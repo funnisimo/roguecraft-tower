@@ -1,0 +1,30 @@
+{
+  "name": "roguecraft-tower",
+  "version": "1.0.0",
+  "description": "7DRL - 2022 :: Can you climb the tower all the way to the top?",
+  "main": "main.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "http-server -p 8080"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funnisimo/roguecraft-tower.git"
+  },
+  "keywords": [
+    "roguelike",
+    "7drl"
+  ],
+  "author": "Funnisimo",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/funnisimo/roguecraft-tower/issues"
+  },
+  "homepage": "https://github.com/funnisimo/roguecraft-tower#readme",
+  "devDependencies": {
+    "http-server": "^14.1.0"
+  }
+}
