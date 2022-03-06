@@ -4,12 +4,14 @@ export const kinds = {
     ch: "@",
     fg: "white",
     bg: -1,
+    moveSpeed: 100,
   },
 
   zombie: {
     id: "Zombie",
     ch: "z",
     fg: "green",
+    moveSpeed: 100,
   },
 };
 

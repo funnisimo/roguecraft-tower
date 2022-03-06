@@ -2,7 +2,7 @@ export function flash(game, x, y, color = "white", ms = 300) {
   const scene = game.scene;
   const map = game.map;
 
-  scene.pause({ input: true, update: true });
+  scene.pause({ update: true });
 
   scene.buffer.draw(x, y, null, null, color);
 
@@ -20,7 +20,7 @@ export function flash(game, x, y, color = "white", ms = 300) {
       }
     });
 
-    scene.resume({ input: true, update: true });
+    scene.resume({ update: true });
     _success();
   });
 
