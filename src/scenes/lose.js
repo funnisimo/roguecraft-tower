@@ -1,6 +1,6 @@
-import "../lib/gw-utils.js";
+import "../../lib/gw-utils.js";
 
-export const loseScene = {
+export const lose = {
   create() {
     this.bg = "dark_gray";
     const build = new GWU.widget.Builder(this);

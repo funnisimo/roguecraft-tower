@@ -1,6 +1,6 @@
-import "../lib/gw-utils.js";
+import "../../lib/gw-utils.js";
 
-export const stuffScene = {
+export const stuff = {
   create() {
     this.bg = "dark_gray";
     const build = new GWU.widget.Builder(this);
@@ -12,13 +12,14 @@ export const stuffScene = {
     build.pos(10, 30).text("Press any key to goto next level.");
 
     this.on("keypress", () => {
-      this.app.scenes.start("level", { id: this.data.id + 1 });
+      this.data.level += 1;
+      this.app.scenes.start("level", this.data);
     });
   },
-  start(data = {}) {
-    const id = data.id || 1;
-    this.data.id = id;
+  start(game) {
+    this.data = game;
+
     const w = this.get("LEVEL");
-    w.text("For Level: " + id);
+    w.text("For Level: " + game.level);
   },
 };

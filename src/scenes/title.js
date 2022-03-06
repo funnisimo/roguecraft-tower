@@ -1,6 +1,8 @@
-import "../lib/gw-utils.js";
+import "../../lib/gw-utils.js";
 
-export const titleScene = {
+import * as GAME from "../game/index.js";
+
+export const title = {
   create() {
     this.bg = "dark_gray";
     const build = new GWU.widget.Builder(this);
@@ -16,10 +18,11 @@ export const titleScene = {
         numbersOnly: true,
         bg: GWU.color.BLACK.alpha(50),
       });
-      prompt.on("stop", (data) => {
+      prompt.on("stop", (seed) => {
         e.stopPropagation();
-        if (data) {
-          this.app.scenes.start("level", { seed: data, id: 1 });
+        if (seed) {
+          const game = GAME.make(seed);
+          this.app.scenes.start("level", game);
         }
       });
       e.stopPropagation();
@@ -29,7 +32,8 @@ export const titleScene = {
       e.stopPropagation();
     });
     this.on("keypress", () => {
-      this.app.scenes.start("level", { id: 1 });
+      const game = GAME.make();
+      this.app.scenes.start("level", game);
     });
   },
 };

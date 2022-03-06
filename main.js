@@ -1,26 +1,22 @@
 import "./lib/gw-utils.js";
-import { titleScene } from "./src/title.js";
-import { levelScene } from "./src/level.js";
-import { winScene } from "./src/win.js";
-import { loseScene } from "./src/lose.js";
-import { stuffScene } from "./src/stuff.js";
-import { helpScene } from "./src/help.js";
+import * as SCENES from "./src/scenes/index.js";
 
 function start() {
   // create the user interface
 
   window.APP = GWU.app.make({
-    width: 80,
+    width: 90,
     height: 45,
     div: "game",
     scenes: {
-      title: titleScene,
-      level: levelScene,
-      stuff: stuffScene,
-      win: winScene,
-      lose: loseScene,
-      help: helpScene,
+      title: SCENES.title,
+      level: SCENES.level,
+      win: SCENES.win,
+      lose: SCENES.lose,
+      help: SCENES.help,
+      stuff: SCENES.stuff,
     },
+    start: "title",
   });
 }
 

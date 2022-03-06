@@ -1,6 +1,6 @@
-import "../lib/gw-utils.js";
+import "../../lib/gw-utils.js";
 
-export const winScene = {
+export const win = {
   create() {
     this.bg = "dark_gray";
     const build = new GWU.widget.Builder(this);
