@@ -12,7 +12,6 @@ export const stuff = {
     build.pos(10, 30).text("Press any key to goto next level.");
 
     this.on("keypress", () => {
-      this.data.level += 1;
       this.app.scenes.start("level", this.data);
     });
   },

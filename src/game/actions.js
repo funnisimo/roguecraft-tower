@@ -1,4 +1,5 @@
 import * as FX from "../fx/index.js";
+import * as MAP from "../map/index.js";
 
 export function moveDir(game, actor, dir) {
   const map = game.map;
@@ -6,17 +7,25 @@ export function moveDir(game, actor, dir) {
   const newY = actor.y + dir[1];
 
   if (map.blocksMove(newX, newY)) {
+    game.addMessage("You bump into a wall.");
     FX.flash(game, newX, newY, "red", 150).then(() => {
       game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 2));
     });
     return;
   }
 
-  game.scene.buffer.drawSprite(actor.x, actor.y, map.tileAt(actor.x, actor.y));
+  const oldX = actor.x;
+  const oldY = actor.y;
   actor.x = newX;
   actor.y = newY;
-  game.scene.buffer.drawSprite(actor.x, actor.y, actor.kind);
-  game.endTurn(actor, actor.kind.moveSpeed);
+  game.drawAt(oldX, oldY);
+  game.drawAt(newX, newY);
+
+  const speed = Math.round(
+    actor.kind.moveSpeed * (GWU.xy.isDiagonal(dir) ? 1.4 : 1.0)
+  );
+
+  game.endTurn(actor, speed);
 }
 
 export function moveToward(game, actor, other) {
@@ -32,14 +41,12 @@ export function moveToward(game, actor, other) {
     const newY = actor.y + dir[1];
 
     if (!map.blocksMove(newX, newY) && !game.actorAt(newX, newY)) {
-      game.scene.buffer.drawSprite(
-        actor.x,
-        actor.y,
-        map.tileAt(actor.x, actor.y)
-      );
+      const oldX = actor.x;
+      const oldY = actor.y;
       actor.x = newX;
       actor.y = newY;
-      game.scene.buffer.drawSprite(actor.x, actor.y, actor.kind);
+      game.drawAt(oldX, oldY);
+      game.drawAt(newX, newY);
       game.endTurn(actor, actor.kind.moveSpeed);
       return true;
     }
@@ -53,11 +60,13 @@ export function attack(game, actor, target = null) {
   if (!target) {
     const targets = game.actors.filter(
       (a) =>
-        a !== actor && GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1
+        a !== actor &&
+        actor.health > 0 &&
+        GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1
     );
 
     if (targets.length == 0) {
-      console.log("no targets.");
+      game.addMessage("no targets.");
       FX.flash(game, actor.x, actor.y, "orange", 150).then(() => {
         game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
       });
@@ -67,7 +76,6 @@ export function attack(game, actor, target = null) {
         .run("target", { game, actor, targets })
         .on("stop", (result) => {
           if (!result) {
-            console.log("Escape targeting.");
             FX.flash(game, actor.x, actor.y, "orange", 150).then(() => {
               game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
             });
@@ -82,7 +90,15 @@ export function attack(game, actor, target = null) {
   }
 
   // we have an actor and a target
-  console.log(actor.kind.id, "attacks", target.kind.id);
+  game.messages.addCombat(
+    `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
+  );
+  target.health -= actor.damage;
+  if (target.health < 0) {
+    game.messages.addCombat(`${target.kind.id} dies`);
+    game.setTile(target.x, target.y, MAP.ids.CORPSE);
+  }
+
   FX.flash(game, target.x, target.y, "red", 150).then(() => {
     game.endTurn(actor, actor.kind.moveSpeed);
   });

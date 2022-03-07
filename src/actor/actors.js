@@ -7,6 +7,8 @@ export const kinds = {
     fg: "white",
     bg: -1,
     moveSpeed: 100,
+    health: 100,
+    damage: 10,
   },
 
   zombie: {
@@ -14,6 +16,8 @@ export const kinds = {
     ch: "z",
     fg: "green",
     moveSpeed: 200,
+    health: 5,
+    damage: 2,
   },
 };
 
@@ -21,7 +25,13 @@ export function make(id) {
   const kind = kinds[id];
   if (!kind) throw new Error("Failed to find actor kind - " + id);
 
-  return { x: 1, y: 1, kind };
+  return {
+    x: 1,
+    y: 1,
+    kind,
+    health: kind.health || 10,
+    damage: kind.damage || 2,
+  };
 }
 
 export function spawn(game, id, x, y) {

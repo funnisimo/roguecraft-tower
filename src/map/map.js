@@ -13,16 +13,20 @@ export class Map {
     return this.cells.height;
   }
 
-  setTile(x, y, tile) {
+  _setTile(x, y, tile) {
     this.cells.set(x, y, tile);
   }
 
   blocksMove(x, y) {
-    const tile = this.tileAt(x, y);
+    const tile = this.getTile(x, y);
     return tile.blocksMove || false;
   }
 
-  tileAt(x, y) {
+  hasTile(x, y, id) {
+    return this.cells.get(x, y) === id;
+  }
+
+  getTile(x, y) {
     const ix = this.cells.get(x, y) || 0;
     return TILE.tiles[ix];
   }
