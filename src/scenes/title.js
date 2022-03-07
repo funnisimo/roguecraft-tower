@@ -31,31 +31,10 @@ export const title = {
       this.app.scenes.start("help");
       e.stopPropagation();
     });
-    this.on("keypress", () => {
+    this.on("keypress", (e) => {
       const game = GAME.make();
       this.app.scenes.start("level", game);
+      e.stopPropagation();
     });
   },
 };
-
-//   buffer.drawText(
-//     0,
-//     26,
-//     "Use the #{green arrow keys} to move around.",
-//     "white",
-//     -1,
-//     80,
-//     "center"
-//   );
-
-//   buffer.drawText(
-//     0,
-//     28,
-//     "Press #{green q} to quit.",
-//     "white",
-//     -1,
-//     80,
-//     "center"
-//   );
-
-//   buffer.drawText(0, 30, "[Press any key to begin]", "gray", -1, 80, "center");

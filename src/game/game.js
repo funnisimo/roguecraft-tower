@@ -1,5 +1,6 @@
 import * as ACTOR from "../actor/index.js";
 import * as MAP from "../map/index.js";
+import * as ACTIONS from "./actions.js";
 
 export function make(seed = 0) {
   return new Game(seed);
@@ -41,6 +42,21 @@ export class Game {
     scene.on("update", () => this.update());
     scene.on("input", (e) => this.input(e));
     this.playerTurn = true;
+
+    scene.on("dir", (e) => {
+      ACTIONS.moveDir(this, this.player, e.dir);
+    });
+    scene.on("a", () => {
+      ACTIONS.attack(this, this.player);
+    });
+    scene.on("z", () => {
+      ACTOR.spawn(this, "zombie", this.player.x, this.player.y);
+    });
+
+    // TODO - This needs to go into the scheduler....
+    scene.wait(1000, () => {
+      ACTOR.spawn(this, "zombie", 20, 20);
+    });
   }
 
   update() {

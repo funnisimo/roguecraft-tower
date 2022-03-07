@@ -1,9 +1,9 @@
 import "../../lib/gw-utils.js";
 import CONFIG from "../config.js";
 import * as MAP from "../map/index.js";
-import * as ACTOR from "../actor/index.js";
-import * as FX from "../fx/index.js";
-import * as GAME from "../game/index.js";
+// import * as ACTOR from "../actor/index.js";
+// import * as FX from "../fx/index.js";
+// import * as GAME from "../game/index.js";
 
 export const level = {
   create() {
@@ -32,22 +32,18 @@ export const level = {
     s.text("Seed: " + seed);
 
     game.startLevel(this);
-
-    this.wait(1000, () => {
-      const zombie = ACTOR.make("zombie");
-      game.actors.push(zombie);
-      game.scheduler.push(zombie, zombie.kind.moveSpeed || 100);
-
-      zombie.x = 20;
-      zombie.y = 20;
-      FX.flash(game, 20, 20, zombie.kind.fg, 500);
-    });
   },
 
   on: {
-    dir(e) {
-      GAME.moveDir(this.data, this.data.player, e.dir);
-    },
+    // dir(e) {
+    //   GAME.moveDir(this.data, this.data.player, e.dir);
+    // },
+    // a() {
+    //   GAME.attack(this.data, this.data.player);
+    // },
+    // z() {
+    //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
+    // },
 
     keypress(e) {
       if (e.key == "Enter") {

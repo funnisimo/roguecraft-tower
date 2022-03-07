@@ -18,3 +18,42 @@ export function moveDir(game, actor, dir) {
   game.scene.buffer.drawSprite(actor.x, actor.y, actor.kind);
   game.endTurn(actor, actor.kind.moveSpeed);
 }
+
+export function attack(game, actor, target = null) {
+  if (!target) {
+    const targets = game.actors.filter(
+      (a) =>
+        a !== actor && GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1
+    );
+
+    if (targets.length == 0) {
+      console.log("no targets.");
+      FX.flash(game, actor.x, actor.y, "orange", 150).then(() => {
+        game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      });
+      return;
+    } else if (targets.length > 1) {
+      game.scene.app.scenes
+        .run("target", { game, actor, targets })
+        .on("stop", (result) => {
+          if (!result) {
+            console.log("Escape targeting.");
+            FX.flash(game, actor.x, actor.y, "orange", 150).then(() => {
+              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+            });
+          } else {
+            attack(game, actor, result);
+          }
+        });
+      return;
+    } else {
+      target = targets[0];
+    }
+  }
+
+  // we have an actor and a target
+  console.log(actor.kind.id, "attacks", target.kind.id);
+  FX.flash(game, target.x, target.y, "red", 150).then(() => {
+    game.endTurn(actor, actor.kind.moveSpeed);
+  });
+}
