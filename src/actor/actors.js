@@ -13,7 +13,7 @@ export const kinds = {
     id: "Zombie",
     ch: "z",
     fg: "green",
-    moveSpeed: 100,
+    moveSpeed: 200,
   },
 };
 

@@ -95,4 +95,8 @@ export class Game {
       this.playerTurn = false;
     }
   }
+
+  actorAt(x, y) {
+    return this.actors.find((a) => a.x === x && a.y === y);
+  }
 }

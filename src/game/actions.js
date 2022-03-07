@@ -19,6 +19,36 @@ export function moveDir(game, actor, dir) {
   game.endTurn(actor, actor.kind.moveSpeed);
 }
 
+export function moveToward(game, actor, other) {
+  const map = game.map;
+
+  let dir = GWU.xy.dirFromTo(actor, other);
+  const dirs = GWU.xy.dirSpread(dir);
+
+  while (dirs.length) {
+    dir = dirs.shift();
+
+    const newX = actor.x + dir[0];
+    const newY = actor.y + dir[1];
+
+    if (!map.blocksMove(newX, newY) && !game.actorAt(newX, newY)) {
+      game.scene.buffer.drawSprite(
+        actor.x,
+        actor.y,
+        map.tileAt(actor.x, actor.y)
+      );
+      actor.x = newX;
+      actor.y = newY;
+      game.scene.buffer.drawSprite(actor.x, actor.y, actor.kind);
+      game.endTurn(actor, actor.kind.moveSpeed);
+      return true;
+    }
+  }
+
+  game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 2));
+  return false;
+}
+
 export function attack(game, actor, target = null) {
   if (!target) {
     const targets = game.actors.filter(
