@@ -34,9 +34,7 @@ export function map(scene, width, height) {
       });
 
       game.actors.forEach((a) => {
-        if (a.health > 0) {
-          buf.drawSprite(a.x, a.y, a.kind);
-        }
+        a.draw(buf);
       });
     },
 

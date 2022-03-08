@@ -1,6 +1,7 @@
 import * as ACTOR from "../actor/index.js";
 import * as MAP from "../map/index.js";
 import * as ACTIONS from "./actions.js";
+import * as LEVEL from "../levels/index.js";
 
 export function make(seed = 0) {
   return new Game(seed);
@@ -11,7 +12,7 @@ export class Game {
     this.player = ACTOR.make("player");
     this.map = null;
     this.scene = null;
-    this.level = 0;
+    this.level = null;
     this.seed = seed;
     this.scheduler = new GWU.scheduler.Scheduler();
 
@@ -40,19 +41,23 @@ export class Game {
     this.level += 1;
     this.scheduler.clear();
 
-    const map = (this.map = new MAP.Map(width, height));
-    GWU.xy.forBorder(map.width, map.height, (x, y) =>
-      this.setTile(x, y, MAP.ids.WALL)
-    );
-
-    // game.player = ACTOR.Player;
-    this.player.x = 1;
-    this.player.y = 1;
+    let level = LEVEL.levels[this.level - 1];
+    if (!level) {
+      level = new LEVEL.Level({ width: 60, height: 35 });
+    } else if (level.map.width != 60 || level.map.height != 35) {
+      throw new Error(
+        `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+      );
+    }
+    this.level = level;
+    this.map = level.map;
+    this.actors = [];
+    this.playerTurn = false;
 
     this.scene.needsDraw = true;
-    this.scheduler.push(this.player, 0);
-    this.actors = [this.player];
-    this.playerTurn = true;
+    // this.scheduler.push(this.player, 0);
+    // this.actors = [this.player];
+    // this.playerTurn = true;
 
     // we want the events that the widgets ignore...
     const cancelEvents = scene.load({
@@ -62,12 +67,16 @@ export class Game {
     });
     scene.once("stop", cancelEvents);
 
-    this.wait(500, () => {
-      ACTOR.spawn(this, "zombie", 20, 20);
-    });
-
+    level.start(this);
     this.tick();
-    this.addMessage("Welcome to level " + this.level);
+  }
+
+  lose() {
+    this.scene.trigger("lose", this);
+  }
+
+  win() {
+    this.scene.trigger("win", this);
   }
 
   update() {
@@ -91,7 +100,7 @@ export class Game {
         console.log("Player - await input");
         this.scene.needsDraw = true;
         if (filter) {
-          this.actors = this.actors.filter((a) => a.health > 0);
+          this.actors = this.actors.filter((a) => a && a.health > 0);
         }
         return;
       } else {
@@ -129,6 +138,7 @@ export class Game {
         tile.on.tick.call(tile, this, x, y);
       }
     });
+    this.level.tick(this);
     this.wait(100, () => this.tick());
   }
 
@@ -143,12 +153,27 @@ export class Game {
     return this.actors.find((a) => a.x === x && a.y === y);
   }
 
+  add(obj) {
+    this.actors.push(obj);
+    obj.trigger("add", this);
+    this.scene.needsDraw = true; // need to update sidebar too
+  }
+
+  remove(obj) {
+    GWU.arrayDelete(this.actors, obj);
+    obj.trigger("remove", this);
+    this.scene.needsDraw = true;
+  }
+
   wait(time, fn) {
     this.scheduler.push(fn, time);
   }
 
   setTile(x, y, id) {
-    this.map._setTile(x, y, id);
+    if (typeof id === "string") {
+      id = MAP.ids[id];
+    }
+    this.map.setTile(x, y, id);
     this.drawAt(x, y);
     const tile = MAP.tiles[id];
     if (tile.on && tile.on.place) {

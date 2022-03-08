@@ -48,17 +48,25 @@ export const level = {
     //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
     // },
 
+    win() {
+      if (this.data.level === CONFIG.LAST_LEVEL) {
+        this.app.scenes.start("win", this.data);
+      } else {
+        this.app.scenes.start("stuff", this.data);
+      }
+    },
+    lose() {
+      this.app.scenes.start("lose", this.data);
+    },
+
     keypress(e) {
       if (e.key == "Enter") {
-        if (this.data.level === CONFIG.LAST_LEVEL) {
-          this.app.scenes.start("win", this.data);
-        } else {
-          this.app.scenes.start("stuff", this.data);
-        }
+        this.trigger("win");
       }
       if (e.key == "Escape") {
-        this.app.scenes.start("lose", this.data);
+        this.trigger("lose");
       }
+      e.stopPropagation();
     },
   },
 };

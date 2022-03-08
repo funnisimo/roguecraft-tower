@@ -94,12 +94,14 @@ export function attack(game, actor, target = null) {
     `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
   );
   target.health -= actor.damage;
-  if (target.health < 0) {
-    game.messages.addCombat(`${target.kind.id} dies`);
-    game.setTile(target.x, target.y, MAP.ids.CORPSE);
-  }
 
   FX.flash(game, target.x, target.y, "red", 150).then(() => {
     game.endTurn(actor, actor.kind.moveSpeed);
   });
+
+  if (target.health < 0) {
+    game.messages.addCombat(`${target.kind.id} dies`);
+    game.setTile(target.x, target.y, MAP.ids.CORPSE);
+    game.remove(target);
+  }
 }
