@@ -15,7 +15,6 @@ function start() {
       lose: SCENES.lose,
       help: SCENES.help,
       stuff: SCENES.stuff,
-      target: SCENES.target,
     },
     start: "title",
   });

@@ -1,6 +1,6 @@
 import "../../lib/gw-utils.js";
 
-export const target = {
+export const TargetScene = {
   start(data) {
     // const game = data.game;
     // const actor = data.actor;
@@ -62,3 +62,5 @@ export const target = {
     },
   },
 };
+
+GWU.app.installScene("target", TargetScene);
