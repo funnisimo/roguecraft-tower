@@ -4,7 +4,7 @@ import * as FX from "../fx/index.js";
 
 export class Level {
   constructor(cfg) {
-    this.index = 0;
+    this.depth = cfg.depth || 1;
 
     if (cfg.map) {
       this.map = cfg.map;
@@ -118,7 +118,7 @@ export const levels = [];
 
 export function install(cfg) {
   const level = new Level(cfg);
-  level.index = levels.length;
   levels.push(level);
+  level.depth = levels.length;
   return level;
 }

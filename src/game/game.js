@@ -13,6 +13,7 @@ export class Game {
     this.map = null;
     this.scene = null;
     this.level = null;
+    this.depth = 0;
     this.seed = seed;
     this.scheduler = new GWU.scheduler.Scheduler();
 
@@ -38,12 +39,12 @@ export class Game {
 
   startLevel(scene, width, height) {
     this.scene = scene;
-    this.level += 1;
+    this.depth += 1;
     this.scheduler.clear();
 
-    let level = LEVEL.levels[this.level - 1];
+    let level = LEVEL.levels[this.depth - 1];
     if (!level) {
-      level = new LEVEL.Level({ width: 60, height: 35 });
+      level = new LEVEL.Level({ width: 60, height: 35, depth: this.depth });
     } else if (level.map.width != 60 || level.map.height != 35) {
       throw new Error(
         `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`

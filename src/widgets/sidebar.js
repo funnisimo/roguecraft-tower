@@ -33,7 +33,7 @@ export function sidebar(scene, x, height) {
       buf.drawText(x);
       y += buf.drawText(x, y, "{Roguecraft}", "yellow");
       y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-      y += buf.drawText(x, y, "Level: " + (game.level.index + 1), "pink");
+      y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
 
       y += 1;
       y += drawPlayer(buf, x, y, game.player);
