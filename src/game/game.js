@@ -32,6 +32,9 @@ export class Game {
     this.events.on("a", (e) => {
       ACTIONS.attack(this, this.player);
     });
+    this.events.on(" ", (e) => {
+      ACTIONS.idle(this, this.player);
+    });
     this.events.on("z", (e) => {
       ACTOR.spawn(this, "zombie", this.player.x, this.player.y);
     });

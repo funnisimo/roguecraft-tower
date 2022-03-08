@@ -1,6 +1,10 @@
 import * as FX from "../fx/index.js";
 import * as MAP from "../map/index.js";
 
+export function idle(game, actor, dir) {
+  game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+}
+
 export function moveDir(game, actor, dir) {
   const map = game.map;
   const newX = actor.x + dir[0];

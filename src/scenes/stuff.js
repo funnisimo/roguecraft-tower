@@ -19,6 +19,6 @@ export const stuff = {
     this.data = game;
 
     const w = this.get("LEVEL");
-    w.text("For Level: " + (game.level.index + 1));
+    w.text("For Level: " + game.level.depth);
   },
 };
