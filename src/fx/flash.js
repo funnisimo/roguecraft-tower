@@ -1,6 +1,6 @@
 import { Obj } from "../game/obj.js";
 
-class FX extends Obj {
+export class FX extends Obj {
   constructor(cfg) {
     super(cfg);
     this.ch = this.ch || null;
@@ -30,7 +30,6 @@ export function flash(game, x, y, color = "white", ms = 300) {
 
   const fx = new FX({ x, y, bg: color, depth: 4 });
   game.add(fx);
-  //   scene.buffer.draw(x, y, null, null, color);
 
   let _success = GWU.NOOP;
   let _fail = GWU.NOOP;

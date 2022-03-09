@@ -113,6 +113,9 @@ export class Game {
       if (this.scene.timers.length || this.scene.tweens.length) {
         return;
       }
+      if (this.scene.paused.update) {
+        return;
+      }
       actor = this.scheduler.pop();
     }
 
@@ -192,10 +195,9 @@ export class Game {
 
   drawAt(x, y) {
     const buf = this.scene.buffer;
-    buf.blackOut(x, y);
-    buf.drawSprite(x, y, this.map.getTile(x, y));
+    this.map.drawAt(buf, x, y);
 
     const actor = this.actorAt(x, y);
-    actor && buf.drawSprite(x, y, actor.kind);
+    actor && actor.draw(buf);
   }
 }

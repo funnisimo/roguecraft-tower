@@ -44,6 +44,11 @@ export class Map {
     const ix = this.cells.get(x, y) || 0;
     return TILE.tiles[ix];
   }
+
+  drawAt(buf, x, y) {
+    buf.blackOut(x, y);
+    buf.drawSprite(x, y, this.getTile(x, y));
+  }
 }
 
 export function from(cfg) {

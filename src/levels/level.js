@@ -66,26 +66,23 @@ export class Level {
       this.startLoc[1],
       (x, y) => game.map.hasTile(x, y, MAP.ids.FLOOR)
     );
-    game.player.x = startLoc[0];
-    game.player.y = startLoc[1];
-    FX.flash(game, game.player.x, game.player.y, "yellow", 500).then(() => {
-      game.add(game.player);
+    ACTOR.spawn(game, game.player, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
+
+      this.waves.forEach((wave) => {
+        game.wait(wave.delay, () => {
+          wave.count = wave.count || 1;
+          for (let i = 0; i < wave.count; ++i) {
+            ACTOR.spawn(game, wave.horde);
+          }
+          --this.wavesLeft;
+        });
+      });
     });
 
     if (this.welcome) {
       game.addMessage(this.welcome);
     }
-
-    this.waves.forEach((wave) => {
-      game.wait(wave.delay, () => {
-        wave.count = wave.count || 1;
-        for (let i = 0; i < wave.count; ++i) {
-          ACTOR.spawn(game, wave.horde);
-        }
-        --this.wavesLeft;
-      });
-    });
   }
 
   tick(game) {

@@ -51,7 +51,7 @@ export function make(id) {
 }
 
 export function spawn(game, id, x, y) {
-  const newbie = make(id);
+  const newbie = typeof id === "string" ? make(id) : id;
 
   if (x === undefined) {
     do {
@@ -60,11 +60,45 @@ export function spawn(game, id, x, y) {
     } while (game.map.blocksMove(x, y) || game.actorAt(x, y));
   }
 
-  FX.flash(game, x, y, newbie.kind.fg, 500).then(() => {
-    newbie.x = x;
-    newbie.y = y;
-    game.add(newbie);
+  const ms = 500;
+  const bg = newbie.kind.fg;
+  const scene = game.scene;
+  const map = game.map;
+
+  const startTime = scene.app.time;
+
+  const fx = new FX.FX({ x, y, bg, depth: 4 });
+  game.add(fx);
+
+  let _success = GWU.NOOP;
+  let _fail = GWU.NOOP;
+
+  game.wait(ms, () => {
+    const nowTime = scene.app.time;
+    const timeLeft = ms - (nowTime - startTime);
+    if (timeLeft > 0) {
+      scene.pause({ update: true });
+
+      scene.wait(timeLeft, () => {
+        game.remove(fx);
+        scene.resume({ update: true });
+        newbie.x = x;
+        newbie.y = y;
+        game.add(newbie);
+        _success(newbie);
+      });
+    } else {
+      game.remove(fx);
+      newbie.x = x;
+      newbie.y = y;
+      game.add(newbie);
+      _success(newbie);
+    }
   });
 
-  return newbie;
+  return {
+    then(success) {
+      _success = success || GWU.NOOP;
+    },
+  };
 }
