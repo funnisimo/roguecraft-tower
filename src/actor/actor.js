@@ -57,7 +57,7 @@ export function spawn(game, id, x, y) {
     do {
       x = game.rng.number(game.map.width);
       y = game.rng.number(game.map.height);
-    } while (game.map.blocksMove(x, y) || game.actorAt(x, y));
+    } while (!game.map.hasTile(x, y, "FLOOR") || game.actorAt(x, y));
   }
 
   const ms = 500;

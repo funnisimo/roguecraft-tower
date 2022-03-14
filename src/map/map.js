@@ -62,6 +62,9 @@ export function from(cfg) {
     for (let x = 0; x < w; ++x) {
       const ch = line[x] || "#";
       const id = TILE.ids[cfg.tiles[ch] || "WALL"];
+      if (id === undefined) {
+        throw new Error(`Failed to find tile: ${cfg.tiles[ch]} at ${x},${y}.`);
+      }
       m.setTile(x, y, id);
     }
   });

@@ -15,8 +15,55 @@ ACTOR.install({
   ch: "z",
   fg: "green",
   moveSpeed: 200,
-  health: 5,
-  damage: 2,
+  health: 6,
+  damage: 8,
+  // attackSpeed: 200
+});
+
+ACTOR.install({
+  id: "Armored Zombie",
+  ch: "Z",
+  fg: "green",
+  moveSpeed: 200,
+  health: 25,
+  damage: 10,
+  // attackSpeed: 200
+});
+
+ACTOR.install({
+  id: "Armored Zombie Sword",
+  ch: "Z",
+  fg: "green",
+  moveSpeed: 200,
+  health: 50,
+  damage: 12,
+  // attackSpeed: 200
+});
+
+ACTOR.install({
+  id: "Vindicator",
+  ch: "v",
+  fg: "blue",
+  moveSpeed: 100,
+  health: 11,
+  damage: 9,
+  // chargeSpeed: 75
+  // chargeDistance: 10
+  // attackSpeed: 150
+});
+
+ACTOR.install({
+  id: "Skeleton",
+  ch: "s",
+  fg: "white",
+  moveSpeed: 100,
+  health: 6,
+  damage: 0,
+  // rangedDamage: 3,
+  // range: 10,
+  // tooClose: 4,
+  // rangedAttackSpeed: 150,
+  // noticeDistance: 10
 });
 
 /*
@@ -26,7 +73,7 @@ BOW - 10-25
 
 ZOMBIE - 8 damage, 6 health
 SKELETON - 3 damage, 6 health
-RAVEGER - 9 damage, 11 health
+VINDICATOR - 9 damage, 11 health
 
 SQUID COAST
 - Follow the path

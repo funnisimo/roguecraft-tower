@@ -6,15 +6,6 @@ export class FX extends Obj {
     this.ch = this.ch || null;
     this.fg = this.fg || null;
     this.bg = this.bg || null;
-
-    this.on("add", (game) => {
-      console.log("fx add", this.x, this.y, this.bg);
-      //   GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-    });
-    this.on("remove", (game) => {
-      console.log("fx remove", this.x, this.y, this.bg);
-      //   GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-    });
   }
 
   draw(buf) {
