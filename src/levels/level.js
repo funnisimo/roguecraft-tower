@@ -14,7 +14,7 @@ export class Level {
       this.map = new MAP.Map(cfg.width, cfg.height);
       this.map.fill("FLOOR");
       GWU.xy.forBorder(this.map.width, this.map.height, (x, y) =>
-        this.map.setTile(x, y, MAP.ids.WALL)
+        this.map.setTile(x, y, "WALL")
       );
     } else {
       throw new Error("Invalid level config.");
@@ -64,7 +64,7 @@ export class Level {
     const startLoc = game.map.rng.matchingLocNear(
       this.startLoc[0],
       this.startLoc[1],
-      (x, y) => game.map.hasTile(x, y, MAP.ids.FLOOR)
+      (x, y) => game.map.hasTile(x, y, "FLOOR")
     );
     ACTOR.spawn(game, game.player, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
@@ -101,10 +101,11 @@ export class Level {
     if (this.proceed) {
       game.addMessage(this.proceed);
     }
-    game.map.cells.forEach((id, x, y) => {
-      if (id === MAP.ids.INACTIVE_STAIRS) {
+    const inactiveStairs = MAP.tilesByName["INACTIVE_STAIRS"].index;
+    game.map._tiles.forEach((index, x, y) => {
+      if (index === inactiveStairs) {
         FX.flash(game, x, y, "yellow").then(() => {
-          game.setTile(x, y, MAP.ids.UP_STAIRS);
+          game.setTile(x, y, "UP_STAIRS");
         });
       }
     });

@@ -1,21 +1,44 @@
 import * as FX from "../fx/index.js";
 import * as MAP from "../map/index.js";
 
-export function idle(game, actor, dir) {
+export function idle(game, actor) {
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
 }
 
-export function moveDir(game, actor, dir) {
+export function moveDir(game, actor, dir, quiet = false) {
   const map = game.map;
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
 
+  const other = game.actorAt(newX, newY);
+  if (other) {
+    if (other.kind.on && other.kind.on.bump) {
+      if (other.kind.on.bump(game, actor, other)) {
+        return true;
+      }
+    }
+    if (actor.hasActed()) return true;
+
+    if (!quiet) {
+      game.addMessage(`You bump into a ${other.id}.`);
+      FX.flash(game, newX, newY, "red", 150);
+      idle(game, actor);
+
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   if (map.blocksMove(newX, newY)) {
-    game.addMessage("You bump into a wall.");
-    FX.flash(game, newX, newY, "red", 150).then(() => {
-      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 2));
-    });
-    return;
+    if (!quiet) {
+      game.addMessage("You bump into a wall.");
+      FX.flash(game, newX, newY, "red", 150);
+      idle(game, actor);
+      return;
+    } else {
+      return false;
+    }
   }
 
   const oldX = actor.x;
@@ -30,9 +53,10 @@ export function moveDir(game, actor, dir) {
   );
 
   game.endTurn(actor, speed);
+  return true;
 }
 
-export function moveToward(game, actor, other) {
+export function moveToward(game, actor, other, quiet = false) {
   const map = game.map;
 
   let dir = GWU.xy.dirFromTo(actor, other);
@@ -41,23 +65,15 @@ export function moveToward(game, actor, other) {
   while (dirs.length) {
     dir = dirs.shift();
 
-    const newX = actor.x + dir[0];
-    const newY = actor.y + dir[1];
-
-    if (!map.blocksMove(newX, newY) && !game.actorAt(newX, newY)) {
-      const oldX = actor.x;
-      const oldY = actor.y;
-      actor.x = newX;
-      actor.y = newY;
-      game.drawAt(oldX, oldY);
-      game.drawAt(newX, newY);
-      game.endTurn(actor, actor.kind.moveSpeed);
-      return true;
+    if (moveDir(game, actor, dir, true)) {
+      return; // success
     }
   }
 
-  game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 2));
-  return false;
+  if (!quiet) {
+    FX.flash(game, actor.x, actor.y, "orange", 150);
+  }
+  idle(game, actor);
 }
 
 export function attack(game, actor, target = null) {
@@ -71,26 +87,31 @@ export function attack(game, actor, target = null) {
 
     if (targets.length == 0) {
       game.addMessage("no targets.");
-      FX.flash(game, actor.x, actor.y, "orange", 150).then(() => {
-        game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-      });
-      return;
+      FX.flash(game, actor.x, actor.y, "orange", 150);
+      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      return true; // did something
     } else if (targets.length > 1) {
       game.scene.app.scenes
         .run("target", { game, actor, targets })
         .on("stop", (result) => {
           if (!result) {
-            FX.flash(game, actor.x, actor.y, "orange", 150).then(() => {
-              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-            });
+            FX.flash(game, actor.x, actor.y, "orange", 150);
+            game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
           } else {
             attack(game, actor, result);
           }
         });
-      return;
+      return true; // didSomething
     } else {
       target = targets[0];
     }
+  }
+
+  const actorIsPlayer = actor === game.player;
+  const otherIsPlayer = target === game.player;
+
+  if (!actorIsPlayer && !otherIsPlayer) {
+    return idle(game, actor); // no attacking
   }
 
   // we have an actor and a target
@@ -99,13 +120,24 @@ export function attack(game, actor, target = null) {
   );
   target.health -= actor.damage;
 
-  FX.flash(game, target.x, target.y, "red", 150).then(() => {
-    game.endTurn(actor, actor.kind.moveSpeed);
-  });
+  FX.flash(game, target.x, target.y, "red", 150);
+  game.endTurn(actor, actor.kind.moveSpeed);
 
   if (target.health < 0) {
     game.messages.addCombat(`${target.kind.id} dies`);
-    game.setTile(target.x, target.y, MAP.ids.CORPSE);
+    game.setTile(target.x, target.y, "CORPSE");
     game.remove(target);
   }
+  return true;
+}
+
+export function climb(game, actor) {
+  const tile = game.map.getTile(actor.x, actor.y);
+  if (tile.on && tile.on.climb) {
+    if (tile.on.climb(game, actor)) {
+      return;
+    }
+  }
+
+  idle(game, actor);
 }

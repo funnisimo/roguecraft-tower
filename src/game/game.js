@@ -23,6 +23,7 @@ export class Game {
 
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);
+    this.actor = null;
 
     // TODO - Get these as parameters...
     // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
@@ -34,6 +35,9 @@ export class Game {
     });
     this.events.on(" ", (e) => {
       ACTIONS.idle(this, this.player);
+    });
+    this.events.on(">", (e) => {
+      ACTIONS.climb(this, this.player);
     });
     this.events.on("z", (e) => {
       ACTOR.spawn(this, "zombie", this.player.x, this.player.y);
@@ -92,14 +96,15 @@ export class Game {
     if (this.playerTurn) return;
 
     let filter = false;
-    let actor = this.scheduler.pop();
-    while (actor) {
-      if (typeof actor === "function") {
-        actor(this);
-      } else if (actor.health <= 0) {
+    this.actor = this.scheduler.pop();
+    while (this.actor) {
+      if (typeof this.actor === "function") {
+        this.actor(this);
+      } else if (this.actor.health <= 0) {
         // skip
         filter = true;
-      } else if (actor === this.player) {
+      } else if (this.actor === this.player) {
+        this.actor.startTurn(this);
         this.playerTurn = true;
         console.log("Player - await input");
         this.scene.needsDraw = true;
@@ -108,7 +113,11 @@ export class Game {
         }
         return;
       } else {
-        ACTOR.ai(this, actor);
+        this.actor.startTurn(this);
+        ACTOR.ai(this, this.actor);
+        if (!this.actor.hasActed()) {
+          console.log("No actor AI action.");
+        }
       }
       if (this.scene.timers.length || this.scene.tweens.length) {
         return;
@@ -116,7 +125,7 @@ export class Game {
       if (this.scene.paused.update) {
         return;
       }
-      actor = this.scheduler.pop();
+      this.actor = this.scheduler.pop();
     }
 
     // no other actors
@@ -139,8 +148,8 @@ export class Game {
   }
 
   tick() {
-    this.map.cells.forEach((id, x, y) => {
-      const tile = MAP.tiles[id];
+    this.map._tiles.forEach((index, x, y) => {
+      const tile = MAP.tilesByIndex[index];
       if (tile.on && tile.on.tick) {
         tile.on.tick.call(tile, this, x, y);
       }
@@ -150,9 +159,14 @@ export class Game {
   }
 
   endTurn(actor, time) {
-    this.scheduler.push(actor, time);
-    if (actor === this.player) {
-      this.playerTurn = false;
+    if (!actor.hasActed()) {
+      actor.endTurn(this, time);
+      this.scheduler.push(actor, time);
+      if (actor === this.player) {
+        this.playerTurn = false;
+      }
+    } else {
+      console.log("double end turn.!");
     }
   }
 
@@ -177,12 +191,10 @@ export class Game {
   }
 
   setTile(x, y, id) {
-    if (typeof id === "string") {
-      id = MAP.ids[id];
-    }
-    this.map.setTile(x, y, id);
+    const tile =
+      typeof id === "string" ? MAP.tilesByName[id] : MAP.tilesByIndex[id];
+    this.map.setTile(x, y, tile.index);
     this.drawAt(x, y);
-    const tile = MAP.tiles[id];
     if (tile.on && tile.on.place) {
       tile.on.place(this, x, y);
     }

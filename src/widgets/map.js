@@ -27,8 +27,8 @@ export function map(scene, width, height) {
       );
 
       const map = game.map;
-      map.cells.forEach((id, x, y) => {
-        const tile = MAP.tiles[id];
+      map._tiles.forEach((index, x, y) => {
+        const tile = MAP.tilesByIndex[index];
         buf.blackOut(x, y);
         buf.drawSprite(x, y, tile);
       });

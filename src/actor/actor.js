@@ -8,6 +8,8 @@ export function install(cfg) {
 }
 
 class Actor extends Obj {
+  _turnTime = 0;
+
   constructor(cfg) {
     super(cfg);
     if (!this.kind) throw new Error("Must have kind.");
@@ -18,16 +20,30 @@ class Actor extends Obj {
       game.scheduler.push(this, this.kind.moveSpeed);
     });
     this.on("remove", (game) => {
-      console.group("ACTOR REMOVE", this);
-      console.group("before");
-      GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-      console.groupEnd();
+      // console.group("ACTOR REMOVE", this);
+      // console.group("before");
+      // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
+      // console.groupEnd();
       game.scheduler.remove(this);
-      console.group("after");
-      GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-      console.groupEnd();
-      console.groupEnd();
+      // console.group("after");
+      // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
+      // console.groupEnd();
+      // console.groupEnd();
     });
+  }
+
+  startTurn(game) {
+    this._turnTime = 0;
+    this.trigger("start", game);
+  }
+
+  endTurn(game, time) {
+    this._turnTime = time;
+    this.trigger("end", game, time);
+  }
+
+  hasActed() {
+    return this._turnTime > 0;
   }
 
   draw(buf) {

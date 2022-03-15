@@ -76,12 +76,44 @@ export function sidebar(scene, x, height) {
 
 function drawPlayer(buf, x, y, player) {
   buf.drawText(x, y, "Hero");
-  buf.drawText(x, y + 1, "" + player.health);
+
+  drawHealth(buf, x, y + 1, 28, player);
+  // buf.drawText(x, y + 1, "" + player.health);
   return 2;
 }
 
 function drawActor(buf, x, y, actor) {
-  buf.drawText(x, y, actor.kind.id, "red");
-  buf.drawText(x, y + 1, "" + actor.health, "red");
+  buf.drawText(x, y, actor.kind.id, actor.kind.fg);
+  drawHealth(buf, x, y + 1, 28, actor);
+  // buf.drawText(x, y + 1, "" + actor.health, "red");
   return 2;
+}
+
+function drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
+  const pct = val / max;
+  const full = Math.floor(w * pct);
+  const partialPct = Math.floor(100 * (w * pct - full));
+
+  buf.fillRect(x, y, full, 1, null, null, bg);
+  buf.draw(x + full, y, null, null, GWU.color.from(bg).alpha(partialPct));
+
+  if (text && text.length) {
+    buf.drawText(x, y, text, fg, null, w, "center");
+  }
+}
+
+function drawHealth(buf, x, y, w, actor) {
+  const pct = actor.health / actor.kind.health;
+  const bg = GWU.color.colors.green.mix(GWU.color.colors.red, 100 * (1 - pct));
+  drawProgress(
+    buf,
+    x,
+    y,
+    w,
+    "white",
+    bg,
+    actor.health,
+    actor.kind.health,
+    "HEALTH"
+  );
 }
