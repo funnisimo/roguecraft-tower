@@ -2,8 +2,8 @@ import "../../lib/gw-utils.js";
 
 export function sidebar(scene, x, height) {
   const widget = GWU.widget.make({
-    id: "MAP",
-    tag: "map",
+    id: "SIDEBAR",
+    tag: "sidebar",
 
     x: x,
     y: 0,
@@ -34,25 +34,47 @@ export function sidebar(scene, x, height) {
       y += buf.drawText(x, y, "{Roguecraft}", "yellow");
       y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
       y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
-
-      y += 1;
-      y += drawPlayer(buf, x, y, game.player);
       y += 1;
 
-      const px = game.player.x;
-      const py = game.player.y;
-      const ordered = game.actors.filter(
+      let px = game.player.x;
+      let py = game.player.y;
+      // if (this.focus[0] != -1) {
+      //   px = this.focus[0];
+      //   py = this.focus[1];
+      // }
+      this.entries = game.actors.filter(
         (a) => a && a !== game.player && a.health > 0
       );
-      ordered.sort(
+      this.entries.sort(
         (a, b) =>
           GWU.xy.distanceBetween(a.x, a.y, px, py) -
           GWU.xy.distanceBetween(b.x, b.y, px, py)
       );
 
-      ordered.forEach((a) => {
-        y += drawActor(buf, x, y, a);
-        y += 1;
+      let focused = this.entries.find((a) => GWU.xy.equals(a, this.focus));
+
+      let used = drawPlayer(buf, x, y, game.player);
+      game.player.data.sideY = y;
+      game.player.data.sideH = used;
+      if (GWU.xy.equals(game.player, this.focus)) {
+        buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+        focused = game.player;
+      } else if (focused) {
+        buf.mix(this._used.bg, 50, x - 1, y, this.bounds.width, used);
+      }
+      y += used + 1;
+
+      this.entries.forEach((a) => {
+        const used = drawActor(buf, x, y, a);
+
+        if (a === focused) {
+          buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+        } else if (focused) {
+          buf.mix(this._used.bg, 50, x - 1, y, this.bounds.width, used);
+        }
+        a.data.sideY = y;
+        a.data.sideH = used;
+        y += used + 1;
       });
 
       y += 1;
@@ -63,15 +85,53 @@ export function sidebar(scene, x, height) {
     },
 
     mousemove(e) {
+      const wasFocus = this.focus.slice();
+      this.focus[0] = -1;
+      this.focus[1] = -1;
+      const game = this.scene.data;
+      const player = game.player;
+      if (
+        player.data.sideY <= e.y &&
+        player.data.sideY + player.data.sideH >= e.y
+      ) {
+        this.focus[0] = player.x;
+        this.focus[1] = player.y;
+      } else {
+        this.entries.forEach((a) => {
+          if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
+            this.focus[0] = a.x;
+            this.focus[1] = a.y;
+          }
+        });
+      }
+      if (!GWU.xy.equals(wasFocus, this.focus)) {
+        this.trigger("focus", this.focus);
+        this.needsDraw = true;
+      }
       e.stopPropagation();
     },
 
-    click(e) {
-      e.stopPropagation();
+    // click(e) {
+    //   e.stopPropagation();
+    // },
+
+    with: {
+      setFocus,
+      clearFocus,
+      focus: [-1, -1],
+      entries: [],
     },
   });
 
   return widget;
+}
+
+function setFocus(game, x, y) {
+  this.focus = [x, y];
+}
+
+function clearFocus(game) {
+  this.focus = [-1, -1];
 }
 
 function drawPlayer(buf, x, y, player) {

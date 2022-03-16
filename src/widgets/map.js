@@ -31,6 +31,9 @@ export function map(scene, width, height) {
         const tile = MAP.tilesByIndex[index];
         buf.blackOut(x, y);
         buf.drawSprite(x, y, tile);
+        if (x === this.focus[0] && y === this.focus[1]) {
+          buf.get(x, y).mix("yellow", 0, 50).separate();
+        }
       });
 
       game.actors.forEach((a) => {
@@ -39,7 +42,24 @@ export function map(scene, width, height) {
     },
 
     mousemove(e) {
+      this.focus[0] = e.x;
+      this.focus[1] = e.y;
+      this.needsDraw = true;
       e.stopPropagation();
+    },
+
+    mouseleave(e) {
+      this.focus[0] = -1;
+      this.focus[1] = -1;
+    },
+
+    keypress() {
+      this.focus[0] = -1;
+      this.focus[1] = -1;
+    },
+
+    with: {
+      focus: [-1, -1],
     },
   });
 

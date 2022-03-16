@@ -15,6 +15,7 @@ class Actor extends Obj {
     if (!this.kind) throw new Error("Must have kind.");
 
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
+    this.data = {};
 
     this.on("add", (game) => {
       game.scheduler.push(this, this.kind.moveSpeed);

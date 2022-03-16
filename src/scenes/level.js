@@ -8,19 +8,38 @@ import * as WIDGETS from "../widgets/index.js";
 export const level = {
   create() {
     this.bg = "dark_gray";
+    // const level = this;
 
-    WIDGETS.messages(this, 35).on("click", (e) => {
-      if (this.data.messages.length > 10) {
+    const sidebar = WIDGETS.sidebar(this, 60, 35);
+    const flavor = WIDGETS.flavor(this, 0, 35);
+    const messages = WIDGETS.messages(this, 36);
+    const map = WIDGETS.map(this, 60, 35);
+
+    sidebar.on("focus", (loc) => {
+      map.focus = loc;
+    });
+
+    messages.on("click", (e) => {
+      const game = this.data;
+      if (game.messages.length > 10) {
         this.app.scenes.run("archive", {
-          messages: this.data.messages,
+          messages: game.messages,
           startHeight: 10,
         });
       }
       e.stopPropagation();
     });
 
-    WIDGETS.map(this, 60, 35);
-    WIDGETS.sidebar(this, 60, 35);
+    map.on("mousemove", (e) => {
+      const game = this.data;
+      const text = game.getFlavor(e.x, e.y);
+      flavor.prop("text", text);
+      sidebar.setFocus(game, e.x, e.y);
+    });
+    map.on("mouseleave", (e) => {
+      const game = this.data;
+      sidebar.clearFocus(game);
+    });
   },
 
   start(game) {
@@ -60,6 +79,8 @@ export const level = {
     },
 
     keypress(e) {
+      this.get("SIDEBAR").clearFocus();
+
       if (e.key == "Enter") {
         this.trigger("win");
       }

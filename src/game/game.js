@@ -60,6 +60,7 @@ export class Game {
     this.level = level;
     this.map = level.map;
     this.actors = [];
+    this.items = [];
     this.playerTurn = false;
 
     this.scene.needsDraw = true;
@@ -174,6 +175,10 @@ export class Game {
     return this.actors.find((a) => a.x === x && a.y === y);
   }
 
+  itemAt(x, y) {
+    return this.items.find((i) => i.x === x && i.y === y);
+  }
+
   add(obj) {
     this.actors.push(obj);
     obj.trigger("add", this);
@@ -203,6 +208,24 @@ export class Game {
   addMessage(msg) {
     this.messages.add(msg);
     this.scene.get("MESSAGES").draw(this.scene.buffer);
+  }
+
+  getFlavor(x, y) {
+    if (!this.map.hasXY(x, y)) return "";
+
+    const actor = this.actorAt(x, y);
+    if (actor) {
+      return `You see a ${actor.kind.id}.`;
+    }
+
+    const item = this.itemAt(x, y);
+    if (item) {
+      return `You see a ${item.kind.id}.`;
+    }
+
+    const tile = this.map.getTile(x, y);
+    const text = `You see ${tile.id}.`;
+    return text;
   }
 
   drawAt(x, y) {
