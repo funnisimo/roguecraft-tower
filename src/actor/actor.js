@@ -1,5 +1,6 @@
 import * as FX from "../fx/index.js";
 import { Obj } from "../game/obj.js";
+import * as AI from "./ai.js";
 
 export const kinds = {};
 
@@ -7,8 +8,9 @@ export function install(cfg) {
   kinds[cfg.id.toLowerCase()] = cfg;
 }
 
-class Actor extends Obj {
+export class Actor extends Obj {
   _turnTime = 0;
+  _level = null;
 
   constructor(cfg) {
     super(cfg);
@@ -19,6 +21,7 @@ class Actor extends Obj {
 
     this.on("add", (game) => {
       game.scheduler.push(this, this.kind.moveSpeed);
+      this._level = game.level;
     });
     this.on("remove", (game) => {
       // console.group("ACTOR REMOVE", this);
@@ -26,6 +29,7 @@ class Actor extends Obj {
       // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
       // console.groupEnd();
       game.scheduler.remove(this);
+      this._level = null;
       // console.group("after");
       // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
       // console.groupEnd();
@@ -53,10 +57,19 @@ class Actor extends Obj {
   }
 
   moveCost(game, x, y) {
-    const map = game.map;
-    if (!map.hasXY(x, y)) return -1;
-    if (map.blocksMove(x, y)) return -1;
+    const level = game.level;
+    if (!level.hasXY(x, y)) return GWU.path.OBSTRUCTION;
+    if (level.blocksMove(x, y)) return GWU.path.OBSTRUCTION;
+    if (game.actorAt(x, y)) return GWU.path.AVOIDED;
     return 1;
+  }
+
+  act(game) {
+    this.startTurn(game);
+    AI.ai(game, this);
+    if (!this.hasActed()) {
+      console.log("No actor AI action.");
+    }
   }
 }
 
@@ -77,17 +90,17 @@ export function make(id) {
 export function spawn(game, id, x, y) {
   const newbie = typeof id === "string" ? make(id) : id;
 
-  if (x === undefined) {
-    do {
-      x = game.rng.number(game.map.width);
-      y = game.rng.number(game.map.height);
-    } while (!game.map.hasTile(x, y, "FLOOR") || game.actorAt(x, y));
-  }
-
   const ms = 500;
   const bg = newbie.kind.fg;
   const scene = game.scene;
-  const map = game.map;
+  const level = game.level;
+
+  if (x === undefined) {
+    do {
+      x = game.rng.number(level.width);
+      y = game.rng.number(level.height);
+    } while (!level.hasTile(x, y, "FLOOR") || game.actorAt(x, y));
+  }
 
   const startTime = scene.app.time;
 

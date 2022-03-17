@@ -1,5 +1,5 @@
 import "../../lib/gw-utils.js";
-import * as MAP from "../map/index.js";
+import * as LEVEL from "../levels/index.js";
 
 export function map(scene, width, height) {
   const widget = GWU.widget.make({
@@ -26,10 +26,9 @@ export function map(scene, width, height) {
         "black"
       );
 
-      const map = game.map;
       const level = game.level;
-      map._tiles.forEach((index, x, y) => {
-        const tile = MAP.tilesByIndex[index];
+      level._tiles.forEach((index, x, y) => {
+        const tile = LEVEL.tilesByIndex[index];
         buf.blackOut(x, y);
         buf.drawSprite(x, y, tile);
         if (x === this.focus[0] && y === this.focus[1]) {

@@ -1,12 +1,11 @@
 import * as FX from "../fx/index.js";
-import * as MAP from "../map/index.js";
 
 export function idle(game, actor) {
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
 }
 
 export function moveDir(game, actor, dir, quiet = false) {
-  const map = game.map;
+  const map = game.level;
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
 
@@ -57,7 +56,7 @@ export function moveDir(game, actor, dir, quiet = false) {
 }
 
 export function moveToward(game, actor, other, quiet = false) {
-  const map = game.map;
+  const map = game.level;
 
   let dir = GWU.xy.dirFromTo(actor, other);
   const dirs = GWU.xy.dirSpread(dir);
@@ -132,7 +131,7 @@ export function attack(game, actor, target = null) {
 }
 
 export function climb(game, actor) {
-  const tile = game.map.getTile(actor.x, actor.y);
+  const tile = game.level.getTile(actor.x, actor.y);
   if (tile.on && tile.on.climb) {
     if (tile.on.climb(game, actor)) {
       return;

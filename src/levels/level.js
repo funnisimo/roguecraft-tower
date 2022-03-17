@@ -1,56 +1,22 @@
 import "../../lib/gw-utils.js";
-import * as MAP from "../map/index.js";
 import * as ACTOR from "../actor/index.js";
 import * as FX from "../fx/index.js";
 
-export class Level {
-  constructor(cfg) {
-    this.depth = cfg.depth || 1;
+import * as TILE from "./tiles.js";
 
-    if (cfg.map) {
-      this.map = cfg.map;
-    } else if (cfg.data || cfg.cells) {
-      this.map = MAP.from(cfg);
-    } else if (cfg.width && cfg.height) {
-      this.map = new MAP.Map(cfg.width, cfg.height);
-      this.map.fill("FLOOR");
-      GWU.xy.forBorder(this.map.width, this.map.height, (x, y) =>
-        this.map.setTile(x, y, "WALL")
-      );
-    } else {
-      throw new Error("Invalid level config.");
-    }
-
-    if (cfg.seed) {
-      this.map.rng.seed(cfg.seed);
-    }
+export class Level extends GWD.site.Site {
+  constructor(width, height, seed) {
+    super(width, height, seed);
+    this.depth = 0;
 
     this.flags = null;
 
-    // Need to ensure stairs...
+    this.welcome = "";
+    this.proceed = "";
+    this.waves = [];
 
-    // - start
-    this.startLoc = cfg.start || [1, 1];
-    // - finish
-    this.finishLoc = cfg.finish || [58, 33];
-
-    if (cfg.welcome) {
-      this.welcome = cfg.welcome;
-    } else {
-      this.welcome = "Welcome.";
-    }
-
-    if (cfg.proceed) {
-      this.proceed = cfg.proceed;
-    } else {
-      this.proceed = "Proceed.";
-    }
-
-    if (cfg.waves) {
-      this.waves = cfg.waves;
-    } else {
-      this.waves = [{ delay: 500, horde: "zombie", count: 1 }];
-    }
+    this.startLoc = [-1, -1];
+    this.finishLoc = [-1, -1];
 
     this.done = false;
     this.started = false;
@@ -62,14 +28,14 @@ export class Level {
     this.done = false;
     this.started = false;
 
-    this.flags = GWU.grid.alloc(this.map.width, this.map.height);
+    this.flags = GWU.grid.alloc(this.width, this.height);
 
     // put player in starting location
 
-    const startLoc = game.map.rng.matchingLocNear(
+    const startLoc = this.rng.matchingLocNear(
       this.startLoc[0],
       this.startLoc[1],
-      (x, y) => game.map.hasTile(x, y, "FLOOR")
+      (x, y) => this.hasTile(x, y, "FLOOR")
     );
     ACTOR.spawn(game, game.player, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
@@ -98,6 +64,13 @@ export class Level {
   tick(game) {
     if (this.done || !this.started) return;
 
+    this._tiles.forEach((index, x, y) => {
+      const tile = TILE.tilesByIndex[index];
+      if (tile.on && tile.on.tick) {
+        tile.on.tick.call(tile, game, x, y);
+      }
+    });
+
     if (!game.actors.includes(game.player)) {
       // lose
       return game.lose();
@@ -111,8 +84,8 @@ export class Level {
     if (this.proceed) {
       game.addMessage(this.proceed);
     }
-    const inactiveStairs = MAP.tilesByName["INACTIVE_STAIRS"].index;
-    game.map._tiles.forEach((index, x, y) => {
+    const inactiveStairs = TILE.tilesByName["INACTIVE_STAIRS"].index;
+    this._tiles.forEach((index, x, y) => {
       if (index === inactiveStairs) {
         FX.flash(game, x, y, "yellow").then(() => {
           game.setTile(x, y, "UP_STAIRS");
@@ -139,13 +112,63 @@ export class Level {
     if (!this.flags) return;
     this.flags.fill(0);
   }
+
+  fill(tile) {
+    if (typeof tile === "string") {
+      tile = TILE.ids[tile];
+    }
+    this._tiles.fill(tile);
+  }
+
+  drawAt(buf, x, y) {
+    buf.blackOut(x, y);
+    buf.drawSprite(x, y, this.getTile(x, y));
+  }
 }
 
 export const levels = [];
 
 export function install(cfg) {
-  const level = new Level(cfg);
+  const level = from(cfg);
   levels.push(level);
   level.depth = levels.length;
+  return level;
+}
+
+export function from(cfg) {
+  const data = cfg.data || cfg.cells;
+  const tiles = cfg.tiles;
+
+  const h = data.length;
+  const w = data[0].length;
+
+  const level = new Level(w, h);
+  GWD.site.loadSite(level, data, tiles);
+
+  if (cfg.welcome) {
+    level.welcome = cfg.welcome;
+  } else {
+    level.welcome = "Welcome.";
+  }
+
+  if (cfg.proceed) {
+    level.proceed = cfg.proceed;
+  } else {
+    level.proceed = "Proceed.";
+  }
+
+  if (cfg.waves) {
+    level.waves = cfg.waves;
+  } else {
+    level.waves = [{ delay: 500, horde: "zombie", count: 1 }];
+  }
+
+  if (cfg.start) {
+    level.startLoc = cfg.start;
+  }
+  if (cfg.finish) {
+    level.finishLoc = cfg.finish;
+  }
+
   return level;
 }

@@ -20,16 +20,16 @@ export const level = {
       map.focus = loc;
 
       const game = this.data;
-      const level = game.level;
+      const player = game.player;
       if (loc[0] < 0) {
-        level.clearPath();
+        player.clearPath();
       } else {
         // highlight path
         const player = game.player;
         const path = GWU.path.fromTo(player, loc, (x, y) =>
           player.moveCost(game, x, y)
         );
-        level.setPath(path);
+        player.setPath(path);
       }
     });
     sidebar.on("choose", (loc) => {
@@ -58,12 +58,12 @@ export const level = {
       const path = GWU.path.fromTo(player, e, (x, y) =>
         player.moveCost(game, x, y)
       );
-      game.level.setPath(path);
+      game.player.setPath(path);
     });
     map.on("mouseleave", (e) => {
       const game = this.data;
       sidebar.clearFocus(game);
-      game.level.clearPath();
+      game.player.clearPath();
     });
     map.on("click", (e) => {
       console.log("tell player to move to", e.x, e.y);
@@ -108,7 +108,7 @@ export const level = {
 
     keypress(e) {
       this.get("SIDEBAR").clearFocus();
-      this.data.level.clearPath();
+      this.data.player.clearPath();
 
       if (e.key == "Enter") {
         this.trigger("win");

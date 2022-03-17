@@ -1,5 +1,4 @@
 import * as ACTOR from "../actor/index.js";
-import * as MAP from "../map/index.js";
 import * as ACTIONS from "./actions.js";
 import * as LEVEL from "../levels/index.js";
 
@@ -9,8 +8,7 @@ export function make(seed = 0) {
 
 export class Game {
   constructor(seed = 0) {
-    this.player = ACTOR.make("player");
-    this.map = null;
+    this.player = ACTOR.makePlayer("player");
     this.scene = null;
     this.level = null;
     this.depth = 0;
@@ -20,10 +18,10 @@ export class Game {
     this.inputQueue = new GWU.app.Queue();
     this.rng = GWU.random;
     this.actors = [];
+    this.items = [];
 
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);
-    this.actor = null;
 
     // TODO - Get these as parameters...
     // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
@@ -52,21 +50,20 @@ export class Game {
     let level = LEVEL.levels[this.depth - 1];
     if (!level) {
       level = new LEVEL.Level({ width: 60, height: 35, depth: this.depth });
-    } else if (level.map.width != 60 || level.map.height != 35) {
+    } else if (level.width != 60 || level.height != 35) {
       throw new Error(
         `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
       );
     }
     this.level = level;
-    this.map = level.map;
     this.actors = [];
     this.items = [];
-    this.playerTurn = false;
+    this.needInput = false;
 
     this.scene.needsDraw = true;
     // this.scheduler.push(this.player, 0);
     // this.actors = [this.player];
-    // this.playerTurn = true;
+    // this.needInput = true;
 
     // we want the events that the widgets ignore...
     const cancelEvents = scene.load({
@@ -89,36 +86,32 @@ export class Game {
   }
 
   update() {
-    while (this.inputQueue.length && this.playerTurn) {
+    while (this.inputQueue.length && this.needInput) {
       const e = this.inputQueue.dequeue();
       e.dispatch(this.events);
     }
 
-    if (this.playerTurn) return;
+    if (this.needInput) return;
 
     let filter = false;
-    this.actor = this.scheduler.pop();
-    while (this.actor) {
-      if (typeof this.actor === "function") {
-        this.actor(this);
-      } else if (this.actor.health <= 0) {
+    let actor = this.scheduler.pop();
+    while (actor) {
+      if (typeof actor === "function") {
+        actor(this);
+      } else if (actor.health <= 0) {
         // skip
         filter = true;
-      } else if (this.actor === this.player) {
-        this.actor.startTurn(this);
-        this.playerTurn = true;
-        console.log("Player - await input");
-        this.scene.needsDraw = true;
-        if (filter) {
-          this.actors = this.actors.filter((a) => a && a.health > 0);
-        }
-        return;
+      } else if (actor === this.player) {
+        actor.act(this);
       } else {
-        this.actor.startTurn(this);
-        ACTOR.ai(this, this.actor);
-        if (!this.actor.hasActed()) {
-          console.log("No actor AI action.");
+        actor.act(this);
+      }
+      if (this.needInput) {
+        if (filter) {
+          actors = actors.filter((a) => a && a.health > 0);
         }
+        this.scene.needsDraw = true;
+        return;
       }
       if (this.scene.timers.length || this.scene.tweens.length) {
         return;
@@ -126,11 +119,11 @@ export class Game {
       if (this.scene.paused.update) {
         return;
       }
-      this.actor = this.scheduler.pop();
+      actor = this.scheduler.pop();
     }
 
     // no other actors
-    this.playerTurn = true;
+    this.needInput = true;
   }
 
   //   input(e) {
@@ -149,12 +142,6 @@ export class Game {
   }
 
   tick() {
-    this.map._tiles.forEach((index, x, y) => {
-      const tile = MAP.tilesByIndex[index];
-      if (tile.on && tile.on.tick) {
-        tile.on.tick.call(tile, this, x, y);
-      }
-    });
     this.level.tick(this);
     this.wait(100, () => this.tick());
   }
@@ -164,7 +151,7 @@ export class Game {
       actor.endTurn(this, time);
       this.scheduler.push(actor, time);
       if (actor === this.player) {
-        this.playerTurn = false;
+        this.needInput = false;
       }
     } else {
       console.log("double end turn.!");
@@ -198,7 +185,7 @@ export class Game {
   setTile(x, y, id) {
     const tile =
       typeof id === "string" ? MAP.tilesByName[id] : MAP.tilesByIndex[id];
-    this.map.setTile(x, y, tile.index);
+    this.level.setTile(x, y, tile.index);
     this.drawAt(x, y);
     if (tile.on && tile.on.place) {
       tile.on.place(this, x, y);
@@ -211,7 +198,7 @@ export class Game {
   }
 
   getFlavor(x, y) {
-    if (!this.map.hasXY(x, y)) return "";
+    if (!this.level.hasXY(x, y)) return "";
 
     const actor = this.actorAt(x, y);
     if (actor && actor.kind) {
@@ -223,14 +210,14 @@ export class Game {
       return `You see a ${item.kind.id}.`;
     }
 
-    const tile = this.map.getTile(x, y);
+    const tile = this.level.getTile(x, y);
     const text = `You see ${tile.id}.`;
     return text;
   }
 
   drawAt(x, y) {
     const buf = this.scene.buffer;
-    this.map.drawAt(buf, x, y);
+    this.level.drawAt(buf, x, y);
 
     const actor = this.actorAt(x, y);
     actor && actor.draw(buf);
