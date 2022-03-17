@@ -51,6 +51,13 @@ class Actor extends Obj {
     if (this.health <= 0) return;
     buf.drawSprite(this.x, this.y, this.kind);
   }
+
+  moveCost(game, x, y) {
+    const map = game.map;
+    if (!map.hasXY(x, y)) return -1;
+    if (map.blocksMove(x, y)) return -1;
+    return 1;
+  }
 }
 
 export function make(id) {

@@ -214,12 +214,12 @@ export class Game {
     if (!this.map.hasXY(x, y)) return "";
 
     const actor = this.actorAt(x, y);
-    if (actor) {
+    if (actor && actor.kind) {
       return `You see a ${actor.kind.id}.`;
     }
 
     const item = this.itemAt(x, y);
-    if (item) {
+    if (item && item.kind) {
       return `You see a ${item.kind.id}.`;
     }
 

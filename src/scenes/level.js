@@ -16,7 +16,24 @@ export const level = {
     const map = WIDGETS.map(this, 60, 35);
 
     sidebar.on("focus", (loc) => {
+      loc = loc || [-1, -1];
       map.focus = loc;
+
+      const game = this.data;
+      const level = game.level;
+      if (loc[0] < 0) {
+        level.clearPath();
+      } else {
+        // highlight path
+        const player = game.player;
+        const path = GWU.path.fromTo(player, loc, (x, y) =>
+          player.moveCost(game, x, y)
+        );
+        level.setPath(path);
+      }
+    });
+    sidebar.on("choose", (loc) => {
+      console.log("tell player to go to", loc[0], loc[1]);
     });
 
     messages.on("click", (e) => {
@@ -35,10 +52,21 @@ export const level = {
       const text = game.getFlavor(e.x, e.y);
       flavor.prop("text", text);
       sidebar.setFocus(game, e.x, e.y);
+
+      // highlight path
+      const player = game.player;
+      const path = GWU.path.fromTo(player, e, (x, y) =>
+        player.moveCost(game, x, y)
+      );
+      game.level.setPath(path);
     });
     map.on("mouseleave", (e) => {
       const game = this.data;
       sidebar.clearFocus(game);
+      game.level.clearPath();
+    });
+    map.on("click", (e) => {
+      console.log("tell player to move to", e.x, e.y);
     });
   },
 
@@ -80,6 +108,7 @@ export const level = {
 
     keypress(e) {
       this.get("SIDEBAR").clearFocus();
+      this.data.level.clearPath();
 
       if (e.key == "Enter") {
         this.trigger("win");

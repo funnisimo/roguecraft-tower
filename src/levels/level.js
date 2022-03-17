@@ -1,3 +1,4 @@
+import "../../lib/gw-utils.js";
 import * as MAP from "../map/index.js";
 import * as ACTOR from "../actor/index.js";
 import * as FX from "../fx/index.js";
@@ -23,6 +24,8 @@ export class Level {
     if (cfg.seed) {
       this.map.rng.seed(cfg.seed);
     }
+
+    this.flags = null;
 
     // Need to ensure stairs...
 
@@ -59,6 +62,8 @@ export class Level {
     this.done = false;
     this.started = false;
 
+    this.flags = GWU.grid.alloc(this.map.width, this.map.height);
+
     // put player in starting location
 
     const startLoc = game.map.rng.matchingLocNear(
@@ -85,6 +90,11 @@ export class Level {
     }
   }
 
+  stop(game) {
+    GWU.grid.free(this.flags);
+    this.flags = null;
+  }
+
   tick(game) {
     if (this.done || !this.started) return;
 
@@ -109,6 +119,25 @@ export class Level {
         });
       }
     });
+  }
+
+  setPath(path) {
+    if (!this.flags) return;
+    this.flags.fill(0);
+
+    path.forEach((loc) => {
+      this.flags[loc[0]][loc[1]] = 1;
+    });
+  }
+
+  isInPath(x, y) {
+    if (!this.flags) return false;
+    return this.flags.get(x, y) === 1;
+  }
+
+  clearPath() {
+    if (!this.flags) return;
+    this.flags.fill(0);
   }
 }
 
