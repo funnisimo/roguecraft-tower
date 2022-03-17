@@ -16,6 +16,7 @@ export function map(scene, width, height) {
 
     draw(buf) {
       const game = this.scene.data;
+
       buf.fillRect(
         this.bounds.x,
         this.bounds.y,
@@ -38,7 +39,7 @@ export function map(scene, width, height) {
         }
       });
 
-      game.actors.forEach((a) => {
+      level.actors.forEach((a) => {
         a.draw(buf);
       });
     },

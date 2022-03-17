@@ -17,8 +17,6 @@ export class Game {
 
     this.inputQueue = new GWU.app.Queue();
     this.rng = GWU.random;
-    this.actors = [];
-    this.items = [];
 
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);
@@ -38,7 +36,7 @@ export class Game {
       ACTIONS.climb(this, this.player);
     });
     this.events.on("z", (e) => {
-      ACTOR.spawn(this, "zombie", this.player.x, this.player.y);
+      ACTOR.spawn(this.level, "zombie", this.player.x, this.player.y);
     });
   }
 
@@ -49,21 +47,17 @@ export class Game {
 
     let level = LEVEL.levels[this.depth - 1];
     if (!level) {
-      level = new LEVEL.Level({ width: 60, height: 35, depth: this.depth });
+      level = new LEVEL.Level(60, 35);
+      level.depth = this.depth;
     } else if (level.width != 60 || level.height != 35) {
       throw new Error(
         `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
       );
     }
     this.level = level;
-    this.actors = [];
-    this.items = [];
     this.needInput = false;
 
     this.scene.needsDraw = true;
-    // this.scheduler.push(this.player, 0);
-    // this.actors = [this.player];
-    // this.needInput = true;
 
     // we want the events that the widgets ignore...
     const cancelEvents = scene.load({
@@ -158,38 +152,8 @@ export class Game {
     }
   }
 
-  actorAt(x, y) {
-    return this.actors.find((a) => a.x === x && a.y === y);
-  }
-
-  itemAt(x, y) {
-    return this.items.find((i) => i.x === x && i.y === y);
-  }
-
-  add(obj) {
-    this.actors.push(obj);
-    obj.trigger("add", this);
-    this.scene.needsDraw = true; // need to update sidebar too
-  }
-
-  remove(obj) {
-    GWU.arrayDelete(this.actors, obj);
-    obj.trigger("remove", this);
-    this.scene.needsDraw = true;
-  }
-
   wait(time, fn) {
     this.scheduler.push(fn, time);
-  }
-
-  setTile(x, y, id) {
-    const tile =
-      typeof id === "string" ? MAP.tilesByName[id] : MAP.tilesByIndex[id];
-    this.level.setTile(x, y, tile.index);
-    this.drawAt(x, y);
-    if (tile.on && tile.on.place) {
-      tile.on.place(this, x, y);
-    }
   }
 
   addMessage(msg) {
@@ -197,29 +161,11 @@ export class Game {
     this.scene.get("MESSAGES").draw(this.scene.buffer);
   }
 
-  getFlavor(x, y) {
-    if (!this.level.hasXY(x, y)) return "";
-
-    const actor = this.actorAt(x, y);
-    if (actor && actor.kind) {
-      return `You see a ${actor.kind.id}.`;
-    }
-
-    const item = this.itemAt(x, y);
-    if (item && item.kind) {
-      return `You see a ${item.kind.id}.`;
-    }
-
-    const tile = this.level.getTile(x, y);
-    const text = `You see ${tile.id}.`;
-    return text;
-  }
-
   drawAt(x, y) {
     const buf = this.scene.buffer;
     this.level.drawAt(buf, x, y);
 
-    const actor = this.actorAt(x, y);
+    const actor = this.level.actorAt(x, y);
     actor && actor.draw(buf);
   }
 }

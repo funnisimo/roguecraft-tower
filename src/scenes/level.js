@@ -26,9 +26,7 @@ export const level = {
       } else {
         // highlight path
         const player = game.player;
-        const path = GWU.path.fromTo(player, loc, (x, y) =>
-          player.moveCost(game, x, y)
-        );
+        const path = player.pathTo(loc);
         player.setPath(path);
       }
     });
@@ -49,16 +47,14 @@ export const level = {
 
     map.on("mousemove", (e) => {
       const game = this.data;
-      const text = game.getFlavor(e.x, e.y);
+      const text = game.level.getFlavor(e.x, e.y);
       flavor.prop("text", text);
       sidebar.setFocus(game, e.x, e.y);
 
       // highlight path
       const player = game.player;
-      const path = GWU.path.fromTo(player, e, (x, y) =>
-        player.moveCost(game, x, y)
-      );
-      game.player.setPath(path);
+      const path = player.pathTo(e);
+      player.setPath(path);
     });
     map.on("mouseleave", (e) => {
       const game = this.data;

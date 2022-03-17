@@ -15,6 +15,8 @@ export function sidebar(scene, x, height) {
 
     draw(buf) {
       const game = this.scene.data;
+      const level = game.level;
+
       buf.fillRect(
         this.bounds.x,
         this.bounds.y,
@@ -42,7 +44,7 @@ export function sidebar(scene, x, height) {
       //   px = this.focus[0];
       //   py = this.focus[1];
       // }
-      this.entries = game.actors.filter(
+      this.entries = level.actors.filter(
         (a) => a && a !== game.player && a.health > 0
       );
       this.entries.sort(

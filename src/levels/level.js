@@ -21,9 +21,16 @@ export class Level extends GWD.site.Site {
     this.done = false;
     this.started = false;
     this.wavesLeft = 0;
+
+    this.actors = [];
+    this.items = [];
+    this.game = null;
+    this.player = null;
   }
 
   start(game) {
+    this.game = game;
+    this.player = game.player;
     this.wavesLeft = this.waves.length;
     this.done = false;
     this.started = false;
@@ -37,14 +44,14 @@ export class Level extends GWD.site.Site {
       this.startLoc[1],
       (x, y) => this.hasTile(x, y, "FLOOR")
     );
-    ACTOR.spawn(game, game.player, startLoc[0], startLoc[1]).then(() => {
+    ACTOR.spawn(this, game.player, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
 
       this.waves.forEach((wave) => {
         game.wait(wave.delay, () => {
           wave.count = wave.count || 1;
           for (let i = 0; i < wave.count; ++i) {
-            ACTOR.spawn(game, wave.horde);
+            ACTOR.spawn(this, wave.horde);
           }
           --this.wavesLeft;
         });
@@ -59,6 +66,7 @@ export class Level extends GWD.site.Site {
   stop(game) {
     GWU.grid.free(this.flags);
     this.flags = null;
+    this.game = null;
   }
 
   tick(game) {
@@ -71,14 +79,14 @@ export class Level extends GWD.site.Site {
       }
     });
 
-    if (!game.actors.includes(game.player)) {
+    if (!this.actors.includes(game.player)) {
       // lose
       return game.lose();
     }
 
     if (this.wavesLeft) return;
 
-    if (game.actors.length > 1) return;
+    if (this.actors.length > 1) return;
     // win level
     this.done = true;
     if (this.proceed) {
@@ -88,7 +96,7 @@ export class Level extends GWD.site.Site {
     this._tiles.forEach((index, x, y) => {
       if (index === inactiveStairs) {
         FX.flash(game, x, y, "yellow").then(() => {
-          game.setTile(x, y, "UP_STAIRS");
+          game.level.setTile(x, y, "UP_STAIRS");
         });
       }
     });
@@ -120,9 +128,58 @@ export class Level extends GWD.site.Site {
     this._tiles.fill(tile);
   }
 
+  setTile(x, y, id) {
+    const tile =
+      typeof id === "string" ? TILE.tilesByName[id] : TILE.tilesByIndex[id];
+    super.setTile(x, y, tile.index);
+
+    this.game && this.game.drawAt(x, y);
+    if (tile.on && tile.on.place) {
+      tile.on.place(this.game, x, y);
+    }
+  }
+
   drawAt(buf, x, y) {
     buf.blackOut(x, y);
     buf.drawSprite(x, y, this.getTile(x, y));
+  }
+
+  actorAt(x, y) {
+    return this.actors.find((a) => a.x === x && a.y === y);
+  }
+
+  itemAt(x, y) {
+    return this.items.find((i) => i.x === x && i.y === y);
+  }
+
+  add(obj) {
+    this.actors.push(obj);
+    obj.trigger("add", this);
+    // this.scene.needsDraw = true; // need to update sidebar too
+  }
+
+  remove(obj) {
+    GWU.arrayDelete(this.actors, obj);
+    obj.trigger("remove", this);
+    // this.scene.needsDraw = true;
+  }
+
+  getFlavor(x, y) {
+    if (!this.hasXY(x, y)) return "";
+
+    const actor = this.actorAt(x, y);
+    if (actor && actor.kind) {
+      return `You see a ${actor.kind.id}.`;
+    }
+
+    const item = this.itemAt(x, y);
+    if (item && item.kind) {
+      return `You see a ${item.kind.id}.`;
+    }
+
+    const tile = this.getTile(x, y);
+    const text = `You see ${tile.id}.`;
+    return text;
   }
 }
 

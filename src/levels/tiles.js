@@ -33,7 +33,7 @@ install({
     },
     tick(game, x, y) {
       if (game.rng.chance(5)) {
-        game.setTile(x, y, "FLOOR");
+        game.level.setTile(x, y, "FLOOR");
       }
     },
   },

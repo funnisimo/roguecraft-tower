@@ -5,13 +5,13 @@ export function idle(game, actor) {
 }
 
 export function moveDir(game, actor, dir, quiet = false) {
-  const map = game.level;
+  const level = game.level;
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
 
-  const other = game.actorAt(newX, newY);
+  const other = level.actorAt(newX, newY);
   if (other) {
-    if (other.kind.on && other.kind.on.bump) {
+    if (other.kind && other.kind.on && other.kind.on.bump) {
       if (other.kind.on.bump(game, actor, other)) {
         return true;
       }
@@ -29,7 +29,7 @@ export function moveDir(game, actor, dir, quiet = false) {
     }
   }
 
-  if (map.blocksMove(newX, newY)) {
+  if (level.blocksMove(newX, newY)) {
     if (!quiet) {
       game.addMessage("You bump into a wall.");
       FX.flash(game, newX, newY, "red", 150);
@@ -77,7 +77,7 @@ export function moveToward(game, actor, other, quiet = false) {
 
 export function attack(game, actor, target = null) {
   if (!target) {
-    const targets = game.actors.filter(
+    const targets = game.level.actors.filter(
       (a) =>
         a !== actor &&
         actor.health > 0 &&
@@ -124,8 +124,8 @@ export function attack(game, actor, target = null) {
 
   if (target.health < 0) {
     game.messages.addCombat(`${target.kind.id} dies`);
-    game.setTile(target.x, target.y, "CORPSE");
-    game.remove(target);
+    game.level.setTile(target.x, target.y, "CORPSE");
+    game.level.remove(target);
   }
   return true;
 }
