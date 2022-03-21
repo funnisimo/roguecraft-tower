@@ -28,7 +28,7 @@ export function map(scene, width, height) {
       );
 
       const level = game.level;
-      level._tiles.forEach((index, x, y) => {
+      level.tiles.forEach((index, x, y) => {
         buf.blackOut(x, y);
         level.drawAt(buf, x, y);
         // if (x === this.focus[0] && y === this.focus[1]) {

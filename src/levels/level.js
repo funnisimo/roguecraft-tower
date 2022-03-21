@@ -4,11 +4,9 @@ import * as FX from "../fx/index.js";
 
 import * as TILE from "./tiles.js";
 
-export class Level extends GWD.site.Site {
+export class Level {
   constructor(width, height, seed) {
-    super(width, height, seed);
     this.depth = 0;
-
     this.flags = null;
 
     this.welcome = "";
@@ -28,6 +26,20 @@ export class Level extends GWD.site.Site {
 
     this.game = null;
     this.player = null;
+
+    this.tiles = GWU.grid.make(width, height);
+    this.rng = GWU.random;
+  }
+
+  get width() {
+    return this.tiles.width;
+  }
+  get height() {
+    return this.tiles.height;
+  }
+
+  hasXY(x, y) {
+    return this.tiles.hasXY(x, y);
   }
 
   start(game) {
@@ -36,6 +48,7 @@ export class Level extends GWD.site.Site {
     this.wavesLeft = this.waves.length;
     this.done = false;
     this.started = false;
+    this.rng = game.rng;
 
     this.flags = GWU.grid.alloc(this.width, this.height);
 
@@ -74,7 +87,7 @@ export class Level extends GWD.site.Site {
   tick(game) {
     if (this.done || !this.started) return;
 
-    this._tiles.forEach((index, x, y) => {
+    this.tiles.forEach((index, x, y) => {
       const tile = TILE.tilesByIndex[index];
       if (tile.on && tile.on.tick) {
         tile.on.tick.call(tile, game, x, y);
@@ -95,7 +108,7 @@ export class Level extends GWD.site.Site {
       game.addMessage(this.proceed);
     }
     const inactiveStairs = TILE.tilesByName["INACTIVE_STAIRS"].index;
-    this._tiles.forEach((index, x, y) => {
+    this.tiles.forEach((index, x, y) => {
       if (index === inactiveStairs) {
         FX.flash(game, x, y, "yellow").then(() => {
           game.level.setTile(x, y, "UP_STAIRS");
@@ -104,42 +117,46 @@ export class Level extends GWD.site.Site {
     });
   }
 
-  // setPath(path) {
-  //   if (!this.flags) return;
-  //   this.flags.fill(0);
-
-  //   path.forEach((loc) => {
-  //     this.flags[loc[0]][loc[1]] = 1;
-  //   });
-  // }
-
-  // isInPath(x, y) {
-  //   if (!this.flags) return false;
-  //   return this.flags.get(x, y) === 1;
-  // }
-
-  // clearPath() {
-  //   if (!this.flags) return;
-  //   this.flags.fill(0);
-  // }
-
   fill(tile) {
     if (typeof tile === "string") {
-      tile = TILE.ids[tile];
+      tile = TILE.tilesByName[tile];
     }
-    this._tiles.fill(tile);
+    this.tiles.fill(tile);
   }
 
-  setTile(x, y, id) {
+  setTile(x, y, id, opts = {}) {
     const tile =
       typeof id === "string" ? TILE.tilesByName[id] : TILE.tilesByIndex[id];
-    super.setTile(x, y, tile.index);
+    this.tiles[x][y] = tile.index;
+
+    // priority, etc...
 
     // this.game && this.game.drawAt(x, y);
     if (tile.on && tile.on.place) {
       tile.on.place(this.game, x, y);
     }
   }
+
+  hasTile(x, y, tile) {
+    if (typeof tile === "string") {
+      tile = TILE.tilesByName[tile].index;
+    }
+    return this.tiles[x][y] === tile;
+  }
+
+  getTile(x, y) {
+    const id = this.tiles[x][y];
+    return TILE.tilesByIndex[id];
+  }
+
+  //
+
+  blocksMove(x, y) {
+    const tile = this.getTile(x, y);
+    return tile.blocksMove || false;
+  }
+
+  //
 
   drawAt(buf, x, y) {
     buf.blackOut(x, y);
@@ -171,6 +188,10 @@ export class Level extends GWD.site.Site {
     // this.scene.needsDraw = true;
   }
 
+  hasActor(x, y) {
+    return this.actors.some((a) => a.x === x && a.y === y);
+  }
+
   itemAt(x, y) {
     return this.items.find((i) => i.x === x && i.y === y);
   }
@@ -187,6 +208,10 @@ export class Level extends GWD.site.Site {
     // this.scene.needsDraw = true;
   }
 
+  hasItem(x, y) {
+    return this.items.some((i) => i.x === x && i.y === y);
+  }
+
   fxAt(x, y) {
     return this.fxs.find((i) => i.x === x && i.y === y);
   }
@@ -201,6 +226,10 @@ export class Level extends GWD.site.Site {
     GWU.arrayDelete(this.fxs, obj);
     obj.trigger("remove", this);
     // this.scene.needsDraw = true;
+  }
+
+  hasFx(x, y) {
+    return this.fxs.some((f) => f.x === x && f.y === y);
   }
 
   getFlavor(x, y) {
@@ -239,7 +268,7 @@ export function from(cfg) {
   const w = data[0].length;
 
   const level = new Level(w, h);
-  GWD.site.loadSite(level, data, tiles);
+  loadLevel(level, data, tiles);
 
   if (cfg.welcome) {
     level.welcome = cfg.welcome;
@@ -267,4 +296,16 @@ export function from(cfg) {
   }
 
   return level;
+}
+
+function loadLevel(level, data, tiles) {
+  level.fill("NONE");
+  for (let y = 0; y < data.length; ++y) {
+    const line = data[y];
+    for (let x = 0; x < line.length; ++x) {
+      const ch = line[x];
+      const tile = tiles[ch] || "NONE";
+      level.setTile(x, y, tile);
+    }
+  }
 }
