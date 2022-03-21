@@ -1,32 +1,93 @@
+import "../../lib/gw-utils.js";
 import * as ACTOR from "./actor.js";
+import * as ACTION from "../game/actions.js";
 
 export class Player extends ACTOR.Actor {
   constructor(cfg) {
     super(cfg);
-    this.path = null;
+    this.goalMap = null;
+    this.mapToMe = null;
+    this.goToGoal = false;
+
+    this.on("add", (game) => {
+      const level = game.level;
+      this.mapToMe = null;
+    });
+    this.on("move", () => {
+      this.updateMapToMe();
+    });
+    this.on("remove", () => {
+      this.mapToMe && GWU.grid.free(this.mapToMe);
+      this.clearGoal();
+    });
   }
 
   act(game) {
     this.startTurn(game);
 
-    if (this.path && this.path.length) {
+    if (this.goalMap && this.goToGoal) {
+      const step = GWU.path.nextStep(
+        this.goalMap,
+        this.x,
+        this.y,
+        (x, y) => {
+          if (this._level.actorAt(x, y)) return true;
+          return false;
+        },
+        true
+      );
+      if (step) {
+        if (ACTION.moveDir(game, this, step, false)) {
+          return;
+        }
+        game.addMessage("You are blocked.");
+      }
     }
-    this.path = null;
+    this.clearGoal();
 
     game.needInput = true;
-    console.log("Player - await input");
+    console.log("Player - await input", game.scheduler.time);
   }
 
-  setPath(path) {
-    if (!this._level) return;
-    this._level.setPath(path);
-    this.path = path;
+  setGoal(x, y) {
+    if (!this._level || this.goToGoal) return;
+
+    if (!this.goalMap) {
+      this.goalMap = GWU.grid.alloc(this._level.width, this._level.height);
+    }
+    GWU.path.calculateDistances(
+      this.goalMap,
+      x,
+      y,
+      (x, y) => this.moveCost(x, y),
+      true
+    );
   }
 
-  clearPath() {
-    if (!this._level) return;
-    this._level.clearPath();
-    this.path = null;
+  clearGoal() {
+    if (this.goalMap) {
+      GWU.grid.free(this.goalMap);
+      this.goalMap = null;
+    }
+    this.goToGoal = false;
+  }
+
+  updateMapToMe() {
+    if (
+      !this.mapToMe ||
+      this.mapToMe.width !== this._level.width ||
+      this.mapToMe.height !== this._level.height
+    ) {
+      this.mapToMe && GWU.grid.free(this.mapToMe);
+      this.mapToMe = GWU.grid.alloc(this._level.width, this._level.height);
+    }
+    GWU.path.calculateDistances(
+      this.mapToMe,
+      this.x,
+      this.y,
+      (x, y) => this.moveCost(x, y),
+      true
+    );
   }
 }
 

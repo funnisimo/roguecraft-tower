@@ -44,12 +44,14 @@ export function moveDir(game, actor, dir, quiet = false) {
   const oldY = actor.y;
   actor.x = newX;
   actor.y = newY;
-  game.drawAt(oldX, oldY);
-  game.drawAt(newX, newY);
+  // game.drawAt(oldX, oldY);
+  // game.drawAt(newX, newY);
 
   const speed = Math.round(
     actor.kind.moveSpeed * (GWU.xy.isDiagonal(dir) ? 1.4 : 1.0)
   );
+
+  actor.trigger("move");
 
   game.endTurn(actor, speed);
   return true;
@@ -125,7 +127,7 @@ export function attack(game, actor, target = null) {
   if (target.health < 0) {
     game.messages.addCombat(`${target.kind.id} dies`);
     game.level.setTile(target.x, target.y, "CORPSE");
-    game.level.remove(target);
+    game.level.removeActor(target);
   }
   return true;
 }

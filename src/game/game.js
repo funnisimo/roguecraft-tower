@@ -97,15 +97,13 @@ export class Game {
         filter = true;
       } else if (actor === this.player) {
         actor.act(this);
-      } else {
-        actor.act(this);
-      }
-      if (this.needInput) {
         if (filter) {
           actors = actors.filter((a) => a && a.health > 0);
         }
         this.scene.needsDraw = true;
         return;
+      } else {
+        actor.act(this);
       }
       if (this.scene.timers.length || this.scene.tweens.length) {
         return;
@@ -159,13 +157,5 @@ export class Game {
   addMessage(msg) {
     this.messages.add(msg);
     this.scene.get("MESSAGES").draw(this.scene.buffer);
-  }
-
-  drawAt(x, y) {
-    const buf = this.scene.buffer;
-    this.level.drawAt(buf, x, y);
-
-    const actor = this.level.actorAt(x, y);
-    actor && actor.draw(buf);
   }
 }

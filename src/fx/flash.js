@@ -20,7 +20,7 @@ export function flash(game, x, y, color = "white", ms = 300) {
   scene.pause({ update: true });
 
   const fx = new FX({ x, y, bg: color, depth: 4 });
-  game.level.add(fx);
+  game.level.addFx(fx);
 
   let _success = GWU.NOOP;
   let _fail = GWU.NOOP;
@@ -28,7 +28,7 @@ export function flash(game, x, y, color = "white", ms = 300) {
   scene.needsDraw = true;
 
   scene.wait(ms, () => {
-    game.level.remove(fx);
+    game.level.removeFx(fx);
     scene.resume({ update: true });
     _success();
   });

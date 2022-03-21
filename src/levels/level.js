@@ -24,6 +24,8 @@ export class Level extends GWD.site.Site {
 
     this.actors = [];
     this.items = [];
+    this.fxs = [];
+
     this.game = null;
     this.player = null;
   }
@@ -102,24 +104,24 @@ export class Level extends GWD.site.Site {
     });
   }
 
-  setPath(path) {
-    if (!this.flags) return;
-    this.flags.fill(0);
+  // setPath(path) {
+  //   if (!this.flags) return;
+  //   this.flags.fill(0);
 
-    path.forEach((loc) => {
-      this.flags[loc[0]][loc[1]] = 1;
-    });
-  }
+  //   path.forEach((loc) => {
+  //     this.flags[loc[0]][loc[1]] = 1;
+  //   });
+  // }
 
-  isInPath(x, y) {
-    if (!this.flags) return false;
-    return this.flags.get(x, y) === 1;
-  }
+  // isInPath(x, y) {
+  //   if (!this.flags) return false;
+  //   return this.flags.get(x, y) === 1;
+  // }
 
-  clearPath() {
-    if (!this.flags) return;
-    this.flags.fill(0);
-  }
+  // clearPath() {
+  //   if (!this.flags) return;
+  //   this.flags.fill(0);
+  // }
 
   fill(tile) {
     if (typeof tile === "string") {
@@ -133,7 +135,7 @@ export class Level extends GWD.site.Site {
       typeof id === "string" ? TILE.tilesByName[id] : TILE.tilesByIndex[id];
     super.setTile(x, y, tile.index);
 
-    this.game && this.game.drawAt(x, y);
+    // this.game && this.game.drawAt(x, y);
     if (tile.on && tile.on.place) {
       tile.on.place(this.game, x, y);
     }
@@ -142,24 +144,61 @@ export class Level extends GWD.site.Site {
   drawAt(buf, x, y) {
     buf.blackOut(x, y);
     buf.drawSprite(x, y, this.getTile(x, y));
+
+    const item = this.itemAt(x, y);
+    item && item.draw(buf);
+
+    const actor = this.actorAt(x, y);
+    actor && actor.draw(buf);
+
+    const fx = this.fxAt(x, y);
+    fx && fx.draw(buf);
   }
 
   actorAt(x, y) {
     return this.actors.find((a) => a.x === x && a.y === y);
   }
 
-  itemAt(x, y) {
-    return this.items.find((i) => i.x === x && i.y === y);
-  }
-
-  add(obj) {
+  addActor(obj) {
     this.actors.push(obj);
     obj.trigger("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
   }
 
-  remove(obj) {
+  removeActor(obj) {
     GWU.arrayDelete(this.actors, obj);
+    obj.trigger("remove", this);
+    // this.scene.needsDraw = true;
+  }
+
+  itemAt(x, y) {
+    return this.items.find((i) => i.x === x && i.y === y);
+  }
+
+  addItem(obj) {
+    this.items.push(obj);
+    obj.trigger("add", this);
+    // this.scene.needsDraw = true; // need to update sidebar too
+  }
+
+  removeItem(obj) {
+    GWU.arrayDelete(this.items, obj);
+    obj.trigger("remove", this);
+    // this.scene.needsDraw = true;
+  }
+
+  fxAt(x, y) {
+    return this.fxs.find((i) => i.x === x && i.y === y);
+  }
+
+  addFx(obj) {
+    this.fxs.push(obj);
+    obj.trigger("add", this);
+    // this.scene.needsDraw = true; // need to update sidebar too
+  }
+
+  removeFx(obj) {
+    GWU.arrayDelete(this.fxs, obj);
     obj.trigger("remove", this);
     // this.scene.needsDraw = true;
   }

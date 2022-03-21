@@ -22,16 +22,22 @@ export const level = {
       const game = this.data;
       const player = game.player;
       if (loc[0] < 0) {
-        player.clearPath();
+        // game.level.clearPath();
+        game.player.clearGoal();
       } else {
         // highlight path
-        const player = game.player;
-        const path = player.pathTo(loc);
-        player.setPath(path);
+        player.setGoal(loc[0], loc[1]);
+        // const player = game.player;
+        // const path = player.pathTo(loc);
+        // game.level.setPath(path);
       }
     });
     sidebar.on("choose", (loc) => {
-      console.log("tell player to go to", loc[0], loc[1]);
+      console.log("sidebar choose - player go to :", loc[0], loc[1]);
+      const game = this.data;
+      game.player.setGoal(loc[0], loc[1]);
+      game.player.goToGoal = true;
+      game.player.act(game);
     });
 
     messages.on("click", (e) => {
@@ -53,16 +59,22 @@ export const level = {
 
       // highlight path
       const player = game.player;
-      const path = player.pathTo(e);
-      player.setPath(path);
+      player.setGoal(e.x, e.y);
+      // const path = player.pathTo(e);
+      // game.level.setPath(path);
     });
     map.on("mouseleave", (e) => {
       const game = this.data;
       sidebar.clearFocus(game);
-      game.player.clearPath();
+      // game.level.clearPath();
+      game.player.clearGoal();
     });
     map.on("click", (e) => {
-      console.log("tell player to move to", e.x, e.y);
+      console.log("map click - player go to:", e.x, e.y);
+      const game = this.data;
+      game.player.setGoal(e.x, e.y);
+      game.player.goToGoal = true;
+      game.player.act(game);
     });
   },
 
@@ -104,13 +116,14 @@ export const level = {
 
     keypress(e) {
       this.get("SIDEBAR").clearFocus();
-      this.data.player.clearPath();
+      // this.data.level.clearPath();
+      this.data.player.clearGoal();
 
       if (e.key == "Enter") {
-        this.trigger("win");
+        this.trigger("win"); // todo - remove
       }
       if (e.key == "Escape") {
-        this.trigger("lose");
+        this.trigger("lose"); // todo -- remove
       }
       e.stopPropagation();
     },

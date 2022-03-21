@@ -112,7 +112,7 @@ export function spawn(level, id, x, y) {
   const startTime = scene.app.time;
 
   const fx = new FX.FX({ x, y, bg, depth: 4 });
-  level.add(fx);
+  level.addFx(fx);
 
   let _success = GWU.NOOP;
   let _fail = GWU.NOOP;
@@ -124,18 +124,18 @@ export function spawn(level, id, x, y) {
       scene.pause({ update: true });
 
       scene.wait(timeLeft, () => {
-        level.remove(fx);
+        level.removeFx(fx);
         scene.resume({ update: true });
         newbie.x = x;
         newbie.y = y;
-        level.add(newbie);
+        level.addActor(newbie);
         _success(newbie);
       });
     } else {
-      level.remove(fx);
+      level.removeFx(fx);
       newbie.x = x;
       newbie.y = y;
-      level.add(newbie);
+      level.addActor(newbie);
       _success(newbie);
     }
   });

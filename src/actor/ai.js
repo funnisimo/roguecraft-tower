@@ -2,7 +2,7 @@ import "../../lib/gw-utils.js";
 import * as ACTIONS from "../game/actions.js";
 
 export function ai(game, actor) {
-  console.log("Actor.AI", actor.kind.id);
+  console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
 
   const player = game.player;
   const noticeDistance = actor.kind.notice || 10;

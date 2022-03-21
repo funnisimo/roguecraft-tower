@@ -29,19 +29,31 @@ export function map(scene, width, height) {
 
       const level = game.level;
       level._tiles.forEach((index, x, y) => {
-        const tile = LEVEL.tilesByIndex[index];
         buf.blackOut(x, y);
-        buf.drawSprite(x, y, tile);
-        if (x === this.focus[0] && y === this.focus[1]) {
-          buf.get(x, y).mix("green", 0, 50).separate();
-        } else if (level.isInPath(x, y)) {
-          buf.get(x, y).mix("yellow", 0, 50).separate();
-        }
+        level.drawAt(buf, x, y);
+        // if (x === this.focus[0] && y === this.focus[1]) {
+        //   buf.get(x, y).mix("green", 0, 50).separate();
+        // } else if (level.isInPath(x, y)) {
+        //   buf.get(x, y).mix("yellow", 0, 50).separate();
+        // }
       });
 
-      level.actors.forEach((a) => {
-        a.draw(buf);
-      });
+      const player = game.player;
+      if (player.goalMap) {
+        GWU.path.forPath(
+          player.goalMap,
+          player.x,
+          player.y,
+          (x, y) => {
+            if (level.hasActor(x, y)) return true;
+            return false;
+          },
+          (x, y) => {
+            buf.get(x, y).mix("green", 0, 25).separate();
+          },
+          true
+        );
+      }
     },
 
     mousemove(e) {
