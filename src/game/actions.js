@@ -51,7 +51,8 @@ export function moveDir(game, actor, dir, quiet = false) {
     actor.kind.moveSpeed * (GWU.xy.isDiagonal(dir) ? 1.4 : 1.0)
   );
 
-  actor.trigger("move");
+  actor.trigger("move", game, newX, newY);
+  level.triggerAction("enter", actor);
 
   game.endTurn(actor, speed);
   return true;

@@ -104,7 +104,7 @@ export const level = {
     // },
 
     win() {
-      if (this.data.level === CONFIG.LAST_LEVEL) {
+      if (this.data.level.depth === CONFIG.LAST_LEVEL) {
         this.app.scenes.start("win", this.data);
       } else {
         this.app.scenes.start("stuff", this.data);

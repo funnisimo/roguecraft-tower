@@ -42,6 +42,11 @@ install({
   id: "DOWN_STAIRS",
   ch: "<",
   fg: "gray",
+  on: {
+    enter(game, actor) {
+      game.addMessage("There is no turning back.");
+    },
+  },
 });
 install({
   id: "UP_STAIRS",
@@ -59,4 +64,22 @@ install({
   ch: ">",
   fg: "gray",
   priority: 75,
+  on: {
+    enter(game, actor) {
+      game.addMessage("There is more to do.");
+    },
+  },
+});
+
+install({
+  id: "IMPREGNABLE",
+  ch: "#",
+  fg: 0x222,
+  bg: 0x444,
+  priority: 200,
+});
+
+GWD.site.allTiles.forEach((t) => {
+  if (tilesByName[t.id]) return;
+  install(t);
 });
