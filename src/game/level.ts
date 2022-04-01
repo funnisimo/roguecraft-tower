@@ -5,8 +5,8 @@ import * as ACTOR from "../actor/index";
 import * as FX from "../fx/index";
 
 import * as TILE from "./tiles";
-import * as OBJ from "../game/obj";
-import { Game } from "../game/game";
+import * as OBJ from "./obj";
+import { Game } from "./game";
 
 export interface WaveInfo {
   count?: number;
@@ -277,7 +277,7 @@ export class Level {
   }
 }
 
-export const levels: Level[] = [];
+// export const levels: Level[] = [];
 
 export interface LevelConfig {
   data: string[];
@@ -291,12 +291,12 @@ export interface LevelConfig {
   waves?: WaveInfo[];
 }
 
-export function install(cfg: LevelConfig) {
-  const level = from(cfg);
-  levels.push(level);
-  level.depth = level.depth || levels.length;
-  return level;
-}
+// export function install(cfg: LevelConfig) {
+//   const level = from(cfg);
+//   levels.push(level);
+//   level.depth = level.depth || levels.length;
+//   return level;
+// }
 
 export function from(cfg: LevelConfig): Level {
   const data = cfg.data;
@@ -306,7 +306,7 @@ export function from(cfg: LevelConfig): Level {
   const w = cfg.width || data[0].length;
 
   const level = new Level(w, h);
-  level.depth = cfg.depth || levels.length + 1;
+  level.depth = cfg.depth || 1;
   // loadLevel(level, data, tiles);
   digLevel(level, cfg.seed);
 

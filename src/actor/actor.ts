@@ -3,7 +3,7 @@ import * as GWU from "gw-utils";
 import * as FX from "../fx/index";
 import { Obj, CallbackFn, ObjConfig } from "../game/obj";
 import { Game } from "../game/game";
-import { Level } from "../levels/level";
+import { Level } from "../game/level";
 import * as AI from "./ai";
 
 export interface ActorKind {

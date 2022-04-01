@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 
-import * as LEVEL from "../levels/index";
+import * as LEVEL from "../game/level";
 
 export function map(scene, width, height) {
   const widget = GWU.widget.make({

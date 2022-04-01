@@ -2,7 +2,7 @@ import * as GWU from "gw-utils";
 
 import * as ACTOR from "../actor/index";
 import * as ACTIONS from "./actions";
-import * as LEVEL from "../levels/index";
+import * as LEVEL from "../game/level";
 import { default as CONFIG } from "../config";
 
 export function make(seed = 0) {
@@ -16,6 +16,7 @@ export class Game {
     this.level = null;
     this.depth = 0;
     this.scheduler = new GWU.scheduler.Scheduler();
+    this.levels = [];
 
     this.inputQueue = new GWU.app.Queue();
 
@@ -57,20 +58,20 @@ export class Game {
     this.depth += 1;
     this.scheduler.clear();
 
-    let level = LEVEL.levels.find((l) => l.depth === this.depth);
-    if (!level) {
-      level = LEVEL.from({
-        width: 60,
-        height: 35,
-        depth: this.depth,
-        seed: this.seeds[this.depth - 1],
-      });
-      LEVEL.levels.push(level);
-    } else if (level.width != 60 || level.height != 35) {
-      throw new Error(
-        `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
-      );
-    }
+    // let level = LEVEL.levels.find((l) => l.depth === this.depth);
+    // if (!level) {
+    const level = LEVEL.from({
+      width: 60,
+      height: 35,
+      depth: this.depth,
+      seed: this.seeds[this.depth - 1],
+    });
+    // LEVEL.levels.push(level);
+    // } else if (level.width != 60 || level.height != 35) {
+    //   throw new Error(
+    //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+    //   );
+    // }
     this.level = level;
     this.needInput = false;
 

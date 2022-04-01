@@ -17877,14 +17877,19 @@ void main() {
           }
       }
   }
-  const levels = [];
+  // export function install(cfg: LevelConfig) {
+  //   const level = from(cfg);
+  //   levels.push(level);
+  //   level.depth = level.depth || levels.length;
+  //   return level;
+  // }
   function from(cfg) {
       const data = cfg.data;
       cfg.tiles;
       const h = cfg.height || data.length;
       const w = cfg.width || data[0].length;
       const level = new Level(w, h);
-      level.depth = cfg.depth || levels.length + 1;
+      level.depth = cfg.depth || 1;
       // loadLevel(level, data, tiles);
       digLevel(level, cfg.seed);
       if (cfg.welcome) {
@@ -18038,6 +18043,7 @@ void main() {
       this.level = null;
       this.depth = 0;
       this.scheduler = new scheduler.Scheduler();
+      this.levels = [];
 
       this.inputQueue = new index.Queue();
 
@@ -18079,20 +18085,20 @@ void main() {
       this.depth += 1;
       this.scheduler.clear();
 
-      let level = levels.find((l) => l.depth === this.depth);
-      if (!level) {
-        level = from({
-          width: 60,
-          height: 35,
-          depth: this.depth,
-          seed: this.seeds[this.depth - 1],
-        });
-        levels.push(level);
-      } else if (level.width != 60 || level.height != 35) {
-        throw new Error(
-          `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
-        );
-      }
+      // let level = LEVEL.levels.find((l) => l.depth === this.depth);
+      // if (!level) {
+      const level = from({
+        width: 60,
+        height: 35,
+        depth: this.depth,
+        seed: this.seeds[this.depth - 1],
+      });
+      // LEVEL.levels.push(level);
+      // } else if (level.width != 60 || level.height != 35) {
+      //   throw new Error(
+      //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+      //   );
+      // }
       this.level = level;
       this.needInput = false;
 
@@ -18283,7 +18289,7 @@ void main() {
     return widget;
   }
 
-  function map$1(scene, width, height) {
+  function map(scene, width, height) {
     const widget = index$1$1.make({
       id: "MAP",
       tag: "map",
@@ -18603,11 +18609,11 @@ void main() {
       const sidebar$1 = sidebar(this, 60, 35);
       const flavor$1 = flavor(this, 0, 35);
       const messages$1 = messages(this, 36);
-      const map = map$1(this, 60, 35);
+      const map$1 = map(this, 60, 35);
 
       sidebar$1.on("focus", (loc) => {
         loc = loc || [-1, -1];
-        map.focus = loc;
+        map$1.focus = loc;
 
         const game = this.data;
         const player = game.player;
@@ -18641,7 +18647,7 @@ void main() {
         e.stopPropagation();
       });
 
-      map.on("mousemove", (e) => {
+      map$1.on("mousemove", (e) => {
         const game = this.data;
         const level = game.level;
 
@@ -18656,13 +18662,13 @@ void main() {
         // const path = player.pathTo(e);
         // game.level.setPath(path);
       });
-      map.on("mouseleave", (e) => {
+      map$1.on("mouseleave", (e) => {
         const game = this.data;
         sidebar$1.clearFocus(game);
         // game.level.clearPath();
         game.player.clearGoal();
       });
-      map.on("click", (e) => {
+      map$1.on("click", (e) => {
         console.log("map click - player go to:", e.x, e.y);
         const game = this.data;
         const level = game.level;
@@ -18727,7 +18733,7 @@ void main() {
 
   const win = {
       create() {
-          this.bg = index$9.from("dark_gray");
+          this.bg = index$9.from("dark_blue");
           const build = new index$1$1.Builder(this);
           build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
           build.pos(10, 17).text("WIN!", { fg: "green" });
@@ -18746,25 +18752,22 @@ void main() {
   };
 
   const lose = {
-    create() {
-      this.bg = "dark_gray";
-      const build = new index$1$1.Builder(this);
-      build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-      build.pos(10, 17).text("LOSE!", { fg: "green" });
-
-      build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
-
-      build.pos(10, 30).text("Press any key to restart.");
-
-      this.on("keypress", () => {
-        this.app.scenes.start("title");
-      });
-    },
-    start(data = {}) {
-      const id = data.id || 1;
-      const w = this.get("LEVEL");
-      w.text("On Level: " + id);
-    },
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 17).text("LOSE!", { fg: "green" });
+          build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
+          build.pos(10, 30).text("Press any key to restart.");
+          this.on("keypress", () => {
+              this.app.scenes.start("title");
+          });
+      },
+      start(game) {
+          const id = game.depth || 1;
+          const w = this.get("LEVEL");
+          w.text("On Level: " + id);
+      },
   };
 
   const stuff = {
