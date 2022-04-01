@@ -1,8 +1,9 @@
 import * as GWU from "gw-utils";
+import { Game } from "../game/game";
 
 export const lose = {
-  create() {
-    this.bg = "dark_gray";
+  create(this: GWU.app.Scene) {
+    this.bg = GWU.color.from("dark_gray");
     const build = new GWU.widget.Builder(this);
     build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
     build.pos(10, 17).text("LOSE!", { fg: "green" });
@@ -15,9 +16,9 @@ export const lose = {
       this.app.scenes.start("title");
     });
   },
-  start(data = {}) {
-    const id = data.id || 1;
-    const w = this.get("LEVEL");
+  start(this: GWU.app.Scene, game: Game) {
+    const id = game.depth || 1;
+    const w = this.get("LEVEL")!;
     w.text("On Level: " + id);
   },
 };

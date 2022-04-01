@@ -3,7 +3,7 @@ import { Game } from "../game/game";
 
 export const win = {
   create(this: GWU.app.Scene) {
-    this.bg = GWU.color.from("dark_gray");
+    this.bg = GWU.color.from("dark_blue");
     const build = new GWU.widget.Builder(this);
     build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
     build.pos(10, 17).text("WIN!", { fg: "green" });
