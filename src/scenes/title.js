@@ -1,6 +1,6 @@
-import "../../lib/gw-utils.js";
+import * as GWU from "gw-utils";
 
-import * as GAME from "../game/index.js";
+import * as GAME from "../game/index";
 
 export const title = {
   create() {

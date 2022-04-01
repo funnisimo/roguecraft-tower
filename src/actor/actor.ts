@@ -1,23 +1,42 @@
-import * as FX from "../fx/index.js";
-import { Obj } from "../game/obj.js";
-import * as AI from "./ai.js";
+import * as GWU from "gw-utils";
 
-export const kinds = {};
+import * as FX from "../fx/index";
+import { Obj, CallbackFn, ObjConfig } from "../game/obj";
+import { Game } from "../game/game";
+import { Level } from "../levels/level";
+import * as AI from "./ai";
 
-export function install(cfg) {
+export interface ActorKind {
+  id: string;
+  health: number;
+  damage: number;
+  moveSpeed: number;
+}
+
+export const kinds: Record<string, ActorKind> = {};
+
+export function install(cfg: ActorKind) {
   kinds[cfg.id.toLowerCase()] = cfg;
+}
+
+export interface ActorConfig extends ObjConfig {
+  kind: ActorKind;
 }
 
 export class Actor extends Obj {
   _turnTime = 0;
-  _level = null;
+  _level: Level | null = null;
+  kind: any;
+  data: Record<string, any>;
+  health: number;
 
-  constructor(cfg) {
+  constructor(cfg?: ActorConfig) {
     super(cfg);
     if (!this.kind) throw new Error("Must have kind.");
 
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
     this.data = {};
+    this.health = this.kind.health || 0;
 
     this.on("add", (level) => {
       level.game.scheduler.push(this, this.kind.moveSpeed);
@@ -37,12 +56,12 @@ export class Actor extends Obj {
     });
   }
 
-  startTurn(game) {
+  startTurn(game: Game) {
     this._turnTime = 0;
     this.trigger("start", game);
   }
 
-  endTurn(game, time) {
+  endTurn(game: Game, time: number) {
     this._turnTime = time;
     this.trigger("end", game, time);
   }
@@ -51,12 +70,12 @@ export class Actor extends Obj {
     return this._turnTime > 0;
   }
 
-  draw(buf) {
+  draw(buf: GWU.buffer.Buffer) {
     if (this.health <= 0) return;
     buf.drawSprite(this.x, this.y, this.kind);
   }
 
-  moveCost(x, y) {
+  moveCost(x: number, y: number) {
     const level = this._level;
     if (!level) return GWU.path.OBSTRUCTION;
 
@@ -66,12 +85,12 @@ export class Actor extends Obj {
     return 1;
   }
 
-  pathTo(loc) {
+  pathTo(loc: GWU.xy.Loc) {
     const path = GWU.path.fromTo(this, loc, (x, y) => this.moveCost(x, y));
     return path;
   }
 
-  act(game) {
+  act(game: Game) {
     this.startTurn(game);
     AI.ai(game, this);
     if (!this.hasActed()) {
@@ -80,7 +99,7 @@ export class Actor extends Obj {
   }
 }
 
-export function make(id) {
+export function make(id: string) {
   const kind = kinds[id.toLowerCase()];
   if (!kind) throw new Error("Failed to find actor kind - " + id);
 
@@ -94,12 +113,23 @@ export function make(id) {
   });
 }
 
-export function spawn(level, id, x, y) {
+export type ActorCallback = (actor: Actor) => void;
+
+export interface ThenActor {
+  then(cb: ActorCallback): void;
+}
+
+export function spawn(
+  level: Level,
+  id: string | Actor,
+  x?: number,
+  y?: number
+): ThenActor {
   const newbie = typeof id === "string" ? make(id) : id;
 
   const ms = 500;
   const bg = newbie.kind.fg;
-  const scene = level.game.scene;
+  const scene = level.game!.scene;
   // const level = level.level;
 
   if (x === undefined) {
@@ -114,10 +144,10 @@ export function spawn(level, id, x, y) {
   const fx = new FX.FX({ x, y, bg, depth: 4 });
   level.addFx(fx);
 
-  let _success = GWU.NOOP;
-  let _fail = GWU.NOOP;
+  let _success: ActorCallback = GWU.NOOP;
+  // let _fail: CallbackFn = GWU.NOOP;
 
-  level.game.wait(ms, () => {
+  level.game!.wait(ms, () => {
     const nowTime = scene.app.time;
     const timeLeft = ms - (nowTime - startTime);
     if (timeLeft > 0) {
@@ -126,23 +156,23 @@ export function spawn(level, id, x, y) {
       scene.wait(timeLeft, () => {
         level.removeFx(fx);
         scene.resume({ update: true });
-        newbie.x = x;
-        newbie.y = y;
+        newbie.x = x!;
+        newbie.y = y!;
         level.addActor(newbie);
         _success(newbie);
       });
     } else {
       level.removeFx(fx);
-      newbie.x = x;
-      newbie.y = y;
+      newbie.x = x!;
+      newbie.y = y!;
       level.addActor(newbie);
       _success(newbie);
     }
   });
 
   return {
-    then(success) {
-      _success = success || GWU.NOOP;
+    then(fn: ActorCallback) {
+      _success = fn || GWU.NOOP;
     },
   };
 }

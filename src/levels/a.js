@@ -1,4 +1,4 @@
-import * as LEVEL from "./level.js";
+import * as LEVEL from "./level";
 
 LEVEL.install({
   tiles: {

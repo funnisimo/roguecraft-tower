@@ -1,5 +1,6 @@
-import "../../lib/gw-utils.js";
-import * as LEVEL from "../levels/index.js";
+import * as GWU from "gw-utils";
+
+import * as LEVEL from "../levels/index";
 
 export function map(scene, width, height) {
   const widget = GWU.widget.make({

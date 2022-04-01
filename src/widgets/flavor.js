@@ -1,4 +1,4 @@
-import "../../lib/gw-utils.js";
+import * as GWU from "gw-utils";
 
 export function flavor(scene, x, y) {
   const widget = GWU.widget.make({

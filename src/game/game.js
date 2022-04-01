@@ -1,7 +1,9 @@
-import * as ACTOR from "../actor/index.js";
-import * as ACTIONS from "./actions.js";
-import * as LEVEL from "../levels/index.js";
-import { default as CONFIG } from "../config.js";
+import * as GWU from "gw-utils";
+
+import * as ACTOR from "../actor/index";
+import * as ACTIONS from "./actions";
+import * as LEVEL from "../levels/index";
+import { default as CONFIG } from "../config";
 
 export function make(seed = 0) {
   return new Game(seed);
@@ -107,6 +109,7 @@ export class Game {
     while (actor) {
       if (typeof actor === "function") {
         actor(this);
+        return; // lets do promises, etc...
       } else if (actor.health <= 0) {
         // skip
         filter = true;

@@ -1,9 +1,38 @@
-import "../../lib/gw-dig.js";
+import * as GWU from "gw-utils";
+import * as GWD from "gw-dig";
+import { CallbackFn, Game } from "../game";
+import { Actor } from "../actor";
 
-export const tilesByIndex = [];
-export const tilesByName = {};
+export interface TileEvents {
+  place?: (game: Game, x: number, y: number) => void;
+  tick?: (game: Game, x: number, y: number) => void;
+  enter?: (game: Game, actor: Actor) => void;
 
-export function install(cfg) {
+  [key: string]: CallbackFn | undefined;
+}
+
+export interface TileOptions extends GWD.site.TileOptions {
+  ch?: string;
+  fg?: GWU.color.ColorBase;
+  bg?: GWU.color.ColorBase;
+  blocksMove?: boolean;
+  on?: TileEvents;
+}
+
+export interface TileConfig extends TileOptions, GWD.site.TileConfig {}
+
+export interface TileInfo
+  extends Omit<TileOptions, "priority" | "tags">,
+    GWD.site.TileInfo {}
+
+// export interface TileInfo extends TileConfig {
+//   index: number;
+// }
+
+export const tilesByIndex: TileInfo[] = [];
+export const tilesByName: Record<string, TileInfo> = {};
+
+export function install(cfg: TileConfig) {
   const info = GWD.site.installTile(cfg);
   tilesByIndex[info.index] = info;
   tilesByName[info.id] = info;
@@ -31,9 +60,9 @@ install({
       //   }
       // });
     },
-    tick(game, x, y) {
+    tick(game: Game, x: number, y: number) {
       if (game.rng.chance(5)) {
-        game.level.setTile(x, y, "FLOOR");
+        game.level!.setTile(x, y, "FLOOR");
       }
     },
   },

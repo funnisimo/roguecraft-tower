@@ -1,4 +1,5 @@
-import * as FX from "../fx/index.js";
+import * as GWU from "gw-utils";
+import * as FX from "../fx/index";
 
 export function idle(game, actor) {
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
@@ -117,6 +118,7 @@ export function attack(game, actor, target = null) {
   }
 
   // we have an actor and a target
+  // Does this move to an event handler?  'damage', { amount: #, type: string }
   game.messages.addCombat(
     `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
   );
@@ -126,6 +128,8 @@ export function attack(game, actor, target = null) {
   game.endTurn(actor, actor.kind.moveSpeed);
 
   if (target.health < 0) {
+    target.trigger("death");
+    // do all of these move to event handlers?
     game.messages.addCombat(`${target.kind.id} dies`);
     game.level.setTile(target.x, target.y, "CORPSE");
     game.level.removeActor(target);

@@ -1,9 +1,10 @@
-import "../../lib/gw-utils.js";
-import CONFIG from "../config.js";
-import * as WIDGETS from "../widgets/index.js";
-// import * as ACTOR from "../actor/index.js";
-// import * as FX from "../fx/index.js";
-// import * as GAME from "../game/index.js";
+import * as GWU from "gw-utils";
+
+import CONFIG from "../config";
+import * as WIDGETS from "../widgets/index";
+// import * as ACTOR from "../actor/index";
+// import * as FX from "../fx/index";
+// import * as GAME from "../game/index";
 
 export const level = {
   create() {
@@ -53,10 +54,13 @@ export const level = {
 
     map.on("mousemove", (e) => {
       const game = this.data;
+      const level = game.level;
+
       const text = game.level.getFlavor(e.x, e.y);
       flavor.prop("text", text);
       sidebar.setFocus(game, e.x, e.y);
 
+      if (!level.started) return;
       // highlight path
       const player = game.player;
       player.setGoal(e.x, e.y);
@@ -72,6 +76,8 @@ export const level = {
     map.on("click", (e) => {
       console.log("map click - player go to:", e.x, e.y);
       const game = this.data;
+      const level = game.level;
+      if (!level.started) return;
       game.player.setGoal(e.x, e.y);
       game.player.goToGoal = true;
       game.player.act(game);

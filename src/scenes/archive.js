@@ -1,4 +1,4 @@
-import "../../lib/gw-utils.js";
+import * as GWU from "gw-utils";
 
 export const ArchiveScene = {
   bg: GWU.color.BLACK.alpha(50),

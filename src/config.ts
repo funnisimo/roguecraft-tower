@@ -1,4 +1,4 @@
-const CONFIG = {
+const CONFIG: Record<string, any> = {
   LAST_LEVEL: 10,
 };
 

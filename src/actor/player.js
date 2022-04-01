@@ -1,6 +1,7 @@
-import "../../lib/gw-utils.js";
-import * as ACTOR from "./actor.js";
-import * as ACTION from "../game/actions.js";
+import * as GWU from "gw-utils";
+
+import * as ACTOR from "./actor";
+import * as ACTION from "../game/actions";
 
 export class Player extends ACTOR.Actor {
   constructor(cfg) {

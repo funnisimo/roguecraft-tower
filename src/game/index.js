@@ -1,3 +1,3 @@
-export * from "./game.js";
-export * from "./actions.js";
-export * from "./obj.js";
+export * from "./game";
+export * from "./actions";
+export * from "./obj";

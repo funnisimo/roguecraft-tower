@@ -1,9 +1,11 @@
-import "./lib/gw-utils.js";
-import * as SCENES from "./src/scenes/index.js";
+import * as GWU from "gw-utils";
+
+import * as SCENES from "./scenes/index";
 
 function start() {
   // create the user interface
 
+  // @ts-ignore
   window.APP = GWU.app.make({
     width: 90,
     height: 45,

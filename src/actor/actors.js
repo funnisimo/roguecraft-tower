@@ -1,5 +1,5 @@
-import * as ACTOR from "./actor.js";
-import * as ACTIONS from "../game/actions.js";
+import * as ACTOR from "./actor";
+import * as ACTIONS from "../game/actions";
 
 ACTOR.install({
   id: "Player",

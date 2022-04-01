@@ -1,6 +1,6 @@
-export * from "./tiles.js";
-export * from "./level.js";
+export * from "./tiles";
+export * from "./level";
 
 // LEVELS
-// import "./level_1.js";
-// import "./a.js";
+// import "./level_1";
+// import "./a";

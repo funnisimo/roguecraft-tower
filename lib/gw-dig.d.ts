@@ -1,1 +1,0 @@
-../../gw-dig/dist/gw-dig.d.ts

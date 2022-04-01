@@ -1,5 +1,6 @@
-import "../../lib/gw-utils.js";
-import * as ACTIONS from "../game/actions.js";
+import * as GWU from "gw-utils";
+
+import * as ACTIONS from "../game/actions";
 
 export function ai(game, actor) {
   console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
