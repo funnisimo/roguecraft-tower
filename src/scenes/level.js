@@ -1,6 +1,5 @@
 import * as GWU from "gw-utils";
 
-import CONFIG from "../config";
 import * as WIDGETS from "../widgets/index";
 // import * as ACTOR from "../actor/index";
 // import * as FX from "../fx/index";
@@ -110,7 +109,8 @@ export const level = {
     // },
 
     win() {
-      if (this.data.level.depth === CONFIG.LAST_LEVEL) {
+      const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
+      if (this.data.level.depth === LAST_LEVEL) {
         this.app.scenes.start("win", this.data);
       } else {
         this.app.scenes.start("stuff", this.data);

@@ -2,9 +2,15 @@ import * as GWU from "gw-utils";
 
 import * as ACTOR from "./actor";
 import * as ACTION from "../game/actions";
+// import { Level } from "../game/level";
+import { Game } from "../game/game";
 
 export class Player extends ACTOR.Actor {
-  constructor(cfg) {
+  goalMap: GWU.grid.NumGrid | null;
+  mapToMe: GWU.grid.NumGrid | null;
+  goToGoal: boolean;
+
+  constructor(cfg: ACTOR.ActorConfig) {
     super(cfg);
     this.goalMap = null;
     this.mapToMe = null;
@@ -23,7 +29,7 @@ export class Player extends ACTOR.Actor {
     });
   }
 
-  act(game) {
+  act(game: Game) {
     this.startTurn(game);
 
     if (this.goalMap && this.goToGoal) {
@@ -32,7 +38,7 @@ export class Player extends ACTOR.Actor {
         this.x,
         this.y,
         (x, y) => {
-          if (this._level.actorAt(x, y)) return true;
+          if (this._level!.actorAt(x, y)) return true;
           return false;
         },
         true
@@ -50,7 +56,7 @@ export class Player extends ACTOR.Actor {
     console.log("Player - await input", game.scheduler.time);
   }
 
-  setGoal(x, y) {
+  setGoal(x: number, y: number) {
     if (!this._level || this.goToGoal) return;
 
     if (!this.goalMap) {
@@ -76,11 +82,11 @@ export class Player extends ACTOR.Actor {
   updateMapToMe() {
     if (
       !this.mapToMe ||
-      this.mapToMe.width !== this._level.width ||
-      this.mapToMe.height !== this._level.height
+      this.mapToMe.width !== this._level!.width ||
+      this.mapToMe.height !== this._level!.height
     ) {
       this.mapToMe && GWU.grid.free(this.mapToMe);
-      this.mapToMe = GWU.grid.alloc(this._level.width, this._level.height);
+      this.mapToMe = GWU.grid.alloc(this._level!.width, this._level!.height);
     }
     GWU.path.calculateDistances(
       this.mapToMe,
@@ -92,7 +98,7 @@ export class Player extends ACTOR.Actor {
   }
 }
 
-export function makePlayer(id) {
+export function makePlayer(id: string) {
   const kind = ACTOR.kinds[id.toLowerCase()];
   if (!kind) throw new Error("Failed to find actor kind - " + id);
 

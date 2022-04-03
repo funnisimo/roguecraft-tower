@@ -1,5 +1,4 @@
 import * as GWU from "gw-utils";
-
 import * as GAME from "../game/index";
 
 export const title = {
@@ -21,7 +20,7 @@ export const title = {
       prompt.on("stop", (seed) => {
         e.stopPropagation();
         if (seed) {
-          const game = GAME.make(seed);
+          const game = GAME.make({ seed, app: this.app });
           this.app.scenes.start("level", game);
         }
       });
@@ -32,7 +31,7 @@ export const title = {
       e.stopPropagation();
     });
     this.on("keypress", (e) => {
-      const game = GAME.make();
+      const game = GAME.make({ app: this.app });
       this.app.scenes.start("level", game);
       e.stopPropagation();
     });

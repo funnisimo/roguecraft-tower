@@ -1,8 +1,24 @@
 import * as GWU from "gw-utils";
 
-export const ArchiveScene = {
+export interface ArchiveConfig {
+  messages: GWU.message.Cache;
+  startHeight: number;
+}
+
+export interface ArchiveScene extends GWU.app.Scene {
+  data: {
+    messages: GWU.message.Cache;
+    shown: number;
+    startHeight: number;
+    mode: "forward" | "reverse" | "ack";
+    totalCount: number;
+    [key: string]: any;
+  };
+}
+
+export const archive = {
   bg: GWU.color.BLACK.alpha(50),
-  start(source) {
+  start(this: ArchiveScene, source: ArchiveConfig) {
     this.data.messages = source.messages;
 
     this.data.shown = source.startHeight;
@@ -14,22 +30,23 @@ export const ArchiveScene = {
     source.messages.confirmAll();
     this.wait(16, () => forward(this));
   },
-  draw(buf) {
+  draw(this: ArchiveScene, buf: GWU.buffer.Buffer) {
     drawArchive(this);
   },
-  keypress(e) {
+  keypress(this: ArchiveScene, e: GWU.app.Event) {
     next(this);
     e.stopPropagation();
   },
-  click(e) {
+  click(this: ArchiveScene, e: GWU.app.Event) {
     next(this);
     e.stopPropagation();
   },
 };
 
-GWU.app.installScene("archive", ArchiveScene);
+// @ts-ignore
+GWU.app.installScene("archive", archive);
 
-function next(scene) {
+function next(scene: ArchiveScene) {
   if (scene.data.mode === "ack") {
     scene.data.mode = "reverse";
     scene.needsDraw = true;
@@ -50,7 +67,7 @@ function next(scene) {
   }
 }
 
-function forward(scene) {
+function forward(scene: ArchiveScene) {
   // console.log('forward');
 
   ++scene.data.shown;
@@ -64,7 +81,7 @@ function forward(scene) {
   }
 }
 
-function reverse(scene) {
+function reverse(scene: ArchiveScene) {
   // console.log('reverse');
 
   --scene.data.shown;
@@ -77,7 +94,7 @@ function reverse(scene) {
   }
 }
 
-function drawArchive(scene) {
+function drawArchive(scene: ArchiveScene) {
   let fadePercent = 0;
   // let reverse = this.mode === 'reverse';
 
@@ -110,15 +127,17 @@ function drawArchive(scene) {
     bg
   );
 
-  scene.data.messages.forEach((line, _confirmed, j) => {
-    const y = startY + j * dy;
-    if (isOnTop) {
-      if (y < endY) return;
-    } else if (y > endY) return;
-    fadePercent = Math.floor((50 * j) / scene.data.shown);
-    const fgColor = fg.mix(scene.bg, fadePercent);
-    dbuf.drawText(0, y, line, fgColor, bg);
-  });
+  scene.data.messages.forEach(
+    (line: string, _confirmed: boolean, j: number) => {
+      const y = startY + j * dy;
+      if (isOnTop) {
+        if (y < endY) return;
+      } else if (y > endY) return;
+      fadePercent = Math.floor((50 * j) / scene.data.shown);
+      const fgColor = fg.mix(scene.bg, fadePercent);
+      dbuf.drawText(0, y, line, fgColor, bg);
+    }
+  );
 
   if (scene.data.mode === "ack") {
     const y = isOnTop ? 0 : dbuf.height - 1;

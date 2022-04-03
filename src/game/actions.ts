@@ -1,12 +1,19 @@
 import * as GWU from "gw-utils";
 import * as FX from "../fx/index";
+import { Game } from "./game";
+import { Actor } from "../actor/actor";
 
-export function idle(game, actor) {
+export function idle(game: Game, actor: Actor) {
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
 }
 
-export function moveDir(game, actor, dir, quiet = false) {
-  const level = game.level;
+export function moveDir(
+  game: Game,
+  actor: Actor,
+  dir: GWU.xy.Loc,
+  quiet = false
+) {
+  const level = game.level!;
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
 
@@ -20,7 +27,7 @@ export function moveDir(game, actor, dir, quiet = false) {
     if (actor.hasActed()) return true;
 
     if (!quiet) {
-      game.addMessage(`You bump into a ${other.id}.`);
+      game.addMessage(`You bump into a ${other.kind.id}.`);
       FX.flash(game, newX, newY, "red", 150);
       idle(game, actor);
 
@@ -59,14 +66,19 @@ export function moveDir(game, actor, dir, quiet = false) {
   return true;
 }
 
-export function moveToward(game, actor, other, quiet = false) {
-  const map = game.level;
+export function moveToward(
+  game: Game,
+  actor: Actor,
+  other: Actor,
+  quiet = false
+) {
+  const map = game.level!;
 
   let dir = GWU.xy.dirFromTo(actor, other);
   const dirs = GWU.xy.dirSpread(dir);
 
   while (dirs.length) {
-    dir = dirs.shift();
+    dir = dirs.shift()!;
 
     if (moveDir(game, actor, dir, true)) {
       return; // success
@@ -79,9 +91,9 @@ export function moveToward(game, actor, other, quiet = false) {
   idle(game, actor);
 }
 
-export function attack(game, actor, target = null) {
+export function attack(game: Game, actor: Actor, target: Actor | null = null) {
   if (!target) {
-    const targets = game.level.actors.filter(
+    const targets = game.level!.actors.filter(
       (a) =>
         a !== actor &&
         actor.health > 0 &&
@@ -94,9 +106,9 @@ export function attack(game, actor, target = null) {
       game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
       return true; // did something
     } else if (targets.length > 1) {
-      game.scene.app.scenes
-        .run("target", { game, actor, targets })
-        .on("stop", (result) => {
+      game
+        .scene!.app.scenes.run("target", { game, actor, targets })
+        .on("stop", (result: Actor | null) => {
           if (!result) {
             FX.flash(game, actor.x, actor.y, "orange", 150);
             game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
@@ -122,7 +134,7 @@ export function attack(game, actor, target = null) {
   game.messages.addCombat(
     `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
   );
-  target.health -= actor.damage;
+  target.health -= actor.damage || 0;
 
   FX.flash(game, target.x, target.y, "red", 150);
   game.endTurn(actor, actor.kind.moveSpeed);
@@ -131,19 +143,17 @@ export function attack(game, actor, target = null) {
     target.trigger("death");
     // do all of these move to event handlers?
     game.messages.addCombat(`${target.kind.id} dies`);
-    game.level.setTile(target.x, target.y, "CORPSE");
-    game.level.removeActor(target);
+    game.level!.setTile(target.x, target.y, "CORPSE");
+    game.level!.removeActor(target);
   }
   return true;
 }
 
-export function climb(game, actor) {
-  const tile = game.level.getTile(actor.x, actor.y);
+export function climb(game: Game, actor: Actor) {
+  const tile = game.level!.getTile(actor.x, actor.y);
   if (tile.on && tile.on.climb) {
-    if (tile.on.climb(game, actor)) {
-      return;
-    }
+    tile.on.climb.call(tile, game, actor);
+  } else {
+    idle(game, actor);
   }
-
-  idle(game, actor);
 }

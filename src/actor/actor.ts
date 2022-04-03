@@ -6,11 +6,22 @@ import { Game } from "../game/game";
 import { Level } from "../game/level";
 import * as AI from "./ai";
 
+export interface ActorEvents {
+  bump?: (game: Game, actor: Actor, other: Actor) => void;
+  [key: string]: CallbackFn | undefined;
+}
+
 export interface ActorKind {
   id: string;
   health: number;
   damage: number;
   moveSpeed: number;
+
+  ch: string;
+  fg: GWU.color.ColorBase;
+  bg?: GWU.color.ColorBase;
+
+  on?: ActorEvents;
 }
 
 export const kinds: Record<string, ActorKind> = {};
@@ -29,6 +40,7 @@ export class Actor extends Obj {
   kind: any;
   data: Record<string, any>;
   health: number;
+  damage: number;
 
   constructor(cfg?: ActorConfig) {
     super(cfg);
@@ -37,6 +49,7 @@ export class Actor extends Obj {
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
     this.data = {};
     this.health = this.kind.health || 0;
+    this.damage = this.kind.damage || 0;
 
     this.on("add", (level) => {
       level.game.scheduler.push(this, this.kind.moveSpeed);
@@ -129,7 +142,7 @@ export function spawn(
 
   const ms = 500;
   const bg = newbie.kind.fg;
-  const scene = level.game!.scene;
+  const scene = level.game!.scene!;
   // const level = level.level;
 
   if (x === undefined) {

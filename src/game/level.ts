@@ -152,7 +152,7 @@ export class Level {
 
     // this.game && this.game.drawAt(x, y);
     if (tile.on && tile.on.place) {
-      tile.on.place(this.game!, x, y);
+      tile.on.place.call(tile, this.game!, x, y);
     }
   }
 
@@ -272,24 +272,32 @@ export class Level {
   triggerAction(event: string, actor: ACTOR.Actor) {
     const tile = this.getTile(actor.x, actor.y);
     if (tile && tile.on && tile.on[event]) {
-      tile.on[event]!(this.game, actor);
+      tile.on[event]!.call(tile, this.game, actor);
     }
   }
 }
 
 // export const levels: Level[] = [];
 
-export interface LevelConfig {
-  data: string[];
-  tiles: Record<string, string>;
-  height?: number;
-  width?: number;
+export interface LevelBase {
   depth?: number;
   seed?: number;
   welcome?: string;
   proceed?: string;
   waves?: WaveInfo[];
 }
+
+export interface LevelData extends LevelBase {
+  data: string[];
+  tiles: Record<string, string>;
+}
+
+export interface LevelGen extends LevelBase {
+  height: number;
+  width: number;
+}
+
+export type LevelConfig = LevelData | LevelGen;
 
 // export function install(cfg: LevelConfig) {
 //   const level = from(cfg);
@@ -299,11 +307,19 @@ export interface LevelConfig {
 // }
 
 export function from(cfg: LevelConfig): Level {
-  const data = cfg.data;
-  const tiles = cfg.tiles;
+  let w = 0;
+  let h = 0;
 
-  const h = cfg.height || data.length;
-  const w = cfg.width || data[0].length;
+  if ("data" in cfg) {
+    const data = cfg.data;
+    const tiles = cfg.tiles;
+
+    h = data.length;
+    w = data[0].length;
+  } else {
+    h = cfg.height;
+    w = cfg.width;
+  }
 
   const level = new Level(w, h);
   level.depth = cfg.depth || 1;

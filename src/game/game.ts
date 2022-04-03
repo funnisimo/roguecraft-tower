@@ -2,30 +2,56 @@ import * as GWU from "gw-utils";
 
 import * as ACTOR from "../actor/index";
 import * as ACTIONS from "./actions";
-import * as LEVEL from "../game/level";
-import { default as CONFIG } from "../config";
+import * as LEVEL from "./level";
+import { Player } from "../actor/player";
+// import { default as CONFIG } from "../config";
 
-export function make(seed = 0) {
-  return new Game(seed);
+export interface GameOpts {
+  seed?: number;
+  app?: GWU.app.App;
+}
+
+export function make(opts: GameOpts | number = 0) {
+  if (typeof opts === "number") {
+    opts = { seed: opts };
+  }
+
+  return new Game(opts);
 }
 
 export class Game {
-  constructor(seed = 0) {
+  player: Player;
+  app: GWU.app.App | null;
+  scene: GWU.app.Scene | null;
+  level: LEVEL.Level | null;
+  depth: number;
+  scheduler: GWU.scheduler.Scheduler;
+  inputQueue: GWU.app.Queue;
+  seed: number;
+  rng: GWU.rng.Random;
+  seeds: number[];
+  messages: GWU.message.Cache;
+  events: GWU.app.Events;
+  needInput = false;
+
+  constructor(opts: GameOpts) {
     this.player = ACTOR.makePlayer("player");
+    this.app = opts.app || null;
     this.scene = null;
     this.level = null;
     this.depth = 0;
     this.scheduler = new GWU.scheduler.Scheduler();
-    this.levels = [];
 
     this.inputQueue = new GWU.app.Queue();
 
-    this.seed = seed || GWU.random.number(100000);
+    this.seed = opts.seed || GWU.random.number(100000);
     console.log("GAME, seed=", this.seed);
 
     this.rng = GWU.rng.make(this.seed);
     this.seeds = [];
-    for (let i = 0; i < CONFIG.LAST_LEVEL; ++i) {
+
+    const LAST_LEVEL = this.app ? this.app.data.get("LAST_LEVEL") : 10;
+    for (let i = 0; i < LAST_LEVEL; ++i) {
       const levelSeed = this.rng.number(100000);
       this.seeds.push(levelSeed);
       console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
@@ -49,11 +75,11 @@ export class Game {
       ACTIONS.climb(this, this.player);
     });
     this.events.on("z", (e) => {
-      ACTOR.spawn(this.level, "zombie", this.player.x, this.player.y);
+      ACTOR.spawn(this.level!, "zombie", this.player.x, this.player.y);
     });
   }
 
-  startLevel(scene, width, height) {
+  startLevel(scene: GWU.app.Scene, width: number, height: number) {
     this.scene = scene;
     this.depth += 1;
     this.scheduler.clear();
@@ -90,17 +116,17 @@ export class Game {
   }
 
   lose() {
-    this.scene.trigger("lose", this);
+    this.scene!.trigger("lose", this);
   }
 
   win() {
-    this.scene.trigger("win", this);
+    this.scene!.trigger("win", this);
   }
 
   update() {
     while (this.inputQueue.length && this.needInput) {
       const e = this.inputQueue.dequeue();
-      e.dispatch(this.events);
+      e && e.dispatch(this.events);
     }
 
     if (this.needInput) return;
@@ -117,17 +143,19 @@ export class Game {
       } else if (actor === this.player) {
         actor.act(this);
         if (filter) {
-          actors = actors.filter((a) => a && a.health > 0);
+          this.level!.actors = this.level!.actors.filter(
+            (a) => a && a.health > 0
+          );
         }
-        this.scene.needsDraw = true;
+        this.scene!.needsDraw = true;
         return;
       } else {
         actor.act(this);
       }
-      if (this.scene.timers.length || this.scene.tweens.length) {
+      if (this.scene!.timers.length || this.scene!.tweens.length) {
         return;
       }
-      if (this.scene.paused.update) {
+      if (this.scene!.paused.update) {
         return;
       }
       actor = this.scheduler.pop();
@@ -142,22 +170,22 @@ export class Game {
   //     e.stopPropagation();
   //   }
 
-  keypress(e) {
+  keypress(e: GWU.app.Event) {
     this.inputQueue.enqueue(e.clone());
     e.stopPropagation();
   }
 
-  click(e) {
+  click(e: GWU.app.Event) {
     this.inputQueue.enqueue(e.clone());
     e.stopPropagation();
   }
 
   tick() {
-    this.level.tick(this);
+    this.level!.tick(this);
     this.wait(100, () => this.tick());
   }
 
-  endTurn(actor, time) {
+  endTurn(actor: ACTOR.Actor, time: number) {
     if (!actor.hasActed()) {
       actor.endTurn(this, time);
       this.scheduler.push(actor, time);
@@ -169,12 +197,12 @@ export class Game {
     }
   }
 
-  wait(time, fn) {
+  wait(time: number, fn: GWU.app.CallbackFn) {
     this.scheduler.push(fn, time);
   }
 
-  addMessage(msg) {
+  addMessage(msg: string) {
     this.messages.add(msg);
-    this.scene.get("MESSAGES").draw(this.scene.buffer);
+    this.scene!.get("MESSAGES")!.draw(this.scene!.buffer);
   }
 }

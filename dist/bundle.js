@@ -94,12 +94,12 @@
    * // => false
    */
 
-  function isObject$3(value) {
+  function isObject$4(value) {
     var type = typeof value;
     return value != null && (type == 'object' || type == 'function');
   }
 
-  var isObject_1 = isObject$3;
+  var isObject_1 = isObject$4;
 
   /** Detect free variable `global` from Node.js. */
 
@@ -127,17 +127,17 @@
   var Symbol$2 = _Symbol;
 
   /** Used for built-in method references. */
-  var objectProto$4 = Object.prototype;
+  var objectProto$5 = Object.prototype;
 
   /** Used to check objects for own properties. */
-  var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
+  var hasOwnProperty$4 = objectProto$5.hasOwnProperty;
 
   /**
    * Used to resolve the
    * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
    * of values.
    */
-  var nativeObjectToString$1 = objectProto$4.toString;
+  var nativeObjectToString$1 = objectProto$5.toString;
 
   /** Built-in value references. */
   var symToStringTag$1 = Symbol$2 ? Symbol$2.toStringTag : undefined;
@@ -150,7 +150,7 @@
    * @returns {string} Returns the raw `toStringTag`.
    */
   function getRawTag$1(value) {
-    var isOwn = hasOwnProperty$3.call(value, symToStringTag$1),
+    var isOwn = hasOwnProperty$4.call(value, symToStringTag$1),
         tag = value[symToStringTag$1];
 
     try {
@@ -173,14 +173,14 @@
 
   /** Used for built-in method references. */
 
-  var objectProto$3 = Object.prototype;
+  var objectProto$4 = Object.prototype;
 
   /**
    * Used to resolve the
    * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
    * of values.
    */
-  var nativeObjectToString = objectProto$3.toString;
+  var nativeObjectToString = objectProto$4.toString;
 
   /**
    * Converts `value` to a string using `Object.prototype.toString`.
@@ -286,7 +286,7 @@
   var isSymbol_1 = isSymbol$4;
 
   var baseTrim = _baseTrim,
-      isObject$2 = isObject_1,
+      isObject$3 = isObject_1,
       isSymbol$3 = isSymbol_1;
 
   /** Used as references for various `Number` constants. */
@@ -334,9 +334,9 @@
     if (isSymbol$3(value)) {
       return NAN;
     }
-    if (isObject$2(value)) {
+    if (isObject$3(value)) {
       var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-      value = isObject$2(other) ? (other + '') : other;
+      value = isObject$3(other) ? (other + '') : other;
     }
     if (typeof value != 'string') {
       return value === 0 ? value : +value;
@@ -1062,7 +1062,7 @@
   var _isKey = isKey$1;
 
   var baseGetTag = _baseGetTag,
-      isObject$1 = isObject_1;
+      isObject$2 = isObject_1;
 
   /** `Object#toString` result references. */
   var asyncTag = '[object AsyncFunction]',
@@ -1088,7 +1088,7 @@
    * // => false
    */
   function isFunction$1(value) {
-    if (!isObject$1(value)) {
+    if (!isObject$2(value)) {
       return false;
     }
     // The use of `Object#toString` avoids issues with the `typeof` operator
@@ -1157,7 +1157,7 @@
 
   var isFunction = isFunction_1,
       isMasked = _isMasked,
-      isObject = isObject_1,
+      isObject$1 = isObject_1,
       toSource = _toSource;
 
   /**
@@ -1171,17 +1171,17 @@
 
   /** Used for built-in method references. */
   var funcProto = Function.prototype,
-      objectProto$2 = Object.prototype;
+      objectProto$3 = Object.prototype;
 
   /** Used to resolve the decompiled source of functions. */
   var funcToString = funcProto.toString;
 
   /** Used to check objects for own properties. */
-  var hasOwnProperty$2 = objectProto$2.hasOwnProperty;
+  var hasOwnProperty$3 = objectProto$3.hasOwnProperty;
 
   /** Used to detect if a method is native. */
   var reIsNative = RegExp('^' +
-    funcToString.call(hasOwnProperty$2).replace(reRegExpChar, '\\$&')
+    funcToString.call(hasOwnProperty$3).replace(reRegExpChar, '\\$&')
     .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
   );
 
@@ -1194,7 +1194,7 @@
    *  else `false`.
    */
   function baseIsNative$1(value) {
-    if (!isObject(value) || isMasked(value)) {
+    if (!isObject$1(value) || isMasked(value)) {
       return false;
     }
     var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
@@ -1229,17 +1229,17 @@
    * @param {string} key The key of the method to get.
    * @returns {*} Returns the function if it's native, else `undefined`.
    */
-  function getNative$2(object, key) {
+  function getNative$3(object, key) {
     var value = getValue$1(object, key);
     return baseIsNative(value) ? value : undefined;
   }
 
-  var _getNative = getNative$2;
+  var _getNative = getNative$3;
 
-  var getNative$1 = _getNative;
+  var getNative$2 = _getNative;
 
   /* Built-in method references that are verified to be native. */
-  var nativeCreate$4 = getNative$1(Object, 'create');
+  var nativeCreate$4 = getNative$2(Object, 'create');
 
   var _nativeCreate = nativeCreate$4;
 
@@ -1284,10 +1284,10 @@
   var HASH_UNDEFINED$1 = '__lodash_hash_undefined__';
 
   /** Used for built-in method references. */
-  var objectProto$1 = Object.prototype;
+  var objectProto$2 = Object.prototype;
 
   /** Used to check objects for own properties. */
-  var hasOwnProperty$1 = objectProto$1.hasOwnProperty;
+  var hasOwnProperty$2 = objectProto$2.hasOwnProperty;
 
   /**
    * Gets the hash value for `key`.
@@ -1304,7 +1304,7 @@
       var result = data[key];
       return result === HASH_UNDEFINED$1 ? undefined : result;
     }
-    return hasOwnProperty$1.call(data, key) ? data[key] : undefined;
+    return hasOwnProperty$2.call(data, key) ? data[key] : undefined;
   }
 
   var _hashGet = hashGet$1;
@@ -1312,10 +1312,10 @@
   var nativeCreate$1 = _nativeCreate;
 
   /** Used for built-in method references. */
-  var objectProto = Object.prototype;
+  var objectProto$1 = Object.prototype;
 
   /** Used to check objects for own properties. */
-  var hasOwnProperty = objectProto.hasOwnProperty;
+  var hasOwnProperty$1 = objectProto$1.hasOwnProperty;
 
   /**
    * Checks if a hash value for `key` exists.
@@ -1328,7 +1328,7 @@
    */
   function hashHas$1(key) {
     var data = this.__data__;
-    return nativeCreate$1 ? (data[key] !== undefined) : hasOwnProperty.call(data, key);
+    return nativeCreate$1 ? (data[key] !== undefined) : hasOwnProperty$1.call(data, key);
   }
 
   var _hashHas = hashHas$1;
@@ -1438,13 +1438,13 @@
    * // => true
    */
 
-  function eq$1(value, other) {
+  function eq$2(value, other) {
     return value === other || (value !== value && other !== other);
   }
 
-  var eq_1 = eq$1;
+  var eq_1 = eq$2;
 
-  var eq = eq_1;
+  var eq$1 = eq_1;
 
   /**
    * Gets the index at which the `key` is found in `array` of key-value pairs.
@@ -1457,7 +1457,7 @@
   function assocIndexOf$4(array, key) {
     var length = array.length;
     while (length--) {
-      if (eq(array[length][0], key)) {
+      if (eq$1(array[length][0], key)) {
         return length;
       }
     }
@@ -1599,11 +1599,11 @@
 
   var _ListCache = ListCache$1;
 
-  var getNative = _getNative,
+  var getNative$1 = _getNative,
       root = _root;
 
   /* Built-in method references that are verified to be native. */
-  var Map$1 = getNative(root, 'Map');
+  var Map$1 = getNative$1(root, 'Map');
 
   var _Map = Map$1;
 
@@ -2006,14 +2006,14 @@
    * @param {Object} [object] The object to query keys on.
    * @returns {Array} Returns the cast property path array.
    */
-  function castPath$1(value, object) {
+  function castPath$2(value, object) {
     if (isArray(value)) {
       return value;
     }
     return isKey(value, object) ? [value] : stringToPath(toString$1(value));
   }
 
-  var _castPath = castPath$1;
+  var _castPath = castPath$2;
 
   var isSymbol = isSymbol_1;
 
@@ -2027,7 +2027,7 @@
    * @param {*} value The value to inspect.
    * @returns {string|symbol} Returns the key.
    */
-  function toKey$1(value) {
+  function toKey$2(value) {
     if (typeof value == 'string' || isSymbol(value)) {
       return value;
     }
@@ -2035,10 +2035,10 @@
     return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
   }
 
-  var _toKey = toKey$1;
+  var _toKey = toKey$2;
 
-  var castPath = _castPath,
-      toKey = _toKey;
+  var castPath$1 = _castPath,
+      toKey$1 = _toKey;
 
   /**
    * The base implementation of `_.get` without support for default values.
@@ -2049,13 +2049,13 @@
    * @returns {*} Returns the resolved value.
    */
   function baseGet$1(object, path) {
-    path = castPath(path, object);
+    path = castPath$1(path, object);
 
     var index = 0,
         length = path.length;
 
     while (object != null && index < length) {
-      object = object[toKey(path[index++])];
+      object = object[toKey$1(path[index++])];
     }
     return (index && index == length) ? object : undefined;
   }
@@ -7297,8 +7297,200 @@ void main() {
   	__proto__: null,
   	Cache: Cache
   });
-  // export const make: any = {};
-  // export const flags: any = {};
+
+  var getNative = _getNative;
+
+  var defineProperty$1 = (function() {
+    try {
+      var func = getNative(Object, 'defineProperty');
+      func({}, '', {});
+      return func;
+    } catch (e) {}
+  }());
+
+  var _defineProperty = defineProperty$1;
+
+  var defineProperty = _defineProperty;
+
+  /**
+   * The base implementation of `assignValue` and `assignMergeValue` without
+   * value checks.
+   *
+   * @private
+   * @param {Object} object The object to modify.
+   * @param {string} key The key of the property to assign.
+   * @param {*} value The value to assign.
+   */
+  function baseAssignValue$1(object, key, value) {
+    if (key == '__proto__' && defineProperty) {
+      defineProperty(object, key, {
+        'configurable': true,
+        'enumerable': true,
+        'value': value,
+        'writable': true
+      });
+    } else {
+      object[key] = value;
+    }
+  }
+
+  var _baseAssignValue = baseAssignValue$1;
+
+  var baseAssignValue = _baseAssignValue,
+      eq = eq_1;
+
+  /** Used for built-in method references. */
+  var objectProto = Object.prototype;
+
+  /** Used to check objects for own properties. */
+  var hasOwnProperty = objectProto.hasOwnProperty;
+
+  /**
+   * Assigns `value` to `key` of `object` if the existing value is not equivalent
+   * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+   * for equality comparisons.
+   *
+   * @private
+   * @param {Object} object The object to modify.
+   * @param {string} key The key of the property to assign.
+   * @param {*} value The value to assign.
+   */
+  function assignValue$1(object, key, value) {
+    var objValue = object[key];
+    if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
+        (value === undefined && !(key in object))) {
+      baseAssignValue(object, key, value);
+    }
+  }
+
+  var _assignValue = assignValue$1;
+
+  /** Used as references for various `Number` constants. */
+
+  var MAX_SAFE_INTEGER = 9007199254740991;
+
+  /** Used to detect unsigned integer values. */
+  var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+  /**
+   * Checks if `value` is a valid array-like index.
+   *
+   * @private
+   * @param {*} value The value to check.
+   * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+   * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+   */
+  function isIndex$1(value, length) {
+    var type = typeof value;
+    length = length == null ? MAX_SAFE_INTEGER : length;
+
+    return !!length &&
+      (type == 'number' ||
+        (type != 'symbol' && reIsUint.test(value))) &&
+          (value > -1 && value % 1 == 0 && value < length);
+  }
+
+  var _isIndex = isIndex$1;
+
+  var assignValue = _assignValue,
+      castPath = _castPath,
+      isIndex = _isIndex,
+      isObject = isObject_1,
+      toKey = _toKey;
+
+  /**
+   * The base implementation of `_.set`.
+   *
+   * @private
+   * @param {Object} object The object to modify.
+   * @param {Array|string} path The path of the property to set.
+   * @param {*} value The value to set.
+   * @param {Function} [customizer] The function to customize path creation.
+   * @returns {Object} Returns `object`.
+   */
+  function baseSet$1(object, path, value, customizer) {
+    if (!isObject(object)) {
+      return object;
+    }
+    path = castPath(path, object);
+
+    var index = -1,
+        length = path.length,
+        lastIndex = length - 1,
+        nested = object;
+
+    while (nested != null && ++index < length) {
+      var key = toKey(path[index]),
+          newValue = value;
+
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        return object;
+      }
+
+      if (index != lastIndex) {
+        var objValue = nested[key];
+        newValue = customizer ? customizer(objValue, key, nested) : undefined;
+        if (newValue === undefined) {
+          newValue = isObject(objValue)
+            ? objValue
+            : (isIndex(path[index + 1]) ? [] : {});
+        }
+      }
+      assignValue(nested, key, newValue);
+      nested = nested[key];
+    }
+    return object;
+  }
+
+  var _baseSet = baseSet$1;
+
+  var baseSet = _baseSet;
+
+  /**
+   * Sets the value at `path` of `object`. If a portion of `path` doesn't exist,
+   * it's created. Arrays are created for missing index properties while objects
+   * are created for all other missing properties. Use `_.setWith` to customize
+   * `path` creation.
+   *
+   * **Note:** This method mutates `object`.
+   *
+   * @static
+   * @memberOf _
+   * @since 3.7.0
+   * @category Object
+   * @param {Object} object The object to modify.
+   * @param {Array|string} path The path of the property to set.
+   * @param {*} value The value to set.
+   * @returns {Object} Returns `object`.
+   * @example
+   *
+   * var object = { 'a': [{ 'b': { 'c': 3 } }] };
+   *
+   * _.set(object, 'a[0].b.c', 4);
+   * console.log(object.a[0].b.c);
+   * // => 4
+   *
+   * _.set(object, ['x', '0', 'y', 'z'], 5);
+   * console.log(object.x[0].y.z);
+   * // => 5
+   */
+  function set(object, path, value) {
+    return object == null ? object : baseSet(object, path, value);
+  }
+
+  var set_1 = set;
+
+  class Data {
+      constructor(config = {}) {
+          this._data = config;
+      }
+      get(path) {
+          return get_1(this._data, path);
+      }
+      set(path, value) {
+          return set_1(this._data, path, value);
+      }
+  }
 
   class Blob {
       constructor(opts = {}) {
@@ -7441,6 +7633,12 @@ void main() {
   	fillBlob: fillBlob,
   	make: make$4
   });
+
+  // const LIGHT_SMOOTHING_THRESHOLD = 150;       // light components higher than this magnitude will be toned down a little
+  // export const config = (CONFIG.light = {
+  //     INTENSITY_DARK: 20,
+  //     INTENSITY_SHADOW: 50,
+  // }); // less than 20% for highest color in rgb
   make$9();
   // // TODO - Move?
   // export function playerInDarkness(
@@ -12671,6 +12869,7 @@ void main() {
           this.events = new Events(this);
           this.timers = new Timers(this);
           this.scenes = new Scenes(this);
+          this.data = new Data(opts.data);
           this.canvas.onclick = this.io.enqueue.bind(this.io);
           this.canvas.onmousemove = this.io.enqueue.bind(this.io);
           this.canvas.onclick = this.io.enqueue.bind(this.io);
@@ -12955,172 +13154,143 @@ void main() {
   }
 
   function idle(game, actor) {
-    game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+      game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
   }
-
   function moveDir(game, actor, dir, quiet = false) {
-    const level = game.level;
-    const newX = actor.x + dir[0];
-    const newY = actor.y + dir[1];
-
-    const other = level.actorAt(newX, newY);
-    if (other) {
-      if (other.kind && other.kind.on && other.kind.on.bump) {
-        if (other.kind.on.bump(game, actor, other)) {
-          return true;
-        }
+      const level = game.level;
+      const newX = actor.x + dir[0];
+      const newY = actor.y + dir[1];
+      const other = level.actorAt(newX, newY);
+      if (other) {
+          if (other.kind && other.kind.on && other.kind.on.bump) {
+              if (other.kind.on.bump(game, actor, other)) {
+                  return true;
+              }
+          }
+          if (actor.hasActed())
+              return true;
+          if (!quiet) {
+              game.addMessage(`You bump into a ${other.kind.id}.`);
+              flash(game, newX, newY, "red", 150);
+              idle(game, actor);
+              return true;
+          }
+          else {
+              return false;
+          }
       }
-      if (actor.hasActed()) return true;
-
-      if (!quiet) {
-        game.addMessage(`You bump into a ${other.id}.`);
-        flash(game, newX, newY, "red", 150);
-        idle(game, actor);
-
-        return true;
-      } else {
-        return false;
+      if (level.blocksMove(newX, newY)) {
+          if (!quiet) {
+              game.addMessage("You bump into a wall.");
+              flash(game, newX, newY, "red", 150);
+              idle(game, actor);
+              return;
+          }
+          else {
+              return false;
+          }
       }
-    }
-
-    if (level.blocksMove(newX, newY)) {
-      if (!quiet) {
-        game.addMessage("You bump into a wall.");
-        flash(game, newX, newY, "red", 150);
-        idle(game, actor);
-        return;
-      } else {
-        return false;
-      }
-    }
-
-    actor.x;
-    actor.y;
-    actor.x = newX;
-    actor.y = newY;
-    // game.drawAt(oldX, oldY);
-    // game.drawAt(newX, newY);
-
-    const speed = Math.round(
-      actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0)
-    );
-
-    actor.trigger("move", game, newX, newY);
-    level.triggerAction("enter", actor);
-
-    game.endTurn(actor, speed);
-    return true;
+      actor.x;
+      actor.y;
+      actor.x = newX;
+      actor.y = newY;
+      // game.drawAt(oldX, oldY);
+      // game.drawAt(newX, newY);
+      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
+      actor.trigger("move", game, newX, newY);
+      level.triggerAction("enter", actor);
+      game.endTurn(actor, speed);
+      return true;
   }
-
   function moveToward(game, actor, other, quiet = false) {
-    game.level;
-
-    let dir = xy.dirFromTo(actor, other);
-    const dirs = xy.dirSpread(dir);
-
-    while (dirs.length) {
-      dir = dirs.shift();
-
-      if (moveDir(game, actor, dir, true)) {
-        return; // success
+      game.level;
+      let dir = xy.dirFromTo(actor, other);
+      const dirs = xy.dirSpread(dir);
+      while (dirs.length) {
+          dir = dirs.shift();
+          if (moveDir(game, actor, dir, true)) {
+              return; // success
+          }
       }
-    }
-
-    if (!quiet) {
-      flash(game, actor.x, actor.y, "orange", 150);
-    }
-    idle(game, actor);
+      if (!quiet) {
+          flash(game, actor.x, actor.y, "orange", 150);
+      }
+      idle(game, actor);
   }
-
   function attack(game, actor, target = null) {
-    if (!target) {
-      const targets = game.level.actors.filter(
-        (a) =>
-          a !== actor &&
-          actor.health > 0 &&
-          xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1
-      );
-
-      if (targets.length == 0) {
-        game.addMessage("no targets.");
-        flash(game, actor.x, actor.y, "orange", 150);
-        game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-        return true; // did something
-      } else if (targets.length > 1) {
-        game.scene.app.scenes
-          .run("target", { game, actor, targets })
-          .on("stop", (result) => {
-            if (!result) {
+      if (!target) {
+          const targets = game.level.actors.filter((a) => a !== actor &&
+              actor.health > 0 &&
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1);
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
               flash(game, actor.x, actor.y, "orange", 150);
               game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-            } else {
-              attack(game, actor, result);
-            }
-          });
-        return true; // didSomething
-      } else {
-        target = targets[0];
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              game
+                  .scene.app.scenes.run("target", { game, actor, targets })
+                  .on("stop", (result) => {
+                  if (!result) {
+                      flash(game, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+                  }
+                  else {
+                      attack(game, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
       }
-    }
-
-    const actorIsPlayer = actor === game.player;
-    const otherIsPlayer = target === game.player;
-
-    if (!actorIsPlayer && !otherIsPlayer) {
-      return idle(game, actor); // no attacking
-    }
-
-    // we have an actor and a target
-    // Does this move to an event handler?  'damage', { amount: #, type: string }
-    game.messages.addCombat(
-      `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
-    );
-    target.health -= actor.damage;
-
-    flash(game, target.x, target.y, "red", 150);
-    game.endTurn(actor, actor.kind.moveSpeed);
-
-    if (target.health < 0) {
-      target.trigger("death");
-      // do all of these move to event handlers?
-      game.messages.addCombat(`${target.kind.id} dies`);
-      game.level.setTile(target.x, target.y, "CORPSE");
-      game.level.removeActor(target);
-    }
-    return true;
+      const actorIsPlayer = actor === game.player;
+      const otherIsPlayer = target === game.player;
+      if (!actorIsPlayer && !otherIsPlayer) {
+          return idle(game, actor); // no attacking
+      }
+      // we have an actor and a target
+      // Does this move to an event handler?  'damage', { amount: #, type: string }
+      game.messages.addCombat(`${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`);
+      target.health -= actor.damage || 0;
+      flash(game, target.x, target.y, "red", 150);
+      game.endTurn(actor, actor.kind.moveSpeed);
+      if (target.health < 0) {
+          target.trigger("death");
+          // do all of these move to event handlers?
+          game.messages.addCombat(`${target.kind.id} dies`);
+          game.level.setTile(target.x, target.y, "CORPSE");
+          game.level.removeActor(target);
+      }
+      return true;
   }
-
   function climb(game, actor) {
-    const tile = game.level.getTile(actor.x, actor.y);
-    if (tile.on && tile.on.climb) {
-      if (tile.on.climb(game, actor)) {
-        return;
+      const tile = game.level.getTile(actor.x, actor.y);
+      if (tile.on && tile.on.climb) {
+          tile.on.climb.call(tile, game, actor);
       }
-    }
-
-    idle(game, actor);
+      else {
+          idle(game, actor);
+      }
   }
 
   function ai(game, actor) {
-    console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
-
-    const player = game.player;
-    const noticeDistance = actor.kind.notice || 10;
-
-    const distToPlayer = xy.distanceBetween(
-      player.x,
-      player.y,
-      actor.x,
-      actor.y
-    );
-    if (distToPlayer > noticeDistance) {
-      // milling around [ move randomly? ]
-      game.endTurn(actor, actor.kind.moveSpeed);
-    } else if (distToPlayer <= 1) {
-      attack(game, actor, player);
-    } else {
-      moveToward(game, actor, player);
-    }
+      console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
+      const player = game.player;
+      const noticeDistance = actor.kind.notice || 10;
+      const distToPlayer = xy.distanceBetween(player.x, player.y, actor.x, actor.y);
+      if (distToPlayer > noticeDistance) {
+          // milling around [ move randomly? ]
+          game.endTurn(actor, actor.kind.moveSpeed);
+      }
+      else if (distToPlayer <= 1) {
+          attack(game, actor, player);
+      }
+      else {
+          moveToward(game, actor, player);
+      }
   }
 
   const kinds = {};
@@ -13137,6 +13307,7 @@ void main() {
           this.kind.moveSpeed = this.kind.moveSpeed || 100;
           this.data = {};
           this.health = this.kind.health || 0;
+          this.damage = this.kind.damage || 0;
           this.on("add", (level) => {
               level.game.scheduler.push(this, this.kind.moveSpeed);
               this._level = level;
@@ -13252,260 +13423,80 @@ void main() {
       };
   }
 
-  install$3({
-    id: "Player",
-    ch: "@",
-    fg: "white",
-    bg: -1,
-    moveSpeed: 100,
-    health: 100,
-    damage: 10,
-  });
-
-  install$3({
-    id: "Zombie",
-    ch: "z",
-    fg: "green",
-    moveSpeed: 200,
-    health: 6,
-    damage: 8,
-    // attackSpeed: 200
-    on: {
-      bump(game, actor, zombie) {
-        return attack(game, actor, zombie);
-      },
-    },
-  });
-
-  install$3({
-    id: "Armored Zombie",
-    ch: "Z",
-    fg: "green",
-    moveSpeed: 200,
-    health: 25,
-    damage: 10,
-    // attackSpeed: 200
-    on: {
-      bump(game, actor, zombie) {
-        return attack(game, actor, zombie);
-      },
-    },
-  });
-
-  install$3({
-    id: "Armored Zombie Sword",
-    ch: "Z",
-    fg: "green",
-    moveSpeed: 200,
-    health: 50,
-    damage: 12,
-    // attackSpeed: 200
-    on: {
-      bump(game, actor, zombie) {
-        return attack(game, actor, zombie);
-      },
-    },
-  });
-
-  install$3({
-    id: "Vindicator",
-    ch: "v",
-    fg: "blue",
-    moveSpeed: 100,
-    health: 11,
-    damage: 9,
-    // chargeSpeed: 75
-    // chargeDistance: 10
-    // attackSpeed: 150
-    on: {
-      bump(game, actor, zombie) {
-        return attack(game, actor, zombie);
-      },
-    },
-  });
-
-  install$3({
-    id: "Skeleton",
-    ch: "s",
-    fg: "white",
-    moveSpeed: 100,
-    health: 6,
-    damage: 0,
-    // rangedDamage: 3,
-    // range: 10,
-    // tooClose: 4,
-    // rangedAttackSpeed: 150,
-    // noticeDistance: 10
-    on: {
-      bump(game, actor, zombie) {
-        return attack(game, actor, zombie);
-      },
-    },
-  });
-
-  /*
-  PLAYER - health = 100
-  SWORD - 10-16 (10,10,16 thrust)
-  BOW - 10-25
-
-  ZOMBIE - 8 damage, 6 health
-  SKELETON - 3 damage, 6 health
-  VINDICATOR - 9 damage, 11 health
-
-  SQUID COAST
-  - Follow the path
-  - Defeat 1 zombie
-  - Defeat a few zombies (3-5)
-  - Pickup arrows
-  - shoot skeleton
-  - follow path
-  - defeat skeleton and raveger
-  - ambush - defeat 3 ravegers
-  - pickup some gear (fireworks arrow, enchantment point)
-  - pull lever to open gate
-  - shoot skeleton to drop bridge
-  - kill a few more things (skeleton, rageger)
-  - roll across gap to get chest
-  - follow path to ending altar
-
-  CREEPER WOODS
-  - drops - food
-  - fishing rod
-  - fireworks arrow
-  - speed potion
-  - tnt
-  - sheep, cows, etc..
-  - free villagers
-  - strength potion
-  - shadow brew
-
-  SPIDER - 5 hp, 3 damage 
-    << fires webs
-    << ONLY attack if caught in web
-
-  ARMORED SKELETON BOW - 25 hp, 4 damage
-  ARMORED SKELETON POWER BOW - 50 hp, 4 damage
-
-  ARMORED ZOMBIE DAGGER - 25 hp, 10 damage
-  ARMORED ZOMBIE SWORD - 50 hp, 12 damage
-
-  CREEPER - <10 hp, 36 damage
-
-  VINDICATOR - 11 hp, ? damage
-  ARMORED VINDICATOR AXE - 
-  ARMORED VINDICATOR DOUBLE AXE - 
-
-  ENCHANTER - <10 hp
-
-  HAWKBRAND (5) = 13-21, CRITICAL HIT CHANCE
-
-
-  NOTES
-  - SUMMONER - 4 damage, 100 HP
-
-  */
-
   class Player extends Actor {
-    constructor(cfg) {
-      super(cfg);
-      this.goalMap = null;
-      this.mapToMe = null;
-      this.goToGoal = false;
-
-      this.on("add", (game) => {
-        game.level;
-        this.mapToMe = null;
-      });
-      this.on("move", () => {
-        this.updateMapToMe();
-      });
-      this.on("remove", () => {
-        this.mapToMe && grid.free(this.mapToMe);
-        this.clearGoal();
-      });
-    }
-
-    act(game) {
-      this.startTurn(game);
-
-      if (this.goalMap && this.goToGoal) {
-        const step = index$6.nextStep(
-          this.goalMap,
-          this.x,
-          this.y,
-          (x, y) => {
-            if (this._level.actorAt(x, y)) return true;
-            return false;
-          },
-          true
-        );
-        if (step) {
-          if (moveDir(game, this, step, false)) {
-            return;
+      constructor(cfg) {
+          super(cfg);
+          this.goalMap = null;
+          this.mapToMe = null;
+          this.goToGoal = false;
+          this.on("add", (game) => {
+              game.level;
+              this.mapToMe = null;
+          });
+          this.on("move", () => {
+              this.updateMapToMe();
+          });
+          this.on("remove", () => {
+              this.mapToMe && grid.free(this.mapToMe);
+              this.clearGoal();
+          });
+      }
+      act(game) {
+          this.startTurn(game);
+          if (this.goalMap && this.goToGoal) {
+              const step = index$6.nextStep(this.goalMap, this.x, this.y, (x, y) => {
+                  if (this._level.actorAt(x, y))
+                      return true;
+                  return false;
+              }, true);
+              if (step) {
+                  if (moveDir(game, this, step, false)) {
+                      return;
+                  }
+                  game.addMessage("You are blocked.");
+              }
           }
-          game.addMessage("You are blocked.");
-        }
+          this.clearGoal();
+          game.needInput = true;
+          console.log("Player - await input", game.scheduler.time);
       }
-      this.clearGoal();
-
-      game.needInput = true;
-      console.log("Player - await input", game.scheduler.time);
-    }
-
-    setGoal(x, y) {
-      if (!this._level || this.goToGoal) return;
-
-      if (!this.goalMap) {
-        this.goalMap = grid.alloc(this._level.width, this._level.height);
+      setGoal(x, y) {
+          if (!this._level || this.goToGoal)
+              return;
+          if (!this.goalMap) {
+              this.goalMap = grid.alloc(this._level.width, this._level.height);
+          }
+          index$6.calculateDistances(this.goalMap, x, y, (x, y) => this.moveCost(x, y), true);
       }
-      index$6.calculateDistances(
-        this.goalMap,
-        x,
-        y,
-        (x, y) => this.moveCost(x, y),
-        true
-      );
-    }
-
-    clearGoal() {
-      if (this.goalMap) {
-        grid.free(this.goalMap);
-        this.goalMap = null;
+      clearGoal() {
+          if (this.goalMap) {
+              grid.free(this.goalMap);
+              this.goalMap = null;
+          }
+          this.goToGoal = false;
       }
-      this.goToGoal = false;
-    }
-
-    updateMapToMe() {
-      if (
-        !this.mapToMe ||
-        this.mapToMe.width !== this._level.width ||
-        this.mapToMe.height !== this._level.height
-      ) {
-        this.mapToMe && grid.free(this.mapToMe);
-        this.mapToMe = grid.alloc(this._level.width, this._level.height);
+      updateMapToMe() {
+          if (!this.mapToMe ||
+              this.mapToMe.width !== this._level.width ||
+              this.mapToMe.height !== this._level.height) {
+              this.mapToMe && grid.free(this.mapToMe);
+              this.mapToMe = grid.alloc(this._level.width, this._level.height);
+          }
+          index$6.calculateDistances(this.mapToMe, this.x, this.y, (x, y) => this.moveCost(x, y), true);
       }
-      index$6.calculateDistances(
-        this.mapToMe,
-        this.x,
-        this.y,
-        (x, y) => this.moveCost(x, y),
-        true
-      );
-    }
   }
-
   function makePlayer(id) {
-    const kind = kinds[id.toLowerCase()];
-    if (!kind) throw new Error("Failed to find actor kind - " + id);
-
-    return new Player({
-      x: 1,
-      y: 1,
-      depth: 1, // items, actors, player, fx
-      kind,
-      health: kind.health || 10,
-      damage: kind.damage || 2,
-    });
+      const kind = kinds[id.toLowerCase()];
+      if (!kind)
+          throw new Error("Failed to find actor kind - " + id);
+      return new Player({
+          x: 1,
+          y: 1,
+          depth: 1,
+          kind,
+          health: kind.health || 10,
+          damage: kind.damage || 2,
+      });
   }
 
   const tileIds = {};
@@ -17778,7 +17769,7 @@ void main() {
           // priority, etc...
           // this.game && this.game.drawAt(x, y);
           if (tile.on && tile.on.place) {
-              tile.on.place(this.game, x, y);
+              tile.on.place.call(tile, this.game, x, y);
           }
       }
       hasTile(x, y, tile) {
@@ -17873,7 +17864,7 @@ void main() {
       triggerAction(event, actor) {
           const tile = this.getTile(actor.x, actor.y);
           if (tile && tile.on && tile.on[event]) {
-              tile.on[event](this.game, actor);
+              tile.on[event].call(tile, this.game, actor);
           }
       }
   }
@@ -17884,10 +17875,18 @@ void main() {
   //   return level;
   // }
   function from(cfg) {
-      const data = cfg.data;
-      cfg.tiles;
-      const h = cfg.height || data.length;
-      const w = cfg.width || data[0].length;
+      let w = 0;
+      let h = 0;
+      if ("data" in cfg) {
+          const data = cfg.data;
+          cfg.tiles;
+          h = data.length;
+          w = data[0].length;
+      }
+      else {
+          h = cfg.height;
+          w = cfg.width;
+      }
       const level = new Level(w, h);
       level.depth = cfg.depth || 1;
       // loadLevel(level, data, tiles);
@@ -18028,182 +18027,164 @@ void main() {
       level.locations = digger.locations;
   }
 
-  const CONFIG = {
-      LAST_LEVEL: 10,
-  };
-
-  function make(seed = 0) {
-    return new Game(seed);
+  function make(opts = 0) {
+      if (typeof opts === "number") {
+          opts = { seed: opts };
+      }
+      return new Game(opts);
   }
-
   class Game {
-    constructor(seed = 0) {
-      this.player = makePlayer("player");
-      this.scene = null;
-      this.level = null;
-      this.depth = 0;
-      this.scheduler = new scheduler.Scheduler();
-      this.levels = [];
-
-      this.inputQueue = new index.Queue();
-
-      this.seed = seed || random.number(100000);
-      console.log("GAME, seed=", this.seed);
-
-      this.rng = rng.make(this.seed);
-      this.seeds = [];
-      for (let i = 0; i < CONFIG.LAST_LEVEL; ++i) {
-        const levelSeed = this.rng.number(100000);
-        this.seeds.push(levelSeed);
-        console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
-      }
-
-      this.messages = new message.Cache({ reverseMultiLine: true });
-      this.events = new index.Events(this);
-
-      // TODO - Get these as parameters...
-      // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
-      this.events.on("dir", (e) => {
-        moveDir(this, this.player, e.dir);
-      });
-      this.events.on("a", (e) => {
-        attack(this, this.player);
-      });
-      this.events.on(" ", (e) => {
-        idle(this, this.player);
-      });
-      this.events.on(">", (e) => {
-        climb(this, this.player);
-      });
-      this.events.on("z", (e) => {
-        spawn(this.level, "zombie", this.player.x, this.player.y);
-      });
-    }
-
-    startLevel(scene, width, height) {
-      this.scene = scene;
-      this.depth += 1;
-      this.scheduler.clear();
-
-      // let level = LEVEL.levels.find((l) => l.depth === this.depth);
-      // if (!level) {
-      const level = from({
-        width: 60,
-        height: 35,
-        depth: this.depth,
-        seed: this.seeds[this.depth - 1],
-      });
-      // LEVEL.levels.push(level);
-      // } else if (level.width != 60 || level.height != 35) {
-      //   throw new Error(
-      //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
-      //   );
-      // }
-      this.level = level;
-      this.needInput = false;
-
-      this.scene.needsDraw = true;
-
-      // we want the events that the widgets ignore...
-      const cancelEvents = scene.load({
-        update: () => this.update(),
-        keypress: (e) => this.keypress(e),
-        click: (e) => this.click(e),
-      });
-      scene.once("stop", cancelEvents);
-
-      level.start(this);
-      this.tick();
-    }
-
-    lose() {
-      this.scene.trigger("lose", this);
-    }
-
-    win() {
-      this.scene.trigger("win", this);
-    }
-
-    update() {
-      while (this.inputQueue.length && this.needInput) {
-        const e = this.inputQueue.dequeue();
-        e.dispatch(this.events);
-      }
-
-      if (this.needInput) return;
-
-      let filter = false;
-      let actor = this.scheduler.pop();
-      while (actor) {
-        if (typeof actor === "function") {
-          actor(this);
-          return; // lets do promises, etc...
-        } else if (actor.health <= 0) {
-          // skip
-          filter = true;
-        } else if (actor === this.player) {
-          actor.act(this);
-          if (filter) {
-            actors = actors.filter((a) => a && a.health > 0);
-          }
-          this.scene.needsDraw = true;
-          return;
-        } else {
-          actor.act(this);
-        }
-        if (this.scene.timers.length || this.scene.tweens.length) {
-          return;
-        }
-        if (this.scene.paused.update) {
-          return;
-        }
-        actor = this.scheduler.pop();
-      }
-
-      // no other actors
-      this.needInput = true;
-    }
-
-    //   input(e) {
-    //     this.inputQueue.enqueue(e.clone());
-    //     e.stopPropagation();
-    //   }
-
-    keypress(e) {
-      this.inputQueue.enqueue(e.clone());
-      e.stopPropagation();
-    }
-
-    click(e) {
-      this.inputQueue.enqueue(e.clone());
-      e.stopPropagation();
-    }
-
-    tick() {
-      this.level.tick(this);
-      this.wait(100, () => this.tick());
-    }
-
-    endTurn(actor, time) {
-      if (!actor.hasActed()) {
-        actor.endTurn(this, time);
-        this.scheduler.push(actor, time);
-        if (actor === this.player) {
+      constructor(opts) {
           this.needInput = false;
-        }
-      } else {
-        console.log("double end turn.!");
+          this.player = makePlayer("player");
+          this.app = opts.app || null;
+          this.scene = null;
+          this.level = null;
+          this.depth = 0;
+          this.scheduler = new scheduler.Scheduler();
+          this.inputQueue = new index.Queue();
+          this.seed = opts.seed || random.number(100000);
+          console.log("GAME, seed=", this.seed);
+          this.rng = rng.make(this.seed);
+          this.seeds = [];
+          const LAST_LEVEL = this.app ? this.app.data.get("LAST_LEVEL") : 10;
+          for (let i = 0; i < LAST_LEVEL; ++i) {
+              const levelSeed = this.rng.number(100000);
+              this.seeds.push(levelSeed);
+              console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
+          }
+          this.messages = new message.Cache({ reverseMultiLine: true });
+          this.events = new index.Events(this);
+          // TODO - Get these as parameters...
+          // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
+          this.events.on("dir", (e) => {
+              moveDir(this, this.player, e.dir);
+          });
+          this.events.on("a", (e) => {
+              attack(this, this.player);
+          });
+          this.events.on(" ", (e) => {
+              idle(this, this.player);
+          });
+          this.events.on(">", (e) => {
+              climb(this, this.player);
+          });
+          this.events.on("z", (e) => {
+              spawn(this.level, "zombie", this.player.x, this.player.y);
+          });
       }
-    }
-
-    wait(time, fn) {
-      this.scheduler.push(fn, time);
-    }
-
-    addMessage(msg) {
-      this.messages.add(msg);
-      this.scene.get("MESSAGES").draw(this.scene.buffer);
-    }
+      startLevel(scene, width, height) {
+          this.scene = scene;
+          this.depth += 1;
+          this.scheduler.clear();
+          // let level = LEVEL.levels.find((l) => l.depth === this.depth);
+          // if (!level) {
+          const level = from({
+              width: 60,
+              height: 35,
+              depth: this.depth,
+              seed: this.seeds[this.depth - 1],
+          });
+          // LEVEL.levels.push(level);
+          // } else if (level.width != 60 || level.height != 35) {
+          //   throw new Error(
+          //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+          //   );
+          // }
+          this.level = level;
+          this.needInput = false;
+          this.scene.needsDraw = true;
+          // we want the events that the widgets ignore...
+          const cancelEvents = scene.load({
+              update: () => this.update(),
+              keypress: (e) => this.keypress(e),
+              click: (e) => this.click(e),
+          });
+          scene.once("stop", cancelEvents);
+          level.start(this);
+          this.tick();
+      }
+      lose() {
+          this.scene.trigger("lose", this);
+      }
+      win() {
+          this.scene.trigger("win", this);
+      }
+      update() {
+          while (this.inputQueue.length && this.needInput) {
+              const e = this.inputQueue.dequeue();
+              e && e.dispatch(this.events);
+          }
+          if (this.needInput)
+              return;
+          let filter = false;
+          let actor = this.scheduler.pop();
+          while (actor) {
+              if (typeof actor === "function") {
+                  actor(this);
+                  return; // lets do promises, etc...
+              }
+              else if (actor.health <= 0) {
+                  // skip
+                  filter = true;
+              }
+              else if (actor === this.player) {
+                  actor.act(this);
+                  if (filter) {
+                      this.level.actors = this.level.actors.filter((a) => a && a.health > 0);
+                  }
+                  this.scene.needsDraw = true;
+                  return;
+              }
+              else {
+                  actor.act(this);
+              }
+              if (this.scene.timers.length || this.scene.tweens.length) {
+                  return;
+              }
+              if (this.scene.paused.update) {
+                  return;
+              }
+              actor = this.scheduler.pop();
+          }
+          // no other actors
+          this.needInput = true;
+      }
+      //   input(e) {
+      //     this.inputQueue.enqueue(e.clone());
+      //     e.stopPropagation();
+      //   }
+      keypress(e) {
+          this.inputQueue.enqueue(e.clone());
+          e.stopPropagation();
+      }
+      click(e) {
+          this.inputQueue.enqueue(e.clone());
+          e.stopPropagation();
+      }
+      tick() {
+          this.level.tick(this);
+          this.wait(100, () => this.tick());
+      }
+      endTurn(actor, time) {
+          if (!actor.hasActed()) {
+              actor.endTurn(this, time);
+              this.scheduler.push(actor, time);
+              if (actor === this.player) {
+                  this.needInput = false;
+              }
+          }
+          else {
+              console.log("double end turn.!");
+          }
+      }
+      wait(time, fn) {
+          this.scheduler.push(fn, time);
+      }
+      addMessage(msg) {
+          this.messages.add(msg);
+          this.scene.get("MESSAGES").draw(this.scene.buffer);
+      }
   }
 
   const title = {
@@ -18225,7 +18206,7 @@ void main() {
         prompt.on("stop", (seed) => {
           e.stopPropagation();
           if (seed) {
-            const game = make(seed);
+            const game = make({ seed, app: this.app });
             this.app.scenes.start("level", game);
           }
         });
@@ -18236,7 +18217,7 @@ void main() {
         e.stopPropagation();
       });
       this.on("keypress", (e) => {
-        const game = make();
+        const game = make({ app: this.app });
         this.app.scenes.start("level", game);
         e.stopPropagation();
       });
@@ -18705,7 +18686,8 @@ void main() {
       // },
 
       win() {
-        if (this.data.level.depth === CONFIG.LAST_LEVEL) {
+        const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
+        if (this.data.level.depth === LAST_LEVEL) {
           this.app.scenes.start("win", this.data);
         } else {
           this.app.scenes.start("stuff", this.data);
@@ -18873,123 +18855,253 @@ void main() {
 
   index.installScene("target", TargetScene);
 
-  const ArchiveScene = {
-    bg: index$9.BLACK.alpha(50),
-    start(source) {
-      this.data.messages = source.messages;
-
-      this.data.shown = source.startHeight;
-      this.data.startHeight = source.startHeight;
-
-      this.data.mode = "forward";
-      this.data.totalCount = source.messages.length;
-
-      source.messages.confirmAll();
-      this.wait(16, () => forward(this));
-    },
-    draw(buf) {
-      drawArchive(this);
-    },
-    keypress(e) {
-      next(this);
-      e.stopPropagation();
-    },
-    click(e) {
-      next(this);
-      e.stopPropagation();
-    },
+  const archive = {
+      bg: index$9.BLACK.alpha(50),
+      start(source) {
+          this.data.messages = source.messages;
+          this.data.shown = source.startHeight;
+          this.data.startHeight = source.startHeight;
+          this.data.mode = "forward";
+          this.data.totalCount = source.messages.length;
+          source.messages.confirmAll();
+          this.wait(16, () => forward(this));
+      },
+      draw(buf) {
+          drawArchive(this);
+      },
+      keypress(e) {
+          next(this);
+          e.stopPropagation();
+      },
+      click(e) {
+          next(this);
+          e.stopPropagation();
+      },
   };
-
-  index.installScene("archive", ArchiveScene);
-
+  // @ts-ignore
+  index.installScene("archive", archive);
   function next(scene) {
-    if (scene.data.mode === "ack") {
-      scene.data.mode = "reverse";
-      scene.needsDraw = true;
-      if (scene.data.timerCancel) {
-        scene.data.timerCancel();
+      if (scene.data.mode === "ack") {
+          scene.data.mode = "reverse";
+          scene.needsDraw = true;
+          if (scene.data.timerCancel) {
+              scene.data.timerCancel();
+          }
+          scene.data.timerCancel = scene.wait(16, () => reverse(scene));
       }
-      scene.data.timerCancel = scene.wait(16, () => reverse(scene));
-    } else if (scene.data.mode === "reverse") {
-      scene.stop();
-    } else {
-      scene.data.mode = "ack";
-      scene.data.shown = scene.data.totalCount;
-      if (scene.data.timerCancel) {
-        scene.data.timerCancel();
-        scene.data.timerCancel = null;
+      else if (scene.data.mode === "reverse") {
+          scene.stop();
       }
-      scene.needsDraw = true;
-    }
+      else {
+          scene.data.mode = "ack";
+          scene.data.shown = scene.data.totalCount;
+          if (scene.data.timerCancel) {
+              scene.data.timerCancel();
+              scene.data.timerCancel = null;
+          }
+          scene.needsDraw = true;
+      }
   }
-
   function forward(scene) {
-    // console.log('forward');
-
-    ++scene.data.shown;
-    scene.data.timerCancel = null;
-    scene.needsDraw = true;
-    if (scene.data.shown < scene.data.totalCount) {
-      scene.data.timerCancel = scene.wait(16, () => forward(scene));
-    } else {
-      scene.data.mode = "ack";
-      scene.data.shown = scene.data.totalCount;
-    }
-  }
-
-  function reverse(scene) {
-    // console.log('reverse');
-
-    --scene.data.shown;
-    scene.data.timerCancel = null;
-    if (scene.data.shown <= scene.data.startHeight) {
-      scene.stop();
-    } else {
+      // console.log('forward');
+      ++scene.data.shown;
+      scene.data.timerCancel = null;
       scene.needsDraw = true;
-      scene.data.timerCancel = scene.wait(16, () => reverse(scene));
-    }
+      if (scene.data.shown < scene.data.totalCount) {
+          scene.data.timerCancel = scene.wait(16, () => forward(scene));
+      }
+      else {
+          scene.data.mode = "ack";
+          scene.data.shown = scene.data.totalCount;
+      }
   }
-
+  function reverse(scene) {
+      // console.log('reverse');
+      --scene.data.shown;
+      scene.data.timerCancel = null;
+      if (scene.data.shown <= scene.data.startHeight) {
+          scene.stop();
+      }
+      else {
+          scene.needsDraw = true;
+          scene.data.timerCancel = scene.wait(16, () => reverse(scene));
+      }
+  }
   function drawArchive(scene) {
-    let fadePercent = 0;
-    const dbuf = scene.buffer;
-    const fg = index$9.from("purple");
-    const bg = index$9.from("black");
-
-    // const dM = reverse ? -1 : 1;
-    // const startM = reverse ? totalMessageCount : scene.bounds.height;
-    // const endM = reverse
-    //     ? scene.bounds.height + dM + 1
-    //     : totalMessageCount + dM;
-
-    const startY = scene.height - scene.data.shown;
-    const endY = scene.height - 1;
-    const dy = 1;
-
-    dbuf.fillRect(
-      0,
-      Math.min(startY, endY),
-      scene.width,
-      scene.data.shown,
-      " ",
-      bg,
-      bg
-    );
-
-    scene.data.messages.forEach((line, _confirmed, j) => {
-      const y = startY + j * dy;
-      if (y > endY) return;
-      fadePercent = Math.floor((50 * j) / scene.data.shown);
-      const fgColor = fg.mix(scene.bg, fadePercent);
-      dbuf.drawText(0, y, line, fgColor, bg);
-    });
-
-    if (scene.data.mode === "ack") {
-      const y = dbuf.height - 1;
-      const x = dbuf.width - 8; // But definitely on the screen - overwrite some text if necessary
-      dbuf.wrapText(x, y, 8, "--DONE--", bg, fg);
-    }
+      let fadePercent = 0;
+      const dbuf = scene.buffer;
+      const fg = index$9.from("purple");
+      const bg = index$9.from("black");
+      // const dM = reverse ? -1 : 1;
+      // const startM = reverse ? totalMessageCount : scene.bounds.height;
+      // const endM = reverse
+      //     ? scene.bounds.height + dM + 1
+      //     : totalMessageCount + dM;
+      const startY = scene.height - scene.data.shown;
+      const endY = scene.height - 1;
+      const dy = 1;
+      dbuf.fillRect(0, Math.min(startY, endY), scene.width, scene.data.shown, " ", bg, bg);
+      scene.data.messages.forEach((line, _confirmed, j) => {
+          const y = startY + j * dy;
+          if (y > endY)
+              return;
+          fadePercent = Math.floor((50 * j) / scene.data.shown);
+          const fgColor = fg.mix(scene.bg, fadePercent);
+          dbuf.drawText(0, y, line, fgColor, bg);
+      });
+      if (scene.data.mode === "ack") {
+          const y = dbuf.height - 1;
+          const x = dbuf.width - 8; // But definitely on the screen - overwrite some text if necessary
+          dbuf.wrapText(x, y, 8, "--DONE--", bg, fg);
+      }
   }
+
+  install$3({
+      id: "Player",
+      ch: "@",
+      fg: "white",
+      bg: -1,
+      moveSpeed: 100,
+      health: 100,
+      damage: 10,
+  });
+  install$3({
+      id: "Zombie",
+      ch: "z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 6,
+      damage: 8,
+      // attackSpeed: 200
+      on: {
+          bump(game, actor, zombie) {
+              return attack(game, actor, zombie);
+          },
+      },
+  });
+  install$3({
+      id: "Armored Zombie",
+      ch: "Z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 25,
+      damage: 10,
+      // attackSpeed: 200
+      on: {
+          bump(game, actor, zombie) {
+              return attack(game, actor, zombie);
+          },
+      },
+  });
+  install$3({
+      id: "Armored Zombie Sword",
+      ch: "Z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 50,
+      damage: 12,
+      // attackSpeed: 200
+      on: {
+          bump(game, actor, zombie) {
+              return attack(game, actor, zombie);
+          },
+      },
+  });
+  install$3({
+      id: "Vindicator",
+      ch: "v",
+      fg: "blue",
+      moveSpeed: 100,
+      health: 11,
+      damage: 9,
+      // chargeSpeed: 75
+      // chargeDistance: 10
+      // attackSpeed: 150
+      on: {
+          bump(game, actor, zombie) {
+              return attack(game, actor, zombie);
+          },
+      },
+  });
+  install$3({
+      id: "Skeleton",
+      ch: "s",
+      fg: "white",
+      moveSpeed: 100,
+      health: 6,
+      damage: 0,
+      // rangedDamage: 3,
+      // range: 10,
+      // tooClose: 4,
+      // rangedAttackSpeed: 150,
+      // noticeDistance: 10
+      on: {
+          bump(game, actor, zombie) {
+              return attack(game, actor, zombie);
+          },
+      },
+  });
+  /*
+  PLAYER - health = 100
+  SWORD - 10-16 (10,10,16 thrust)
+  BOW - 10-25
+
+  ZOMBIE - 8 damage, 6 health
+  SKELETON - 3 damage, 6 health
+  VINDICATOR - 9 damage, 11 health
+
+  SQUID COAST
+  - Follow the path
+  - Defeat 1 zombie
+  - Defeat a few zombies (3-5)
+  - Pickup arrows
+  - shoot skeleton
+  - follow path
+  - defeat skeleton and raveger
+  - ambush - defeat 3 ravegers
+  - pickup some gear (fireworks arrow, enchantment point)
+  - pull lever to open gate
+  - shoot skeleton to drop bridge
+  - kill a few more things (skeleton, rageger)
+  - roll across gap to get chest
+  - follow path to ending altar
+
+  CREEPER WOODS
+  - drops - food
+  - fishing rod
+  - fireworks arrow
+  - speed potion
+  - tnt
+  - sheep, cows, etc..
+  - free villagers
+  - strength potion
+  - shadow brew
+
+  SPIDER - 5 hp, 3 damage
+    << fires webs
+    << ONLY attack if caught in web
+
+  ARMORED SKELETON BOW - 25 hp, 4 damage
+  ARMORED SKELETON POWER BOW - 50 hp, 4 damage
+
+  ARMORED ZOMBIE DAGGER - 25 hp, 10 damage
+  ARMORED ZOMBIE SWORD - 50 hp, 12 damage
+
+  CREEPER - <10 hp, 36 damage
+
+  VINDICATOR - 11 hp, ? damage
+  ARMORED VINDICATOR AXE -
+  ARMORED VINDICATOR DOUBLE AXE -
+
+  ENCHANTER - <10 hp
+
+  HAWKBRAND (5) = 13-21, CRITICAL HIT CHANCE
+
+
+  NOTES
+  - SUMMONER - 4 damage, 100 HP
+
+  */
 
   function start() {
       // create the user interface
@@ -19005,6 +19117,9 @@ void main() {
               lose: lose,
               help: help,
               stuff: stuff,
+          },
+          data: {
+              LAST_LEVEL: 10,
           },
           start: "title",
       });

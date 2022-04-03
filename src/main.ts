@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
-
 import * as SCENES from "./scenes/index";
+import "./actors";
 
 function start() {
   // create the user interface
@@ -17,6 +17,9 @@ function start() {
       lose: SCENES.lose,
       help: SCENES.help,
       stuff: SCENES.stuff,
+    },
+    data: {
+      LAST_LEVEL: 10,
     },
     start: "title",
   });

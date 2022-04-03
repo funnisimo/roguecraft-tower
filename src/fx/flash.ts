@@ -26,7 +26,7 @@ export function flash(
   color: GWU.color.ColorBase = "white",
   ms = 300
 ) {
-  const scene = game.scene;
+  const scene = game.scene!;
   scene.pause({ update: true });
 
   const fx = new FX({ x, y, bg: color, depth: 4 });

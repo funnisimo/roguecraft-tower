@@ -2,11 +2,20 @@ import * as GWU from "gw-utils";
 import * as GWD from "gw-dig";
 import { CallbackFn, Game } from ".";
 import { Actor } from "../actor";
+import { Obj } from "./obj";
 
 export interface TileEvents {
-  place?: (game: Game, x: number, y: number) => void;
-  tick?: (game: Game, x: number, y: number) => void;
-  enter?: (game: Game, actor: Actor) => void;
+  // tile is this
+  place?: (this: TileInfo, game: Game, x: number, y: number) => void;
+  tick?: (this: TileInfo, game: Game, x: number, y: number) => void;
+
+  // x, y from actor, tile is this
+  enter?: (this: TileInfo, game: Game, actor: Actor) => void;
+  exit?: (this: TileInfo, game: Game, actor: Actor) => void;
+
+  // x, y from item, tile is this
+  drop?: (this: TileInfo, game: Game, item: Obj) => void;
+  pickup?: (this: TileInfo, game: Game, item: Obj) => void;
 
   [key: string]: CallbackFn | undefined;
 }
@@ -84,7 +93,7 @@ install({
   on: {
     enter(game, actor) {
       game.addMessage("Going up!");
-      game.scene.trigger("win");
+      game.scene!.trigger("win");
     },
   },
 });
