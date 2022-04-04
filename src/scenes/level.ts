@@ -51,7 +51,7 @@ export const level = {
       e.stopPropagation();
     });
 
-    map.on("mousemove", (e) => {
+    map.on("mousemove", (e: GWU.app.Event) => {
       const game = this.data;
       const level = game.level;
 
@@ -66,13 +66,13 @@ export const level = {
       // const path = player.pathTo(e);
       // game.level.setPath(path);
     });
-    map.on("mouseleave", (e) => {
+    map.on("mouseleave", (e: GWU.app.Event) => {
       const game = this.data;
       sidebar.clearFocus();
       // game.level.clearPath();
       game.player.clearGoal();
     });
-    map.on("click", (e) => {
+    map.on("click", (e: GWU.app.Event) => {
       console.log("map click - player go to:", e.x, e.y);
       const game = this.data;
       const level = game.level;
