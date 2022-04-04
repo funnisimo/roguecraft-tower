@@ -18188,40 +18188,38 @@ void main() {
   }
 
   const title = {
-    create() {
-      this.bg = "dark_gray";
-      const build = new index$1$1.Builder(this);
-      build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-      build.pos(10, 17).text("TOWER", { fg: "green" });
-
-      build.pos(10, 30).text("Press any key to start.");
-      build.pos(10, 32).text("Press s to enter seed.");
-      build.pos(10, 34).text("Press h for help.");
-
-      this.on("s", (e) => {
-        const prompt = this.app.prompt("What is your starting seed?", {
-          numbersOnly: true,
-          bg: index$9.BLACK.alpha(50),
-        });
-        prompt.on("stop", (seed) => {
-          e.stopPropagation();
-          if (seed) {
-            const game = make({ seed, app: this.app });
-            this.app.scenes.start("level", game);
-          }
-        });
-        e.stopPropagation();
-      });
-      this.on("h", (e) => {
-        this.app.scenes.start("help");
-        e.stopPropagation();
-      });
-      this.on("keypress", (e) => {
-        const game = make({ app: this.app });
-        this.app.scenes.start("level", game);
-        e.stopPropagation();
-      });
-    },
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 17).text("TOWER", { fg: "green" });
+          build.pos(10, 30).text("Press any key to start.");
+          build.pos(10, 32).text("Press s to enter seed.");
+          build.pos(10, 34).text("Press h for help.");
+          this.on("s", (e) => {
+              const prompt = this.app.prompt("What is your starting seed?", {
+                  numbersOnly: true,
+                  bg: index$9.BLACK.alpha(50),
+              });
+              prompt.on("stop", (seed) => {
+                  e.stopPropagation();
+                  if (seed) {
+                      const game = make({ seed, app: this.app });
+                      this.app.scenes.start("level", game);
+                  }
+              });
+              e.stopPropagation();
+          });
+          this.on("h", (e) => {
+              this.app.scenes.start("help");
+              e.stopPropagation();
+          });
+          this.on("keypress", (e) => {
+              const game = make({ app: this.app });
+              this.app.scenes.start("level", game);
+              e.stopPropagation();
+          });
+      },
   };
 
   function messages(scene, y) {
@@ -18350,184 +18348,135 @@ void main() {
     return widget;
   }
 
-  function sidebar(scene, x, height) {
-    const widget = index$1$1.make({
-      id: "SIDEBAR",
-      tag: "sidebar",
-
-      x: x,
-      y: 0,
-      width: scene.width - x,
-      height: height,
-
-      scene,
-      bg: index$9.from("dark_gray"),
-
-      draw(buf) {
-        const game = this.scene.data;
-        const level = game.level;
-
-        buf.fillRect(
-          this.bounds.x,
-          this.bounds.y,
-          this.bounds.width,
-          this.bounds.height,
-          " ",
-          this._used.bg,
-          this._used.bg
-        );
-
-        const x = this.bounds.x + 1;
-        let y = this.bounds.y;
-
-        buf.setClip(this.bounds);
-
-        buf.drawText(x);
-        y += buf.drawText(x, y, "{Roguecraft}", "yellow");
-        y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-        y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
-        y += 1;
-
-        let px = game.player.x;
-        let py = game.player.y;
-        // if (this.focus[0] != -1) {
-        //   px = this.focus[0];
-        //   py = this.focus[1];
-        // }
-        this.entries = level.actors.filter(
-          (a) => a && a !== game.player && a.health > 0
-        );
-        this.entries.sort(
-          (a, b) =>
-            xy.distanceBetween(a.x, a.y, px, py) -
-            xy.distanceBetween(b.x, b.y, px, py)
-        );
-
-        let focused = this.entries.find((a) => xy.equals(a, this.focus));
-
-        let used = drawPlayer(buf, x, y, game.player);
-        game.player.data.sideY = y;
-        game.player.data.sideH = used;
-        if (xy.equals(game.player, this.focus)) {
-          buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-          focused = game.player;
-        } else if (focused) {
-          buf.mix(this._used.bg, 50, x - 1, y, this.bounds.width, used);
-        }
-        y += used + 1;
-
-        this.entries.forEach((a) => {
-          const used = drawActor(buf, x, y, a);
-
-          if (a === focused) {
-            buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-          } else if (focused) {
-            buf.mix(this._used.bg, 50, x - 1, y, this.bounds.width, used);
+  class Sidebar extends index.Widget {
+      constructor(opts) {
+          super(opts);
+          this._focus = [-1, -1];
+          this.entries = [];
+          this.on("draw", this._draw.bind(this));
+          this.on("mousemove", this._mousemove.bind(this));
+      }
+      setFocus(x, y) {
+          this._focus = [x, y];
+      }
+      clearFocus() {
+          this._focus = [-1, -1];
+      }
+      drawPlayer(buf, x, y, player) {
+          buf.drawText(x, y, "Hero");
+          this.drawHealth(buf, x, y + 1, 28, player);
+          // buf.drawText(x, y + 1, "" + player.health);
+          return 2;
+      }
+      drawActor(buf, x, y, actor) {
+          buf.drawText(x, y, actor.kind.id, actor.kind.fg);
+          this.drawHealth(buf, x, y + 1, 28, actor);
+          // buf.drawText(x, y + 1, "" + actor.health, "red");
+          return 2;
+      }
+      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
+          const pct = val / max;
+          const full = Math.floor(w * pct);
+          const partialPct = Math.floor(100 * (w * pct - full));
+          buf.fillRect(x, y, full, 1, null, null, bg);
+          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
+          if (text && text.length) {
+              buf.drawText(x, y, text, fg, null, w, "center");
           }
-          a.data.sideY = y;
-          a.data.sideH = used;
+      }
+      drawHealth(buf, x, y, w, actor) {
+          const pct = actor.health / actor.kind.health;
+          const bg = index$9.colors.green.mix(index$9.colors.red, 100 * (1 - pct));
+          this.drawProgress(buf, x, y, w, "white", bg, actor.health, actor.kind.health, "HEALTH");
+      }
+      _draw(buf) {
+          const game = this.scene.data;
+          const level = game.level;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+          const x = this.bounds.x + 1;
+          let y = this.bounds.y;
+          buf.setClip(this.bounds);
+          // buf.drawText(x);
+          y += buf.drawText(x, y, "{Roguecraft}", "yellow");
+          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
+          y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
+          y += 1;
+          let px = game.player.x;
+          let py = game.player.y;
+          // if (this._focus[0] != -1) {
+          //   px = this._focus[0];
+          //   py = this._focus[1];
+          // }
+          this.entries = level.actors.filter((a) => a && a !== game.player && a.health > 0);
+          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
+              xy.distanceBetween(b.x, b.y, px, py));
+          let focused = this.entries.find((a) => xy.equals(a, this._focus));
+          let used = this.drawPlayer(buf, x, y, game.player);
+          game.player.data.sideY = y;
+          game.player.data.sideH = used;
+          if (xy.equals(game.player, this._focus)) {
+              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              focused = game.player;
+          }
+          else if (focused) {
+              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+          }
           y += used + 1;
-        });
-
-        y += 1;
-        y += buf.drawText(x, y, "Press Enter to win.");
-        y += buf.drawText(x, y, "Press Escape to lose.");
-
-        buf.clearClip();
-      },
-
-      mousemove(e) {
-        const wasFocus = this.focus.slice();
-        this.focus[0] = -1;
-        this.focus[1] = -1;
-        const game = this.scene.data;
-        const player = game.player;
-        if (
-          player.data.sideY <= e.y &&
-          player.data.sideY + player.data.sideH >= e.y
-        ) {
-          this.focus[0] = player.x;
-          this.focus[1] = player.y;
-        } else {
           this.entries.forEach((a) => {
-            if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
-              this.focus[0] = a.x;
-              this.focus[1] = a.y;
-            }
+              const used = this.drawActor(buf, x, y, a);
+              if (a === focused) {
+                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              }
+              else if (focused) {
+                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+              }
+              a.data.sideY = y;
+              a.data.sideH = used;
+              y += used + 1;
           });
-        }
-        if (!xy.equals(wasFocus, this.focus)) {
-          this.trigger("focus", this.focus);
-          this.needsDraw = true;
-        }
-        e.stopPropagation();
-      },
-
-      // click(e) {
-      //   e.stopPropagation();
-      // },
-
-      with: {
-        setFocus,
-        clearFocus,
-        focus: [-1, -1],
-        entries: [],
-      },
-    });
-
-    return widget;
+          y += 1;
+          y += buf.drawText(x, y, "Press Enter to win.");
+          y += buf.drawText(x, y, "Press Escape to lose.");
+          buf.clearClip();
+      }
+      _mousemove(e) {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+          const game = this.scene.data;
+          const player = game.player;
+          if (player.data.sideY <= e.y &&
+              player.data.sideY + player.data.sideH >= e.y) {
+              this._focus[0] = player.x;
+              this._focus[1] = player.y;
+          }
+          else {
+              this.entries.forEach((a) => {
+                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
+                      this._focus[0] = a.x;
+                      this._focus[1] = a.y;
+                  }
+              });
+          }
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.trigger("focus", this._focus);
+              this.needsDraw = true;
+          }
+          e.stopPropagation();
+      }
   }
-
-  function setFocus(game, x, y) {
-    this.focus = [x, y];
-  }
-
-  function clearFocus(game) {
-    this.focus = [-1, -1];
-  }
-
-  function drawPlayer(buf, x, y, player) {
-    buf.drawText(x, y, "Hero");
-
-    drawHealth(buf, x, y + 1, 28, player);
-    // buf.drawText(x, y + 1, "" + player.health);
-    return 2;
-  }
-
-  function drawActor(buf, x, y, actor) {
-    buf.drawText(x, y, actor.kind.id, actor.kind.fg);
-    drawHealth(buf, x, y + 1, 28, actor);
-    // buf.drawText(x, y + 1, "" + actor.health, "red");
-    return 2;
-  }
-
-  function drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
-    const pct = val / max;
-    const full = Math.floor(w * pct);
-    const partialPct = Math.floor(100 * (w * pct - full));
-
-    buf.fillRect(x, y, full, 1, null, null, bg);
-    buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
-
-    if (text && text.length) {
-      buf.drawText(x, y, text, fg, null, w, "center");
-    }
-  }
-
-  function drawHealth(buf, x, y, w, actor) {
-    const pct = actor.health / actor.kind.health;
-    const bg = index$9.colors.green.mix(index$9.colors.red, 100 * (1 - pct));
-    drawProgress(
-      buf,
-      x,
-      y,
-      w,
-      "white",
-      bg,
-      actor.health,
-      actor.kind.health,
-      "HEALTH"
-    );
+  function sidebar(scene, x, height) {
+      const widget = new Sidebar({
+          id: "SIDEBAR",
+          tag: "sidebar",
+          x: x,
+          y: 0,
+          width: scene.width - x,
+          height: height,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
   }
 
   function flavor(scene, x, y) {
@@ -18578,139 +18527,125 @@ void main() {
     return widget;
   }
 
-  // import * as ACTOR from "../actor/index";
-  // import * as FX from "../fx/index";
-  // import * as GAME from "../game/index";
-
   const level = {
-    create() {
-      this.bg = "dark_gray";
-      // const level = this;
-
-      const sidebar$1 = sidebar(this, 60, 35);
-      const flavor$1 = flavor(this, 0, 35);
-      const messages$1 = messages(this, 36);
-      const map$1 = map(this, 60, 35);
-
-      sidebar$1.on("focus", (loc) => {
-        loc = loc || [-1, -1];
-        map$1.focus = loc;
-
-        const game = this.data;
-        const player = game.player;
-        if (loc[0] < 0) {
-          // game.level.clearPath();
-          game.player.clearGoal();
-        } else {
-          // highlight path
-          player.setGoal(loc[0], loc[1]);
-          // const player = game.player;
-          // const path = player.pathTo(loc);
-          // game.level.setPath(path);
-        }
-      });
-      sidebar$1.on("choose", (loc) => {
-        console.log("sidebar choose - player go to :", loc[0], loc[1]);
-        const game = this.data;
-        game.player.setGoal(loc[0], loc[1]);
-        game.player.goToGoal = true;
-        game.player.act(game);
-      });
-
-      messages$1.on("click", (e) => {
-        const game = this.data;
-        if (game.messages.length > 10) {
-          this.app.scenes.run("archive", {
-            messages: game.messages,
-            startHeight: 10,
+      create() {
+          this.bg = index$9.from("dark_gray");
+          // const level = this;
+          const sidebar$1 = sidebar(this, 60, 35);
+          const flavor$1 = flavor(this, 0, 35);
+          const messages$1 = messages(this, 36);
+          const map$1 = map(this, 60, 35);
+          sidebar$1.on("focus", (loc) => {
+              loc = loc || [-1, -1];
+              map$1.focus = loc;
+              const game = this.data;
+              const player = game.player;
+              if (loc[0] < 0) {
+                  // game.level.clearPath();
+                  game.player.clearGoal();
+              }
+              else {
+                  // highlight path
+                  player.setGoal(loc[0], loc[1]);
+                  // const player = game.player;
+                  // const path = player.pathTo(loc);
+                  // game.level.setPath(path);
+              }
           });
-        }
-        e.stopPropagation();
-      });
-
-      map$1.on("mousemove", (e) => {
-        const game = this.data;
-        const level = game.level;
-
-        const text = game.level.getFlavor(e.x, e.y);
-        flavor$1.prop("text", text);
-        sidebar$1.setFocus(game, e.x, e.y);
-
-        if (!level.started) return;
-        // highlight path
-        const player = game.player;
-        player.setGoal(e.x, e.y);
-        // const path = player.pathTo(e);
-        // game.level.setPath(path);
-      });
-      map$1.on("mouseleave", (e) => {
-        const game = this.data;
-        sidebar$1.clearFocus(game);
-        // game.level.clearPath();
-        game.player.clearGoal();
-      });
-      map$1.on("click", (e) => {
-        console.log("map click - player go to:", e.x, e.y);
-        const game = this.data;
-        const level = game.level;
-        if (!level.started) return;
-        game.player.setGoal(e.x, e.y);
-        game.player.goToGoal = true;
-        game.player.act(game);
-      });
-    },
-
-    start(game) {
-      this.data = game;
-      game.scene = this;
-
-      // const w = this.get("LEVEL");
-      // w.text("Level: " + game.level);
-
-      // const seed = game.seed || 12345;
-      // const s = this.get("SEED");
-      // s.text("Seed: " + seed);
-
-      game.startLevel(this, 60, 35);
-    },
-
-    on: {
-      // dir(e) {
-      //   GAME.moveDir(this.data, this.data.player, e.dir);
-      // },
-      // a() {
-      //   GAME.attack(this.data, this.data.player);
-      // },
-      // z() {
-      //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
-      // },
-
-      win() {
-        const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
-        if (this.data.level.depth === LAST_LEVEL) {
-          this.app.scenes.start("win", this.data);
-        } else {
-          this.app.scenes.start("stuff", this.data);
-        }
+          sidebar$1.on("choose", (loc) => {
+              console.log("sidebar choose - player go to :", loc[0], loc[1]);
+              const game = this.data;
+              game.player.setGoal(loc[0], loc[1]);
+              game.player.goToGoal = true;
+              game.player.act(game);
+          });
+          messages$1.on("click", (e) => {
+              const game = this.data;
+              if (game.messages.length > 10) {
+                  this.app.scenes.run("archive", {
+                      messages: game.messages,
+                      startHeight: 10,
+                  });
+              }
+              e.stopPropagation();
+          });
+          map$1.on("mousemove", (e) => {
+              const game = this.data;
+              const level = game.level;
+              const text = game.level.getFlavor(e.x, e.y);
+              flavor$1.prop("text", text);
+              sidebar$1.setFocus(e.x, e.y);
+              if (!level.started)
+                  return;
+              // highlight path
+              const player = game.player;
+              player.setGoal(e.x, e.y);
+              // const path = player.pathTo(e);
+              // game.level.setPath(path);
+          });
+          map$1.on("mouseleave", (e) => {
+              const game = this.data;
+              sidebar$1.clearFocus();
+              // game.level.clearPath();
+              game.player.clearGoal();
+          });
+          map$1.on("click", (e) => {
+              console.log("map click - player go to:", e.x, e.y);
+              const game = this.data;
+              const level = game.level;
+              if (!level.started)
+                  return;
+              game.player.setGoal(e.x, e.y);
+              game.player.goToGoal = true;
+              game.player.act(game);
+          });
       },
-      lose() {
-        this.app.scenes.start("lose", this.data);
+      start(game) {
+          this.data = game;
+          game.scene = this;
+          // const w = this.get("LEVEL");
+          // w.text("Level: " + game.level);
+          // const seed = game.seed || 12345;
+          // const s = this.get("SEED");
+          // s.text("Seed: " + seed);
+          game.startLevel(this, 60, 35);
       },
-
-      keypress(e) {
-        this.get("SIDEBAR").clearFocus();
-        // this.data.level.clearPath();
-        this.data.player.clearGoal();
-
-        if (e.key == "Enter") {
-          this.trigger("win"); // todo - remove
-        }
-        if (e.key == "Escape") {
-          this.trigger("lose"); // todo -- remove
-        }
-        e.stopPropagation();
+      on: {
+          // dir(e) {
+          //   GAME.moveDir(this.data, this.data.player, e.dir);
+          // },
+          // a() {
+          //   GAME.attack(this.data, this.data.player);
+          // },
+          // z() {
+          //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
+          // },
+          win() {
+              const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
+              if (this.data.level.depth === LAST_LEVEL) {
+                  this.app.scenes.start("win", this.data);
+              }
+              else {
+                  this.app.scenes.start("stuff", this.data);
+              }
+          },
+          lose() {
+              this.app.scenes.start("lose", this.data);
+          },
+          keypress(e) {
+              const sidebar = this.get("SIDEBAR");
+              sidebar.clearFocus();
+              // this.data.level.clearPath();
+              this.data.player.clearGoal();
+              if (e.key == "Enter") {
+                  this.trigger("win"); // todo - remove
+              }
+              if (e.key == "Escape") {
+                  this.trigger("lose"); // todo -- remove
+              }
+              e.stopPropagation();
+          },
       },
-    },
   };
 
   const win = {
@@ -18753,106 +18688,98 @@ void main() {
   };
 
   const stuff = {
-    create() {
-      this.bg = "dark_gray";
-      const build = new index$1$1.Builder(this);
-      build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-      build.pos(10, 17).text("STUFF", { fg: "green" });
-
-      build.pos(10, 22).text("For Level: {}", { fg: "pink", id: "LEVEL" });
-
-      build.pos(10, 30).text("Press any key to goto next level.");
-
-      this.on("keypress", () => {
-        this.app.scenes.start("level", this.data);
-      });
-    },
-    start(game) {
-      this.data = game;
-
-      const w = this.get("LEVEL");
-      w.text("For Level: " + game.level.depth);
-    },
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 17).text("STUFF", { fg: "green" });
+          build.pos(10, 22).text("For Level: {}", { fg: "pink", id: "LEVEL" });
+          build.pos(10, 30).text("Press any key to goto next level.");
+          this.on("keypress", () => {
+              this.app.scenes.start("level", this.data);
+          });
+      },
+      start(game) {
+          this.data = game;
+          const w = this.get("LEVEL");
+          w && w.text("For Level: " + game.level.depth);
+      },
   };
 
   const help = {
-    create() {
-      this.bg = "dark_gray";
-      const build = new index$1$1.Builder(this);
-      build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-      build.pos(10, 17).text("HELP!", { fg: "green" });
-
-      build.pos(10, 30).text("Press any key to return to title.");
-
-      this.on("keypress", () => {
-        this.app.scenes.start("title");
-      });
-    },
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 17).text("HELP!", { fg: "green" });
+          build.pos(10, 30).text("Press any key to return to title.");
+          this.on("keypress", () => {
+              this.app.scenes.start("title");
+          });
+      },
   };
 
   const TargetScene = {
-    start(data) {
-      // const game = data.game;
-      // const actor = data.actor;
-      // const targets = data.targets;
-
-      this.data = data;
-      this.data.current = 0;
-      this.bg = index$9.NONE;
-      this.needsDraw = false;
-
-      this.buffer.nullify();
-      let current = this.data.targets[this.data.current];
-      const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
-      this.buffer.drawSprite(current.x, current.y, mixer);
-
-      console.log("target", current.x, current.y);
-    },
-
-    on: {
-      dir(e) {
-        let current = this.data.targets[this.data.current];
-        this.buffer.nullify(current.x, current.y);
-
-        if (e.dir[0] > 0) {
-          this.data.current += 1;
-        } else if (e.dir[0] < 0) {
-          this.data.current -= 1;
-        } else if (e.dir[1] > 0) {
-          this.data.current += 1;
-        } else if (e.dir[1] < 0) {
-          this.data.current += 1;
-        }
-        if (this.data.current < 0) {
-          this.data.current = this.data.targets.length - 1;
-        } else if (this.data.current >= this.data.targets.length) {
+      start(data) {
+          // const game = data.game;
+          // const actor = data.actor;
+          // const targets = data.targets;
+          this.data = data;
           this.data.current = 0;
-        }
-
-        current = this.data.targets[this.data.current];
-
-        console.log("target", current.x, current.y);
-        const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
-        this.buffer.drawSprite(current.x, current.y, mixer);
+          this.bg = index$9.NONE;
+          this.needsDraw = false;
+          this.buffer.nullify();
+          let current = this.data.targets[this.data.current];
+          const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
+          this.buffer.drawSprite(current.x, current.y, mixer);
+          console.log("target", current.x, current.y);
       },
-      Enter() {
-        this.stop(this.data.targets[this.data.current]);
+      on: {
+          dir(e) {
+              if (!e.dir)
+                  return;
+              let current = this.data.targets[this.data.current];
+              this.buffer.nullify(current.x, current.y);
+              if (e.dir[0] > 0) {
+                  this.data.current += 1;
+              }
+              else if (e.dir[0] < 0) {
+                  this.data.current -= 1;
+              }
+              else if (e.dir[1] > 0) {
+                  this.data.current += 1;
+              }
+              else if (e.dir[1] < 0) {
+                  this.data.current += 1;
+              }
+              if (this.data.current < 0) {
+                  this.data.current = this.data.targets.length - 1;
+              }
+              else if (this.data.current >= this.data.targets.length) {
+                  this.data.current = 0;
+              }
+              current = this.data.targets[this.data.current];
+              console.log("target", current.x, current.y);
+              const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
+              this.buffer.drawSprite(current.x, current.y, mixer);
+          },
+          Enter() {
+              this.stop(this.data.targets[this.data.current]);
+          },
+          Escape() {
+              this.stop(null);
+          },
+          keypress(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
       },
-      Escape() {
-        this.stop(null);
-      },
-      keypress(e) {
-        e.stopPropagation();
-      },
-      click(e) {
-        e.stopPropagation();
-      },
-      mousemove(e) {
-        e.stopPropagation();
-      },
-    },
   };
-
   index.installScene("target", TargetScene);
 
   const archive = {

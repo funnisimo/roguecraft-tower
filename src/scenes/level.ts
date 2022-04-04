@@ -3,11 +3,11 @@ import * as GWU from "gw-utils";
 import * as WIDGETS from "../widgets/index";
 // import * as ACTOR from "../actor/index";
 // import * as FX from "../fx/index";
-// import * as GAME from "../game/index";
+import { Game } from "../game/game";
 
 export const level = {
-  create() {
-    this.bg = "dark_gray";
+  create(this: GWU.app.Scene) {
+    this.bg = GWU.color.from("dark_gray");
     // const level = this;
 
     const sidebar = WIDGETS.sidebar(this, 60, 35);
@@ -40,7 +40,7 @@ export const level = {
       game.player.act(game);
     });
 
-    messages.on("click", (e) => {
+    messages.on("click", (e: GWU.app.Event) => {
       const game = this.data;
       if (game.messages.length > 10) {
         this.app.scenes.run("archive", {
@@ -57,7 +57,7 @@ export const level = {
 
       const text = game.level.getFlavor(e.x, e.y);
       flavor.prop("text", text);
-      sidebar.setFocus(game, e.x, e.y);
+      sidebar.setFocus(e.x, e.y);
 
       if (!level.started) return;
       // highlight path
@@ -68,7 +68,7 @@ export const level = {
     });
     map.on("mouseleave", (e) => {
       const game = this.data;
-      sidebar.clearFocus(game);
+      sidebar.clearFocus();
       // game.level.clearPath();
       game.player.clearGoal();
     });
@@ -83,7 +83,7 @@ export const level = {
     });
   },
 
-  start(game) {
+  start(this: GWU.app.Scene, game: Game) {
     this.data = game;
     game.scene = this;
 
@@ -108,7 +108,7 @@ export const level = {
     //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
     // },
 
-    win() {
+    win(this: GWU.app.Scene) {
       const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
       if (this.data.level.depth === LAST_LEVEL) {
         this.app.scenes.start("win", this.data);
@@ -116,12 +116,13 @@ export const level = {
         this.app.scenes.start("stuff", this.data);
       }
     },
-    lose() {
+    lose(this: GWU.app.Scene) {
       this.app.scenes.start("lose", this.data);
     },
 
-    keypress(e) {
-      this.get("SIDEBAR").clearFocus();
+    keypress(this: GWU.app.Scene, e: GWU.app.Event) {
+      const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
+      sidebar.clearFocus();
       // this.data.level.clearPath();
       this.data.player.clearGoal();
 

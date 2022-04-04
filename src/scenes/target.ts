@@ -1,7 +1,11 @@
 import * as GWU from "gw-utils";
 
+export interface TargetData {
+  targets: GWU.xy.Loc[];
+}
+
 export const TargetScene = {
-  start(data) {
+  start(this: GWU.app.Scene, data: TargetData) {
     // const game = data.game;
     // const actor = data.actor;
     // const targets = data.targets;
@@ -20,7 +24,9 @@ export const TargetScene = {
   },
 
   on: {
-    dir(e) {
+    dir(this: GWU.app.Scene, e: GWU.app.Event) {
+      if (!e.dir) return;
+
       let current = this.data.targets[this.data.current];
       this.buffer.nullify(current.x, current.y);
 
@@ -45,19 +51,19 @@ export const TargetScene = {
       const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
       this.buffer.drawSprite(current.x, current.y, mixer);
     },
-    Enter() {
+    Enter(this: GWU.app.Scene) {
       this.stop(this.data.targets[this.data.current]);
     },
-    Escape() {
+    Escape(this: GWU.app.Scene) {
       this.stop(null);
     },
-    keypress(e) {
+    keypress(this: GWU.app.Scene, e: GWU.app.Event) {
       e.stopPropagation();
     },
-    click(e) {
+    click(this: GWU.app.Scene, e: GWU.app.Event) {
       e.stopPropagation();
     },
-    mousemove(e) {
+    mousemove(this: GWU.app.Scene, e: GWU.app.Event) {
       e.stopPropagation();
     },
   },

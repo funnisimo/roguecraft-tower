@@ -2,8 +2,8 @@ import * as GWU from "gw-utils";
 import * as GAME from "../game/index";
 
 export const title = {
-  create() {
-    this.bg = "dark_gray";
+  create(this: GWU.app.Scene) {
+    this.bg = GWU.color.from("dark_gray");
     const build = new GWU.widget.Builder(this);
     build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
     build.pos(10, 17).text("TOWER", { fg: "green" });
