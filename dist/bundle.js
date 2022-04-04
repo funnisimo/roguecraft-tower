@@ -1609,7 +1609,7 @@
 
   var Hash = _Hash,
       ListCache = _ListCache,
-      Map = _Map;
+      Map$2 = _Map;
 
   /**
    * Removes all key-value entries from the map.
@@ -1622,7 +1622,7 @@
     this.size = 0;
     this.__data__ = {
       'hash': new Hash,
-      'map': new (Map || ListCache),
+      'map': new (Map$2 || ListCache),
       'string': new Hash
     };
   }
@@ -18122,7 +18122,6 @@ void main() {
           while (actor) {
               if (typeof actor === "function") {
                   actor(this);
-                  return; // lets do promises, etc...
               }
               else if (actor.health <= 0) {
                   // skip
@@ -18223,129 +18222,96 @@ void main() {
   };
 
   function messages(scene, y) {
-    const widget = index$1$1.make({
-      id: "MESSAGES",
-      tag: "msg",
-
-      x: 0,
-      y: y,
-      width: scene.width,
-      height: scene.height - y,
-
-      scene,
-      bg: index$9.BLACK.alpha(50),
-
-      draw(buf) {
-        buf.fillRect(
-          this.bounds.x,
-          this.bounds.y,
-          this.bounds.width,
-          this.bounds.height,
-          " ",
-          "black",
-          "black"
-        );
-
-        const game = this.scene.data;
-        if (game && game.messages) {
-          game.messages.forEach((msg, confirmed, i) => {
-            if (i < this.bounds.height) {
-              const fg = confirmed ? "dark_purple" : "purple";
-              buf.drawText(this.bounds.x, this.bounds.top + i, msg, fg);
-            }
-          });
-        }
-      },
-
-      mousemove(e) {
-        e.stopPropagation();
-      },
-      click(e) {
-        e.stopPropagation();
-      },
-    });
-
-    return widget;
+      const widget = index$1$1.make({
+          id: "MESSAGES",
+          tag: "msg",
+          x: 0,
+          y: y,
+          width: scene.width,
+          height: scene.height - y,
+          scene,
+          bg: "darkest_gray",
+          fg: "white",
+          draw(buf) {
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              const fg = index$9.from(this._used.fg);
+              const fgc = fg.alpha(50);
+              const game = this.scene.data;
+              if (game && game.messages) {
+                  game.messages.forEach((msg, confirmed, i) => {
+                      if (i < this.bounds.height) {
+                          const color = confirmed ? fgc : fg;
+                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
+                      }
+                  });
+              }
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
   }
 
+  class Map extends index.Widget {
+      constructor(opts) {
+          super(opts);
+          this._focus = [-1, -1];
+          this.on("draw", this._draw);
+          this.on("mousemove", this._setFocus);
+          this.on("mouseleave", this._clearFocus);
+          this.on("keypress", this._clearFocus);
+      }
+      _draw(buf) {
+          const game = this.scene.data;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
+          const level = game.level;
+          level.tiles.forEach((index, x, y) => {
+              buf.blackOut(x, y);
+              level.drawAt(buf, x, y);
+              // if (x === this._focus[0] && y === this._focus[1]) {
+              //   buf.get(x, y).mix("green", 0, 50).separate();
+              // } else if (level.isInPath(x, y)) {
+              //   buf.get(x, y).mix("yellow", 0, 50).separate();
+              // }
+          });
+          const player = game.player;
+          if (player.goalMap) {
+              index$6.forPath(player.goalMap, player.x, player.y, (x, y) => {
+                  if (level.hasActor(x, y))
+                      return true;
+                  return false;
+              }, (x, y) => {
+                  buf.get(x, y).mix("green", 0, 25).separate();
+              }, true);
+          }
+      }
+      _setFocus(e) {
+          this._focus[0] = e.x;
+          this._focus[1] = e.y;
+          this.needsDraw = true;
+          // e.stopPropagation();
+      }
+      _clearFocus() {
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+      }
+  }
   function map(scene, width, height) {
-    const widget = index$1$1.make({
-      id: "MAP",
-      tag: "map",
-
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
-
-      scene,
-      bg: index$9.BLACK,
-
-      draw(buf) {
-        const game = this.scene.data;
-
-        buf.fillRect(
-          this.bounds.x,
-          this.bounds.y,
-          this.bounds.width,
-          this.bounds.height,
-          " ",
-          "black",
-          "black"
-        );
-
-        const level = game.level;
-        level.tiles.forEach((index, x, y) => {
-          buf.blackOut(x, y);
-          level.drawAt(buf, x, y);
-          // if (x === this.focus[0] && y === this.focus[1]) {
-          //   buf.get(x, y).mix("green", 0, 50).separate();
-          // } else if (level.isInPath(x, y)) {
-          //   buf.get(x, y).mix("yellow", 0, 50).separate();
-          // }
-        });
-
-        const player = game.player;
-        if (player.goalMap) {
-          index$6.forPath(
-            player.goalMap,
-            player.x,
-            player.y,
-            (x, y) => {
-              if (level.hasActor(x, y)) return true;
-              return false;
-            },
-            (x, y) => {
-              buf.get(x, y).mix("green", 0, 25).separate();
-            },
-            true
-          );
-        }
-      },
-
-      mousemove(e) {
-        this.focus[0] = e.x;
-        this.focus[1] = e.y;
-        this.needsDraw = true;
-        e.stopPropagation();
-      },
-
-      mouseleave(e) {
-        this.focus[0] = -1;
-        this.focus[1] = -1;
-      },
-
-      keypress() {
-        this.focus[0] = -1;
-        this.focus[1] = -1;
-      },
-
-      with: {
-        focus: [-1, -1],
-      },
-    });
-
-    return widget;
+      const widget = new Map({
+          id: "MAP",
+          tag: "map",
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          scene,
+          bg: index$9.BLACK,
+      });
+      return widget;
   }
 
   class Sidebar extends index.Widget {
@@ -18480,51 +18446,29 @@ void main() {
   }
 
   function flavor(scene, x, y) {
-    const widget = index$1$1.make({
-      id: "FLAVOR",
-      tag: "flavor",
-
-      x: x,
-      y: y,
-      width: scene.width - x,
-      height: 1,
-
-      scene,
-      bg: index$9.from("black"),
-      fg: index$9.from("purple"),
-
-      draw(buf) {
-        this.scene.data;
-        buf.fillRect(
-          this.bounds.x,
-          this.bounds.y,
-          this.bounds.width,
-          this.bounds.height,
-          " ",
-          this._used.bg,
-          this._used.bg
-        );
-
-        buf.drawText(
-          this.bounds.x,
-          this.bounds.y,
-          this.prop("text"),
-          this.fg,
-          this.bg,
-          this.bounds.width
-        );
-      },
-
-      mousemove(e) {
-        e.stopPropagation();
-      },
-
-      click(e) {
-        e.stopPropagation();
-      },
-    });
-
-    return widget;
+      const widget = index$1$1.make({
+          id: "FLAVOR",
+          tag: "flavor",
+          x: x,
+          y: y,
+          width: scene.width - x,
+          height: 1,
+          scene,
+          bg: index$9.from("darker_gray"),
+          fg: index$9.from("purple"),
+          draw(buf) {
+              this.scene.data;
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
   }
 
   const level = {
@@ -18857,7 +18801,7 @@ void main() {
   function drawArchive(scene) {
       let fadePercent = 0;
       const dbuf = scene.buffer;
-      const fg = index$9.from("purple");
+      const fg = index$9.from("white");
       const bg = index$9.from("black");
       // const dM = reverse ? -1 : 1;
       // const startM = reverse ? totalMessageCount : scene.bounds.height;

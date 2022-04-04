@@ -1,6 +1,7 @@
 import * as GWU from "gw-utils";
+import { Game } from "../game/game";
 
-export function messages(scene, y) {
+export function messages(scene: GWU.app.Scene, y: number) {
   const widget = GWU.widget.make({
     id: "MESSAGES",
     tag: "msg",
@@ -11,35 +12,39 @@ export function messages(scene, y) {
     height: scene.height - y,
 
     scene,
-    bg: GWU.color.BLACK.alpha(50),
+    bg: "darkest_gray",
+    fg: "white",
 
-    draw(buf) {
+    draw(this: GWU.app.Widget, buf: GWU.buffer.Buffer) {
       buf.fillRect(
         this.bounds.x,
         this.bounds.y,
         this.bounds.width,
         this.bounds.height,
         " ",
-        "black",
-        "black"
+        this._used.bg,
+        this._used.bg
       );
 
-      const game = this.scene.data;
+      const fg = GWU.color.from(this._used.fg);
+      const fgc = fg.alpha(50);
+
+      const game = this.scene!.data as Game;
       if (game && game.messages) {
         let h = 0;
         game.messages.forEach((msg, confirmed, i) => {
           if (i < this.bounds.height) {
-            const fg = confirmed ? "dark_purple" : "purple";
-            buf.drawText(this.bounds.x, this.bounds.top + i, msg, fg);
+            const color = confirmed ? fgc : fg;
+            buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
           }
         });
       }
     },
 
-    mousemove(e) {
+    mousemove(e: GWU.app.Event) {
       e.stopPropagation();
     },
-    click(e) {
+    click(e: GWU.app.Event) {
       e.stopPropagation();
     },
   });

@@ -136,7 +136,6 @@ export class Game {
     while (actor) {
       if (typeof actor === "function") {
         actor(this);
-        return; // lets do promises, etc...
       } else if (actor.health <= 0) {
         // skip
         filter = true;

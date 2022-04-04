@@ -102,7 +102,7 @@ function drawArchive(scene: ArchiveScene) {
   // let totalMessageCount = scene.totalCount;
   const isOnTop = false;
   const dbuf = scene.buffer;
-  const fg = GWU.color.from("purple");
+  const fg = GWU.color.from("white");
   const bg = GWU.color.from("black");
 
   // const dM = reverse ? -1 : 1;

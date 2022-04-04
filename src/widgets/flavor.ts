@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 
-export function flavor(scene, x, y) {
+export function flavor(scene: GWU.app.Scene, x: number, y: number) {
   const widget = GWU.widget.make({
     id: "FLAVOR",
     tag: "flavor",
@@ -11,11 +11,11 @@ export function flavor(scene, x, y) {
     height: 1,
 
     scene,
-    bg: GWU.color.from("black"),
+    bg: GWU.color.from("darker_gray"),
     fg: GWU.color.from("purple"),
 
-    draw(buf) {
-      const game = this.scene.data;
+    draw(this: GWU.app.Widget, buf: GWU.buffer.Buffer) {
+      const game = this.scene!.data;
       buf.fillRect(
         this.bounds.x,
         this.bounds.y,
@@ -29,9 +29,9 @@ export function flavor(scene, x, y) {
       buf.drawText(
         this.bounds.x,
         this.bounds.y,
-        this.prop("text"),
-        this.fg,
-        this.bg,
+        this.prop("text") as string,
+        this._used.fg,
+        this._used.bg,
         this.bounds.width
       );
     },
