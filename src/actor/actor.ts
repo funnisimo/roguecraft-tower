@@ -1,39 +1,13 @@
 import * as GWU from "gw-utils";
 
 import * as FX from "../fx/index";
-import { Obj, CallbackFn, ObjConfig } from "../game/obj";
+import { Obj, ObjConfig } from "../game/obj";
 import { Game } from "../game/game";
 import { Level } from "../game/level";
 import { TileInfo } from "../game/tiles";
 import * as AI from "./ai";
 
-export interface ActorEvents {
-  bump?: (game: Game, actor: Actor, other: Actor) => void;
-  [key: string]: CallbackFn | undefined;
-}
-
-export interface ActorKind {
-  id: string;
-  health: number;
-  damage: number;
-  moveSpeed: number;
-
-  ch: string;
-  fg: GWU.color.ColorBase;
-  bg?: GWU.color.ColorBase;
-
-  on?: ActorEvents;
-}
-
-export const kinds: Record<string, ActorKind> = {};
-
-export function install(cfg: ActorKind) {
-  kinds[cfg.id.toLowerCase()] = cfg;
-}
-
-export function get(id: string): ActorKind | null {
-  return kinds[id] || null;
-}
+import { ActorKind, getKind } from "./kind";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -124,9 +98,9 @@ export class Actor extends Obj {
 }
 
 export function make(id: string | ActorKind, opts?: Record<string, any>) {
-  let kind: ActorKind;
+  let kind: ActorKind | null;
   if (typeof id === "string") {
-    kind = kinds[id.toLowerCase()];
+    kind = getKind(id);
     if (!kind) throw new Error("Failed to find actor kind - " + id);
   } else {
     kind = id;

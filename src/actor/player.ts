@@ -1,6 +1,7 @@
 import * as GWU from "gw-utils";
 
 import * as ACTOR from "./actor";
+import * as KIND from "./kind";
 import * as ACTION from "../game/actions";
 // import { Level } from "../game/level";
 import { Game } from "../game/game";
@@ -99,7 +100,7 @@ export class Player extends ACTOR.Actor {
 }
 
 export function makePlayer(id: string) {
-  const kind = ACTOR.kinds[id.toLowerCase()];
+  const kind = KIND.getKind(id);
   if (!kind) throw new Error("Failed to find actor kind - " + id);
 
   return new Player({

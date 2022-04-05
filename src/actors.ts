@@ -1,4 +1,4 @@
-import * as ACTOR from "./actor/actor";
+import * as ACTOR from "./actor";
 import * as ACTIONS from "./game/actions";
 
 ACTOR.install({

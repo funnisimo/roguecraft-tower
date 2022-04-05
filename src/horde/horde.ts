@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 import { Level } from "../game/level";
-import * as Actor from "../actor/actor";
+import * as ACTOR from "../actor";
 import * as FX from "../fx";
 
 const Fl = GWU.flag.fl;
@@ -108,7 +108,7 @@ export class Horde {
     x = -1,
     y = -1,
     opts: Partial<SpawnOptions> = {}
-  ): Actor.Actor | null {
+  ): ACTOR.Actor | null {
     opts.canSpawn = opts.canSpawn || GWU.TRUE;
     opts.rng = opts.rng || map.rng;
     opts.machine = opts.machine ?? 0;
@@ -125,13 +125,13 @@ export class Horde {
     x: number,
     y: number,
     opts: SpawnOptions
-  ): Actor.Actor | null {
-    const leaderKind = Actor.get(this.leader);
+  ): ACTOR.Actor | null {
+    const leaderKind = ACTOR.getKind(this.leader);
     if (!leaderKind) {
       throw new Error("Failed to find leader kind = " + this.leader);
     }
 
-    const leader = Actor.make(leaderKind, { machineHome: opts.machine });
+    const leader = ACTOR.make(leaderKind, { machineHome: opts.machine });
     if (!leader)
       throw new Error("Failed to make horde leader - " + this.leader);
 
@@ -156,7 +156,7 @@ export class Horde {
   }
 
   _addLeader(
-    leader: Actor.Actor,
+    leader: ACTOR.Actor,
     map: Level,
     x: number,
     y: number,
@@ -174,11 +174,11 @@ export class Horde {
   }
 
   _addMember(
-    member: Actor.Actor,
+    member: ACTOR.Actor,
     map: Level,
     x: number,
     y: number,
-    leader: Actor.Actor,
+    leader: ACTOR.Actor,
     _opts: SpawnOptions
   ): boolean {
     const game = map.game!;
@@ -193,7 +193,7 @@ export class Horde {
     return true;
   }
 
-  _spawnMembers(leader: Actor.Actor, map: Level, opts: SpawnOptions): number {
+  _spawnMembers(leader: ACTOR.Actor, map: Level, opts: SpawnOptions): number {
     const entries = Object.entries(this.members);
 
     if (entries.length == 0) return 0;
@@ -212,15 +212,15 @@ export class Horde {
   _spawnMember(
     kindId: string,
     map: Level,
-    leader: Actor.Actor,
+    leader: ACTOR.Actor,
     opts: SpawnOptions
-  ): Actor.Actor | null {
-    const kind = Actor.get(kindId);
+  ): ACTOR.Actor | null {
+    const kind = ACTOR.getKind(kindId);
     if (!kind) {
       throw new Error("Failed to find member kind = " + kindId);
     }
 
-    const member = Actor.make(kind, { machineHome: opts.machine });
+    const member = ACTOR.make(kind, { machineHome: opts.machine });
     if (!member) throw new Error("Failed to make horde member - " + kindId);
 
     const [x, y] = this._pickMemberLoc(member, map, leader, opts) || [-1, -1];
@@ -238,7 +238,7 @@ export class Horde {
   }
 
   _pickLeaderLoc(
-    leader: Actor.Actor,
+    leader: ACTOR.Actor,
     map: Level,
     opts: SpawnOptions
   ): GWU.xy.Loc | null {
@@ -257,9 +257,9 @@ export class Horde {
   }
 
   _pickMemberLoc(
-    actor: Actor.Actor,
+    actor: ACTOR.Actor,
     map: Level,
-    leader: Actor.Actor,
+    leader: ACTOR.Actor,
     opts: SpawnOptions
   ): GWU.xy.Loc | null {
     let loc = opts.rng.matchingLocNear(leader.x, leader.y, (x, y) => {

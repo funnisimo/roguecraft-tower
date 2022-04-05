@@ -3,9 +3,10 @@ import * as FX from "../fx/index";
 import { Game } from "./game";
 import { Actor } from "../actor/actor";
 
-export function idle(game: Game, actor: Actor) {
+export function idle(game: Game, actor: Actor): boolean {
   console.log("- idle", actor.kind.name, actor.x, actor.y);
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+  return true;
 }
 
 export function moveRandom(game: Game, actor: Actor, quiet = false): boolean {
@@ -78,7 +79,7 @@ export function moveToward(
   actor: Actor,
   other: Actor,
   quiet = false
-) {
+): boolean {
   const map = game.level!;
 
   let dir = GWU.xy.dirFromTo(actor, other);
@@ -88,17 +89,21 @@ export function moveToward(
     dir = dirs.shift()!;
 
     if (moveDir(game, actor, dir, true)) {
-      return; // success
+      return true; // success
     }
   }
 
   if (!quiet) {
     FX.flash(game, actor.x, actor.y, "orange", 150);
   }
-  idle(game, actor);
+  return idle(game, actor);
 }
 
-export function attack(game: Game, actor: Actor, target: Actor | null = null) {
+export function attack(
+  game: Game,
+  actor: Actor,
+  target: Actor | null = null
+): boolean {
   if (!target) {
     const targets = game.level!.actors.filter(
       (a) =>
@@ -156,11 +161,12 @@ export function attack(game: Game, actor: Actor, target: Actor | null = null) {
   return true;
 }
 
-export function climb(game: Game, actor: Actor) {
+export function climb(game: Game, actor: Actor): boolean {
   const tile = game.level!.getTile(actor.x, actor.y);
   if (tile.on && tile.on.climb) {
     tile.on.climb.call(tile, game, actor);
+    return actor.hasActed();
   } else {
-    idle(game, actor);
+    return idle(game, actor);
   }
 }

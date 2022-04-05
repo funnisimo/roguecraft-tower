@@ -2089,12 +2089,12 @@
    * _.get(object, 'a.b.c', 'default');
    * // => 'default'
    */
-  function get$1(object, path, defaultValue) {
+  function get(object, path, defaultValue) {
     var result = object == null ? undefined : baseGet(object, path);
     return result === undefined ? defaultValue : result;
   }
 
-  var get_1 = get$1;
+  var get_1 = get;
 
   const getValue = get_1;
   // export function extend(obj, name, fn) {
@@ -13186,6 +13186,7 @@ void main() {
   function idle(game, actor) {
       console.log("- idle", actor.kind.name, actor.x, actor.y);
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+      return true;
   }
   function moveRandom(game, actor, quiet = false) {
       const dir = game.rng.item(xy.DIRS);
@@ -13246,13 +13247,13 @@ void main() {
       while (dirs.length) {
           dir = dirs.shift();
           if (moveDir(game, actor, dir, true)) {
-              return; // success
+              return true; // success
           }
       }
       if (!quiet) {
           flash(game, actor.x, actor.y, "orange", 150);
       }
-      idle(game, actor);
+      return idle(game, actor);
   }
   function attack(game, actor, target = null) {
       if (!target) {
@@ -13307,9 +13308,10 @@ void main() {
       const tile = game.level.getTile(actor.x, actor.y);
       if (tile.on && tile.on.climb) {
           tile.on.climb.call(tile, game, actor);
+          return actor.hasActed();
       }
       else {
-          idle(game, actor);
+          return idle(game, actor);
       }
   }
 
@@ -13337,11 +13339,24 @@ void main() {
 
   const kinds = {};
   function install$3(cfg) {
-      kinds[cfg.id.toLowerCase()] = cfg;
+      const kind = Object.assign({
+          health: 10,
+          damage: 1,
+          moveSpeed: 100,
+          ch: "!",
+          fg: "white",
+          bump: ["attack"],
+          on: {},
+      }, cfg);
+      if (typeof cfg.bump === "string") {
+          kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      }
+      kinds[cfg.id.toLowerCase()] = kind;
   }
-  function get(id) {
-      return kinds[id] || null;
+  function getKind(id) {
+      return kinds[id.toLowerCase()] || null;
   }
+
   class Actor extends Obj {
       constructor(cfg) {
           super(cfg);
@@ -13416,7 +13431,7 @@ void main() {
   function make$2(id, opts) {
       let kind;
       if (typeof id === "string") {
-          kind = kinds[id.toLowerCase()];
+          kind = getKind(id);
           if (!kind)
               throw new Error("Failed to find actor kind - " + id);
       }
@@ -13522,7 +13537,7 @@ void main() {
       }
   }
   function makePlayer(id) {
-      const kind = kinds[id.toLowerCase()];
+      const kind = getKind(id);
       if (!kind)
           throw new Error("Failed to find actor kind - " + id);
       return new Player({
@@ -17689,7 +17704,7 @@ void main() {
           return leader;
       }
       _spawnLeader(map, x, y, opts) {
-          const leaderKind = get(this.leader);
+          const leaderKind = getKind(this.leader);
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
@@ -17745,7 +17760,7 @@ void main() {
           return count;
       }
       _spawnMember(kindId, map, leader, opts) {
-          const kind = get(kindId);
+          const kind = getKind(kindId);
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
