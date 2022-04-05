@@ -13184,7 +13184,7 @@ void main() {
   }
 
   function idle(game, actor) {
-      console.log("- idle", actor.kind.name, actor.x, actor.y);
+      console.log("- idle", actor.kind.id, actor.x, actor.y);
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }

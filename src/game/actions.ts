@@ -4,7 +4,7 @@ import { Game } from "./game";
 import { Actor } from "../actor/actor";
 
 export function idle(game: Game, actor: Actor): boolean {
-  console.log("- idle", actor.kind.name, actor.x, actor.y);
+  console.log("- idle", actor.kind.id, actor.x, actor.y);
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
   return true;
 }
