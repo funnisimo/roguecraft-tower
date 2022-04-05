@@ -4,6 +4,7 @@ import * as FX from "../fx/index";
 import { Obj, CallbackFn, ObjConfig } from "../game/obj";
 import { Game } from "../game/game";
 import { Level } from "../game/level";
+import { TileInfo } from "../game/tiles";
 import * as AI from "./ai";
 
 export interface ActorEvents {
@@ -30,6 +31,10 @@ export function install(cfg: ActorKind) {
   kinds[cfg.id.toLowerCase()] = cfg;
 }
 
+export function get(id: string): ActorKind | null {
+  return kinds[id] || null;
+}
+
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
 }
@@ -41,6 +46,8 @@ export class Actor extends Obj {
   data: Record<string, any>;
   health: number;
   damage: number;
+
+  leader: Actor | null = null;
 
   constructor(cfg?: ActorConfig) {
     super(cfg);
@@ -88,6 +95,10 @@ export class Actor extends Obj {
     buf.drawSprite(this.x, this.y, this.kind);
   }
 
+  avoidsTile(tile: TileInfo): boolean {
+    return tile.blocksMove || false;
+  }
+
   moveCost(x: number, y: number) {
     const level = this._level;
     if (!level) return GWU.path.OBSTRUCTION;
@@ -112,18 +123,28 @@ export class Actor extends Obj {
   }
 }
 
-export function make(id: string) {
-  const kind = kinds[id.toLowerCase()];
-  if (!kind) throw new Error("Failed to find actor kind - " + id);
+export function make(id: string | ActorKind, opts?: Record<string, any>) {
+  let kind: ActorKind;
+  if (typeof id === "string") {
+    kind = kinds[id.toLowerCase()];
+    if (!kind) throw new Error("Failed to find actor kind - " + id);
+  } else {
+    kind = id;
+  }
 
-  return new Actor({
-    x: 1,
-    y: 1,
-    depth: 1, // items, actors, player, fx
-    kind,
-    health: kind.health || 10,
-    damage: kind.damage || 2,
-  });
+  const config = Object.assign(
+    {
+      x: 1,
+      y: 1,
+      depth: 1, // items, actors, player, fx
+      kind,
+      health: kind.health || 10,
+      damage: kind.damage || 2,
+    },
+    opts
+  );
+
+  return new Actor(config);
 }
 
 export type ActorCallback = (actor: Actor) => void;
@@ -136,13 +157,14 @@ export function spawn(
   level: Level,
   id: string | Actor,
   x?: number,
-  y?: number
+  y?: number,
+  ms = 500
 ): ThenActor {
   const newbie = typeof id === "string" ? make(id) : id;
 
-  const ms = 500;
   const bg = newbie.kind.fg;
-  const scene = level.game!.scene!;
+  const game = level.game!;
+  const scene = game.scene!;
   // const level = level.level;
 
   if (x === undefined) {
@@ -152,40 +174,18 @@ export function spawn(
     } while (!level.hasTile(x, y, "FLOOR") || level.actorAt(x, y));
   }
 
-  const startTime = scene.app.time;
-
-  const fx = new FX.FX({ x, y, bg, depth: 4 });
-  level.addFx(fx);
-
   let _success: ActorCallback = GWU.NOOP;
-  // let _fail: CallbackFn = GWU.NOOP;
 
-  level.game!.wait(ms, () => {
-    const nowTime = scene.app.time;
-    const timeLeft = ms - (nowTime - startTime);
-    if (timeLeft > 0) {
-      scene.pause({ update: true });
-
-      scene.wait(timeLeft, () => {
-        level.removeFx(fx);
-        scene.resume({ update: true });
-        newbie.x = x!;
-        newbie.y = y!;
-        level.addActor(newbie);
-        _success(newbie);
-      });
-    } else {
-      level.removeFx(fx);
-      newbie.x = x!;
-      newbie.y = y!;
-      level.addActor(newbie);
-      _success(newbie);
-    }
+  FX.flashGameTime(game, x, y!, bg).then(() => {
+    newbie.x = x!;
+    newbie.y = y!;
+    level.addActor(newbie);
+    _success(newbie);
   });
 
   return {
-    then(fn: ActorCallback) {
-      _success = fn || GWU.NOOP;
+    then(cb: ActorCallback) {
+      _success = cb || GWU.NOOP;
     },
   };
 }

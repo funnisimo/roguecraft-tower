@@ -1,6 +1,7 @@
 import * as GWU from "gw-utils";
 import * as SCENES from "./scenes/index";
 import "./actors";
+import "./hordes";
 
 function start() {
   // create the user interface

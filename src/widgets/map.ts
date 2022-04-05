@@ -8,13 +8,13 @@ export class Map extends GWU.app.Widget {
 
   constructor(opts: GWU.app.WidgetOpts) {
     super(opts);
-    this.on("draw", this._draw);
+    this.on("draw", this.__draw);
     this.on("mousemove", this._setFocus);
     this.on("mouseleave", this._clearFocus);
     this.on("keypress", this._clearFocus);
   }
 
-  _draw(buf: GWU.buffer.Buffer) {
+  __draw(buf: GWU.buffer.Buffer) {
     const game = this.scene!.data as Game;
 
     buf.fillRect(

@@ -5,6 +5,8 @@ import * as ACTIONS from "./actions";
 import * as LEVEL from "./level";
 import { Player } from "../actor/player";
 // import { default as CONFIG } from "../config";
+import { CallbackFn } from "./obj";
+import { FX } from "../fx/flash";
 
 export interface GameOpts {
   seed?: number;

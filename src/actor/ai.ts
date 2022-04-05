@@ -17,8 +17,12 @@ export function ai(game: Game, actor: Actor) {
     actor.y
   );
   if (distToPlayer > noticeDistance) {
-    // milling around [ move randomly? ]
-    game.endTurn(actor, actor.kind.moveSpeed);
+    // wander somewhere?  [wanderChance]
+    // step randomly [idleMoveChance]
+    if (game.rng.chance(20)) {
+      if (ACTIONS.moveRandom(game, actor, true)) return;
+    }
+    ACTIONS.idle(game, actor);
   } else if (distToPlayer <= 1) {
     ACTIONS.attack(game, actor, player);
   } else {

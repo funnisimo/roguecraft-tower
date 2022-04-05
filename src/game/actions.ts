@@ -4,7 +4,13 @@ import { Game } from "./game";
 import { Actor } from "../actor/actor";
 
 export function idle(game: Game, actor: Actor) {
+  console.log("- idle", actor.kind.name, actor.x, actor.y);
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+}
+
+export function moveRandom(game: Game, actor: Actor, quiet = false): boolean {
+  const dir = game.rng.item(GWU.xy.DIRS);
+  return moveDir(game, actor, dir, quiet);
 }
 
 export function moveDir(
@@ -12,7 +18,7 @@ export function moveDir(
   actor: Actor,
   dir: GWU.xy.Loc,
   quiet = false
-) {
+): boolean {
   const level = game.level!;
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
@@ -30,9 +36,9 @@ export function moveDir(
       game.addMessage(`You bump into a ${other.kind.id}.`);
       FX.flash(game, newX, newY, "red", 150);
       idle(game, actor);
-
       return true;
     } else {
+      console.log("- nothing!!!", actor.kind.name, actor.x, actor.y);
       return false;
     }
   }
@@ -42,8 +48,9 @@ export function moveDir(
       game.addMessage("You bump into a wall.");
       FX.flash(game, newX, newY, "red", 150);
       idle(game, actor);
-      return;
+      return false;
     } else {
+      console.log("- nothing blocked!!!", actor.kind.name, actor.x, actor.y);
       return false;
     }
   }

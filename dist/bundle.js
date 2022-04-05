@@ -2089,12 +2089,12 @@
    * _.get(object, 'a.b.c', 'default');
    * // => 'default'
    */
-  function get(object, path, defaultValue) {
+  function get$1(object, path, defaultValue) {
     var result = object == null ? undefined : baseGet(object, path);
     return result === undefined ? defaultValue : result;
   }
 
-  var get_1 = get;
+  var get_1 = get$1;
 
   const getValue = get_1;
   // export function extend(obj, name, fn) {
@@ -7482,13 +7482,13 @@ void main() {
 
   class Data {
       constructor(config = {}) {
-          this._data = config;
+          Object.assign(this, config);
       }
       get(path) {
-          return get_1(this._data, path);
+          return get_1(this, path);
       }
       set(path, value) {
-          return set_1(this._data, path, value);
+          return set_1(this, path, value);
       }
   }
 
@@ -13152,9 +13152,44 @@ void main() {
           },
       };
   }
+  function flashGameTime(game, x, y, color = "white", ms = 300) {
+      const scene = game.scene;
+      const level = game.level;
+      const startTime = scene.app.time;
+      const fx = new FX({ x, y, bg: color, depth: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      // let _fail: CallbackFn = GWU.NOOP;
+      game.wait(ms, () => {
+          const nowTime = scene.app.time;
+          const timeLeft = ms - (nowTime - startTime);
+          if (timeLeft > 0) {
+              scene.pause({ update: true });
+              scene.wait(timeLeft, () => {
+                  level.removeFx(fx);
+                  scene.resume({ update: true });
+                  _success();
+              });
+          }
+          else {
+              level.removeFx(fx);
+              _success();
+          }
+      });
+      return {
+          then(fn) {
+              _success = fn || NOOP;
+          },
+      };
+  }
 
   function idle(game, actor) {
+      console.log("- idle", actor.kind.name, actor.x, actor.y);
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+  }
+  function moveRandom(game, actor, quiet = false) {
+      const dir = game.rng.item(xy.DIRS);
+      return moveDir(game, actor, dir, quiet);
   }
   function moveDir(game, actor, dir, quiet = false) {
       const level = game.level;
@@ -13176,6 +13211,7 @@ void main() {
               return true;
           }
           else {
+              console.log("- nothing!!!", actor.kind.name, actor.x, actor.y);
               return false;
           }
       }
@@ -13184,9 +13220,10 @@ void main() {
               game.addMessage("You bump into a wall.");
               flash(game, newX, newY, "red", 150);
               idle(game, actor);
-              return;
+              return false;
           }
           else {
+              console.log("- nothing blocked!!!", actor.kind.name, actor.x, actor.y);
               return false;
           }
       }
@@ -13282,8 +13319,13 @@ void main() {
       const noticeDistance = actor.kind.notice || 10;
       const distToPlayer = xy.distanceBetween(player.x, player.y, actor.x, actor.y);
       if (distToPlayer > noticeDistance) {
-          // milling around [ move randomly? ]
-          game.endTurn(actor, actor.kind.moveSpeed);
+          // wander somewhere?  [wanderChance]
+          // step randomly [idleMoveChance]
+          if (game.rng.chance(20)) {
+              if (moveRandom(game, actor, true))
+                  return;
+          }
+          idle(game, actor);
       }
       else if (distToPlayer <= 1) {
           attack(game, actor, player);
@@ -13297,11 +13339,15 @@ void main() {
   function install$3(cfg) {
       kinds[cfg.id.toLowerCase()] = cfg;
   }
+  function get(id) {
+      return kinds[id] || null;
+  }
   class Actor extends Obj {
       constructor(cfg) {
           super(cfg);
           this._turnTime = 0;
           this._level = null;
+          this.leader = null;
           if (!this.kind)
               throw new Error("Must have kind.");
           this.kind.moveSpeed = this.kind.moveSpeed || 100;
@@ -13341,6 +13387,9 @@ void main() {
               return;
           buf.drawSprite(this.x, this.y, this.kind);
       }
+      avoidsTile(tile) {
+          return tile.blocksMove || false;
+      }
       moveCost(x, y) {
           const level = this._level;
           if (!level)
@@ -13364,24 +13413,31 @@ void main() {
           }
       }
   }
-  function make$2(id) {
-      const kind = kinds[id.toLowerCase()];
-      if (!kind)
-          throw new Error("Failed to find actor kind - " + id);
-      return new Actor({
+  function make$2(id, opts) {
+      let kind;
+      if (typeof id === "string") {
+          kind = kinds[id.toLowerCase()];
+          if (!kind)
+              throw new Error("Failed to find actor kind - " + id);
+      }
+      else {
+          kind = id;
+      }
+      const config = Object.assign({
           x: 1,
           y: 1,
           depth: 1,
           kind,
           health: kind.health || 10,
           damage: kind.damage || 2,
-      });
+      }, opts);
+      return new Actor(config);
   }
-  function spawn(level, id, x, y) {
+  function spawn(level, id, x, y, ms = 500) {
       const newbie = typeof id === "string" ? make$2(id) : id;
-      const ms = 500;
       const bg = newbie.kind.fg;
-      const scene = level.game.scene;
+      const game = level.game;
+      game.scene;
       // const level = level.level;
       if (x === undefined) {
           do {
@@ -13389,36 +13445,16 @@ void main() {
               y = level.rng.number(level.height);
           } while (!level.hasTile(x, y, "FLOOR") || level.actorAt(x, y));
       }
-      const startTime = scene.app.time;
-      const fx = new FX({ x, y, bg, depth: 4 });
-      level.addFx(fx);
       let _success = NOOP;
-      // let _fail: CallbackFn = GWU.NOOP;
-      level.game.wait(ms, () => {
-          const nowTime = scene.app.time;
-          const timeLeft = ms - (nowTime - startTime);
-          if (timeLeft > 0) {
-              scene.pause({ update: true });
-              scene.wait(timeLeft, () => {
-                  level.removeFx(fx);
-                  scene.resume({ update: true });
-                  newbie.x = x;
-                  newbie.y = y;
-                  level.addActor(newbie);
-                  _success(newbie);
-              });
-          }
-          else {
-              level.removeFx(fx);
-              newbie.x = x;
-              newbie.y = y;
-              level.addActor(newbie);
-              _success(newbie);
-          }
+      flashGameTime(game, x, y, bg).then(() => {
+          newbie.x = x;
+          newbie.y = y;
+          level.addActor(newbie);
+          _success(newbie);
       });
       return {
-          then(fn) {
-              _success = fn || NOOP;
+          then(cb) {
+              _success = cb || NOOP;
           },
       };
   }
@@ -14127,7 +14163,7 @@ void main() {
       return didSomething;
   }
 
-  const hordes = [];
+  const hordes$1 = [];
   function installHorde(config) {
       const info = {};
       info.id = config.id || config.leader;
@@ -14161,7 +14197,7 @@ void main() {
       info.requiredTile = config.requiredTile || null;
       info.feature = config.feature ? make$1(config.feature) : null;
       info.blueprint = config.blueprint || null;
-      hordes.push(info);
+      hordes$1.push(info);
       return info;
   }
   function pickHorde(depth, rules, rng) {
@@ -14171,12 +14207,12 @@ void main() {
           tagMatch = tags.makeMatch(rules);
       }
       else if ('id' in rules) {
-          return hordes.find((h) => h.id === rules.id) || null;
+          return hordes$1.find((h) => h.id === rules.id) || null;
       }
       else {
           tagMatch = tags.makeMatch(rules);
       }
-      const choices = hordes.filter((horde) => tagMatch(horde.tags));
+      const choices = hordes$1.filter((horde) => tagMatch(horde.tags));
       if (choices.length == 0)
           return null;
       const freq = choices.map((info) => info.frequency(depth));
@@ -15795,7 +15831,7 @@ void main() {
       getTile: getTile,
       tileId: tileId,
       blocksMove: blocksMove,
-      hordes: hordes,
+      hordes: hordes$1,
       installHorde: installHorde,
       pickHorde: pickHorde,
       spawnHorde: spawnHorde,
@@ -16467,12 +16503,12 @@ void main() {
       return digger.create(site, doors);
   }
   var halls = {};
-  function install$1(id, hall) {
+  function install$1$1(id, hall) {
       // @ts-ignore
       halls[id] = hall;
       return hall;
   }
-  install$1('DEFAULT', new HallDigger({ chance: 15 }));
+  install$1$1('DEFAULT', new HallDigger({ chance: 15 }));
 
   class Lakes {
       constructor(options = {}) {
@@ -17555,26 +17591,234 @@ void main() {
       }
   }
 
+  const Fl$3 = flag.fl;
+  var Flags$3;
+  (function (Flags) {
+      Flags[Flags["BP_ROOM"] = Fl$3(0)] = "BP_ROOM";
+      Flags[Flags["BP_VESTIBULE"] = Fl$3(1)] = "BP_VESTIBULE";
+      Flags[Flags["BP_REWARD"] = Fl$3(2)] = "BP_REWARD";
+      Flags[Flags["BP_ADOPT_ITEM"] = Fl$3(3)] = "BP_ADOPT_ITEM";
+      Flags[Flags["BP_PURGE_PATHING_BLOCKERS"] = Fl$3(4)] = "BP_PURGE_PATHING_BLOCKERS";
+      Flags[Flags["BP_PURGE_INTERIOR"] = Fl$3(5)] = "BP_PURGE_INTERIOR";
+      Flags[Flags["BP_PURGE_LIQUIDS"] = Fl$3(6)] = "BP_PURGE_LIQUIDS";
+      Flags[Flags["BP_SURROUND_WITH_WALLS"] = Fl$3(7)] = "BP_SURROUND_WITH_WALLS";
+      Flags[Flags["BP_IMPREGNABLE"] = Fl$3(8)] = "BP_IMPREGNABLE";
+      Flags[Flags["BP_OPEN_INTERIOR"] = Fl$3(9)] = "BP_OPEN_INTERIOR";
+      Flags[Flags["BP_MAXIMIZE_INTERIOR"] = Fl$3(10)] = "BP_MAXIMIZE_INTERIOR";
+      Flags[Flags["BP_REDESIGN_INTERIOR"] = Fl$3(11)] = "BP_REDESIGN_INTERIOR";
+      Flags[Flags["BP_TREAT_AS_BLOCKING"] = Fl$3(12)] = "BP_TREAT_AS_BLOCKING";
+      Flags[Flags["BP_REQUIRE_BLOCKING"] = Fl$3(13)] = "BP_REQUIRE_BLOCKING";
+      Flags[Flags["BP_NO_INTERIOR_FLAG"] = Fl$3(14)] = "BP_NO_INTERIOR_FLAG";
+      Flags[Flags["BP_NOT_IN_HALLWAY"] = Fl$3(15)] = "BP_NOT_IN_HALLWAY";
+  })(Flags$3 || (Flags$3 = {}));
+
   const Fl = flag.fl;
   var Flags;
   (function (Flags) {
-      Flags[Flags["BP_ROOM"] = Fl(0)] = "BP_ROOM";
-      Flags[Flags["BP_VESTIBULE"] = Fl(1)] = "BP_VESTIBULE";
-      Flags[Flags["BP_REWARD"] = Fl(2)] = "BP_REWARD";
-      Flags[Flags["BP_ADOPT_ITEM"] = Fl(3)] = "BP_ADOPT_ITEM";
-      Flags[Flags["BP_PURGE_PATHING_BLOCKERS"] = Fl(4)] = "BP_PURGE_PATHING_BLOCKERS";
-      Flags[Flags["BP_PURGE_INTERIOR"] = Fl(5)] = "BP_PURGE_INTERIOR";
-      Flags[Flags["BP_PURGE_LIQUIDS"] = Fl(6)] = "BP_PURGE_LIQUIDS";
-      Flags[Flags["BP_SURROUND_WITH_WALLS"] = Fl(7)] = "BP_SURROUND_WITH_WALLS";
-      Flags[Flags["BP_IMPREGNABLE"] = Fl(8)] = "BP_IMPREGNABLE";
-      Flags[Flags["BP_OPEN_INTERIOR"] = Fl(9)] = "BP_OPEN_INTERIOR";
-      Flags[Flags["BP_MAXIMIZE_INTERIOR"] = Fl(10)] = "BP_MAXIMIZE_INTERIOR";
-      Flags[Flags["BP_REDESIGN_INTERIOR"] = Fl(11)] = "BP_REDESIGN_INTERIOR";
-      Flags[Flags["BP_TREAT_AS_BLOCKING"] = Fl(12)] = "BP_TREAT_AS_BLOCKING";
-      Flags[Flags["BP_REQUIRE_BLOCKING"] = Fl(13)] = "BP_REQUIRE_BLOCKING";
-      Flags[Flags["BP_NO_INTERIOR_FLAG"] = Fl(14)] = "BP_NO_INTERIOR_FLAG";
-      Flags[Flags["BP_NOT_IN_HALLWAY"] = Fl(15)] = "BP_NOT_IN_HALLWAY";
+      Flags[Flags["HORDE_DIES_ON_LEADER_DEATH"] = Fl(0)] = "HORDE_DIES_ON_LEADER_DEATH";
+      Flags[Flags["HORDE_IS_SUMMONED"] = Fl(1)] = "HORDE_IS_SUMMONED";
+      Flags[Flags["HORDE_SUMMONED_AT_DISTANCE"] = Fl(2)] = "HORDE_SUMMONED_AT_DISTANCE";
+      Flags[Flags["HORDE_NO_PERIODIC_SPAWN"] = Fl(4)] = "HORDE_NO_PERIODIC_SPAWN";
+      Flags[Flags["HORDE_ALLIED_WITH_PLAYER"] = Fl(5)] = "HORDE_ALLIED_WITH_PLAYER";
+      Flags[Flags["HORDE_NEVER_OOD"] = Fl(15)] = "HORDE_NEVER_OOD";
+      // Move all these to tags?
+      // HORDE_LEADER_CAPTIVE = Fl(3), // the leader is in chains and the followers are guards
+      // HORDE_MACHINE_BOSS = Fl(6), // used in machines for a boss challenge
+      // HORDE_MACHINE_WATER_MONSTER = Fl(7), // used in machines where the room floods with shallow water
+      // HORDE_MACHINE_CAPTIVE = Fl(8), // powerful captive monsters without any captors
+      // HORDE_MACHINE_STATUE = Fl(9), // the kinds of monsters that make sense in a statue
+      // HORDE_MACHINE_TURRET = Fl(10), // turrets, for hiding in walls
+      // HORDE_MACHINE_MUD = Fl(11), // bog monsters, for hiding in mud
+      // HORDE_MACHINE_KENNEL = Fl(12), // monsters that can appear in cages in kennels
+      // HORDE_VAMPIRE_FODDER = Fl(13), // monsters that are prone to capture and farming by vampires
+      // HORDE_MACHINE_LEGENDARY_ALLY = Fl(14), // legendary allies
+      // HORDE_MACHINE_THIEF = Fl(16), // monsters that can be generated in the key thief area machines
+      // HORDE_MACHINE_GOBLIN_WARREN = Fl(17), // can spawn in goblin warrens
+      // HORDE_SACRIFICE_TARGET = Fl(18), // can be the target of an assassination challenge; leader will get scary light.
+      // HORDE_MACHINE_ONLY = HORDE_MACHINE_BOSS |
+      //     HORDE_MACHINE_WATER_MONSTER |
+      //     HORDE_MACHINE_CAPTIVE |
+      //     HORDE_MACHINE_STATUE |
+      //     HORDE_MACHINE_TURRET |
+      //     HORDE_MACHINE_MUD |
+      //     HORDE_MACHINE_KENNEL |
+      //     HORDE_VAMPIRE_FODDER |
+      //     HORDE_MACHINE_LEGENDARY_ALLY |
+      //     HORDE_MACHINE_THIEF |
+      //     HORDE_MACHINE_GOBLIN_WARREN |
+      //     HORDE_SACRIFICE_TARGET,
   })(Flags || (Flags = {}));
+  class Horde {
+      constructor(config) {
+          var _a, _b, _c;
+          this.tags = [];
+          this.members = {};
+          // blueprintId: string | null = null;
+          this.flags = { horde: 0 };
+          if (config.tags) {
+              if (typeof config.tags === "string") {
+                  this.tags = config.tags.split(/[,|]/).map((t) => t.trim());
+              }
+              else {
+                  this.tags = config.tags.slice();
+              }
+          }
+          this.leader = config.leader;
+          if (config.members) {
+              Object.entries(config.members).forEach(([id, range$1]) => {
+                  this.members[id] = range.make(range$1);
+              });
+          }
+          this.frequency = frequency.make(config.frequency || 100);
+          // this.blueprintId = config.blueprintId || null;
+          this.flags.horde = flag.from(Flags, config.flags);
+          // if (config.requiredTile) this.requiredTile = config.requiredTile;
+          this.warnMs = (_a = config.warnMs) !== null && _a !== void 0 ? _a : 500;
+          this.memberWarnMs = (_b = config.memberWarnMs) !== null && _b !== void 0 ? _b : this.warnMs;
+          this.warnColor = (_c = config.warnColor) !== null && _c !== void 0 ? _c : "green";
+      }
+      spawn(map, x = -1, y = -1, opts = {}) {
+          var _a;
+          opts.canSpawn = opts.canSpawn || TRUE;
+          opts.rng = opts.rng || map.rng;
+          opts.machine = (_a = opts.machine) !== null && _a !== void 0 ? _a : 0;
+          const leader = this._spawnLeader(map, x, y, opts);
+          if (!leader)
+              return null;
+          this._spawnMembers(leader, map, opts);
+          return leader;
+      }
+      _spawnLeader(map, x, y, opts) {
+          const leaderKind = get(this.leader);
+          if (!leaderKind) {
+              throw new Error("Failed to find leader kind = " + this.leader);
+          }
+          const leader = make$2(leaderKind, { machineHome: opts.machine });
+          if (!leader)
+              throw new Error("Failed to make horde leader - " + this.leader);
+          if (x >= 0 && y >= 0) {
+              if (leader.avoidsTile(map.getTile(x, y)))
+                  return null;
+          }
+          if (x < 0 || y < 0) {
+              [x, y] = this._pickLeaderLoc(leader, map, opts) || [-1, -1];
+              if (x < 0 || y < 0) {
+                  return null;
+              }
+          }
+          // pre-placement stuff?  machine? effect?
+          if (!this._addLeader(leader, map, x, y, opts)) {
+              return null;
+          }
+          return leader;
+      }
+      _addLeader(leader, map, x, y, _opts) {
+          const game = map.game;
+          leader.x = x;
+          leader.y = y;
+          flashGameTime(game, x, y, this.warnColor, this.warnMs).then(() => {
+              map.addActor(leader);
+          });
+          return true;
+      }
+      _addMember(member, map, x, y, leader, _opts) {
+          const game = map.game;
+          member.leader = leader;
+          member.x = x;
+          member.y = y;
+          flashGameTime(game, x, y, this.warnColor, this.memberWarnMs).then(() => {
+              map.addActor(member);
+          });
+          return true;
+      }
+      _spawnMembers(leader, map, opts) {
+          const entries = Object.entries(this.members);
+          if (entries.length == 0)
+              return 0;
+          let count = 0;
+          entries.forEach(([kindId, countRange]) => {
+              const count = countRange.value(opts.rng);
+              for (let i = 0; i < count; ++i) {
+                  this._spawnMember(kindId, map, leader, opts);
+              }
+          });
+          return count;
+      }
+      _spawnMember(kindId, map, leader, opts) {
+          const kind = get(kindId);
+          if (!kind) {
+              throw new Error("Failed to find member kind = " + kindId);
+          }
+          const member = make$2(kind, { machineHome: opts.machine });
+          if (!member)
+              throw new Error("Failed to make horde member - " + kindId);
+          const [x, y] = this._pickMemberLoc(member, map, leader, opts) || [-1, -1];
+          if (x < 0 || y < 0) {
+              return null;
+          }
+          // pre-placement stuff?  machine? effect?
+          if (!this._addMember(member, map, x, y, leader, opts)) {
+              return null;
+          }
+          return member;
+      }
+      _pickLeaderLoc(leader, map, opts) {
+          let loc = opts.rng.matchingLoc(map.width, map.height, (x, y) => {
+              if (map.hasActor(x, y))
+                  return false; // Brogue kills existing actors, but lets do this instead
+              if (map.hasFx(x, y))
+                  return false; // Could be someone else spawning here
+              if (!opts.canSpawn(x, y))
+                  return false;
+              if (leader.avoidsTile(map.getTile(x, y)))
+                  return false;
+              if (map.isHallway(x, y)) {
+                  return false;
+              }
+              return true;
+          });
+          return loc;
+      }
+      _pickMemberLoc(actor, map, leader, opts) {
+          let loc = opts.rng.matchingLocNear(leader.x, leader.y, (x, y) => {
+              if (!map.hasXY(x, y))
+                  return false;
+              if (map.hasActor(x, y))
+                  return false; // Brogue kills existing actors, but lets do this instead
+              if (map.hasFx(x, y))
+                  return false; // Could be someone else spawning here
+              // if (map.fov.isAnyKindOfVisible(x, y)) return false;
+              if (actor.avoidsTile(map.getTile(x, y)))
+                  return false;
+              if (map.isHallway(x, y)) {
+                  return false;
+              }
+              return true;
+          });
+          return loc;
+      }
+  }
+
+  const hordes = {};
+  function install$1(id, horde) {
+      if (typeof horde === "string") {
+          horde = { leader: horde };
+      }
+      if (!(horde instanceof Horde)) {
+          horde = new Horde(horde);
+      }
+      hordes[id] = horde;
+      return horde;
+  }
+  function from$1(id) {
+      if (id instanceof Horde) {
+          return id;
+      }
+      if (typeof id === "string") {
+          return hordes[id];
+      }
+      return new Horde(id);
+  }
 
   // export interface TileInfo extends TileConfig {
   //   index: number;
@@ -17678,7 +17922,7 @@ void main() {
           this.locations = {};
           this.tiles = grid.make(width, height);
           this.flags = grid.make(this.width, this.height);
-          this.data.mobsLeft = 0;
+          this.data.wavesLeft = 0;
       }
       get width() {
           return this.tiles.width;
@@ -17704,17 +17948,19 @@ void main() {
           game.player.clearGoal();
           spawn(this, game.player, startLoc[0], startLoc[1]).then(() => {
               this.started = true;
+              this.data.wavesLeft = this.waves.length;
               this.waves.forEach((wave) => {
-                  wave.count = wave.count || 1;
-                  this.data.mobsLeft += wave.count;
                   game.wait(wave.delay || 0, () => {
-                      for (let i = 0; i < wave.count; ++i) {
-                          spawn(this, wave.horde).then((actor) => {
-                              actor.on("death", () => {
-                                  --this.data.mobsLeft;
-                              });
-                          });
+                      const horde = from$1(wave.horde);
+                      if (!horde) {
+                          throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
                       }
+                      const leader = horde.spawn(this);
+                      if (!leader)
+                          throw new Error("Failed to place horde!");
+                      leader.once("add", () => {
+                          --this.data.wavesLeft;
+                      });
                   });
               });
           });
@@ -17739,7 +17985,7 @@ void main() {
               return game.lose();
           }
           // Do we have work left to do on the level?
-          if (this.data.mobsLeft > 0)
+          if (this.data.wavesLeft > 0)
               return;
           if (this.actors.length > 1)
               return;
@@ -17786,6 +18032,11 @@ void main() {
       blocksMove(x, y) {
           const tile = this.getTile(x, y);
           return tile.blocksMove || false;
+      }
+      isHallway(x, y) {
+          return (xy.arcCount(x, y, (i, j) => {
+              return !this.blocksMove(i, j);
+          }) > 1);
       }
       //
       drawAt(buf, x, y) {
@@ -17907,7 +18158,7 @@ void main() {
           level.waves = cfg.waves;
       }
       else {
-          level.waves = [{ delay: 500, horde: "zombie", count: 1 }];
+          level.waves = [{ delay: 500, horde: "ZOMBIE" }];
       }
       // if (cfg.start) {
       //   level.startLoc = cfg.start;
@@ -18260,12 +18511,12 @@ void main() {
       constructor(opts) {
           super(opts);
           this._focus = [-1, -1];
-          this.on("draw", this._draw);
+          this.on("draw", this.__draw);
           this.on("mousemove", this._setFocus);
           this.on("mouseleave", this._clearFocus);
           this.on("keypress", this._clearFocus);
       }
-      _draw(buf) {
+      __draw(buf) {
           const game = this.scene.data;
           buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
           const level = game.level;
@@ -18319,8 +18570,8 @@ void main() {
           super(opts);
           this._focus = [-1, -1];
           this.entries = [];
-          this.on("draw", this._draw.bind(this));
-          this.on("mousemove", this._mousemove.bind(this));
+          this.on("draw", this.__draw.bind(this));
+          this.on("mousemove", this._setFocus.bind(this));
       }
       setFocus(x, y) {
           this._focus = [x, y];
@@ -18355,7 +18606,7 @@ void main() {
           const bg = index$9.colors.green.mix(index$9.colors.red, 100 * (1 - pct));
           this.drawProgress(buf, x, y, w, "white", bg, actor.health, actor.kind.health, "HEALTH");
       }
-      _draw(buf) {
+      __draw(buf) {
           const game = this.scene.data;
           const level = game.level;
           buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
@@ -18405,7 +18656,7 @@ void main() {
           y += buf.drawText(x, y, "Press Escape to lose.");
           buf.clearClip();
       }
-      _mousemove(e) {
+      _setFocus(e) {
           const wasFocus = this._focus.slice();
           this._focus[0] = -1;
           this._focus[1] = -1;
@@ -18481,7 +18732,7 @@ void main() {
           const map$1 = map(this, 60, 35);
           sidebar$1.on("focus", (loc) => {
               loc = loc || [-1, -1];
-              map$1.focus = loc;
+              map$1._focus = loc;
               const game = this.data;
               const player = game.player;
               if (loc[0] < 0) {
@@ -18973,6 +19224,12 @@ void main() {
   - SUMMONER - 4 damage, 100 HP
 
   */
+
+  install$1("ZOMBIE", {
+      leader: "zombie",
+      members: { zombie: "2-3" },
+      frequency: 10,
+  });
 
   function start() {
       // create the user interface

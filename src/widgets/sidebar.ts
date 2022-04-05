@@ -10,8 +10,8 @@ export class Sidebar extends GWU.app.Widget {
 
   constructor(opts: GWU.app.WidgetOpts) {
     super(opts);
-    this.on("draw", this._draw.bind(this));
-    this.on("mousemove", this._mousemove.bind(this));
+    this.on("draw", this.__draw.bind(this));
+    this.on("mousemove", this._setFocus.bind(this));
   }
 
   setFocus(x: number, y: number) {
@@ -85,7 +85,7 @@ export class Sidebar extends GWU.app.Widget {
     );
   }
 
-  _draw(buf: GWU.buffer.Buffer) {
+  __draw(buf: GWU.buffer.Buffer) {
     const game = this.scene!.data as Game;
     const level = game.level!;
 
@@ -158,7 +158,7 @@ export class Sidebar extends GWU.app.Widget {
     buf.clearClip();
   }
 
-  _mousemove(e: GWU.app.Event) {
+  _setFocus(e: GWU.app.Event) {
     const wasFocus = this._focus.slice() as GWU.xy.Loc;
     this._focus[0] = -1;
     this._focus[1] = -1;

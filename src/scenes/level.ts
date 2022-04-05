@@ -17,7 +17,7 @@ export const level = {
 
     sidebar.on("focus", (loc) => {
       loc = loc || [-1, -1];
-      map.focus = loc;
+      map._focus = loc;
 
       const game = this.data;
       const player = game.player;

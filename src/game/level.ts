@@ -1,15 +1,15 @@
 import * as GWU from "gw-utils";
 import * as GWD from "gw-dig";
 
-import * as ACTOR from "../actor/index";
-import * as FX from "../fx/index";
+import * as ACTOR from "../actor";
+import * as HORDE from "../horde";
+import * as FX from "../fx";
 
 import * as TILE from "./tiles";
 import * as OBJ from "./obj";
 import { Game } from "./game";
 
 export interface WaveInfo {
-  count?: number;
   delay?: number;
   horde: string;
 }
@@ -41,7 +41,7 @@ export class Level {
     this.tiles = GWU.grid.make(width, height);
     this.flags = GWU.grid.make(this.width, this.height);
 
-    this.data.mobsLeft = 0;
+    this.data.wavesLeft = 0;
   }
 
   get width() {
@@ -77,17 +77,20 @@ export class Level {
     ACTOR.spawn(this, game.player, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
 
+      this.data.wavesLeft = this.waves.length;
       this.waves.forEach((wave) => {
-        wave.count = wave.count || 1;
-        this.data.mobsLeft += wave.count;
         game.wait(wave.delay || 0, () => {
-          for (let i = 0; i < wave.count!; ++i) {
-            ACTOR.spawn(this, wave.horde).then((actor) => {
-              actor.on("death", () => {
-                --this.data.mobsLeft;
-              });
-            });
+          const horde = HORDE.from(wave.horde);
+          if (!horde) {
+            throw new Error(
+              "Failed to get horde: " + JSON.stringify(wave.horde)
+            );
           }
+          const leader = horde.spawn(this);
+          if (!leader) throw new Error("Failed to place horde!");
+          leader.once("add", () => {
+            --this.data.wavesLeft;
+          });
         });
       });
     });
@@ -117,7 +120,7 @@ export class Level {
     }
 
     // Do we have work left to do on the level?
-    if (this.data.mobsLeft > 0) return;
+    if (this.data.wavesLeft > 0) return;
     if (this.actors.length > 1) return;
 
     // win level
@@ -173,6 +176,14 @@ export class Level {
   blocksMove(x: number, y: number) {
     const tile = this.getTile(x, y);
     return tile.blocksMove || false;
+  }
+
+  isHallway(x: number, y: number): boolean {
+    return (
+      GWU.xy.arcCount(x, y, (i, j) => {
+        return !this.blocksMove(i, j);
+      }) > 1
+    );
   }
 
   //
@@ -341,7 +352,7 @@ export function from(cfg: LevelConfig): Level {
   if (cfg.waves) {
     level.waves = cfg.waves;
   } else {
-    level.waves = [{ delay: 500, horde: "zombie", count: 1 }];
+    level.waves = [{ delay: 500, horde: "ZOMBIE" }];
   }
 
   // if (cfg.start) {
