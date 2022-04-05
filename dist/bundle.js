@@ -13413,7 +13413,8 @@ void main() {
               return index$6.OBSTRUCTION;
           if (level.blocksMove(x, y))
               return index$6.OBSTRUCTION;
-          // if (game.actorAt(x, y)) return GWU.path.AVOIDED;
+          if (level.hasActor(x, y))
+              return index$6.AVOIDED;
           return 1;
       }
       pathTo(loc) {
@@ -13477,9 +13478,9 @@ void main() {
   class Player extends Actor {
       constructor(cfg) {
           super(cfg);
-          this.goalMap = null;
           this.mapToMe = null;
-          this.goToGoal = false;
+          this.goalPath = null;
+          this.followPath = false;
           this.on("add", (game) => {
               game.level;
               this.mapToMe = null;
@@ -13494,14 +13495,14 @@ void main() {
       }
       act(game) {
           this.startTurn(game);
-          if (this.goalMap && this.goToGoal) {
-              const step = index$6.nextStep(this.goalMap, this.x, this.y, (x, y) => {
-                  if (this._level.actorAt(x, y))
-                      return true;
-                  return false;
-              }, true);
+          if (this.goalPath && this.followPath && this.goalPath.length) {
+              const step = this.goalPath[0];
               if (step) {
-                  if (moveDir(game, this, step, false)) {
+                  const dir = xy.dirFromTo(this, step);
+                  if (moveDir(game, this, dir, false)) {
+                      if (xy.equals(this, step)) {
+                          this.goalPath.shift(); // we moved there, so remove that step
+                      }
                       return;
                   }
                   game.addMessage("You are blocked.");
@@ -13512,19 +13513,18 @@ void main() {
           console.log("Player - await input", game.scheduler.time);
       }
       setGoal(x, y) {
-          if (!this._level || this.goToGoal)
+          if (!this._level || this.followPath)
               return;
-          if (!this.goalMap) {
-              this.goalMap = grid.alloc(this._level.width, this._level.height);
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => this.moveCost(i, j));
+          if (this.goalPath &&
+              this.goalPath.length &&
+              xy.equals(this.goalPath[0], this)) {
+              this.goalPath.shift(); // remove the spot we are standing on
           }
-          index$6.calculateDistances(this.goalMap, x, y, (x, y) => this.moveCost(x, y), true);
       }
       clearGoal() {
-          if (this.goalMap) {
-              grid.free(this.goalMap);
-              this.goalMap = null;
-          }
-          this.goToGoal = false;
+          this.followPath = false;
+          this.goalPath = null;
       }
       updateMapToMe() {
           if (!this.mapToMe ||
@@ -18545,14 +18545,10 @@ void main() {
               // }
           });
           const player = game.player;
-          if (player.goalMap) {
-              index$6.forPath(player.goalMap, player.x, player.y, (x, y) => {
-                  if (level.hasActor(x, y))
-                      return true;
-                  return false;
-              }, (x, y) => {
+          if (player.goalPath) {
+              player.goalPath.forEach(([x, y]) => {
                   buf.get(x, y).mix("green", 0, 25).separate();
-              }, true);
+              });
           }
       }
       _setFocus(e) {
@@ -18766,7 +18762,7 @@ void main() {
               console.log("sidebar choose - player go to :", loc[0], loc[1]);
               const game = this.data;
               game.player.setGoal(loc[0], loc[1]);
-              game.player.goToGoal = true;
+              game.player.followPath = true;
               game.player.act(game);
           });
           messages$1.on("click", (e) => {
@@ -18782,7 +18778,7 @@ void main() {
           map$1.on("mousemove", (e) => {
               const game = this.data;
               const level = game.level;
-              const text = game.level.getFlavor(e.x, e.y);
+              const text = level.getFlavor(e.x, e.y);
               flavor$1.prop("text", text);
               sidebar$1.setFocus(e.x, e.y);
               if (!level.started)
@@ -18806,7 +18802,7 @@ void main() {
               if (!level.started)
                   return;
               game.player.setGoal(e.x, e.y);
-              game.player.goToGoal = true;
+              game.player.followPath = true;
               game.player.act(game);
           });
       },

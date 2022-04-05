@@ -19,7 +19,7 @@ export const level = {
       loc = loc || [-1, -1];
       map._focus = loc;
 
-      const game = this.data;
+      const game = this.data as Game;
       const player = game.player;
       if (loc[0] < 0) {
         // game.level.clearPath();
@@ -34,14 +34,14 @@ export const level = {
     });
     sidebar.on("choose", (loc) => {
       console.log("sidebar choose - player go to :", loc[0], loc[1]);
-      const game = this.data;
+      const game = this.data as Game;
       game.player.setGoal(loc[0], loc[1]);
-      game.player.goToGoal = true;
+      game.player.followPath = true;
       game.player.act(game);
     });
 
     messages.on("click", (e: GWU.app.Event) => {
-      const game = this.data;
+      const game = this.data as Game;
       if (game.messages.length > 10) {
         this.app.scenes.run("archive", {
           messages: game.messages,
@@ -52,10 +52,10 @@ export const level = {
     });
 
     map.on("mousemove", (e: GWU.app.Event) => {
-      const game = this.data;
-      const level = game.level;
+      const game = this.data as Game;
+      const level = game.level!;
 
-      const text = game.level.getFlavor(e.x, e.y);
+      const text = level.getFlavor(e.x, e.y);
       flavor.prop("text", text);
       sidebar.setFocus(e.x, e.y);
 
@@ -67,18 +67,18 @@ export const level = {
       // game.level.setPath(path);
     });
     map.on("mouseleave", (e: GWU.app.Event) => {
-      const game = this.data;
+      const game = this.data as Game;
       sidebar.clearFocus();
       // game.level.clearPath();
       game.player.clearGoal();
     });
     map.on("click", (e: GWU.app.Event) => {
       console.log("map click - player go to:", e.x, e.y);
-      const game = this.data;
-      const level = game.level;
+      const game = this.data as Game;
+      const level = game.level!;
       if (!level.started) return;
       game.player.setGoal(e.x, e.y);
-      game.player.goToGoal = true;
+      game.player.followPath = true;
       game.player.act(game);
     });
   },

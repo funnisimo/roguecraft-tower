@@ -39,20 +39,10 @@ export class Map extends GWU.app.Widget {
     });
 
     const player = game.player;
-    if (player.goalMap) {
-      GWU.path.forPath(
-        player.goalMap,
-        player.x,
-        player.y,
-        (x, y) => {
-          if (level.hasActor(x, y)) return true;
-          return false;
-        },
-        (x, y) => {
-          buf.get(x, y).mix("green", 0, 25).separate();
-        },
-        true
-      );
+    if (player.goalPath) {
+      player.goalPath.forEach(([x, y]) => {
+        buf.get(x, y).mix("green", 0, 25).separate();
+      });
     }
   }
 

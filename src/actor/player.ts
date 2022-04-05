@@ -7,15 +7,16 @@ import * as ACTION from "../game/actions";
 import { Game } from "../game/game";
 
 export class Player extends ACTOR.Actor {
-  goalMap: GWU.grid.NumGrid | null;
   mapToMe: GWU.grid.NumGrid | null;
-  goToGoal: boolean;
+
+  goalPath: GWU.xy.Loc[] | null;
+  followPath: boolean;
 
   constructor(cfg: ACTOR.ActorConfig) {
     super(cfg);
-    this.goalMap = null;
     this.mapToMe = null;
-    this.goToGoal = false;
+    this.goalPath = null;
+    this.followPath = false;
 
     this.on("add", (game) => {
       const level = game.level;
@@ -33,19 +34,14 @@ export class Player extends ACTOR.Actor {
   act(game: Game) {
     this.startTurn(game);
 
-    if (this.goalMap && this.goToGoal) {
-      const step = GWU.path.nextStep(
-        this.goalMap,
-        this.x,
-        this.y,
-        (x, y) => {
-          if (this._level!.actorAt(x, y)) return true;
-          return false;
-        },
-        true
-      );
+    if (this.goalPath && this.followPath && this.goalPath.length) {
+      const step = this.goalPath[0];
       if (step) {
-        if (ACTION.moveDir(game, this, step, false)) {
+        const dir = GWU.xy.dirFromTo(this, step);
+        if (ACTION.moveDir(game, this, dir, false)) {
+          if (GWU.xy.equals(this, step)) {
+            this.goalPath.shift(); // we moved there, so remove that step
+          }
           return;
         }
         game.addMessage("You are blocked.");
@@ -58,26 +54,23 @@ export class Player extends ACTOR.Actor {
   }
 
   setGoal(x: number, y: number) {
-    if (!this._level || this.goToGoal) return;
+    if (!this._level || this.followPath) return;
 
-    if (!this.goalMap) {
-      this.goalMap = GWU.grid.alloc(this._level.width, this._level.height);
-    }
-    GWU.path.calculateDistances(
-      this.goalMap,
-      x,
-      y,
-      (x, y) => this.moveCost(x, y),
-      true
+    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j) =>
+      this.moveCost(i, j)
     );
+    if (
+      this.goalPath &&
+      this.goalPath.length &&
+      GWU.xy.equals(this.goalPath[0], this)
+    ) {
+      this.goalPath.shift(); // remove the spot we are standing on
+    }
   }
 
   clearGoal() {
-    if (this.goalMap) {
-      GWU.grid.free(this.goalMap);
-      this.goalMap = null;
-    }
-    this.goToGoal = false;
+    this.followPath = false;
+    this.goalPath = null;
   }
 
   updateMapToMe() {

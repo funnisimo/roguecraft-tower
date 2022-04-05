@@ -79,7 +79,7 @@ export class Actor extends Obj {
 
     if (!level.hasXY(x, y)) return GWU.path.OBSTRUCTION;
     if (level.blocksMove(x, y)) return GWU.path.OBSTRUCTION;
-    // if (game.actorAt(x, y)) return GWU.path.AVOIDED;
+    if (level.hasActor(x, y)) return GWU.path.AVOIDED;
     return 1;
   }
 
