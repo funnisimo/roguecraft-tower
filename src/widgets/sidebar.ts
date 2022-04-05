@@ -10,16 +10,16 @@ export class Sidebar extends GWU.app.Widget {
 
   constructor(opts: GWU.app.WidgetOpts) {
     super(opts);
-    this.on("draw", this.__draw.bind(this));
-    this.on("mousemove", this._setFocus.bind(this));
   }
 
   setFocus(x: number, y: number) {
-    this._focus = [x, y];
+    this._focus[0] = x;
+    this._focus[1] = y;
   }
 
   clearFocus() {
-    this._focus = [-1, -1];
+    this._focus[0] = -1;
+    this._focus[1] = -1;
   }
 
   drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Player) {
@@ -85,7 +85,7 @@ export class Sidebar extends GWU.app.Widget {
     );
   }
 
-  __draw(buf: GWU.buffer.Buffer) {
+  _draw(buf: GWU.buffer.Buffer) {
     const game = this.scene!.data as Game;
     const level = game.level!;
 
@@ -158,23 +158,24 @@ export class Sidebar extends GWU.app.Widget {
     buf.clearClip();
   }
 
-  _setFocus(e: GWU.app.Event) {
+  _mousemove(e: GWU.app.Event) {
+    super._mousemove(e);
+
+    if (e.defaultPrevented || e.propagationStopped) return;
+
     const wasFocus = this._focus.slice() as GWU.xy.Loc;
-    this._focus[0] = -1;
-    this._focus[1] = -1;
+    this.clearFocus();
     const game = this.scene!.data;
     const player = game.player;
     if (
       player.data.sideY <= e.y &&
       player.data.sideY + player.data.sideH >= e.y
     ) {
-      this._focus[0] = player.x;
-      this._focus[1] = player.y;
+      this.setFocus(player.x, player.y);
     } else {
       this.entries.forEach((a) => {
         if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
-          this._focus[0] = a.x;
-          this._focus[1] = a.y;
+          this.setFocus(a.x, a.y);
         }
       });
     }
@@ -183,6 +184,16 @@ export class Sidebar extends GWU.app.Widget {
       this.needsDraw = true;
     }
     e.stopPropagation();
+  }
+
+  _click(e: GWU.app.Event) {
+    super._click(e);
+
+    if (e.defaultPrevented || e.propagationStopped) return;
+
+    if (this._focus[0] > -1) {
+      this.trigger("choose", this._focus);
+    }
   }
 }
 
