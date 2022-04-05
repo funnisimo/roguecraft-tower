@@ -13498,14 +13498,22 @@ void main() {
           if (this.goalPath && this.followPath && this.goalPath.length) {
               const step = this.goalPath[0];
               if (step) {
-                  const dir = xy.dirFromTo(this, step);
-                  if (moveDir(game, this, dir, false)) {
-                      if (xy.equals(this, step)) {
-                          this.goalPath.shift(); // we moved there, so remove that step
-                      }
-                      return;
+                  if (game.level.hasActor(step[0], step[1])) {
+                      game.addMessage("You are blocked.");
                   }
-                  game.addMessage("You are blocked.");
+                  else {
+                      const dir = xy.dirFromTo(this, step);
+                      if (moveDir(game, this, dir, true)) {
+                          if (xy.equals(this, step)) {
+                              this.goalPath.shift(); // we moved there, so remove that step
+                          }
+                          else {
+                              this.clearGoal();
+                          }
+                          return;
+                      }
+                      game.addMessage("You lost track of path.");
+                  }
               }
           }
           this.clearGoal();

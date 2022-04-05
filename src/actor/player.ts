@@ -37,14 +37,20 @@ export class Player extends ACTOR.Actor {
     if (this.goalPath && this.followPath && this.goalPath.length) {
       const step = this.goalPath[0];
       if (step) {
-        const dir = GWU.xy.dirFromTo(this, step);
-        if (ACTION.moveDir(game, this, dir, false)) {
-          if (GWU.xy.equals(this, step)) {
-            this.goalPath.shift(); // we moved there, so remove that step
+        if (game.level!.hasActor(step[0], step[1])) {
+          game.addMessage("You are blocked.");
+        } else {
+          const dir = GWU.xy.dirFromTo(this, step);
+          if (ACTION.moveDir(game, this, dir, true)) {
+            if (GWU.xy.equals(this, step)) {
+              this.goalPath.shift(); // we moved there, so remove that step
+            } else {
+              this.clearGoal();
+            }
+            return;
           }
-          return;
+          game.addMessage("You lost track of path.");
         }
-        game.addMessage("You are blocked.");
       }
     }
     this.clearGoal();
