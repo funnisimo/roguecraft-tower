@@ -99,6 +99,24 @@ export class Game {
         this.scene!.needsDraw = true;
       }
     });
+    this.events.on("<", (e) => {
+      if (!this.level) return;
+      // find stairs
+      let loc: GWU.xy.Loc = [-1, -1];
+      this.level.tiles.forEach((t, x, y) => {
+        const tile = TILE.tilesByIndex[t];
+        if (tile.id === "DOWN_STAIRS") {
+          loc[0] = x;
+          loc[1] = y;
+        }
+      });
+      // set player goal
+      if (loc[0] >= 0) {
+        this.player.setGoal(loc[0], loc[1]);
+        this.scene!.needsDraw = true;
+      }
+    });
+
     this.events.on("z", (e) => {
       ACTOR.spawn(this.level!, "zombie", this.player.x, this.player.y);
     });

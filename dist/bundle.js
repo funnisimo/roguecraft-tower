@@ -13826,7 +13826,7 @@ void main() {
       target.health -= actor.damage || 0;
       flash(game, target.x, target.y, "red", 150);
       game.endTurn(actor, actor.kind.moveSpeed);
-      if (target.health < 0) {
+      if (target.health <= 0) {
           target.trigger("death");
           // do all of these move to event handlers?
           game.messages.addCombat(`${target.kind.id} dies`);
@@ -19009,6 +19009,24 @@ void main() {
                   this.scene.needsDraw = true;
               }
           });
+          this.events.on("<", (e) => {
+              if (!this.level)
+                  return;
+              // find stairs
+              let loc = [-1, -1];
+              this.level.tiles.forEach((t, x, y) => {
+                  const tile = tilesByIndex[t];
+                  if (tile.id === "DOWN_STAIRS") {
+                      loc[0] = x;
+                      loc[1] = y;
+                  }
+              });
+              // set player goal
+              if (loc[0] >= 0) {
+                  this.player.setGoal(loc[0], loc[1]);
+                  this.scene.needsDraw = true;
+              }
+          });
           this.events.on("z", (e) => {
               spawn(this.level, "zombie", this.player.x, this.player.y);
           });
@@ -19335,8 +19353,7 @@ void main() {
               y += used + 1;
           });
           y += 1;
-          y += buf.drawText(x, y, "Press Enter to win.");
-          y += buf.drawText(x, y, "Press Escape to lose.");
+          // y += buf.drawText(x, y, "Press Escape to lose.");
           buf.clearClip();
       }
       _mousemove(e) {

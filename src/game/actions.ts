@@ -151,7 +151,7 @@ export function attack(
   FX.flash(game, target.x, target.y, "red", 150);
   game.endTurn(actor, actor.kind.moveSpeed);
 
-  if (target.health < 0) {
+  if (target.health <= 0) {
     target.trigger("death");
     // do all of these move to event handlers?
     game.messages.addCombat(`${target.kind.id} dies`);
