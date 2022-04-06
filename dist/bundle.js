@@ -18749,6 +18749,47 @@ void main() {
       return widget;
   }
 
+  class Details extends index$1$1.Dialog {
+      constructor(opts) {
+          var _a;
+          opts.border = (_a = opts.border) !== null && _a !== void 0 ? _a : "ascii";
+          super(opts);
+          this._text = new index$1$1.Text({
+              id: "INFO",
+              text: "details...",
+              x: this.bounds.x + 1,
+              y: this.bounds.y + 1,
+          });
+          this.addChild(this._text);
+          this.hidden = true;
+      }
+      showActor(actor) {
+          let text = actor.kind.id + "\n";
+          text += "Health: " + actor.health + "/" + actor.kind.health + "\n";
+          text += "Damage: " + actor.damage + "\n";
+          text += "Moves : " + actor.kind.moveSpeed + "\n";
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+      showPlayer(player) {
+          this.showActor(player);
+      }
+  }
+  function details(scene, width, height) {
+      const widget = new Details({
+          id: "DETAILS",
+          tag: "details",
+          x: 2,
+          y: 2,
+          width: width - 4,
+          height: height - 4,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
   const level = {
       create() {
           this.bg = index$9.from("dark_gray");
@@ -18757,6 +18798,7 @@ void main() {
           const flavor$1 = flavor(this, 0, 35);
           const messages$1 = messages(this, 36);
           const map$1 = map(this, 60, 35);
+          const details$1 = details(this, 60, 35);
           sidebar$1.on("focus", (loc) => {
               loc = loc || [-1, -1];
               map$1._focus = loc;
@@ -18773,6 +18815,17 @@ void main() {
                   // const path = player.pathTo(loc);
                   // game.level.setPath(path);
               }
+              const actor = game.level.actorAt(loc[0], loc[1]);
+              if (actor) {
+                  details$1.hidden = false;
+                  details$1.showActor(actor);
+              }
+              else {
+                  details$1.hidden = true;
+              }
+          });
+          sidebar$1.on("mouseleave", () => {
+              details$1.hidden = true;
           });
           sidebar$1.on("choose", (loc) => {
               console.log("sidebar choose - player go to :", loc[0], loc[1]);

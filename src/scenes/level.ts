@@ -14,6 +14,7 @@ export const level = {
     const flavor = WIDGETS.flavor(this, 0, 35);
     const messages = WIDGETS.messages(this, 36);
     const map = WIDGETS.map(this, 60, 35);
+    const details = WIDGETS.details(this, 60, 35);
 
     sidebar.on("focus", (loc) => {
       loc = loc || [-1, -1];
@@ -31,6 +32,17 @@ export const level = {
         // const path = player.pathTo(loc);
         // game.level.setPath(path);
       }
+
+      const actor = game.level!.actorAt(loc[0], loc[1]);
+      if (actor) {
+        details.hidden = false;
+        details.showActor(actor);
+      } else {
+        details.hidden = true;
+      }
+    });
+    sidebar.on("mouseleave", () => {
+      details.hidden = true;
     });
     sidebar.on("choose", (loc) => {
       console.log("sidebar choose - player go to :", loc[0], loc[1]);
