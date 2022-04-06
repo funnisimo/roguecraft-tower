@@ -7,6 +7,7 @@ import { Player } from "../actor/player";
 // import { default as CONFIG } from "../config";
 import { CallbackFn } from "./obj";
 import { FX } from "../fx/flash";
+import * as TILE from "./tiles";
 
 export interface GameOpts {
   seed?: number;
@@ -64,6 +65,14 @@ export class Game {
 
     // TODO - Get these as parameters...
     // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
+    this.events.on("Enter", (e) => {
+      if (this.player.goalPath && this.player.goalPath.length) {
+        this.player.followPath = true;
+        this.player.act(this);
+      } else {
+        // pickup?
+      }
+    });
     this.events.on("dir", (e) => {
       ACTIONS.moveDir(this, this.player, e.dir);
     });
@@ -74,7 +83,21 @@ export class Game {
       ACTIONS.idle(this, this.player);
     });
     this.events.on(">", (e) => {
-      ACTIONS.climb(this, this.player);
+      if (!this.level) return;
+      // find stairs
+      let loc: GWU.xy.Loc = [-1, -1];
+      this.level.tiles.forEach((t, x, y) => {
+        const tile = TILE.tilesByIndex[t];
+        if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+          loc[0] = x;
+          loc[1] = y;
+        }
+      });
+      // set player goal
+      if (loc[0] >= 0) {
+        this.player.setGoal(loc[0], loc[1]);
+        this.scene!.needsDraw = true;
+      }
     });
     this.events.on("z", (e) => {
       ACTOR.spawn(this.level!, "zombie", this.player.x, this.player.y);

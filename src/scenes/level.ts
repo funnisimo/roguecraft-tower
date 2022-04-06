@@ -139,14 +139,14 @@ export const level = {
       const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
       sidebar.clearFocus();
       // this.data.level.clearPath();
-      this.data.player.clearGoal();
 
-      if (e.key == "Enter") {
-        this.trigger("win"); // todo - remove
+      const game = this.data as Game;
+      if (e.key !== "Enter") {
+        game.player.clearGoal();
       }
-      if (e.key == "Escape") {
-        this.trigger("lose"); // todo -- remove
-      }
+      // if (e.key == "Escape") {
+      //   this.trigger("lose"); // todo -- remove
+      // }
       e.stopPropagation();
     },
   },

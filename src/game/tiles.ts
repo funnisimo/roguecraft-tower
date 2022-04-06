@@ -98,7 +98,7 @@ install({
   },
 });
 install({
-  id: "INACTIVE_STAIRS",
+  id: "UP_STAIRS_INACTIVE",
   ch: ">",
   fg: "gray",
   priority: 75,

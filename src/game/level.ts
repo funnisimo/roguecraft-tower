@@ -131,7 +131,7 @@ export class Level {
     if (this.proceed) {
       game.addMessage(this.proceed);
     }
-    const inactiveStairs = TILE.tilesByName["INACTIVE_STAIRS"].index;
+    const inactiveStairs = TILE.tilesByName["UP_STAIRS_INACTIVE"].index;
     this.tiles.forEach((index, x, y) => {
       if (index === inactiveStairs) {
         FX.flash(game, x, y, "yellow").then(() => {
@@ -534,7 +534,12 @@ function digLevel(level: Level, seed = 12345) {
       minDistance: 10,
       maxLength: 10,
     }, */,
-    stairs: { start: "down", up: true, upTile: "INACTIVE_STAIRS", down: true },
+    stairs: {
+      start: "down",
+      up: true,
+      upTile: "UP_STAIRS_INACTIVE",
+      down: true,
+    },
     goesUp: true,
   });
   digger.create(60, 35, (x, y, v) => {

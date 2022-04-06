@@ -13835,16 +13835,6 @@ void main() {
       }
       return true;
   }
-  function climb(game, actor) {
-      const tile = game.level.getTile(actor.x, actor.y);
-      if (tile.on && tile.on.climb) {
-          tile.on.climb.call(tile, game, actor);
-          return actor.hasActed();
-      }
-      else {
-          return idle(game, actor);
-      }
-  }
 
   function ai(game, actor) {
       console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
@@ -18550,7 +18540,7 @@ void main() {
       },
   });
   install({
-      id: "INACTIVE_STAIRS",
+      id: "UP_STAIRS_INACTIVE",
       ch: ">",
       fg: "gray",
       priority: 75,
@@ -18667,7 +18657,7 @@ void main() {
           if (this.proceed) {
               game.addMessage(this.proceed);
           }
-          const inactiveStairs = tilesByName["INACTIVE_STAIRS"].index;
+          const inactiveStairs = tilesByName["UP_STAIRS_INACTIVE"].index;
           this.tiles.forEach((index, x, y) => {
               if (index === inactiveStairs) {
                   flash(game, x, y, "yellow").then(() => {
@@ -18942,7 +18932,12 @@ void main() {
             minDistance: 10,
             maxLength: 10,
           }, */,
-          stairs: { start: "down", up: true, upTile: "INACTIVE_STAIRS", down: true },
+          stairs: {
+              start: "down",
+              up: true,
+              upTile: "UP_STAIRS_INACTIVE",
+              down: true,
+          },
           goesUp: true,
       });
       digger.create(60, 35, (x, y, v) => {
@@ -18981,6 +18976,12 @@ void main() {
           this.events = new index.Events(this);
           // TODO - Get these as parameters...
           // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
+          this.events.on("Enter", (e) => {
+              if (this.player.goalPath && this.player.goalPath.length) {
+                  this.player.followPath = true;
+                  this.player.act(this);
+              }
+          });
           this.events.on("dir", (e) => {
               moveDir(this, this.player, e.dir);
           });
@@ -18991,7 +18992,22 @@ void main() {
               idle(this, this.player);
           });
           this.events.on(">", (e) => {
-              climb(this, this.player);
+              if (!this.level)
+                  return;
+              // find stairs
+              let loc = [-1, -1];
+              this.level.tiles.forEach((t, x, y) => {
+                  const tile = tilesByIndex[t];
+                  if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+                      loc[0] = x;
+                      loc[1] = y;
+                  }
+              });
+              // set player goal
+              if (loc[0] >= 0) {
+                  this.player.setGoal(loc[0], loc[1]);
+                  this.scene.needsDraw = true;
+              }
           });
           this.events.on("z", (e) => {
               spawn(this.level, "zombie", this.player.x, this.player.y);
@@ -19561,13 +19577,13 @@ void main() {
               const sidebar = this.get("SIDEBAR");
               sidebar.clearFocus();
               // this.data.level.clearPath();
-              this.data.player.clearGoal();
-              if (e.key == "Enter") {
-                  this.trigger("win"); // todo - remove
+              const game = this.data;
+              if (e.key !== "Enter") {
+                  game.player.clearGoal();
               }
-              if (e.key == "Escape") {
-                  this.trigger("lose"); // todo -- remove
-              }
+              // if (e.key == "Escape") {
+              //   this.trigger("lose"); // todo -- remove
+              // }
               e.stopPropagation();
           },
       },
