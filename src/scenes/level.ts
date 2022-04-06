@@ -121,6 +121,9 @@ export const level = {
     // },
 
     win(this: GWU.app.Scene) {
+      const game = this.data as Game;
+      game.messages.confirmAll();
+
       const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
       if (this.data.level.depth === LAST_LEVEL) {
         this.app.scenes.start("win", this.data);

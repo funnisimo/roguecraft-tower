@@ -18896,6 +18896,8 @@ void main() {
           //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
           // },
           win() {
+              const game = this.data;
+              game.messages.confirmAll();
               const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
               if (this.data.level.depth === LAST_LEVEL) {
                   this.app.scenes.start("win", this.data);
