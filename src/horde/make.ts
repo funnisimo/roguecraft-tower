@@ -129,7 +129,7 @@ export function random(
     return true;
   });
 
-  if (match.depth) {
+  if (!match.depth) {
     return rng.item(matches) || null;
   }
 

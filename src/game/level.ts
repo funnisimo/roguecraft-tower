@@ -11,7 +11,7 @@ import { Game } from "./game";
 
 export interface WaveInfo {
   delay?: number;
-  horde: string;
+  horde?: string;
 }
 
 export class Level {
@@ -80,7 +80,10 @@ export class Level {
       this.data.wavesLeft = this.waves.length;
       this.waves.forEach((wave) => {
         game.wait(wave.delay || 0, () => {
-          const horde = HORDE.from(wave.horde);
+          let horde: HORDE.Horde | null = null;
+          if (wave.horde) horde = HORDE.from(wave.horde);
+          if (!wave.horde) horde = HORDE.random({ depth: this.depth });
+
           if (!horde) {
             throw new Error(
               "Failed to get horde: " + JSON.stringify(wave.horde)
@@ -352,7 +355,7 @@ export function from(cfg: LevelConfig): Level {
   if (cfg.waves) {
     level.waves = cfg.waves;
   } else {
-    level.waves = [{ delay: 500, horde: "ZOMBIE" }];
+    level.waves = [{ delay: 500 }];
   }
 
   // if (cfg.start) {

@@ -12,7 +12,7 @@ ACTOR.install({
 });
 
 ACTOR.install({
-  id: "Zombie",
+  id: "ZOMBIE",
   ch: "z",
   fg: "green",
   moveSpeed: 200,
@@ -27,7 +27,7 @@ ACTOR.install({
 });
 
 ACTOR.install({
-  id: "Armored Zombie",
+  id: "ARMOR_ZOMBIE",
   ch: "Z",
   fg: "green",
   moveSpeed: 200,
@@ -42,7 +42,7 @@ ACTOR.install({
 });
 
 ACTOR.install({
-  id: "Armored Zombie Sword",
+  id: "ARMOR_ZOMBIE_2",
   ch: "Z",
   fg: "green",
   moveSpeed: 200,

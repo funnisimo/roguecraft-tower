@@ -421,6 +421,9 @@
   function first(...args) {
       return args.find((v) => v !== undefined);
   }
+  function arraysIntersect(a, b) {
+      return a.some((av) => b.includes(av));
+  }
   function arrayIncludesAll(a, b) {
       return b.every((av) => a.includes(av));
   }
@@ -2429,7 +2432,7 @@
           });
       }
       randomEach(fn) {
-          const sequence = random.sequence(this.width * this.height);
+          const sequence = random$1.sequence(this.width * this.height);
           for (let i = 0; i < sequence.length; ++i) {
               const n = sequence[i];
               const x = n % this.width;
@@ -2617,7 +2620,7 @@
                       bestLoc[1] = j;
                       bestDistance = dist;
                   }
-                  else if (dist == bestDistance && random.chance(50)) {
+                  else if (dist == bestDistance && random$1.chance(50)) {
                       bestLoc[0] = i;
                       bestLoc[1] = j;
                   }
@@ -2642,13 +2645,13 @@
           const fn = typeof v === 'function'
               ? (x, y) => v(this[x][y], x, y, this)
               : (x, y) => this.get(x, y) === v;
-          return random.matchingLoc(this.width, this.height, fn);
+          return random$1.matchingLoc(this.width, this.height, fn);
       }
       matchingLocNear(x, y, v) {
           const fn = typeof v === 'function'
               ? (x, y) => v(this[x][y], x, y, this)
               : (x, y) => this.get(x, y) === v;
-          return random.matchingLocNear(x, y, fn);
+          return random$1.matchingLocNear(x, y, fn);
       }
       // Rotates around the cell, counting up the number of distinct strings of neighbors with the same test result in a single revolution.
       //		Zero means there are no impassable tiles adjacent.
@@ -2965,7 +2968,7 @@
   function configure$1(config = {}) {
       if (config.make) {
           RANDOM_CONFIG.make = config.make;
-          random.seed();
+          random$1.seed();
           cosmetic.seed();
       }
   }
@@ -3206,7 +3209,7 @@
           return [-1, -1]; // should never reach this point
       }
   }
-  const random = new Random();
+  const random$1 = new Random();
   const cosmetic = new Random();
   function make$d(seed) {
       return new Random(seed);
@@ -3217,7 +3220,7 @@
   	Alea: Alea,
   	configure: configure$1,
   	Random: Random,
-  	random: random,
+  	random: random$1,
   	cosmetic: cosmetic,
   	make: make$d
   });
@@ -3237,7 +3240,7 @@
           this.clumps = clumps || 1;
       }
       value(rng) {
-          rng = rng || random;
+          rng = rng || random$1;
           return rng.clumped(this.lo, this.hi, this.clumps);
       }
       max() {
@@ -6364,27 +6367,31 @@
       }
       const parts = Object.entries(base);
       const funcs = parts.map(([levels, frequency]) => {
-          let value = 0;
+          let valueFn;
           if (typeof frequency === 'string') {
-              value = Number.parseInt(frequency);
+              const value = Number.parseInt(frequency);
+              valueFn = () => value;
+          }
+          else if (typeof frequency === 'number') {
+              valueFn = () => frequency;
           }
           else {
-              value = frequency;
+              valueFn = frequency;
           }
           if (levels.includes('-')) {
               let [start, end] = levels
                   .split('-')
                   .map((t) => t.trim())
                   .map((v) => Number.parseInt(v));
-              return (level) => level >= start && level <= end ? value : 0;
+              return (level) => level >= start && level <= end ? valueFn(level) : 0;
           }
           else if (levels.endsWith('+')) {
               const found = Number.parseInt(levels);
-              return (level) => (level >= found ? value : 0);
+              return (level) => (level >= found ? valueFn(level) : 0);
           }
           else {
               const found = Number.parseInt(levels);
-              return (level) => (level === found ? value : 0);
+              return (level) => (level === found ? valueFn(level) : 0);
           }
       });
       if (funcs.length == 1)
@@ -8018,7 +8025,7 @@ void main() {
   class Blob {
       constructor(opts = {}) {
           this.options = {
-              rng: random,
+              rng: random$1,
               rounds: 5,
               minWidth: 10,
               minHeight: 10,
@@ -14776,7 +14783,7 @@ void main() {
       return info;
   }
   function pickHorde(depth, rules, rng) {
-      rng = rng || random;
+      rng = rng || random$1;
       let tagMatch;
       if (typeof rules === 'string') {
           tagMatch = tags.makeMatch(rules);
@@ -14931,7 +14938,7 @@ void main() {
       return info;
   }
   function pickItem(depth, tagRules, rng) {
-      rng = rng || random;
+      rng = rng || random$1;
       if (typeof tagRules !== 'string' && 'id' in tagRules) {
           // @ts-ignore
           return items.find((i) => i.id === tagRules.id) || null;
@@ -18394,6 +18401,93 @@ void main() {
       }
       return new Horde(id);
   }
+  function random(opts = {}) {
+      const match = {
+          tags: [],
+          forbidTags: [],
+          flags: 0,
+          forbidFlags: 0,
+          depth: 0,
+      };
+      if (typeof opts === "string") {
+          opts = {
+              tags: opts,
+          };
+      }
+      const rng$1 = opts.rng || rng.random;
+      if (typeof opts.tags === "string") {
+          opts.tags
+              .split(/[,|&]/)
+              .map((t) => t.trim())
+              .forEach((t) => {
+              if (t.startsWith("!")) {
+                  match.forbidTags.push(t.substring(1).trim());
+              }
+              else {
+                  match.tags.push(t);
+              }
+          });
+      }
+      else if (Array.isArray(opts.tags)) {
+          match.tags = opts.tags.slice();
+      }
+      if (typeof opts.forbidTags === "string") {
+          match.forbidTags = opts.forbidTags.split(/[,|&]/).map((t) => t.trim());
+      }
+      else if (Array.isArray(opts.forbidTags)) {
+          match.forbidTags = opts.forbidTags.slice();
+      }
+      if (opts.flags) {
+          if (typeof opts.flags === "string") {
+              opts.flags
+                  .split(/[,|]/)
+                  .map((t) => t.trim())
+                  .forEach((flag) => {
+                  if (flag.startsWith("!")) {
+                      const key = flag.substring(1);
+                      match.forbidFlags |= Flags[key];
+                  }
+                  else {
+                      match.flags |= Flags[flag];
+                  }
+              });
+          }
+      }
+      if (opts.forbidFlags) {
+          match.forbidFlags = flag.from(Flags, opts.forbidFlags);
+      }
+      if (opts.depth) {
+          match.depth = opts.depth;
+      }
+      if (match.depth && opts.oodChance) {
+          while (rng$1.chance(opts.oodChance)) {
+              match.depth += 1;
+          }
+          match.forbidFlags |= Flags.HORDE_NEVER_OOD;
+      }
+      const matches = Object.values(hordes).filter((k) => {
+          if (match.tags.length && !arraysIntersect(match.tags, k.tags))
+              return false;
+          if (match.forbidTags && arraysIntersect(match.forbidTags, k.tags))
+              return false;
+          if (match.flags && !(k.flags.horde & match.flags)) {
+              return false;
+          }
+          if (match.forbidFlags && k.flags.horde & match.forbidFlags) {
+              return false;
+          }
+          return true;
+      });
+      if (!match.depth) {
+          return rng$1.item(matches) || null;
+      }
+      const depth = match.depth;
+      const weights = matches.map((h) => h.frequency(depth));
+      const index = rng$1.weighted(weights);
+      if (index < 0)
+          return null;
+      return matches[index];
+  }
 
   // export interface TileInfo extends TileConfig {
   //   index: number;
@@ -18493,7 +18587,7 @@ void main() {
           this.fxs = [];
           this.game = null;
           this.player = null;
-          this.rng = random;
+          this.rng = random$1;
           this.locations = {};
           this.tiles = grid.make(width, height);
           this.flags = grid.make(this.width, this.height);
@@ -18526,7 +18620,11 @@ void main() {
               this.data.wavesLeft = this.waves.length;
               this.waves.forEach((wave) => {
                   game.wait(wave.delay || 0, () => {
-                      const horde = from$1(wave.horde);
+                      let horde = null;
+                      if (wave.horde)
+                          horde = from$1(wave.horde);
+                      if (!wave.horde)
+                          horde = random({ depth: this.depth });
                       if (!horde) {
                           throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
                       }
@@ -18733,7 +18831,7 @@ void main() {
           level.waves = cfg.waves;
       }
       else {
-          level.waves = [{ delay: 500, horde: "ZOMBIE" }];
+          level.waves = [{ delay: 500 }];
       }
       // if (cfg.start) {
       //   level.startLoc = cfg.start;
@@ -18869,7 +18967,7 @@ void main() {
           this.depth = 0;
           this.scheduler = new scheduler.Scheduler();
           this.inputQueue = new index.Queue();
-          this.seed = opts.seed || random.number(100000);
+          this.seed = opts.seed || random$1.number(100000);
           console.log("GAME, seed=", this.seed);
           this.rng = rng.make(this.seed);
           this.seeds = [];
@@ -19720,7 +19818,7 @@ void main() {
       damage: 10,
   });
   install$3({
-      id: "Zombie",
+      id: "ZOMBIE",
       ch: "z",
       fg: "green",
       moveSpeed: 200,
@@ -19734,7 +19832,7 @@ void main() {
       },
   });
   install$3({
-      id: "Armored Zombie",
+      id: "ARMOR_ZOMBIE",
       ch: "Z",
       fg: "green",
       moveSpeed: 200,
@@ -19748,7 +19846,7 @@ void main() {
       },
   });
   install$3({
-      id: "Armored Zombie Sword",
+      id: "ARMOR_ZOMBIE_2",
       ch: "Z",
       fg: "green",
       moveSpeed: 200,
@@ -19858,9 +19956,19 @@ void main() {
   */
 
   install$1("ZOMBIE", {
-      leader: "zombie",
-      members: { zombie: "2-3" },
+      leader: "ZOMBIE",
+      members: { ZOMBIE: "2-3" },
       frequency: 10,
+  });
+  install$1("ZOMBIE2", {
+      leader: "ARMOR_ZOMBIE",
+      members: { ZOMBIE: "2-3" },
+      frequency: (l) => l + 5,
+  });
+  install$1("ZOMBIE3", {
+      leader: "ARMOR_ZOMBIE_2",
+      members: { ARMOR_ZOMBIE: "1-2", ZOMBIE: "1-3" },
+      frequency: (l) => 2 * l,
   });
 
   function start() {
