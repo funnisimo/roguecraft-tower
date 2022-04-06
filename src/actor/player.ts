@@ -3,11 +3,12 @@ import * as GWU from "gw-utils";
 import * as ACTOR from "./actor";
 import * as KIND from "./kind";
 import * as ACTION from "../game/actions";
-// import { Level } from "../game/level";
+import { Level } from "../game/level";
 import { Game } from "../game/game";
 
 export class Player extends ACTOR.Actor {
   mapToMe: GWU.grid.NumGrid | null;
+  fov: GWU.grid.NumGrid | null;
 
   goalPath: GWU.xy.Loc[] | null;
   followPath: boolean;
@@ -15,18 +16,29 @@ export class Player extends ACTOR.Actor {
   constructor(cfg: ACTOR.ActorConfig) {
     super(cfg);
     this.mapToMe = null;
+    this.fov = null;
     this.goalPath = null;
     this.followPath = false;
 
-    this.on("add", (game) => {
-      const level = game.level;
-      this.mapToMe = null;
+    this.on("add", (level: Level) => {
+      this._level = level;
+      this.updateMapToMe();
+      this.updateFov();
+      level.game!.scene!.needsDraw = true;
     });
     this.on("move", () => {
       this.updateMapToMe();
+      this.updateFov();
     });
     this.on("remove", () => {
-      this.mapToMe && GWU.grid.free(this.mapToMe);
+      if (this.mapToMe) {
+        GWU.grid.free(this.mapToMe);
+        this.mapToMe = null;
+      }
+      if (this.fov) {
+        GWU.grid.free(this.fov);
+        this.fov = null;
+      }
       this.clearGoal();
     });
   }
@@ -80,13 +92,16 @@ export class Player extends ACTOR.Actor {
   }
 
   updateMapToMe() {
+    const level = this._level;
+    if (!level) return;
+
     if (
       !this.mapToMe ||
-      this.mapToMe.width !== this._level!.width ||
-      this.mapToMe.height !== this._level!.height
+      this.mapToMe.width !== level.width ||
+      this.mapToMe.height !== level.height
     ) {
       this.mapToMe && GWU.grid.free(this.mapToMe);
-      this.mapToMe = GWU.grid.alloc(this._level!.width, this._level!.height);
+      this.mapToMe = GWU.grid.alloc(level.width, level.height);
     }
     GWU.path.calculateDistances(
       this.mapToMe,
@@ -94,6 +109,30 @@ export class Player extends ACTOR.Actor {
       this.y,
       (x, y) => this.moveCost(x, y),
       true
+    );
+  }
+
+  updateFov() {
+    const level = this._level;
+    if (!level) return;
+
+    if (
+      !this.fov ||
+      this.fov.width !== level.width ||
+      this.fov.height !== level.height
+    ) {
+      this.fov && GWU.grid.free(this.fov);
+      this.fov = GWU.grid.alloc(level.width, level.height);
+    }
+
+    GWU.fov.calculate(
+      this.fov,
+      (x, y) => {
+        return this.moveCost(x, y) < 0;
+      },
+      this.x,
+      this.y,
+      100
     );
   }
 }

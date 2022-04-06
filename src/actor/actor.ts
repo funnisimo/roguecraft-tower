@@ -32,8 +32,8 @@ export class Actor extends Obj {
     this.health = this.kind.health || 0;
     this.damage = this.kind.damage || 0;
 
-    this.on("add", (level) => {
-      level.game.scheduler.push(this, this.kind.moveSpeed);
+    this.on("add", (level: Level) => {
+      level.game!.scheduler.push(this, this.kind.moveSpeed);
       this._level = level;
     });
     this.on("remove", (level) => {

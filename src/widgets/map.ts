@@ -8,14 +8,15 @@ export class Map extends GWU.app.Widget {
 
   constructor(opts: GWU.app.WidgetOpts) {
     super(opts);
-    this.on("draw", this.__draw);
+    this.on("draw", this._draw);
     this.on("mousemove", this._setFocus);
     this.on("mouseleave", this._clearFocus);
     this.on("keypress", this._clearFocus);
   }
 
-  __draw(buf: GWU.buffer.Buffer) {
+  _draw(buf: GWU.buffer.Buffer) {
     const game = this.scene!.data as Game;
+    const player = game.player;
 
     buf.fillRect(
       this.bounds.x,
@@ -31,14 +32,12 @@ export class Map extends GWU.app.Widget {
     level.tiles.forEach((index, x, y) => {
       buf.blackOut(x, y);
       level.drawAt(buf, x, y);
-      // if (x === this._focus[0] && y === this._focus[1]) {
-      //   buf.get(x, y).mix("green", 0, 50).separate();
-      // } else if (level.isInPath(x, y)) {
-      //   buf.get(x, y).mix("yellow", 0, 50).separate();
-      // }
+
+      if (!player.fov || !player.fov.get(x, y)) {
+        buf.get(x, y).mix("black", 25, 25);
+      }
     });
 
-    const player = game.player;
     if (player.goalPath) {
       player.goalPath.forEach(([x, y]) => {
         buf.get(x, y).mix("green", 0, 25).separate();

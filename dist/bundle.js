@@ -5319,7 +5319,7 @@
       }
   }
 
-  make$a([
+  const FovFlags = make$a([
       'VISIBLE',
       'WAS_VISIBLE',
       'CLAIRVOYANT_VISIBLE',
@@ -5347,6 +5347,529 @@
       'TELEPATHIC = TELEPATHIC_VISIBLE',
       'VIEWPORT_TYPES = PLAYER | VISIBLE |CLAIRVOYANT |TELEPATHIC |ITEM_DETECTED |ACTOR_DETECTED',
   ]);
+
+  // CREDIT - This is adapted from: http://roguebasin.roguelikedevelopment.org/index.php?title=Improved_Shadowcasting_in_Java
+  class FOV {
+      constructor(strategy) {
+          this._setVisible = null;
+          this._startX = -1;
+          this._startY = -1;
+          this._maxRadius = 100;
+          this._isBlocked = strategy.isBlocked;
+          this._calcRadius = strategy.calcRadius || calcRadius;
+          this._hasXY = strategy.hasXY || TRUE;
+          this._debug = strategy.debug || NOOP;
+      }
+      calculate(x, y, maxRadius, setVisible) {
+          this._setVisible = setVisible;
+          this._setVisible(x, y, 1);
+          this._startX = x;
+          this._startY = y;
+          this._maxRadius = maxRadius + 1;
+          // uses the diagonals
+          for (let i = 4; i < 8; ++i) {
+              const d = DIRS$2[i];
+              this.castLight(1, 1.0, 0.0, 0, d[0], d[1], 0);
+              this.castLight(1, 1.0, 0.0, d[0], 0, 0, d[1]);
+          }
+      }
+      // NOTE: slope starts a 1 and ends at 0.
+      castLight(row, startSlope, endSlope, xx, xy, yx, yy) {
+          if (row >= this._maxRadius) {
+              this._debug('CAST: row=%d, start=%d, end=%d, row >= maxRadius => cancel', row, startSlope.toFixed(2), endSlope.toFixed(2));
+              return;
+          }
+          if (startSlope < endSlope) {
+              this._debug('CAST: row=%d, start=%d, end=%d, start < end => cancel', row, startSlope.toFixed(2), endSlope.toFixed(2));
+              return;
+          }
+          this._debug('CAST: row=%d, start=%d, end=%d, x=%d,%d, y=%d,%d', row, startSlope.toFixed(2), endSlope.toFixed(2), xx, xy, yx, yy);
+          let nextStart = startSlope;
+          let blocked = false;
+          let deltaY = -row;
+          let currentX, currentY, outerSlope, innerSlope, maxSlope, minSlope = 0;
+          for (let deltaX = -row; deltaX <= 0; deltaX++) {
+              currentX = Math.floor(this._startX + deltaX * xx + deltaY * xy);
+              currentY = Math.floor(this._startY + deltaX * yx + deltaY * yy);
+              outerSlope = (deltaX - 0.5) / (deltaY + 0.5);
+              innerSlope = (deltaX + 0.5) / (deltaY - 0.5);
+              maxSlope = deltaX / (deltaY + 0.5);
+              minSlope = (deltaX + 0.5) / deltaY;
+              if (!this._hasXY(currentX, currentY)) {
+                  blocked = true;
+                  // nextStart = innerSlope;
+                  continue;
+              }
+              this._debug('- test %d,%d ... start=%d, min=%d, max=%d, end=%d, dx=%d, dy=%d', currentX, currentY, startSlope.toFixed(2), maxSlope.toFixed(2), minSlope.toFixed(2), endSlope.toFixed(2), deltaX, deltaY);
+              if (startSlope < minSlope) {
+                  blocked = this._isBlocked(currentX, currentY);
+                  continue;
+              }
+              else if (endSlope > maxSlope) {
+                  break;
+              }
+              //check if it's within the lightable area and light if needed
+              const radius = this._calcRadius(deltaX, deltaY);
+              if (radius < this._maxRadius) {
+                  const bright = 1 - radius / this._maxRadius;
+                  this._setVisible(currentX, currentY, bright);
+                  this._debug('       - visible');
+              }
+              if (blocked) {
+                  //previous cell was a blocking one
+                  if (this._isBlocked(currentX, currentY)) {
+                      //hit a wall
+                      this._debug('       - blocked ... nextStart: %d', innerSlope.toFixed(2));
+                      nextStart = innerSlope;
+                      continue;
+                  }
+                  else {
+                      blocked = false;
+                  }
+              }
+              else {
+                  if (this._isBlocked(currentX, currentY) &&
+                      row < this._maxRadius) {
+                      //hit a wall within sight line
+                      this._debug('       - blocked ... start:%d, end:%d, nextStart: %d', nextStart.toFixed(2), outerSlope.toFixed(2), innerSlope.toFixed(2));
+                      blocked = true;
+                      this.castLight(row + 1, nextStart, outerSlope, xx, xy, yx, yy);
+                      nextStart = innerSlope;
+                  }
+              }
+          }
+          if (!blocked) {
+              this.castLight(row + 1, nextStart, endSlope, xx, xy, yx, yy);
+          }
+      }
+  }
+  function calculate(dest, isBlocked, x, y, radius) {
+      dest.fill(0);
+      const fov = new FOV({
+          isBlocked,
+          hasXY: dest.hasXY.bind(dest),
+      });
+      fov.calculate(x, y, radius, (i, j, v) => {
+          dest.set(i, j, v);
+      });
+  }
+
+  // import * as GWU from 'gw-utils';
+  class FovSystem {
+      constructor(site, opts = {}) {
+          // needsUpdate: boolean;
+          this.changed = true;
+          this._callback = NOOP;
+          this.follow = null;
+          this.site = site;
+          let flag = 0;
+          const visible = opts.visible || opts.alwaysVisible;
+          if (opts.revealed || (visible && opts.revealed !== false))
+              flag |= FovFlags.REVEALED;
+          if (visible)
+              flag |= FovFlags.VISIBLE;
+          this.flags = make$e(site.width, site.height, flag);
+          // this.needsUpdate = true;
+          if (opts.callback) {
+              this.callback = opts.callback;
+          }
+          this.fov = new FOV({
+              isBlocked: (x, y) => {
+                  return this.site.blocksVision(x, y);
+              },
+              hasXY: (x, y) => {
+                  return (x >= 0 &&
+                      y >= 0 &&
+                      x < this.site.width &&
+                      y < this.site.height);
+              },
+          });
+          if (opts.alwaysVisible) {
+              this.makeAlwaysVisible();
+          }
+          if (opts.visible || opts.alwaysVisible) {
+              forRect(site.width, site.height, (x, y) => this._callback(x, y, true));
+          }
+      }
+      get callback() {
+          return this._callback;
+      }
+      set callback(v) {
+          if (!v) {
+              this._callback = NOOP;
+          }
+          else if (typeof v === 'function') {
+              this._callback = v;
+          }
+          else {
+              this._callback = v.onFovChange.bind(v);
+          }
+      }
+      getFlag(x, y) {
+          return this.flags[x][y];
+      }
+      isVisible(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.VISIBLE);
+      }
+      isAnyKindOfVisible(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.ANY_KIND_OF_VISIBLE);
+      }
+      isClairvoyantVisible(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.CLAIRVOYANT_VISIBLE);
+      }
+      isTelepathicVisible(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.TELEPATHIC_VISIBLE);
+      }
+      isInFov(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.IN_FOV);
+      }
+      isDirectlyVisible(x, y) {
+          const flags = FovFlags.VISIBLE | FovFlags.IN_FOV;
+          return ((this.flags.get(x, y) || 0) & flags) === flags;
+      }
+      isActorDetected(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.ACTOR_DETECTED);
+      }
+      isItemDetected(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.ITEM_DETECTED);
+      }
+      isMagicMapped(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.MAGIC_MAPPED);
+      }
+      isRevealed(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.REVEALED);
+      }
+      fovChanged(x, y) {
+          const flags = this.flags.get(x, y) || 0;
+          const isVisible = !!(flags & FovFlags.ANY_KIND_OF_VISIBLE);
+          const wasVisible = !!(flags & FovFlags.WAS_ANY_KIND_OF_VISIBLE);
+          return isVisible !== wasVisible;
+      }
+      wasAnyKindOfVisible(x, y) {
+          return !!((this.flags.get(x, y) || 0) & FovFlags.WAS_ANY_KIND_OF_VISIBLE);
+      }
+      makeAlwaysVisible() {
+          this.changed = true;
+          this.flags.forEach((_v, x, y) => {
+              this.flags[x][y] |=
+                  FovFlags.ALWAYS_VISIBLE | FovFlags.REVEALED | FovFlags.VISIBLE;
+              this.callback(x, y, true);
+          });
+      }
+      makeCellAlwaysVisible(x, y) {
+          this.changed = true;
+          this.flags[x][y] |=
+              FovFlags.ALWAYS_VISIBLE | FovFlags.REVEALED | FovFlags.VISIBLE;
+          this.callback(x, y, true);
+      }
+      revealAll(makeVisibleToo = true) {
+          const flag = FovFlags.REVEALED | (makeVisibleToo ? FovFlags.VISIBLE : 0);
+          this.flags.update((v) => v | flag);
+          this.flags.forEach((v, x, y) => {
+              this.callback(x, y, !!(v & FovFlags.VISIBLE));
+          });
+          this.changed = true;
+      }
+      revealCell(x, y, radius = 0, makeVisibleToo = true) {
+          const flag = FovFlags.REVEALED | (makeVisibleToo ? FovFlags.VISIBLE : 0);
+          this.fov.calculate(x, y, radius, (x0, y0) => {
+              this.flags[x0][y0] |= flag;
+              this.callback(x0, y0, !!(flag & FovFlags.VISIBLE));
+          });
+          this.changed = true;
+      }
+      hideCell(x, y) {
+          this.flags[x][y] &= ~(FovFlags.MAGIC_MAPPED |
+              FovFlags.REVEALED |
+              FovFlags.ALWAYS_VISIBLE);
+          this.flags[x][y] = this.demoteCellVisibility(this.flags[x][y]); // clears visible, etc...
+          this.callback(x, y, false);
+          this.changed = true;
+      }
+      magicMapCell(x, y) {
+          this.flags[x][y] |= FovFlags.MAGIC_MAPPED;
+          this.changed = true;
+          this.callback(x, y, true);
+      }
+      reset() {
+          this.flags.fill(0);
+          this.changed = true;
+          this.flags.forEach((_v, x, y) => {
+              this.callback(x, y, false);
+          });
+      }
+      // get changed(): boolean {
+      //     return this._changed;
+      // }
+      // set changed(v: boolean) {
+      //     this._changed = v;
+      //     this.needsUpdate = this.needsUpdate || v;
+      // }
+      // CURSOR
+      setCursor(x, y, keep = false) {
+          if (!keep) {
+              this.flags.update((f) => f & ~FovFlags.IS_CURSOR);
+          }
+          this.flags[x][y] |= FovFlags.IS_CURSOR;
+          this.changed = true;
+      }
+      clearCursor(x, y) {
+          if (x === undefined || y === undefined) {
+              this.flags.update((f) => f & ~FovFlags.IS_CURSOR);
+          }
+          else {
+              this.flags[x][y] &= ~FovFlags.IS_CURSOR;
+          }
+          this.changed = true;
+      }
+      isCursor(x, y) {
+          return !!(this.flags[x][y] & FovFlags.IS_CURSOR);
+      }
+      // HIGHLIGHT
+      setHighlight(x, y, keep = false) {
+          if (!keep) {
+              this.flags.update((f) => f & ~FovFlags.IS_HIGHLIGHTED);
+          }
+          this.flags[x][y] |= FovFlags.IS_HIGHLIGHTED;
+          this.changed = true;
+      }
+      clearHighlight(x, y) {
+          if (x === undefined || y === undefined) {
+              this.flags.update((f) => f & ~FovFlags.IS_HIGHLIGHTED);
+          }
+          else {
+              this.flags[x][y] &= ~FovFlags.IS_HIGHLIGHTED;
+          }
+          this.changed = true;
+      }
+      isHighlight(x, y) {
+          return !!(this.flags[x][y] & FovFlags.IS_HIGHLIGHTED);
+      }
+      // COPY
+      // copy(other: FovSystem) {
+      //     this.site = other.site;
+      //     this.flags.copy(other.flags);
+      //     this.fov = other.fov;
+      //     this.follow = other.follow;
+      //     this.onFovChange = other.onFovChange;
+      //     // this.needsUpdate = other.needsUpdate;
+      //     // this._changed = other._changed;
+      // }
+      //////////////////////////
+      // UPDATE
+      demoteCellVisibility(flag) {
+          flag &= ~(FovFlags.WAS_ANY_KIND_OF_VISIBLE |
+              FovFlags.WAS_IN_FOV |
+              FovFlags.WAS_DETECTED);
+          if (flag & FovFlags.IN_FOV) {
+              flag &= ~FovFlags.IN_FOV;
+              flag |= FovFlags.WAS_IN_FOV;
+          }
+          if (flag & FovFlags.VISIBLE) {
+              flag &= ~FovFlags.VISIBLE;
+              flag |= FovFlags.WAS_VISIBLE;
+          }
+          if (flag & FovFlags.CLAIRVOYANT_VISIBLE) {
+              flag &= ~FovFlags.CLAIRVOYANT_VISIBLE;
+              flag |= FovFlags.WAS_CLAIRVOYANT_VISIBLE;
+          }
+          if (flag & FovFlags.TELEPATHIC_VISIBLE) {
+              flag &= ~FovFlags.TELEPATHIC_VISIBLE;
+              flag |= FovFlags.WAS_TELEPATHIC_VISIBLE;
+          }
+          if (flag & FovFlags.ALWAYS_VISIBLE) {
+              flag |= FovFlags.VISIBLE;
+          }
+          if (flag & FovFlags.ITEM_DETECTED) {
+              flag &= ~FovFlags.ITEM_DETECTED;
+              flag |= FovFlags.WAS_ITEM_DETECTED;
+          }
+          if (flag & FovFlags.ACTOR_DETECTED) {
+              flag &= ~FovFlags.ACTOR_DETECTED;
+              flag |= FovFlags.WAS_ACTOR_DETECTED;
+          }
+          return flag;
+      }
+      updateCellVisibility(flag, x, y) {
+          const isVisible = !!(flag & FovFlags.ANY_KIND_OF_VISIBLE);
+          const wasVisible = !!(flag & FovFlags.WAS_ANY_KIND_OF_VISIBLE);
+          if (isVisible && wasVisible) ;
+          else if (isVisible && !wasVisible) {
+              // if the cell became visible this move
+              this.flags[x][y] |= FovFlags.REVEALED;
+              this._callback(x, y, isVisible);
+              this.changed = true;
+          }
+          else if (!isVisible && wasVisible) {
+              // if the cell ceased being visible this move
+              this._callback(x, y, isVisible);
+              this.changed = true;
+          }
+          return isVisible;
+      }
+      // protected updateCellClairyvoyance(
+      //     flag: number,
+      //     x: number,
+      //     y: number
+      // ): boolean {
+      //     const isClairy = !!(flag & FovFlags.CLAIRVOYANT_VISIBLE);
+      //     const wasClairy = !!(flag & FovFlags.WAS_CLAIRVOYANT_VISIBLE);
+      //     if (isClairy && wasClairy) {
+      //         // if (this.site.lightChanged(x, y)) {
+      //         //     this.site.redrawCell(x, y);
+      //         // }
+      //     } else if (!isClairy && wasClairy) {
+      //         // ceased being clairvoyantly visible
+      //         this._callback(x, y, isClairy);
+      //     } else if (!wasClairy && isClairy) {
+      //         // became clairvoyantly visible
+      //         this._callback(x, y, isClairy);
+      //     }
+      //     return isClairy;
+      // }
+      // protected updateCellTelepathy(flag: number, x: number, y: number): boolean {
+      //     const isTele = !!(flag & FovFlags.TELEPATHIC_VISIBLE);
+      //     const wasTele = !!(flag & FovFlags.WAS_TELEPATHIC_VISIBLE);
+      //     if (isTele && wasTele) {
+      //         // if (this.site.lightChanged(x, y)) {
+      //         //     this.site.redrawCell(x, y);
+      //         // }
+      //     } else if (!isTele && wasTele) {
+      //         // ceased being telepathically visible
+      //         this._callback(x, y, isTele);
+      //     } else if (!wasTele && isTele) {
+      //         // became telepathically visible
+      //         this._callback(x, y, isTele);
+      //     }
+      //     return isTele;
+      // }
+      updateCellDetect(flag, x, y) {
+          const isDetect = !!(flag & FovFlags.IS_DETECTED);
+          const wasDetect = !!(flag & FovFlags.WAS_DETECTED);
+          if (isDetect && wasDetect) ;
+          else if (!isDetect && wasDetect) {
+              // ceased being detected visible
+              this._callback(x, y, isDetect);
+              this.changed = true;
+          }
+          else if (!wasDetect && isDetect) {
+              // became detected visible
+              this._callback(x, y, isDetect);
+              this.changed = true;
+          }
+          return isDetect;
+      }
+      // protected updateItemDetect(flag: number, x: number, y: number): boolean {
+      //     const isItem = !!(flag & FovFlags.ITEM_DETECTED);
+      //     const wasItem = !!(flag & FovFlags.WAS_ITEM_DETECTED);
+      //     if (isItem && wasItem) {
+      //         // if (this.site.lightChanged(x, y)) {
+      //         //     this.site.redrawCell(x, y);
+      //         // }
+      //     } else if (!isItem && wasItem) {
+      //         // ceased being detected visible
+      //         this._callback(x, y, isItem);
+      //     } else if (!wasItem && isItem) {
+      //         // became detected visible
+      //         this._callback(x, y, isItem);
+      //     }
+      //     return isItem;
+      // }
+      promoteCellVisibility(flag, x, y) {
+          if (flag & FovFlags.IN_FOV &&
+              this.site.hasVisibleLight(x, y) // &&
+          // !(cell.flags.cellMech & FovFlagsMech.DARKENED)
+          ) {
+              flag = this.flags[x][y] |= FovFlags.VISIBLE;
+          }
+          if (this.updateCellVisibility(flag, x, y))
+              return;
+          // if (this.updateCellClairyvoyance(flag, x, y)) return;
+          // if (this.updateCellTelepathy(flag, x, y)) return;
+          if (this.updateCellDetect(flag, x, y))
+              return;
+          // if (this.updateItemDetect(flag, x, y)) return;
+      }
+      updateFor(subject) {
+          return this.update(subject.x, subject.y, subject.visionDistance);
+      }
+      update(cx, cy, cr) {
+          if (cx === undefined) {
+              if (this.follow) {
+                  return this.updateFor(this.follow);
+              }
+          }
+          // if (
+          //     // !this.needsUpdate &&
+          //     cx === undefined &&
+          //     !this.site.lightingChanged()
+          // ) {
+          //     return false;
+          // }
+          if (cr === undefined) {
+              cr = this.site.width + this.site.height;
+          }
+          // this.needsUpdate = false;
+          this.changed = false;
+          this.flags.update(this.demoteCellVisibility.bind(this));
+          this.site.eachViewport((x, y, radius, type) => {
+              let flag = type & FovFlags.VIEWPORT_TYPES;
+              if (!flag)
+                  flag = FovFlags.VISIBLE;
+              // if (!flag)
+              //     throw new Error('Received invalid viewport type: ' + Flag.toString(FovFlags, type));
+              if (radius == 0) {
+                  this.flags[x][y] |= flag;
+                  return;
+              }
+              this.fov.calculate(x, y, radius, (x, y, v) => {
+                  if (v) {
+                      this.flags[x][y] |= flag;
+                  }
+              });
+          });
+          if (cx !== undefined && cy !== undefined) {
+              this.fov.calculate(cx, cy, cr, (x, y, v) => {
+                  if (v) {
+                      this.flags[x][y] |= FovFlags.PLAYER;
+                  }
+              });
+          }
+          // if (PLAYER.bonus.clairvoyance < 0) {
+          //   discoverCell(PLAYER.xLoc, PLAYER.yLoc);
+          // }
+          //
+          // if (PLAYER.bonus.clairvoyance != 0) {
+          // 	updateClairvoyance();
+          // }
+          //
+          // updateTelepathy();
+          // updateMonsterDetection();
+          // updateLighting();
+          this.flags.forEach(this.promoteCellVisibility.bind(this));
+          // if (PLAYER.status.hallucinating > 0) {
+          // 	for (theItem of DUNGEON.items) {
+          // 		if ((pmap[theItem.xLoc][theItem.yLoc].flags & DISCOVERED) && refreshDisplay) {
+          // 			refreshDungeonCell(theItem.xLoc, theItem.yLoc);
+          // 		}
+          // 	}
+          // 	for (monst of DUNGEON.monsters) {
+          // 		if ((pmap[monst.xLoc][monst.yLoc].flags & DISCOVERED) && refreshDisplay) {
+          // 			refreshDungeonCell(monst.xLoc, monst.yLoc);
+          // 		}
+          // 	}
+          // }
+          return this.changed;
+      }
+  }
+
+  var index$7 = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	FovFlags: FovFlags,
+  	FOV: FOV,
+  	calculate: calculate,
+  	FovSystem: FovSystem
+  });
 
   // import { grid } from '.';
   const FORBIDDEN = -1;
@@ -7752,6 +8275,7 @@ void main() {
           this.onUnhandled(ev, ...args);
           return true;
       }
+      // TODO - Move this to overload of 'on'
       load(cfg) {
           const cancel = Object.entries(cfg).map(([ev, cb]) => this.on(ev, cb));
           return () => cancel.forEach((c) => c());
@@ -13479,17 +14003,28 @@ void main() {
       constructor(cfg) {
           super(cfg);
           this.mapToMe = null;
+          this.fov = null;
           this.goalPath = null;
           this.followPath = false;
-          this.on("add", (game) => {
-              game.level;
-              this.mapToMe = null;
+          this.on("add", (level) => {
+              this._level = level;
+              this.updateMapToMe();
+              this.updateFov();
+              level.game.scene.needsDraw = true;
           });
           this.on("move", () => {
               this.updateMapToMe();
+              this.updateFov();
           });
           this.on("remove", () => {
-              this.mapToMe && grid.free(this.mapToMe);
+              if (this.mapToMe) {
+                  grid.free(this.mapToMe);
+                  this.mapToMe = null;
+              }
+              if (this.fov) {
+                  grid.free(this.fov);
+                  this.fov = null;
+              }
               this.clearGoal();
           });
       }
@@ -13535,13 +14070,30 @@ void main() {
           this.goalPath = null;
       }
       updateMapToMe() {
+          const level = this._level;
+          if (!level)
+              return;
           if (!this.mapToMe ||
-              this.mapToMe.width !== this._level.width ||
-              this.mapToMe.height !== this._level.height) {
+              this.mapToMe.width !== level.width ||
+              this.mapToMe.height !== level.height) {
               this.mapToMe && grid.free(this.mapToMe);
-              this.mapToMe = grid.alloc(this._level.width, this._level.height);
+              this.mapToMe = grid.alloc(level.width, level.height);
           }
           index$6.calculateDistances(this.mapToMe, this.x, this.y, (x, y) => this.moveCost(x, y), true);
+      }
+      updateFov() {
+          const level = this._level;
+          if (!level)
+              return;
+          if (!this.fov ||
+              this.fov.width !== level.width ||
+              this.fov.height !== level.height) {
+              this.fov && grid.free(this.fov);
+              this.fov = grid.alloc(level.width, level.height);
+          }
+          index$7.calculate(this.fov, (x, y) => {
+              return this.moveCost(x, y) < 0;
+          }, this.x, this.y, 100);
       }
   }
   function makePlayer(id) {
@@ -18534,25 +19086,23 @@ void main() {
       constructor(opts) {
           super(opts);
           this._focus = [-1, -1];
-          this.on("draw", this.__draw);
+          this.on("draw", this._draw);
           this.on("mousemove", this._setFocus);
           this.on("mouseleave", this._clearFocus);
           this.on("keypress", this._clearFocus);
       }
-      __draw(buf) {
+      _draw(buf) {
           const game = this.scene.data;
+          const player = game.player;
           buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
           const level = game.level;
           level.tiles.forEach((index, x, y) => {
               buf.blackOut(x, y);
               level.drawAt(buf, x, y);
-              // if (x === this._focus[0] && y === this._focus[1]) {
-              //   buf.get(x, y).mix("green", 0, 50).separate();
-              // } else if (level.isInPath(x, y)) {
-              //   buf.get(x, y).mix("yellow", 0, 50).separate();
-              // }
+              if (!player.fov || !player.fov.get(x, y)) {
+                  buf.get(x, y).mix("black", 25, 25);
+              }
           });
-          const player = game.player;
           if (player.goalPath) {
               player.goalPath.forEach(([x, y]) => {
                   buf.get(x, y).mix("green", 0, 25).separate();
