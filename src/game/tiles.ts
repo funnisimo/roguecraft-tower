@@ -24,7 +24,11 @@ export interface TileOptions extends GWD.site.TileOptions {
   ch?: string;
   fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
+
   blocksMove?: boolean;
+  blocksVision?: boolean;
+  blocksDiagonal?: boolean; // cannot attack or move diagonally around this tile
+
   on?: TileEvents;
 }
 
@@ -54,6 +58,8 @@ install({
   fg: 0x333,
   bg: 0x666,
   blocksMove: true,
+  blocksVision: true,
+  blocksDiagonal: true,
 });
 install({
   id: "CORPSE",
@@ -115,6 +121,9 @@ install({
   fg: 0x222,
   bg: 0x444,
   priority: 200,
+  blocksMove: true,
+  blocksVision: true,
+  blocksDiagonal: true,
 });
 
 GWD.site.allTiles.forEach((t) => {

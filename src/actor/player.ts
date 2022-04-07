@@ -74,8 +74,8 @@ export class Player extends ACTOR.Actor {
   setGoal(x: number, y: number) {
     if (!this._level || this.followPath) return;
 
-    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j) =>
-      this.moveCost(i, j)
+    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j, fromX, fromY) =>
+      this.moveCost(i, j, fromX, fromY)
     );
     if (
       this.goalPath &&

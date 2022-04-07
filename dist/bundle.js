@@ -5874,7 +5874,6 @@
   	FovSystem: FovSystem
   });
 
-  // import { grid } from '.';
   const FORBIDDEN = -1;
   const OBSTRUCTION = -2;
   const AVOIDED = 10;
@@ -6310,7 +6309,7 @@
                       return;
                   }
                   const mult = isDiagonal(dir) ? 1.4 : 1;
-                  const cost = this.costFn(x, y) * mult;
+                  const cost = this.costFn(x, y, item.x, item.y) * mult;
                   if (cost < 0 || cost > 10000)
                       return;
                   this._add([x, y], cost, item);
@@ -13735,6 +13734,19 @@ void main() {
       const level = game.level;
       const newX = actor.x + dir[0];
       const newY = actor.y + dir[1];
+      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
+          if (!quiet) {
+              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
+              game.addMessage(`Blocked by a ${tile.id}.`);
+              flash(game, newX, newY, "red", 150);
+              idle(game, actor);
+              return true;
+          }
+          else {
+              console.log("- diagonal blocked!!!", actor.kind.name, actor.x, actor.y);
+              return false;
+          }
+      }
       const other = level.actorAt(newX, newY);
       if (other) {
           if (other.kind && other.bump(game, actor)) {
@@ -13777,15 +13789,17 @@ void main() {
       game.endTurn(actor, speed);
       return true;
   }
-  function moveToward(game, actor, other, quiet = false) {
+  function moveTowardPlayer(game, actor, quiet = false) {
       game.level;
-      let dir = xy.dirFromTo(actor, other);
-      const dirs = xy.dirSpread(dir);
-      while (dirs.length) {
-          dir = dirs.shift();
-          if (moveDir(game, actor, dir, true)) {
-              return true; // success
-          }
+      const player = game.player;
+      if (!player.mapToMe)
+          throw new Error("Player does not have mapToMe!");
+      const dir = index$6.nextStep(player.mapToMe, actor.x, actor.y, (x, y) => {
+          const cost = actor.moveCost(x, y, actor.x, actor.y);
+          return cost < 0 || cost > 10000;
+      }, true);
+      if (moveDir(game, actor, dir, true)) {
+          return true; // success
       }
       if (!quiet) {
           flash(game, actor.x, actor.y, "orange", 150);
@@ -13793,12 +13807,18 @@ void main() {
       return idle(game, actor);
   }
   function attack(game, actor, target = null) {
-      if (!target) {
+      const level = game.level;
+      if (target) {
+          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
+              return false;
+          }
+      }
+      else {
           // todo - long reach melee -- spear, etc...
           const targets = game.level.actors.filter((a) => a !== actor &&
               actor.health > 0 &&
-              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 // can attack diagonal
-          );
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
+              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
           if (targets.length == 0) {
               game.addMessage("no targets.");
               flash(game, actor.x, actor.y, "orange", 150);
@@ -13857,15 +13877,14 @@ void main() {
               if (moveRandom(game, actor, true))
                   return;
           }
-          idle(game, actor);
+          return idle(game, actor);
       }
-      else if (distToPlayer < 2) {
+      if (distToPlayer < 2) {
           // can attack diagonal
-          attack(game, actor, player);
+          if (attack(game, actor, player))
+              return;
       }
-      else {
-          moveToward(game, actor, player);
-      }
+      return moveTowardPlayer(game, actor);
   }
 
   const kinds = {};
@@ -13939,7 +13958,7 @@ void main() {
       avoidsTile(tile) {
           return tile.blocksMove || false;
       }
-      moveCost(x, y) {
+      moveCost(x, y, fromX, fromY) {
           const level = this._level;
           if (!level)
               return index$6.OBSTRUCTION;
@@ -13947,6 +13966,10 @@ void main() {
               return index$6.OBSTRUCTION;
           if (level.blocksMove(x, y))
               return index$6.OBSTRUCTION;
+          if (fromX !== undefined && fromY !== undefined) {
+              if (level.diagonalBlocked(fromX, fromY, x, y))
+                  return index$6.FORBIDDEN;
+          }
           if (level.hasActor(x, y))
               return index$6.AVOIDED;
           return 1;
@@ -14078,7 +14101,7 @@ void main() {
       setGoal(x, y) {
           if (!this._level || this.followPath)
               return;
-          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => this.moveCost(i, j));
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j, fromX, fromY) => this.moveCost(i, j, fromX, fromY));
           if (this.goalPath &&
               this.goalPath.length &&
               xy.equals(this.goalPath[0], this)) {
@@ -18519,6 +18542,8 @@ void main() {
       fg: 0x333,
       bg: 0x666,
       blocksMove: true,
+      blocksVision: true,
+      blocksDiagonal: true,
   });
   install({
       id: "CORPSE",
@@ -18579,6 +18604,9 @@ void main() {
       fg: 0x222,
       bg: 0x444,
       priority: 200,
+      blocksMove: true,
+      blocksVision: true,
+      blocksDiagonal: true,
   });
   index$1.allTiles.forEach((t) => {
       if (tilesByName[t.id])
@@ -18803,6 +18831,18 @@ void main() {
           if (tile && tile.on && tile.on[event]) {
               tile.on[event].call(tile, this.game, actor);
           }
+      }
+      diagonalBlocked(fromX, fromY, toX, toY) {
+          if (fromX == toX || fromY == toY)
+              return false;
+          // check if diagonal move is blocked by tiles
+          const horiz = this.getTile(toX, fromY);
+          if (horiz.blocksDiagonal)
+              return true;
+          const vert = this.getTile(fromX, toY);
+          if (vert.blocksDiagonal)
+              return true;
+          return false;
       }
   }
   // export function install(cfg: LevelConfig) {

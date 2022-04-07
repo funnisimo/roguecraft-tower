@@ -289,6 +289,23 @@ export class Level {
       tile.on[event]!.call(tile, this.game, actor);
     }
   }
+
+  diagonalBlocked(
+    fromX: number,
+    fromY: number,
+    toX: number,
+    toY: number
+  ): boolean {
+    if (fromX == toX || fromY == toY) return false;
+
+    // check if diagonal move is blocked by tiles
+    const horiz = this.getTile(toX, fromY);
+    if (horiz.blocksDiagonal) return true;
+    const vert = this.getTile(fromX, toY);
+    if (vert.blocksDiagonal) return true;
+
+    return false;
+  }
 }
 
 // export const levels: Level[] = [];

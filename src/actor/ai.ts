@@ -22,11 +22,13 @@ export function ai(game: Game, actor: Actor) {
     if (game.rng.chance(20)) {
       if (ACTIONS.moveRandom(game, actor, true)) return;
     }
-    ACTIONS.idle(game, actor);
-  } else if (distToPlayer < 2) {
-    // can attack diagonal
-    ACTIONS.attack(game, actor, player);
-  } else {
-    ACTIONS.moveToward(game, actor, player);
+    return ACTIONS.idle(game, actor);
   }
+
+  if (distToPlayer < 2) {
+    // can attack diagonal
+    if (ACTIONS.attack(game, actor, player)) return;
+  }
+
+  return ACTIONS.moveTowardPlayer(game, actor);
 }

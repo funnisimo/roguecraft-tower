@@ -37,6 +37,21 @@ export function moveDir(
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
 
+  if (
+    level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])
+  ) {
+    if (!quiet) {
+      const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
+      game.addMessage(`Blocked by a ${tile.id}.`);
+      FX.flash(game, newX, newY, "red", 150);
+      idle(game, actor);
+      return true;
+    } else {
+      console.log("- diagonal blocked!!!", actor.kind.name, actor.x, actor.y);
+      return false;
+    }
+  }
+
   const other = level.actorAt(newX, newY);
   if (other) {
     if (other.kind && other.bump(game, actor)) {
@@ -85,23 +100,29 @@ export function moveDir(
   return true;
 }
 
-export function moveToward(
+export function moveTowardPlayer(
   game: Game,
   actor: Actor,
-  other: Actor,
   quiet = false
 ): boolean {
   const map = game.level!;
+  const player = game.player;
 
-  let dir = GWU.xy.dirFromTo(actor, other);
-  const dirs = GWU.xy.dirSpread(dir);
+  if (!player.mapToMe) throw new Error("Player does not have mapToMe!");
 
-  while (dirs.length) {
-    dir = dirs.shift()!;
+  const dir = GWU.path.nextStep(
+    player.mapToMe,
+    actor.x,
+    actor.y,
+    (x, y) => {
+      const cost = actor.moveCost(x, y, actor.x, actor.y);
+      return cost < 0 || cost > 10000;
+    },
+    true
+  );
 
-    if (moveDir(game, actor, dir, true)) {
-      return true; // success
-    }
+  if (moveDir(game, actor, dir, true)) {
+    return true; // success
   }
 
   if (!quiet) {
@@ -115,14 +136,21 @@ export function attack(
   actor: Actor,
   target: Actor | null = null
 ): boolean {
-  if (!target) {
+  const level = game.level!;
+
+  if (target) {
+    if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
+      return false;
+    }
+  } else {
     // todo - long reach melee -- spear, etc...
 
     const targets = game.level!.actors.filter(
       (a) =>
         a !== actor &&
         actor.health > 0 &&
-        GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 // can attack diagonal
+        GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
+        !level.diagonalBlocked(actor.x, actor.y, a.x, a.y)
     );
 
     if (targets.length == 0) {
