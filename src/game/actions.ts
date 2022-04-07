@@ -3,11 +3,24 @@ import * as FX from "../fx/index";
 import { Game } from "./game";
 import { Actor } from "../actor/actor";
 
+export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
+const actionsByName: Record<string, ActionFn> = {};
+
+export function installBump(name: string, fn: ActionFn) {
+  actionsByName[name] = fn;
+}
+
+export function getBump(name: string): ActionFn | null {
+  return actionsByName[name] || null;
+}
+
 export function idle(game: Game, actor: Actor): boolean {
   console.log("- idle", actor.kind.id, actor.x, actor.y);
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
   return true;
 }
+
+installBump("idle", idle);
 
 export function moveRandom(game: Game, actor: Actor, quiet = false): boolean {
   const dir = game.rng.item(GWU.xy.DIRS);
@@ -26,10 +39,8 @@ export function moveDir(
 
   const other = level.actorAt(newX, newY);
   if (other) {
-    if (other.kind && other.kind.on && other.kind.on.bump) {
-      if (other.kind.on.bump(game, actor, other)) {
-        return true;
-      }
+    if (other.kind && other.bump(game, actor)) {
+      return true;
     }
     if (actor.hasActed()) return true;
 
@@ -160,6 +171,8 @@ export function attack(
   }
   return true;
 }
+
+installBump("attack", attack);
 
 export function climb(game: Game, actor: Actor): boolean {
   const tile = game.level!.getTile(actor.x, actor.y);

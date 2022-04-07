@@ -19,11 +19,6 @@ ACTOR.install({
   health: 6,
   damage: 8,
   // attackSpeed: 200
-  on: {
-    bump(game, actor, zombie) {
-      return ACTIONS.attack(game, actor, zombie);
-    },
-  },
 });
 
 ACTOR.install({
@@ -34,11 +29,6 @@ ACTOR.install({
   health: 25,
   damage: 10,
   // attackSpeed: 200
-  on: {
-    bump(game, actor, zombie) {
-      return ACTIONS.attack(game, actor, zombie);
-    },
-  },
 });
 
 ACTOR.install({
@@ -49,11 +39,6 @@ ACTOR.install({
   health: 50,
   damage: 12,
   // attackSpeed: 200
-  on: {
-    bump(game, actor, zombie) {
-      return ACTIONS.attack(game, actor, zombie);
-    },
-  },
 });
 
 ACTOR.install({
@@ -66,11 +51,6 @@ ACTOR.install({
   // chargeSpeed: 75
   // chargeDistance: 10
   // attackSpeed: 150
-  on: {
-    bump(game, actor, zombie) {
-      return ACTIONS.attack(game, actor, zombie);
-    },
-  },
 });
 
 ACTOR.install({
@@ -85,11 +65,6 @@ ACTOR.install({
   // tooClose: 4,
   // rangedAttackSpeed: 150,
   // noticeDistance: 10
-  on: {
-    bump(game, actor, zombie) {
-      return ACTIONS.attack(game, actor, zombie);
-    },
-  },
 });
 
 /*

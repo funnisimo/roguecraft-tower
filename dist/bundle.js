@@ -13714,11 +13714,19 @@ void main() {
       };
   }
 
+  const actionsByName = {};
+  function installBump(name, fn) {
+      actionsByName[name] = fn;
+  }
+  function getBump(name) {
+      return actionsByName[name] || null;
+  }
   function idle(game, actor) {
       console.log("- idle", actor.kind.id, actor.x, actor.y);
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }
+  installBump("idle", idle);
   function moveRandom(game, actor, quiet = false) {
       const dir = game.rng.item(xy.DIRS);
       return moveDir(game, actor, dir, quiet);
@@ -13729,10 +13737,8 @@ void main() {
       const newY = actor.y + dir[1];
       const other = level.actorAt(newX, newY);
       if (other) {
-          if (other.kind && other.kind.on && other.kind.on.bump) {
-              if (other.kind.on.bump(game, actor, other)) {
-                  return true;
-              }
+          if (other.kind && other.bump(game, actor)) {
+              return true;
           }
           if (actor.hasActed())
               return true;
@@ -13835,6 +13841,7 @@ void main() {
       }
       return true;
   }
+  installBump("attack", attack);
 
   function ai(game, actor) {
       console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
@@ -13948,6 +13955,16 @@ void main() {
           if (!this.hasActed()) {
               console.log("No actor AI action.");
           }
+      }
+      bump(game, actor) {
+          const actions = this.kind.bump;
+          for (let action of actions) {
+              const fn = getBump(action);
+              if (fn && fn(game, actor, this)) {
+                  return true;
+              }
+          }
+          return false; // did nothing
       }
   }
   function make$2(id, opts) {
@@ -19858,11 +19875,6 @@ void main() {
       health: 6,
       damage: 8,
       // attackSpeed: 200
-      on: {
-          bump(game, actor, zombie) {
-              return attack(game, actor, zombie);
-          },
-      },
   });
   install$3({
       id: "ARMOR_ZOMBIE",
@@ -19872,11 +19884,6 @@ void main() {
       health: 25,
       damage: 10,
       // attackSpeed: 200
-      on: {
-          bump(game, actor, zombie) {
-              return attack(game, actor, zombie);
-          },
-      },
   });
   install$3({
       id: "ARMOR_ZOMBIE_2",
@@ -19886,11 +19893,6 @@ void main() {
       health: 50,
       damage: 12,
       // attackSpeed: 200
-      on: {
-          bump(game, actor, zombie) {
-              return attack(game, actor, zombie);
-          },
-      },
   });
   install$3({
       id: "Vindicator",
@@ -19902,11 +19904,6 @@ void main() {
       // chargeSpeed: 75
       // chargeDistance: 10
       // attackSpeed: 150
-      on: {
-          bump(game, actor, zombie) {
-              return attack(game, actor, zombie);
-          },
-      },
   });
   install$3({
       id: "Skeleton",
@@ -19920,11 +19917,6 @@ void main() {
       // tooClose: 4,
       // rangedAttackSpeed: 150,
       // noticeDistance: 10
-      on: {
-          bump(game, actor, zombie) {
-              return attack(game, actor, zombie);
-          },
-      },
   });
   /*
   PLAYER - health = 100

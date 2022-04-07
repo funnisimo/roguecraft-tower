@@ -6,8 +6,10 @@ import { Game } from "../game/game";
 import { Level } from "../game/level";
 import { TileInfo } from "../game/tiles";
 import * as AI from "./ai";
+import * as ACTIONS from "../game/actions";
 
 import { ActorKind, getKind } from "./kind";
+import { getPositionOfLineAndCharacter } from "typescript";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -94,6 +96,19 @@ export class Actor extends Obj {
     if (!this.hasActed()) {
       console.log("No actor AI action.");
     }
+  }
+
+  bump(game: Game, actor: Actor): boolean {
+    const actions = this.kind.bump;
+
+    for (let action of actions) {
+      const fn = ACTIONS.getBump(action);
+      if (fn && fn(game, actor, this)) {
+        return true;
+      }
+    }
+
+    return false; // did nothing
   }
 }
 
