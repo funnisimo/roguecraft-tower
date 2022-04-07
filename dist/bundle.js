@@ -13794,9 +13794,11 @@ void main() {
   }
   function attack(game, actor, target = null) {
       if (!target) {
+          // todo - long reach melee -- spear, etc...
           const targets = game.level.actors.filter((a) => a !== actor &&
               actor.health > 0 &&
-              xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1);
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 // can attack diagonal
+          );
           if (targets.length == 0) {
               game.addMessage("no targets.");
               flash(game, actor.x, actor.y, "orange", 150);
@@ -13831,7 +13833,7 @@ void main() {
       game.messages.addCombat(`${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`);
       target.health -= actor.damage || 0;
       flash(game, target.x, target.y, "red", 150);
-      game.endTurn(actor, actor.kind.moveSpeed);
+      game.endTurn(actor, actor.kind.attackSpeed);
       if (target.health <= 0) {
           target.trigger("death");
           // do all of these move to event handlers?
@@ -13857,7 +13859,8 @@ void main() {
           }
           idle(game, actor);
       }
-      else if (distToPlayer <= 1) {
+      else if (distToPlayer < 2) {
+          // can attack diagonal
           attack(game, actor, player);
       }
       else {
@@ -13869,8 +13872,10 @@ void main() {
   function install$3(cfg) {
       const kind = Object.assign({
           health: 10,
+          notice: 10,
           damage: 1,
           moveSpeed: 100,
+          attackSpeed: 0,
           ch: "!",
           fg: "white",
           bump: ["attack"],
@@ -13879,6 +13884,7 @@ void main() {
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
       }
+      kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
       kinds[cfg.id.toLowerCase()] = kind;
   }
   function getKind(id) {

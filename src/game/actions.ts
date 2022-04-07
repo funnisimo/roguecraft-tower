@@ -116,11 +116,13 @@ export function attack(
   target: Actor | null = null
 ): boolean {
   if (!target) {
+    // todo - long reach melee -- spear, etc...
+
     const targets = game.level!.actors.filter(
       (a) =>
         a !== actor &&
         actor.health > 0 &&
-        GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) <= 1
+        GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 // can attack diagonal
     );
 
     if (targets.length == 0) {
@@ -160,7 +162,7 @@ export function attack(
   target.health -= actor.damage || 0;
 
   FX.flash(game, target.x, target.y, "red", 150);
-  game.endTurn(actor, actor.kind.moveSpeed);
+  game.endTurn(actor, actor.kind.attackSpeed);
 
   if (target.health <= 0) {
     target.trigger("death");

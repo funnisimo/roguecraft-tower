@@ -9,8 +9,12 @@ export interface ActorEvents {
 export interface KindConfig {
   id: string;
   health?: number;
-  damage?: number;
+
+  notice?: number;
   moveSpeed?: number;
+
+  damage?: number;
+  attackSpeed?: number;
 
   ch: string;
   fg: GWU.color.ColorBase;
@@ -24,8 +28,12 @@ export interface KindConfig {
 export interface ActorKind {
   id: string;
   health: number;
-  damage: number;
+
+  notice: number;
   moveSpeed: number;
+
+  damage: number;
+  attackSpeed: number;
 
   ch: string;
   fg: GWU.color.ColorBase;
@@ -42,8 +50,10 @@ export function install(cfg: KindConfig) {
   const kind = Object.assign(
     {
       health: 10,
+      notice: 10,
       damage: 1,
       moveSpeed: 100,
+      attackSpeed: 0,
       ch: "!",
       fg: "white",
       bump: ["attack"],
@@ -55,6 +65,7 @@ export function install(cfg: KindConfig) {
   if (typeof cfg.bump === "string") {
     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
   }
+  kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
 
   kinds[cfg.id.toLowerCase()] = kind;
 }
