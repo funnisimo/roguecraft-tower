@@ -23,6 +23,8 @@ export function ai(game: Game, actor: Actor) {
       if (ACTIONS.moveRandom(game, actor, true)) return;
     }
     return ACTIONS.idle(game, actor);
+  } else if (distToPlayer < actor.kind.tooClose) {
+    if (ACTIONS.moveAwayFromPlayer(game, actor)) return;
   }
 
   if (distToPlayer < 2) {

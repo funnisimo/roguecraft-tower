@@ -75,20 +75,14 @@ export class Actor extends Obj {
     return tile.blocksMove || false;
   }
 
-  moveCost(x: number, y: number, fromX?: number, fromY?: number) {
+  moveCost(x: number, y: number) {
     const level = this._level;
     if (!level) return GWU.path.OBSTRUCTION;
-
     if (!level.hasXY(x, y)) return GWU.path.OBSTRUCTION;
-    if (level.blocksMove(x, y)) return GWU.path.OBSTRUCTION;
-
-    if (fromX !== undefined && fromY !== undefined) {
-      if (level.diagonalBlocked(fromX, fromY, x, y)) return GWU.path.FORBIDDEN;
-    }
-
+    if (level.blocksDiagonal(x, y)) return GWU.path.OBSTRUCTION;
+    if (level.blocksMove(x, y)) return GWU.path.BLOCKED;
     if (level.hasActor(x, y)) return GWU.path.AVOIDED;
-
-    return 1;
+    return GWU.path.OK;
   }
 
   pathTo(loc: GWU.xy.Loc) {

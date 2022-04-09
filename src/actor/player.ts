@@ -7,7 +7,7 @@ import { Level } from "../game/level";
 import { Game } from "../game/game";
 
 export class Player extends ACTOR.Actor {
-  mapToMe: GWU.grid.NumGrid | null;
+  mapToMe: GWU.path.DijkstraMap;
   fov: GWU.grid.NumGrid | null;
 
   goalPath: GWU.xy.Loc[] | null;
@@ -15,7 +15,7 @@ export class Player extends ACTOR.Actor {
 
   constructor(cfg: ACTOR.ActorConfig) {
     super(cfg);
-    this.mapToMe = null;
+    this.mapToMe = new GWU.path.DijkstraMap();
     this.fov = null;
     this.goalPath = null;
     this.followPath = false;
@@ -31,10 +31,6 @@ export class Player extends ACTOR.Actor {
       this.updateFov();
     });
     this.on("remove", () => {
-      if (this.mapToMe) {
-        GWU.grid.free(this.mapToMe);
-        this.mapToMe = null;
-      }
       if (this.fov) {
         GWU.grid.free(this.fov);
         this.fov = null;
@@ -74,8 +70,8 @@ export class Player extends ACTOR.Actor {
   setGoal(x: number, y: number) {
     if (!this._level || this.followPath) return;
 
-    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j, fromX, fromY) =>
-      this.moveCost(i, j, fromX, fromY)
+    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j) =>
+      this.moveCost(i, j)
     );
     if (
       this.goalPath &&
@@ -95,21 +91,9 @@ export class Player extends ACTOR.Actor {
     const level = this._level;
     if (!level) return;
 
-    if (
-      !this.mapToMe ||
-      this.mapToMe.width !== level.width ||
-      this.mapToMe.height !== level.height
-    ) {
-      this.mapToMe && GWU.grid.free(this.mapToMe);
-      this.mapToMe = GWU.grid.alloc(level.width, level.height);
-    }
-    GWU.path.calculateDistances(
-      this.mapToMe,
-      this.x,
-      this.y,
-      (x, y) => this.moveCost(x, y),
-      true
-    );
+    this.mapToMe.reset(level.width, level.height);
+    this.mapToMe.setGoal(this.x, this.y);
+    this.mapToMe.calculate((x, y) => this.moveCost(x, y));
   }
 
   updateFov() {

@@ -60,11 +60,11 @@ ACTOR.install({
   moveSpeed: 100,
   health: 6,
   damage: 0,
-  // rangedDamage: 3,
-  // range: 10,
-  // tooClose: 4,
-  // rangedAttackSpeed: 150,
-  // noticeDistance: 10
+  rangedDamage: 3,
+  range: 10,
+  tooClose: 4,
+  rangedAttackSpeed: 150,
+  // notice: 10
 });
 
 /*

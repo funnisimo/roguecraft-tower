@@ -181,6 +181,11 @@ export class Level {
     return tile.blocksMove || false;
   }
 
+  blocksDiagonal(x: number, y: number) {
+    const tile = this.getTile(x, y);
+    return tile.blocksDiagonal || false;
+  }
+
   isHallway(x: number, y: number): boolean {
     return (
       GWU.xy.arcCount(x, y, (i, j) => {

@@ -953,6 +953,22 @@
           return 1;
       return Math.floor(arcCount / 2); // Since we added one when we entered a wall and another when we left.
   }
+  function closestMatchingLocs(x, y, matchFn) {
+      const locs = [];
+      let i, j, k;
+      // count up the number of candidate locations
+      for (k = 0; k < 100 && !locs.length; k++) {
+          for (i = x - k; i <= x + k; i++) {
+              for (j = y - k; j <= y + k; j++) {
+                  if (Math.ceil(distanceBetween(x, y, i, j)) == k &&
+                      matchFn(i, j)) {
+                      locs.push([i, j]);
+                  }
+              }
+          }
+      }
+      return locs.length ? locs : null;
+  }
 
   var xy = /*#__PURE__*/Object.freeze({
   	__proto__: null,
@@ -1003,7 +1019,8 @@
   	forCircle: forCircle,
   	forRect: forRect,
   	forBorder: forBorder,
-  	arcCount: arcCount
+  	arcCount: arcCount,
+  	closestMatchingLocs: closestMatchingLocs
   });
 
   /**
@@ -5874,385 +5891,325 @@
   	FovSystem: FovSystem
   });
 
-  const FORBIDDEN = -1;
-  const OBSTRUCTION = -2;
-  const AVOIDED = 10;
-  const OK = 1;
-  const NO_PATH = 30000;
-  function makeCostLink(i) {
-      return {
-          distance: 0,
-          cost: 0,
-          index: i,
-          left: null,
-          right: null,
-      };
-  }
-  function makeDijkstraMap(w, h) {
-      return {
-          eightWays: false,
-          front: makeCostLink(-1),
-          links: makeArray$1(w * h, (i) => makeCostLink(i)),
-          width: w,
-          height: h,
-      };
-  }
-  function getLink(map, x, y) {
-      return map.links[x + map.width * y];
-  }
   const DIRS$3 = DIRS$2;
-  function update(map) {
-      let dir, dirs;
-      let linkIndex;
-      let left = null, right = null, link = null;
-      dirs = map.eightWays ? 8 : 4;
-      let head = map.front.right;
-      map.front.right = null;
-      while (head != null) {
-          for (dir = 0; dir < dirs; dir++) {
-              linkIndex = head.index + (DIRS$3[dir][0] + map.width * DIRS$3[dir][1]);
-              if (linkIndex < 0 || linkIndex >= map.width * map.height)
-                  continue;
-              link = map.links[linkIndex];
-              // verify passability
-              if (link.cost < 0)
-                  continue;
-              let diagCost = 0;
-              if (dir >= 4) {
-                  diagCost = 0.4142;
-                  let way1, way1index, way2, way2index;
-                  way1index = head.index + DIRS$3[dir][0];
-                  if (way1index < 0 || way1index >= map.width * map.height)
-                      continue;
-                  way2index = head.index + map.width * DIRS$3[dir][1];
-                  if (way2index < 0 || way2index >= map.width * map.height)
-                      continue;
-                  way1 = map.links[way1index];
-                  way2 = map.links[way2index];
-                  if (way1.cost == OBSTRUCTION || way2.cost == OBSTRUCTION)
-                      continue;
-              }
-              if (head.distance + link.cost + diagCost < link.distance) {
-                  link.distance = head.distance + link.cost + diagCost;
-                  // reinsert the touched cell; it'll be close to the beginning of the list now, so
-                  // this will be very fast.  start by removing it.
-                  if (link.right != null)
-                      link.right.left = link.left;
-                  if (link.left != null)
-                      link.left.right = link.right;
-                  left = head;
-                  right = head.right;
-                  while (right != null && right.distance < link.distance) {
-                      left = right;
-                      right = right.right;
-                  }
-                  if (left != null)
-                      left.right = link;
-                  link.right = right;
-                  link.left = left;
-                  if (right != null)
-                      right.left = link;
-              }
-          }
-          right = head.right;
-          head.left = null;
-          head.right = null;
-          head = right;
-      }
+  const OK = 1;
+  const AVOIDED = 10;
+  const BLOCKED = 10000;
+  const OBSTRUCTION = 20000; // Blocks Diagonal
+  const NOT_DONE = 30000;
+  function makeItem$1(x, y, distance = NOT_DONE) {
+      return {
+          x,
+          y,
+          distance,
+          next: null,
+          prev: null,
+      };
   }
-  function clear(map, maxDistance, eightWays) {
-      let i;
-      map.eightWays = eightWays;
-      map.front.right = null;
-      for (i = 0; i < map.width * map.height; i++) {
-          map.links[i].distance = maxDistance;
-          map.links[i].left = map.links[i].right = null;
-      }
-  }
-  function setDistance(map, x, y, distance) {
-      let left, right, link;
-      if (x > 0 && y > 0 && x < map.width - 1 && y < map.height - 1) {
-          link = getLink(map, x, y);
-          if (link.distance > distance) {
-              link.distance = distance;
-              if (link.right != null)
-                  link.right.left = link.left;
-              if (link.left != null)
-                  link.left.right = link.right;
-              left = map.front;
-              right = map.front.right;
-              while (right != null && right.distance < link.distance) {
-                  left = right;
-                  right = right.right;
-              }
-              link.right = right;
-              link.left = left;
-              left.right = link;
-              if (right != null)
-                  right.left = link;
+  class DijkstraMap {
+      constructor(width, height) {
+          this._data = [];
+          this._todo = makeItem$1(-1, -1);
+          this._maxDistance = 999;
+          this._width = 0;
+          this._height = 0;
+          if (width !== undefined && height !== undefined) {
+              this.reset(width, height);
           }
       }
-  }
-  function isBoundaryXY(data, x, y) {
-      if (x <= 0 || y <= 0)
+      get width() {
+          return this._width;
+      }
+      get height() {
+          return this._height;
+      }
+      copy(other) {
+          this.reset(other.width, other.height);
+          const max = other.width * other.height;
+          for (let index = 0; index < max; ++index) {
+              this._data[index].distance = other._data[index].distance;
+          }
+      }
+      hasXY(x, y) {
+          return x >= 0 && x < this._width && y >= 0 && y < this._height;
+      }
+      reset(width, height) {
+          this._width = width;
+          this._height = height;
+          while (this._data.length < width * height) {
+              this._data.push(makeItem$1(-1, -1));
+          }
+          for (let y = 0; y < this._height; ++y) {
+              for (let x = 0; x < this._width; ++x) {
+                  const item = this._get(x, y);
+                  item.x = x;
+                  item.y = y;
+                  item.distance = NOT_DONE;
+                  item.next = item.prev = null;
+              }
+          }
+          this._maxDistance = 999;
+          this._todo.next = this._todo.prev = null;
+      }
+      _get(...args) {
+          if (args.length == 1) {
+              const x$1 = x(args[0]);
+              const y$1 = y(args[0]);
+              return this._data[x$1 + y$1 * this._width];
+          }
+          else {
+              return this._data[args[0] + args[1] * this._width];
+          }
+      }
+      setGoal(...args) {
+          if (typeof args[0] === 'number') {
+              this._add(args[0], args[1], args[2] || 0);
+          }
+          else {
+              this._add(x(args[0]), y(args[0]), args[1] || 0);
+          }
+      }
+      _add(x, y, distance) {
+          if (!this.hasXY(x, y))
+              return false;
+          const item = this._get(x, y);
+          if (Math.floor(item.distance * 100) <= Math.floor(distance * 100))
+              return false;
+          if (item.prev) {
+              item.prev.next = item.next;
+              item.next && (item.next.prev = item.prev);
+          }
+          item.prev = item.next = null;
+          if (distance >= OBSTRUCTION) {
+              item.distance = OBSTRUCTION;
+              return false;
+          }
+          else if (distance >= BLOCKED) {
+              item.distance = BLOCKED;
+              return false;
+          }
+          else if (distance > this._maxDistance) {
+              return false;
+          }
+          item.distance = distance;
+          return this._insert(item);
+      }
+      _insert(item) {
+          let prev = this._todo;
+          let current = prev.next;
+          while (current && current.distance < item.distance) {
+              prev = current;
+              current = prev.next;
+          }
+          prev.next = item;
+          item.prev = prev;
+          item.next = current;
+          current && (current.prev = item);
           return true;
-      if (x >= data.length - 1 || y >= data[0].length - 1)
-          return true;
-      return false;
-  }
-  function batchInput(map, distanceMap, costMap, eightWays = false, maxDistance = NO_PATH) {
-      let i, j;
-      map.eightWays = eightWays;
-      let left = null;
-      let right = null;
-      map.front.right = null;
-      for (i = 0; i < distanceMap.width; i++) {
-          for (j = 0; j < distanceMap.height; j++) {
-              let link = getLink(map, i, j);
-              if (distanceMap) {
-                  link.distance = distanceMap[i][j];
-              }
-              else {
-                  if (costMap) {
-                      // totally hackish; refactor
-                      link.distance = maxDistance;
-                  }
-              }
-              let cost;
-              if (i == 0 ||
-                  j == 0 ||
-                  i == distanceMap.width - 1 ||
-                  j == distanceMap.height - 1) {
-                  cost = OBSTRUCTION;
-                  // }
-                  // else if (costMap === null) {
-                  //     if (
-                  //         cellHasEntityFlag(i, j, L_BLOCKS_MOVE) &&
-                  //         cellHasEntityFlag(i, j, L_BLOCKS_DIAGONAL)
-                  //     ) {
-                  //         cost = OBSTRUCTION;
-                  //     } else {
-                  //         cost = FORBIDDEN;
-                  //     }
-              }
-              else {
-                  cost = costMap[i][j];
-              }
-              link.cost = cost;
-              if (cost > 0) {
-                  if (link.distance < maxDistance) {
-                      // @ts-ignore
-                      if (right === null || right.distance > link.distance) {
-                          // left and right are used to traverse the list; if many cells have similar values,
-                          // some time can be saved by not clearing them with each insertion.  this time,
-                          // sadly, we have to start from the front.
-                          left = map.front;
-                          right = map.front.right;
+      }
+      calculate(costFn, only4dirs = false, maxDistance = 999) {
+          let current = this._todo.next;
+          this._maxDistance = maxDistance;
+          while (current) {
+              let next = current.next;
+              current.prev = current.next = null;
+              this._todo.next = next;
+              // console.log('current', current.x, current.y, current.distance);
+              eachNeighbor(current.x, current.y, (x, y, dir) => {
+                  let mult = 1;
+                  if (isDiagonal(dir)) {
+                      mult = 1.4;
+                      // check to see if obstruction blocks this move
+                      if (costFn(x, current.y) >= OBSTRUCTION ||
+                          costFn(current.x, y) >= OBSTRUCTION) {
+                          return;
                       }
-                      // @ts-ignore
-                      while (right !== null && right.distance < link.distance) {
-                          left = right;
-                          // @ts-ignore
-                          right = right.right;
-                      }
-                      link.right = right;
-                      link.left = left;
-                      // @ts-ignore
-                      left.right = link;
-                      // @ts-ignore
-                      if (right !== null)
-                          right.left = link;
-                      left = link;
                   }
-                  else {
-                      link.right = null;
-                      link.left = null;
+                  const cost = costFn(x, y) * mult;
+                  if (this._add(x, y, current.distance + cost)) ;
+              }, only4dirs);
+              current = this._todo.next;
+          }
+      }
+      rescan(costFn, only4dirs = false, maxDistance = 999) {
+          this._data.forEach((item) => {
+              item.next = item.prev = null;
+              if (item.distance < BLOCKED) {
+                  this._insert(item);
+              }
+          });
+          this.calculate(costFn, only4dirs, maxDistance);
+      }
+      getDistance(x, y) {
+          if (!this.hasXY(x, y))
+              throw new Error('Invalid index: ' + x + ',' + y);
+          return this._get(x, y).distance;
+      }
+      nextDir(fromX, fromY, isBlocked, only4dirs = false) {
+          let newX, newY, bestScore;
+          let index;
+          // brogueAssert(coordinatesAreInMap(x, y));
+          bestScore = 0;
+          let bestDir = NO_DIRECTION;
+          if (!this.hasXY(fromX, fromY))
+              throw new Error('Invalid index.');
+          const dist = this._get(fromX, fromY).distance;
+          for (index = 0; index < (only4dirs ? 4 : 8); ++index) {
+              const dir = DIRS$3[index];
+              newX = fromX + dir[0];
+              newY = fromY + dir[1];
+              if (!this.hasXY(newX, newY))
+                  continue;
+              if (isDiagonal(dir)) {
+                  if (this._get(newX, fromY).distance >= OBSTRUCTION ||
+                      this._get(fromX, newY).distance >= OBSTRUCTION) {
+                      continue; // diagonal blocked
                   }
               }
-              else {
-                  link.right = null;
-                  link.left = null;
-              }
-          }
-      }
-  }
-  function batchOutput(map, distanceMap) {
-      let i, j;
-      update(map);
-      // transfer results to the distanceMap
-      for (i = 0; i < map.width; i++) {
-          for (j = 0; j < map.height; j++) {
-              distanceMap[i][j] = getLink(map, i, j).distance;
-          }
-      }
-  }
-  var DIJKSTRA_MAP;
-  function calculateDistances(distanceMap, destinationX, destinationY, costMap, eightWays = false, maxDistance = NO_PATH) {
-      const width = distanceMap.length;
-      const height = distanceMap[0].length;
-      if (maxDistance <= 0)
-          maxDistance = NO_PATH;
-      if (!DIJKSTRA_MAP ||
-          DIJKSTRA_MAP.width < width ||
-          DIJKSTRA_MAP.height < height) {
-          DIJKSTRA_MAP = makeDijkstraMap(width, height);
-      }
-      DIJKSTRA_MAP.width = width;
-      DIJKSTRA_MAP.height = height;
-      let i, j;
-      const costFn = typeof costMap === 'function'
-          ? costMap
-          : (x, y) => costMap.get(x, y) || 0;
-      for (i = 0; i < width; i++) {
-          for (j = 0; j < height; j++) {
-              getLink(DIJKSTRA_MAP, i, j).cost = isBoundaryXY(distanceMap, i, j)
-                  ? OBSTRUCTION
-                  : costFn(i, j);
-          }
-      }
-      clear(DIJKSTRA_MAP, maxDistance, eightWays);
-      setDistance(DIJKSTRA_MAP, destinationX, destinationY, 0);
-      batchOutput(DIJKSTRA_MAP, distanceMap);
-      // TODO - Add this where called!
-      distanceMap.x = destinationX;
-      distanceMap.y = destinationY;
-  }
-  function rescan(distanceMap, costMap, eightWays = false, maxDistance = NO_PATH) {
-      if (!DIJKSTRA_MAP)
-          throw new Error('You must scan the map first.');
-      batchInput(DIJKSTRA_MAP, distanceMap, costMap, eightWays, maxDistance);
-      batchOutput(DIJKSTRA_MAP, distanceMap);
-  }
-  // Returns null if there are no beneficial moves.
-  // If preferDiagonals is true, we will prefer diagonal moves.
-  // Always rolls downhill on the distance map.
-  // If monst is provided, do not return a direction pointing to
-  // a cell that the monster avoids.
-  function nextStep(distanceMap, fromX, fromY, isBlocked, useDiagonals = false) {
-      let newX, newY, bestScore;
-      let dir;
-      // brogueAssert(coordinatesAreInMap(x, y));
-      bestScore = 0;
-      let bestDir = NO_DIRECTION;
-      const dist = distanceMap[fromX][fromY];
-      for (dir = 0; dir < (useDiagonals ? 8 : 4); ++dir) {
-          newX = fromX + DIRS$2[dir][0];
-          newY = fromY + DIRS$2[dir][1];
-          const newDist = distanceMap[newX][newY];
-          if (newDist < dist) {
-              const diff = dist - newDist;
-              if (diff > bestScore &&
-                  (newDist === 0 ||
-                      !isBlocked(newX, newY, fromX, fromY, distanceMap))) {
-                  bestDir = dir;
-                  bestScore = diff;
-              }
-          }
-      }
-      return DIRS$2[bestDir] || null;
-  }
-  function getClosestValidLocation(distanceMap, x, y, blocked = FALSE) {
-      let i, j, dist, closestDistance, lowestMapScore;
-      let locX = -1;
-      let locY = -1;
-      const width = distanceMap.length;
-      const height = distanceMap[0].length;
-      closestDistance = 10000;
-      lowestMapScore = 10000;
-      for (i = 1; i < width - 1; i++) {
-          for (j = 1; j < height - 1; j++) {
-              if (distanceMap[i][j] >= 0 &&
-                  distanceMap[i][j] < NO_PATH &&
-                  !blocked(i, j, i, j, distanceMap)) {
-                  dist = (i - x) * (i - x) + (j - y) * (j - y);
-                  if (dist < closestDistance ||
-                      (dist == closestDistance &&
-                          distanceMap[i][j] < lowestMapScore)) {
-                      locX = i;
-                      locY = j;
-                      closestDistance = dist;
-                      lowestMapScore = distanceMap[i][j];
+              const newDist = this._get(newX, newY).distance;
+              if (newDist < dist) {
+                  const diff = dist - newDist;
+                  if (diff > bestScore &&
+                      (newDist === 0 || !isBlocked(newX, newY))) {
+                      bestDir = index;
+                      bestScore = diff;
                   }
               }
           }
+          return DIRS$3[bestDir] || null;
       }
-      if (locX >= 0)
-          return [locX, locY];
-      return null;
-  }
-  // Populates path[][] with a list of coordinates starting at origin and traversing down the map. Returns the path.
-  function getPath(distanceMap, fromX, fromY, isBlocked, eightWays = false) {
-      const path = [];
-      forPath(distanceMap, fromX, fromY, isBlocked, (x, y) => {
-          path.push([x, y]);
-      }, eightWays);
-      return path.length ? path : null;
-  }
-  // Populates path[][] with a list of coordinates starting at origin and traversing down the map. Returns the path.
-  function forPath(distanceMap, fromX, fromY, isBlocked, pathFn, eightWays = false) {
-      // actor = actor || GW.PLAYER;
-      let x = fromX;
-      let y = fromY;
-      let dist = distanceMap[x][y];
-      let count = 0;
-      if (dist === 0) {
+      getPath(fromX, fromY, isBlocked, only4dirs = false) {
+          const path = [];
+          this.forPath(fromX, fromY, isBlocked, (x, y) => {
+              path.push([x, y]);
+          }, only4dirs);
+          return path.length ? path : null;
+      }
+      // Populates path[][] with a list of coordinates starting at origin and traversing down the map. Returns the path.
+      forPath(fromX, fromY, isBlocked, pathFn, only4dirs = false) {
+          // actor = actor || GW.PLAYER;
+          let x = fromX;
+          let y = fromY;
+          let dist = this._get(x, y).distance || 0;
+          let count = 0;
+          if (dist === 0) {
+              pathFn(x, y);
+              return count;
+          }
+          if (dist >= BLOCKED) {
+              const locs = closestMatchingLocs(x, y, (v) => {
+                  return v < BLOCKED;
+              });
+              if (!locs || locs.length === 0)
+                  return 0;
+              // get the loc with the lowest distance
+              const loc = locs.reduce((best, current) => {
+                  const bestItem = this._get(best);
+                  const currentItem = this._get(current);
+                  return bestItem.distance <= currentItem.distance
+                      ? best
+                      : current;
+              });
+              x = loc[0];
+              y = loc[1];
+              pathFn(x, y);
+              ++count;
+          }
+          let dir;
+          do {
+              dir = this.nextDir(x, y, isBlocked, only4dirs);
+              if (dir) {
+                  pathFn(x, y);
+                  ++count;
+                  x += dir[0];
+                  y += dir[1];
+                  // path[steps][0] = x;
+                  // path[steps][1] = y;
+                  // brogueAssert(coordinatesAreInMap(x, y));
+              }
+          } while (dir);
           pathFn(x, y);
           return count;
       }
-      if (dist < 0 ||
-          dist >= NO_PATH /* || isBlocked(x, y, x, y, distanceMap) */) {
-          const loc = getClosestValidLocation(distanceMap, x, y, isBlocked);
-          if (!loc)
-              return 0;
-          x = loc[0];
-          y = loc[1];
-          pathFn(x, y);
-          ++count;
-      }
-      let dir;
-      do {
-          dir = nextStep(distanceMap, x, y, isBlocked, eightWays);
-          if (dir) {
-              pathFn(x, y);
-              ++count;
-              x += dir[0];
-              y += dir[1];
-              // path[steps][0] = x;
-              // path[steps][1] = y;
-              // brogueAssert(coordinatesAreInMap(x, y));
+      // allows you to transform the data - for flee calcs, etc...
+      update(fn) {
+          for (let y = 0; y < this._height; ++y) {
+              for (let x = 0; x < this._width; ++x) {
+                  const item = this._get(x, y);
+                  item.distance = fn(item.distance, item.x, item.y);
+              }
           }
-      } while (dir);
-      pathFn(x, y);
-      return count;
+      }
+      forEach(fn) {
+          for (let y = 0; y < this._height; ++y) {
+              for (let x = 0; x < this._width; ++x) {
+                  const item = this._get(x, y);
+                  fn(item.distance, item.x, item.y);
+              }
+          }
+      }
+      dump(log = console.log) {
+          let output = [];
+          let line = '    ';
+          for (let x = 0; x < this._width; ++x) {
+              if (x && x % 10 == 0) {
+                  line += '   ';
+              }
+              line += ('' + x).padStart(4, ' ').substring(0, 4) + ' ';
+          }
+          output.push(line);
+          for (let y = 0; y < this._height; ++y) {
+              let line = ('' + y + ']').padStart(4, ' ') + ' ';
+              for (let x = 0; x < this._width; ++x) {
+                  if (x && x % 10 == 0) {
+                      line += '   ';
+                  }
+                  const v = this.getDistance(x, y);
+                  line += _format(v).padStart(4, ' ').substring(0, 4) + ' ';
+              }
+              output.push(line);
+          }
+          log(output.join('\n'));
+      }
+      _dumpTodo() {
+          let current = this._todo.next;
+          const out = [];
+          while (current) {
+              out.push(`${current.x},${current.y}=${current.distance.toFixed(2)}`);
+              current = current.next;
+          }
+          return out;
+      }
   }
-  // export function getPathBetween(
-  //     width: number,
-  //     height: number,
-  //     fromX: number,
-  //     fromY: number,
-  //     toX: number,
-  //     toY: number,
-  //     costFn: (x: number, y: number) => number,
-  //     eightWays = true
-  // ): XY.Loc[] | null {
-  //     const costMap = Grid.alloc(width, height);
-  //     const distanceMap = Grid.alloc(width, height);
-  //     for (let x = 0; x < width; ++x) {
-  //         for (let y = 0; y < height; ++y) {
-  //             costMap[x][y] = costFn(x, y);
-  //         }
-  //     }
-  //     calculateDistances(distanceMap, toX, toY, costMap, eightWays);
-  //     const isBlocked = (x: number, y: number) => costFn(x, y) < 0;
-  //     const path = getPath(distanceMap, fromX, fromY, isBlocked, eightWays);
-  //     Grid.free(distanceMap);
-  //     Grid.free(costMap);
-  //     return path;
-  // }
+  function _format(v) {
+      if (v < 100) {
+          return '' + v;
+          // } else if (v < 36) {
+          //     return String.fromCharCode('a'.charCodeAt(0) + v - 10);
+          // } else if (v < 62) {
+          //     return String.fromCharCode('A'.charCodeAt(0) + v - 10 - 26);
+      }
+      else if (v >= OBSTRUCTION) {
+          return '#';
+      }
+      else if (v >= BLOCKED) {
+          return 'X';
+      }
+      else {
+          return '>';
+      }
+  }
+  function computeDistances(grid, from, costFn = ONE, only4dirs = false) {
+      const dm = new DijkstraMap();
+      dm.reset(grid.width, grid.height);
+      dm.setGoal(from);
+      dm.calculate(costFn, only4dirs);
+      dm.forEach((v, x, y) => (grid[x][y] = v));
+  }
 
-  function fromTo(from, to, costFn = ONE) {
+  function fromTo(from, to, costFn = ONE, only4dirs = false) {
       const search = new AStar(to, costFn);
-      return search.from(from);
+      return search.from(from, only4dirs);
   }
   class AStar {
       constructor(goal, costFn = ONE) {
@@ -6290,7 +6247,7 @@
           }
           this._todo.push(newItem);
       }
-      from(from) {
+      from(from, only4dirs = false) {
           this._add(from);
           let item = null;
           while (this._todo.length) {
@@ -6308,12 +6265,20 @@
                   if (this._done.findIndex((i) => i.x === x && i.y === y) > -1) {
                       return;
                   }
-                  const mult = isDiagonal(dir) ? 1.4 : 1;
-                  const cost = this.costFn(x, y, item.x, item.y) * mult;
-                  if (cost < 0 || cost > 10000)
+                  // TODO - Handle OBSTRUCTION and diagonals
+                  let mult = 1;
+                  if (isDiagonal(dir)) {
+                      mult = 1.4;
+                      if (this.costFn(item.x, y) === OBSTRUCTION ||
+                          this.costFn(x, item.y) === OBSTRUCTION) {
+                          return;
+                      }
+                  }
+                  const cost = this.costFn(x, y) * mult;
+                  if (cost < 0 || cost >= 10000)
                       return;
                   this._add([x, y], cost, item);
-              }, false);
+              }, only4dirs);
           }
           if (item && !equals(item, this.goal))
               return [];
@@ -6329,17 +6294,13 @@
 
   var index$6 = /*#__PURE__*/Object.freeze({
   	__proto__: null,
-  	FORBIDDEN: FORBIDDEN,
-  	OBSTRUCTION: OBSTRUCTION,
-  	AVOIDED: AVOIDED,
   	OK: OK,
-  	NO_PATH: NO_PATH,
-  	calculateDistances: calculateDistances,
-  	rescan: rescan,
-  	nextStep: nextStep,
-  	getClosestValidLocation: getClosestValidLocation,
-  	getPath: getPath,
-  	forPath: forPath,
+  	AVOIDED: AVOIDED,
+  	BLOCKED: BLOCKED,
+  	OBSTRUCTION: OBSTRUCTION,
+  	NOT_DONE: NOT_DONE,
+  	DijkstraMap: DijkstraMap,
+  	computeDistances: computeDistances,
   	fromTo: fromTo
   });
 
@@ -13790,21 +13751,43 @@ void main() {
       return true;
   }
   function moveTowardPlayer(game, actor, quiet = false) {
-      game.level;
+      const map = game.level;
       const player = game.player;
-      if (!player.mapToMe)
-          throw new Error("Player does not have mapToMe!");
-      const dir = index$6.nextStep(player.mapToMe, actor.x, actor.y, (x, y) => {
-          const cost = actor.moveCost(x, y, actor.x, actor.y);
-          return cost < 0 || cost > 10000;
-      }, true);
-      if (moveDir(game, actor, dir, true)) {
-          return true; // success
+      const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+          return map.hasActor(x, y);
+      });
+      if (dir) {
+          if (moveDir(game, actor, dir, true)) {
+              return true; // success
+          }
+          if (!quiet) {
+              flash(game, actor.x, actor.y, "orange", 150);
+          }
+          return idle(game, actor);
       }
-      if (!quiet) {
-          flash(game, actor.x, actor.y, "orange", 150);
+      return false;
+  }
+  function moveAwayFromPlayer(game, actor, quiet = false) {
+      const map = game.level;
+      const player = game.player;
+      // compute safety map
+      const safety = new index$6.DijkstraMap();
+      safety.copy(player.mapToMe);
+      safety.update((v) => (v >= index$6.BLOCKED ? v : -1.2 * v));
+      safety.rescan((x, y) => actor.moveCost(x, y));
+      const dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+          return map.hasActor(x, y);
+      });
+      if (dir) {
+          if (moveDir(game, actor, dir, true)) {
+              return true; // success
+          }
+          if (!quiet) {
+              flash(game, actor.x, actor.y, "orange", 150);
+          }
+          return idle(game, actor);
       }
-      return idle(game, actor);
+      return false;
   }
   function attack(game, actor, target = null) {
       const level = game.level;
@@ -13879,6 +13862,10 @@ void main() {
           }
           return idle(game, actor);
       }
+      else if (distToPlayer < actor.kind.tooClose) {
+          if (moveAwayFromPlayer(game, actor))
+              return;
+      }
       if (distToPlayer < 2) {
           // can attack diagonal
           if (attack(game, actor, player))
@@ -13899,11 +13886,16 @@ void main() {
           fg: "white",
           bump: ["attack"],
           on: {},
+          range: 0,
+          rangedDamage: 0,
+          tooClose: 0,
+          rangedAttackSpeed: 0,
       }, cfg);
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
       }
       kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
+      kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.moveSpeed;
       kinds[cfg.id.toLowerCase()] = kind;
   }
   function getKind(id) {
@@ -13958,21 +13950,19 @@ void main() {
       avoidsTile(tile) {
           return tile.blocksMove || false;
       }
-      moveCost(x, y, fromX, fromY) {
+      moveCost(x, y) {
           const level = this._level;
           if (!level)
               return index$6.OBSTRUCTION;
           if (!level.hasXY(x, y))
               return index$6.OBSTRUCTION;
-          if (level.blocksMove(x, y))
+          if (level.blocksDiagonal(x, y))
               return index$6.OBSTRUCTION;
-          if (fromX !== undefined && fromY !== undefined) {
-              if (level.diagonalBlocked(fromX, fromY, x, y))
-                  return index$6.FORBIDDEN;
-          }
+          if (level.blocksMove(x, y))
+              return index$6.BLOCKED;
           if (level.hasActor(x, y))
               return index$6.AVOIDED;
-          return 1;
+          return index$6.OK;
       }
       pathTo(loc) {
           const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
@@ -14045,7 +14035,7 @@ void main() {
   class Player extends Actor {
       constructor(cfg) {
           super(cfg);
-          this.mapToMe = null;
+          this.mapToMe = new index$6.DijkstraMap();
           this.fov = null;
           this.goalPath = null;
           this.followPath = false;
@@ -14060,10 +14050,6 @@ void main() {
               this.updateFov();
           });
           this.on("remove", () => {
-              if (this.mapToMe) {
-                  grid.free(this.mapToMe);
-                  this.mapToMe = null;
-              }
               if (this.fov) {
                   grid.free(this.fov);
                   this.fov = null;
@@ -14101,7 +14087,7 @@ void main() {
       setGoal(x, y) {
           if (!this._level || this.followPath)
               return;
-          this.goalPath = index$6.fromTo(this, [x, y], (i, j, fromX, fromY) => this.moveCost(i, j, fromX, fromY));
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => this.moveCost(i, j));
           if (this.goalPath &&
               this.goalPath.length &&
               xy.equals(this.goalPath[0], this)) {
@@ -14116,13 +14102,9 @@ void main() {
           const level = this._level;
           if (!level)
               return;
-          if (!this.mapToMe ||
-              this.mapToMe.width !== level.width ||
-              this.mapToMe.height !== level.height) {
-              this.mapToMe && grid.free(this.mapToMe);
-              this.mapToMe = grid.alloc(level.width, level.height);
-          }
-          index$6.calculateDistances(this.mapToMe, this.x, this.y, (x, y) => this.moveCost(x, y), true);
+          this.mapToMe.reset(level.width, level.height);
+          this.mapToMe.setGoal(this.x, this.y);
+          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
       }
       updateFov() {
           const level = this._level;
@@ -15412,11 +15394,17 @@ void main() {
       return disrupts;
   }
   function computeDistanceMap(site, distanceMap, originX, originY, maxDistance) {
-      const costGrid = grid.alloc(site.width, site.height);
-      fillCostGrid(site, costGrid);
-      index$6.calculateDistances(distanceMap, originX, originY, costGrid, false, maxDistance + 1 // max distance is the same as max size of this blueprint
-      );
-      grid.free(costGrid);
+      distanceMap.reset(site.width, site.height);
+      distanceMap.setGoal(originX, originY);
+      distanceMap.calculate((x, y) => {
+          if (!site.hasXY(x, y))
+              return index$6.OBSTRUCTION;
+          if (site.isPassable(x, y))
+              return index$6.OK;
+          if (site.blocksDiagonal(x, y))
+              return index$6.OBSTRUCTION;
+          return index$6.BLOCKED;
+      }, false, maxDistance);
   }
   function clearInteriorFlag(site, machine) {
       for (let i = 0; i < site.width; i++) {
@@ -17285,13 +17273,12 @@ void main() {
           let i, j, d, x, y;
           const maxLength = this.options.maxLength;
           const minDistance = this.options.minDistance;
-          const pathGrid = grid.alloc(site.width, site.height);
-          const costGrid = grid.alloc(site.width, site.height);
+          const pathGrid = new index$6.DijkstraMap();
+          // const costGrid = GWU.grid.alloc(site.width, site.height);
           const dirCoords = [
               [1, 0],
               [0, 1],
           ];
-          costGrid.update((_v, x, y) => site.isPassable(x, y) ? 1 : index$6.OBSTRUCTION);
           const seq = site.rng.sequence(site.width * site.height);
           for (i = 0; i < seq.length; i++) {
               x = Math.floor(seq[i] / site.height);
@@ -17326,12 +17313,9 @@ void main() {
                       // map.get(newX, newY) &&
                       site.isPassable(newX, newY) &&
                           j < maxLength) {
-                          index$6.calculateDistances(pathGrid, newX, newY, costGrid, false);
-                          // pathGrid.fill(30000);
-                          // pathGrid[newX][newY] = 0;
-                          // dijkstraScan(pathGrid, costGrid, false);
-                          if (pathGrid[x][y] > minDistance &&
-                              pathGrid[x][y] < index$6.NO_PATH) {
+                          computeDistanceMap(site, pathGrid, newX, newY, 999);
+                          if (pathGrid.getDistance(x, y) > minDistance &&
+                              pathGrid.getDistance(x, y) < index$6.BLOCKED) {
                               // and if the pathing distance between the two flanking floor tiles exceeds minDistance,
                               // dungeon.debug(
                               //     'Adding Bridge',
@@ -17344,11 +17328,11 @@ void main() {
                               while (x !== newX || y !== newY) {
                                   if (this.isBridgeCandidate(site, x, y, bridgeDir)) {
                                       site.setTile(x, y, 'BRIDGE'); // map[x][y] = SITE.BRIDGE;
-                                      costGrid[x][y] = 1; // (Cost map also needs updating.)
+                                      // costGrid[x][y] = 1; // (Cost map also needs updating.)
                                   }
                                   else {
                                       site.setTile(x, y, 'FLOOR'); // map[x][y] = SITE.FLOOR;
-                                      costGrid[x][y] = 1;
+                                      // costGrid[x][y] = 1;
                                   }
                                   x += bridgeDir[0];
                                   y += bridgeDir[1];
@@ -17360,8 +17344,7 @@ void main() {
                   }
               }
           }
-          grid.free(pathGrid);
-          grid.free(costGrid);
+          // GWU.grid.free(costGrid);
           return count;
       }
       isBridgeCandidate(site, x, y, _bridgeDir) {
@@ -17556,13 +17539,13 @@ void main() {
           let i, j, d, x, y;
           const minDistance = Math.min(this.options.minDistance, Math.floor(Math.max(site.width, site.height) / 2));
           const maxLength = this.options.maxLength;
-          const pathGrid = grid.alloc(site.width, site.height);
-          const costGrid = grid.alloc(site.width, site.height);
+          const pathGrid = new index$6.DijkstraMap();
+          // const costGrid = GWU.grid.alloc(site.width, site.height);
           const dirCoords = [
               [1, 0],
               [0, 1],
           ];
-          fillCostGrid(site, costGrid);
+          // SITE.fillCostGrid(site, costGrid);
           function isValidTunnelStart(x, y, dir) {
               if (!site.hasXY(x, y))
                   return false;
@@ -17638,12 +17621,12 @@ void main() {
                           }
                       }
                       if (j < maxLength) {
-                          index$6.calculateDistances(pathGrid, startX, startY, costGrid, false);
+                          computeDistanceMap(site, pathGrid, startX, startY, 888);
                           // pathGrid.fill(30000);
                           // pathGrid[startX][startY] = 0;
                           // dijkstraScan(pathGrid, costGrid, false);
-                          if (pathGrid[endX][endY] > minDistance &&
-                              pathGrid[endX][endY] < 30000) {
+                          if (pathGrid.getDistance(endX, endY) > minDistance &&
+                              pathGrid.getDistance(endX, endY) < index$6.BLOCKED) {
                               // and if the pathing distance between the two flanking floor tiles exceeds minDistance,
                               // dungeon.debug(
                               //     'Adding Loop',
@@ -17658,7 +17641,7 @@ void main() {
                               while (endX !== startX || endY !== startY) {
                                   if (site.isNothing(endX, endY)) {
                                       site.setTile(endX, endY, 'FLOOR');
-                                      costGrid[endX][endY] = 1; // (Cost map also needs updating.)
+                                      // costGrid[endX][endY] = 1; // (Cost map also needs updating.)
                                   }
                                   endX += dir[0];
                                   endY += dir[1];
@@ -17675,8 +17658,8 @@ void main() {
                   }
               }
           }
-          grid.free(pathGrid);
-          grid.free(costGrid);
+          // pathGrid.free();
+          // GWU.grid.free(costGrid);
           return count;
       }
   }
@@ -18746,6 +18729,10 @@ void main() {
       blocksMove(x, y) {
           const tile = this.getTile(x, y);
           return tile.blocksMove || false;
+      }
+      blocksDiagonal(x, y) {
+          const tile = this.getTile(x, y);
+          return tile.blocksDiagonal || false;
       }
       isHallway(x, y) {
           return (xy.arcCount(x, y, (i, j) => {
@@ -19958,11 +19945,11 @@ void main() {
       moveSpeed: 100,
       health: 6,
       damage: 0,
-      // rangedDamage: 3,
-      // range: 10,
-      // tooClose: 4,
-      // rangedAttackSpeed: 150,
-      // noticeDistance: 10
+      rangedDamage: 3,
+      range: 10,
+      tooClose: 4,
+      rangedAttackSpeed: 150,
+      // notice: 10
   });
   /*
   PLAYER - health = 100

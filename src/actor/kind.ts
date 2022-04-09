@@ -13,9 +13,6 @@ export interface KindConfig {
   notice?: number;
   moveSpeed?: number;
 
-  damage?: number;
-  attackSpeed?: number;
-
   ch: string;
   fg: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
@@ -23,6 +20,16 @@ export interface KindConfig {
   bump?: string | string[];
 
   on?: ActorEvents;
+
+  // melee
+  damage?: number;
+  attackSpeed?: number;
+
+  // ranged
+  range?: number;
+  rangedDamage?: number;
+  tooClose?: number;
+  rangedAttackSpeed?: number;
 }
 
 export interface ActorKind {
@@ -32,9 +39,6 @@ export interface ActorKind {
   notice: number;
   moveSpeed: number;
 
-  damage: number;
-  attackSpeed: number;
-
   ch: string;
   fg: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
@@ -42,6 +46,14 @@ export interface ActorKind {
   bump: string[];
 
   on: ActorEvents;
+
+  damage: number;
+  attackSpeed: number;
+
+  range: number;
+  rangedDamage: number;
+  tooClose: number;
+  rangedAttackSpeed: number;
 }
 
 export const kinds: Record<string, ActorKind> = {};
@@ -58,6 +70,10 @@ export function install(cfg: KindConfig) {
       fg: "white",
       bump: ["attack"],
       on: {},
+      range: 0,
+      rangedDamage: 0,
+      tooClose: 0,
+      rangedAttackSpeed: 0,
     },
     cfg
   ) as ActorKind;
@@ -66,6 +82,7 @@ export function install(cfg: KindConfig) {
     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
   }
   kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
+  kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.moveSpeed;
 
   kinds[cfg.id.toLowerCase()] = kind;
 }

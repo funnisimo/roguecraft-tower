@@ -108,27 +108,49 @@ export function moveTowardPlayer(
   const map = game.level!;
   const player = game.player;
 
-  if (!player.mapToMe) throw new Error("Player does not have mapToMe!");
-
-  const dir = GWU.path.nextStep(
-    player.mapToMe,
-    actor.x,
-    actor.y,
-    (x, y) => {
-      const cost = actor.moveCost(x, y, actor.x, actor.y);
-      return cost < 0 || cost > 10000;
-    },
-    true
-  );
-
-  if (moveDir(game, actor, dir, true)) {
-    return true; // success
+  const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+    return map.hasActor(x, y);
+  });
+  if (dir) {
+    if (moveDir(game, actor, dir, true)) {
+      return true; // success
+    }
+    if (!quiet) {
+      FX.flash(game, actor.x, actor.y, "orange", 150);
+    }
+    return idle(game, actor);
   }
+  return false;
+}
 
-  if (!quiet) {
-    FX.flash(game, actor.x, actor.y, "orange", 150);
+export function moveAwayFromPlayer(
+  game: Game,
+  actor: Actor,
+  quiet = false
+): boolean {
+  const map = game.level!;
+  const player = game.player;
+
+  // compute safety map
+  const safety = new GWU.path.DijkstraMap();
+  safety.copy(player.mapToMe);
+  safety.update((v) => (v >= GWU.path.BLOCKED ? v : -1.2 * v));
+  safety.rescan((x, y) => actor.moveCost(x, y));
+
+  const dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+    return map.hasActor(x, y);
+  });
+  if (dir) {
+    if (moveDir(game, actor, dir, true)) {
+      return true; // success
+    }
+
+    if (!quiet) {
+      FX.flash(game, actor.x, actor.y, "orange", 150);
+    }
+    return idle(game, actor);
   }
-  return idle(game, actor);
+  return false;
 }
 
 export function attack(
