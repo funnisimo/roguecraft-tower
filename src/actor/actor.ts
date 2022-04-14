@@ -13,12 +13,14 @@ import { getPositionOfLineAndCharacter } from "typescript";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
+  health?: number;
+  damage?: number;
 }
 
 export class Actor extends Obj {
   _turnTime = 0;
   _level: Level | null = null;
-  kind: any;
+  kind: ActorKind;
   data: Record<string, any>;
   health: number;
   damage: number;
@@ -27,6 +29,7 @@ export class Actor extends Obj {
 
   constructor(cfg?: ActorConfig) {
     super(cfg);
+    // @ts-ignore
     if (!this.kind) throw new Error("Must have kind.");
 
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
@@ -81,11 +84,11 @@ export class Actor extends Obj {
     if (!level.hasXY(x, y)) return GWU.path.OBSTRUCTION;
     if (level.blocksDiagonal(x, y)) return GWU.path.OBSTRUCTION;
     if (level.blocksMove(x, y)) return GWU.path.BLOCKED;
-    if (level.hasActor(x, y)) return GWU.path.AVOIDED;
+    // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
     return GWU.path.OK;
   }
 
-  pathTo(loc: GWU.xy.Loc) {
+  pathTo(loc: GWU.xy.Pos) {
     const path = GWU.path.fromTo(this, loc, (x, y) => this.moveCost(x, y));
     return path;
   }

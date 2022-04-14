@@ -70,9 +70,11 @@ export class Player extends ACTOR.Actor {
   setGoal(x: number, y: number) {
     if (!this._level || this.followPath) return;
 
-    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j) =>
-      this.moveCost(i, j)
-    );
+    const level = this._level;
+    this.goalPath = GWU.path.fromTo(this, [x, y], (i, j) => {
+      if (level.hasActor(i, j)) return GWU.path.AVOIDED;
+      return this.moveCost(i, j);
+    });
     if (
       this.goalPath &&
       this.goalPath.length &&
@@ -112,12 +114,24 @@ export class Player extends ACTOR.Actor {
     GWU.fov.calculate(
       this.fov,
       (x, y) => {
-        return this.moveCost(x, y) < 0;
+        return this.moveCost(x, y) >= GWU.path.BLOCKED;
       },
       this.x,
       this.y,
       100
     );
+  }
+
+  isInFov(pos: GWU.xy.Pos): boolean;
+  isInFov(x: number, y: number): boolean;
+  isInFov(...args: any[]): boolean {
+    if (!this.fov) return false;
+
+    if (args.length == 2) {
+      return this.fov.get(args[0], args[1])! > 0;
+    } else {
+      return this.fov.get(GWU.xy.x(args[0]), GWU.xy.y(args[1]))! > 0;
+    }
   }
 }
 
@@ -128,7 +142,7 @@ export function makePlayer(id: string) {
   return new Player({
     x: 1,
     y: 1,
-    depth: 1, // items, actors, player, fx
+    z: 1, // items, actors, player, fx
     kind,
     health: kind.health || 10,
     damage: kind.damage || 2,

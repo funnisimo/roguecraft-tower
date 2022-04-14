@@ -4,7 +4,7 @@
   "description": "7DRL - 2022 :: Can you climb the tower all the way to the top?",
   "main": "main.js",
   "directories": {
-    "lib": "lib"
+    "dist": "dist"
   },
   "scripts": {
     "build": "rollup -c",

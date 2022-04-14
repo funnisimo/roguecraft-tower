@@ -29,7 +29,7 @@ export function flash(
   const scene = game.scene!;
   scene.pause({ update: true });
 
-  const fx = new FX({ x, y, bg: color, depth: 4 });
+  const fx = new FX({ x, y, bg: color, z: 4 });
   game.level!.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
@@ -60,7 +60,7 @@ export function flashGameTime(
 
   const startTime = scene.app.time;
 
-  const fx = new FX({ x, y, bg: color, depth: 4 });
+  const fx = new FX({ x, y, bg: color, z: 4 });
   level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;

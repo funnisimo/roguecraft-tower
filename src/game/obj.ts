@@ -2,11 +2,15 @@ import * as GWU from "gw-utils";
 
 export type CallbackFn = GWU.app.CallbackFn;
 export interface ObjConfig {
+  x?: number;
+  y?: number;
+  z?: number;
+
   ch?: string | null;
   fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
 
-  [key: string]: any;
+  // [key: string]: any;
 }
 
 export class Obj {

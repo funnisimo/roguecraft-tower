@@ -524,6 +524,12 @@
   function isXY(a) {
       return a && typeof a.x === 'number' && typeof a.y === 'number';
   }
+  function asLoc(v) {
+      return [x(v), y(v)];
+  }
+  function asXY(v) {
+      return { x: x(v), y: y(v) };
+  }
   function x(src) {
       // @ts-ignore
       return src.x || src[0] || 0;
@@ -903,6 +909,26 @@
           }
       }
   }
+  function dumpRect(left, top, width, height, fmtFn, log = console.log) {
+      let i, j;
+      const bottom = top + height;
+      const right = left + width;
+      let output = [];
+      for (j = top; j <= bottom; j++) {
+          let line = ('' + j + ']').padStart(3, ' ');
+          for (i = left; i <= right; i++) {
+              if (i % 10 == 0) {
+                  line += ' ';
+              }
+              line += fmtFn(i, j);
+          }
+          output.push(line);
+      }
+      log(output.join('\n'));
+  }
+  function dumpAround(x, y, radius, fmtFn, log = console.log) {
+      dumpRect(x - radius, y - radius, 2 * radius, 2 * radius, fmtFn, log);
+  }
   function forBorder(...args) {
       let left = 0;
       let top = 0;
@@ -985,6 +1011,8 @@
   	CLOCK_DIRS: CLOCK_DIRS,
   	isLoc: isLoc,
   	isXY: isXY,
+  	asLoc: asLoc,
+  	asXY: asXY,
   	x: x,
   	y: y,
   	contains: contains,
@@ -1018,6 +1046,8 @@
   	getLineThru: getLineThru,
   	forCircle: forCircle,
   	forRect: forRect,
+  	dumpRect: dumpRect,
+  	dumpAround: dumpAround,
   	forBorder: forBorder,
   	arcCount: arcCount,
   	closestMatchingLocs: closestMatchingLocs
@@ -2599,25 +2629,11 @@
           this.dumpRect(0, 0, this.width, this.height, fmtFn, log);
       }
       dumpRect(left, top, width, height, fmtFn, log = console.log) {
-          let i, j;
           fmtFn = fmtFn || _formatGridValue;
-          left = clamp(left, 0, this.width - 2);
-          top = clamp(top, 0, this.height - 2);
-          const right = clamp(left + width, 1, this.width - 1);
-          const bottom = clamp(top + height, 1, this.height - 1);
-          let output = [];
-          for (j = top; j <= bottom; j++) {
-              let line = ('' + j + ']').padStart(3, ' ');
-              for (i = left; i <= right; i++) {
-                  if (i % 10 == 0) {
-                      line += ' ';
-                  }
-                  const v = this[i][j];
-                  line += fmtFn(v, i, j)[0];
-              }
-              output.push(line);
-          }
-          log(output.join('\n'));
+          const format = (x, y) => {
+              return fmtFn(this.get(x, y), x, y);
+          };
+          return dumpRect(left, top, width, height, format, log);
       }
       dumpAround(x, y, radius, fmtFn, log = console.log) {
           this.dumpRect(x - radius, y - radius, 2 * radius, 2 * radius, fmtFn, log);
@@ -2881,8 +2897,8 @@
       }
   }
   // Grid.fillBlob = fillBlob;
-  const alloc = NumGrid.alloc.bind(NumGrid);
-  const free = NumGrid.free.bind(NumGrid);
+  const alloc$1 = NumGrid.alloc.bind(NumGrid);
+  const free$1 = NumGrid.free.bind(NumGrid);
   function make$e(w, h, v) {
       if (v === undefined)
           return new NumGrid(w, h, 0);
@@ -2923,8 +2939,8 @@
   	Grid: Grid,
   	stats: stats,
   	NumGrid: NumGrid,
-  	alloc: alloc,
-  	free: free,
+  	alloc: alloc$1,
+  	free: free$1,
   	make: make$e,
   	offsetZip: offsetZip,
   	intersection: intersection,
@@ -3162,7 +3178,7 @@
       matchingLoc(width, height, matchFn) {
           let locationCount = 0;
           let i, j, index;
-          const grid$1 = alloc(width, height);
+          const grid$1 = alloc$1(width, height);
           locationCount = 0;
           grid$1.update((_v, x, y) => {
               if (matchFn(x, y)) {
@@ -3177,7 +3193,7 @@
                   for (j = 0; j < height && index >= 0; j++) {
                       if (grid$1[i][j]) {
                           if (index == 0) {
-                              free(grid$1);
+                              free$1(grid$1);
                               return [i, j];
                           }
                           index--;
@@ -3185,7 +3201,7 @@
                   }
               }
           }
-          free(grid$1);
+          free$1(grid$1);
           return [-1, -1];
       }
       matchingLocNear(x, y, matchFn) {
@@ -5910,7 +5926,6 @@
       constructor(width, height) {
           this._data = [];
           this._todo = makeItem$1(-1, -1);
-          this._maxDistance = 999;
           this._width = 0;
           this._height = 0;
           if (width !== undefined && height !== undefined) {
@@ -5933,7 +5948,7 @@
       hasXY(x, y) {
           return x >= 0 && x < this._width && y >= 0 && y < this._height;
       }
-      reset(width, height) {
+      reset(width, height, distance = NOT_DONE) {
           this._width = width;
           this._height = height;
           while (this._data.length < width * height) {
@@ -5944,11 +5959,10 @@
                   const item = this._get(x, y);
                   item.x = x;
                   item.y = y;
-                  item.distance = NOT_DONE;
+                  item.distance = distance;
                   item.next = item.prev = null;
               }
           }
-          this._maxDistance = 999;
           this._todo.next = this._todo.prev = null;
       }
       _get(...args) {
@@ -5963,35 +5977,34 @@
       }
       setGoal(...args) {
           if (typeof args[0] === 'number') {
-              this._add(args[0], args[1], args[2] || 0);
+              this._add(args[0], args[1], args[2] || 0, 0);
           }
           else {
-              this._add(x(args[0]), y(args[0]), args[1] || 0);
+              this._add(x(args[0]), y(args[0]), args[1] || 0, 0);
           }
       }
-      _add(x, y, distance) {
+      _add(x, y, distance, cost) {
           if (!this.hasXY(x, y))
               return false;
           const item = this._get(x, y);
-          if (Math.floor(item.distance * 100) <= Math.floor(distance * 100))
+          if (Math.floor(item.distance * 100) <=
+              Math.floor((cost + distance) * 100)) {
               return false;
+          }
           if (item.prev) {
               item.prev.next = item.next;
               item.next && (item.next.prev = item.prev);
           }
           item.prev = item.next = null;
-          if (distance >= OBSTRUCTION) {
+          if (cost >= OBSTRUCTION) {
               item.distance = OBSTRUCTION;
               return false;
           }
-          else if (distance >= BLOCKED) {
+          else if (cost >= BLOCKED) {
               item.distance = BLOCKED;
               return false;
           }
-          else if (distance > this._maxDistance) {
-              return false;
-          }
-          item.distance = distance;
+          item.distance = distance + cost;
           return this._insert(item);
       }
       _insert(item) {
@@ -6007,9 +6020,8 @@
           current && (current.prev = item);
           return true;
       }
-      calculate(costFn, only4dirs = false, maxDistance = 999) {
+      calculate(costFn, only4dirs = false) {
           let current = this._todo.next;
-          this._maxDistance = maxDistance;
           while (current) {
               let next = current.next;
               current.prev = current.next = null;
@@ -6026,24 +6038,54 @@
                       }
                   }
                   const cost = costFn(x, y) * mult;
-                  if (this._add(x, y, current.distance + cost)) ;
+                  if (this._add(x, y, current.distance, cost)) ;
               }, only4dirs);
               current = this._todo.next;
           }
       }
-      rescan(costFn, only4dirs = false, maxDistance = 999) {
+      rescan(costFn, only4dirs = false) {
           this._data.forEach((item) => {
               item.next = item.prev = null;
               if (item.distance < BLOCKED) {
                   this._insert(item);
               }
           });
-          this.calculate(costFn, only4dirs, maxDistance);
+          this.calculate(costFn, only4dirs);
       }
       getDistance(x, y) {
           if (!this.hasXY(x, y))
-              throw new Error('Invalid index: ' + x + ',' + y);
+              return NOT_DONE;
           return this._get(x, y).distance;
+      }
+      setDistance(x, y, distance) {
+          if (!this.hasXY(x, y))
+              return;
+          this._get(x, y).distance = distance;
+      }
+      addObstacle(x, y, costFn, radius, penalty = radius) {
+          const done = [[x, y]];
+          const todo = [[x, y]];
+          while (todo.length) {
+              const item = todo.shift();
+              const dist = distanceBetween(x, y, item[0], item[1]);
+              if (dist > radius) {
+                  continue;
+              }
+              const stepPenalty = penalty * ((radius - dist) / radius);
+              const data = this._get(item);
+              data.distance += stepPenalty;
+              eachNeighbor(item[0], item[1], (i, j) => {
+                  const stepCost = costFn(i, j);
+                  if (done.findIndex((e) => e[0] === i && e[1] === j) >= 0) {
+                      return;
+                  }
+                  if (stepCost >= BLOCKED) {
+                      return;
+                  }
+                  done.push([i, j]);
+                  todo.push([i, j]);
+              });
+          }
       }
       nextDir(fromX, fromY, isBlocked, only4dirs = false) {
           let newX, newY, bestScore;
@@ -6140,6 +6182,13 @@
               }
           }
       }
+      add(other) {
+          if (this._width !== other._width || this._height !== other._height)
+              throw new Error('Not same size!');
+          for (let index = 0; index < this._width * this._height; ++index) {
+              this._data[index].distance += other._data[index].distance;
+          }
+      }
       forEach(fn) {
           for (let y = 0; y < this._height; ++y) {
               for (let x = 0; x < this._width; ++x) {
@@ -6148,28 +6197,18 @@
               }
           }
       }
-      dump(log = console.log) {
-          let output = [];
-          let line = '    ';
-          for (let x = 0; x < this._width; ++x) {
-              if (x && x % 10 == 0) {
-                  line += '   ';
-              }
-              line += ('' + x).padStart(4, ' ').substring(0, 4) + ' ';
-          }
-          output.push(line);
-          for (let y = 0; y < this._height; ++y) {
-              let line = ('' + y + ']').padStart(4, ' ') + ' ';
-              for (let x = 0; x < this._width; ++x) {
-                  if (x && x % 10 == 0) {
-                      line += '   ';
-                  }
-                  const v = this.getDistance(x, y);
-                  line += _format(v).padStart(4, ' ').substring(0, 4) + ' ';
-              }
-              output.push(line);
-          }
-          log(output.join('\n'));
+      dump(fmtFn, log = console.log) {
+          this.dumpRect(0, 0, this.width, this.height, fmtFn, log);
+      }
+      dumpRect(left, top, width, height, fmtFn, log = console.log) {
+          fmtFn = fmtFn || _format;
+          const format = (x, y) => {
+              return fmtFn(this.getDistance(x, y));
+          };
+          return dumpRect(left, top, width, height, format, log);
+      }
+      dumpAround(x, y, radius, fmtFn, log = console.log) {
+          this.dumpRect(x - radius, y - radius, 2 * radius, 2 * radius, fmtFn, log);
       }
       _dumpTodo() {
           let current = this._todo.next;
@@ -6182,21 +6221,21 @@
       }
   }
   function _format(v) {
-      if (v < 100) {
-          return '' + v;
+      if (v < BLOCKED) {
+          return v.toFixed(1).padStart(3, ' ') + ' ';
           // } else if (v < 36) {
           //     return String.fromCharCode('a'.charCodeAt(0) + v - 10);
           // } else if (v < 62) {
           //     return String.fromCharCode('A'.charCodeAt(0) + v - 10 - 26);
       }
       else if (v >= OBSTRUCTION) {
-          return '#';
+          return ' ## ';
       }
       else if (v >= BLOCKED) {
-          return 'X';
+          return ' XX ';
       }
       else {
-          return '>';
+          return ' >> ';
       }
   }
   function computeDistances(grid, from, costFn = ONE, only4dirs = false) {
@@ -6205,6 +6244,17 @@
       dm.setGoal(from);
       dm.calculate(costFn, only4dirs);
       dm.forEach((v, x, y) => (grid[x][y] = v));
+  }
+  const maps = [];
+  function alloc() {
+      let map = maps.pop();
+      if (!map) {
+          map = new DijkstraMap();
+      }
+      return map;
+  }
+  function free(map) {
+      maps.push(map);
   }
 
   function fromTo(from, to, costFn = ONE, only4dirs = false) {
@@ -6215,7 +6265,7 @@
       constructor(goal, costFn = ONE) {
           this._todo = [];
           this._done = [];
-          this.goal = goal;
+          this.goal = asLoc(goal);
           this.costFn = costFn;
       }
       _add(loc, cost = 1, prev = null) {
@@ -6301,6 +6351,8 @@
   	NOT_DONE: NOT_DONE,
   	DijkstraMap: DijkstraMap,
   	computeDistances: computeDistances,
+  	alloc: alloc,
+  	free: free,
   	fromTo: fromTo
   });
 
@@ -8011,7 +8063,7 @@ void main() {
           let i, j, k;
           let blobNumber, blobSize, topBlobNumber, topBlobSize;
           let bounds = new Bounds(0, 0, 0, 0);
-          const dest = alloc(width, height);
+          const dest = alloc$1(width, height);
           const maxWidth = Math.min(width, this.options.maxWidth);
           const maxHeight = Math.min(height, this.options.maxHeight);
           const minWidth = Math.min(width, this.options.minWidth);
@@ -8071,7 +8123,7 @@ void main() {
                   }
               }
           }
-          free(dest);
+          free$1(dest);
           // Populate the returned variables.
           return bounds;
       }
@@ -8079,7 +8131,7 @@ void main() {
           let i, j, nbCount, newX, newY;
           let dir;
           let buffer2;
-          buffer2 = alloc(grid$1.width, grid$1.height);
+          buffer2 = alloc$1(grid$1.width, grid$1.height);
           buffer2.copy(grid$1); // Make a backup of this in buffer2, so that each generation is isolated.
           let didSomething = false;
           for (i = 0; i < grid$1.width; i++) {
@@ -8105,7 +8157,7 @@ void main() {
                   }
               }
           }
-          free(buffer2);
+          free$1(buffer2);
           return didSomething;
       }
   }
@@ -8443,6 +8495,7 @@ void main() {
           ++this._count;
           // reset starting values
           Object.entries(this._start).forEach(([key, value]) => {
+              // @ts-ignore
               this._obj[key] = value;
           });
           if (this._count == 1) {
@@ -8486,8 +8539,17 @@ void main() {
       if (typeof start === 'boolean' || typeof goal === 'boolean') {
           return Math.floor(pct) == 0 ? start : goal;
       }
-      return Math.floor((goal - start) * pct) + start;
+      return Math.round((goal - start) * pct) + start;
   }
+
+  var tween = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	BaseObj: BaseObj,
+  	Tween: Tween,
+  	make: make$2$1,
+  	linear: linear,
+  	interpolate: interpolate
+  });
 
   class Timers {
       constructor(ctx) {
@@ -13628,7 +13690,7 @@ void main() {
   function flash(game, x, y, color = "white", ms = 300) {
       const scene = game.scene;
       scene.pause({ update: true });
-      const fx = new FX({ x, y, bg: color, depth: 4 });
+      const fx = new FX({ x, y, bg: color, z: 4 });
       game.level.addFx(fx);
       let _success = NOOP;
       scene.needsDraw = true;
@@ -13647,7 +13709,7 @@ void main() {
       const scene = game.scene;
       const level = game.level;
       const startTime = scene.app.time;
-      const fx = new FX({ x, y, bg: color, depth: 4 });
+      const fx = new FX({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       // let _fail: CallbackFn = GWU.NOOP;
@@ -13670,6 +13732,51 @@ void main() {
       return {
           then(fn) {
               _success = fn || NOOP;
+          },
+      };
+  }
+
+  function projectile(game, from, to, sprite, ms) {
+      const level = game.level;
+      const scene = game.scene;
+      const fromX = xy.x(from);
+      const fromY = xy.y(from);
+      const toX = xy.x(to);
+      const toY = xy.y(to);
+      let _success = NOOP;
+      const fx = new FX(sprite);
+      console.log("- fire", from, to);
+      scene.pause({ update: true });
+      const tween$1 = tween
+          .make({ x: fromX, y: fromY })
+          .to({ x: toX, y: toY })
+          .duration(ms)
+          .onStart((vals) => {
+          fx.x = fromX;
+          fx.y = fromY;
+          level.addFx(fx);
+      })
+          .onUpdate((vals) => {
+          if (level.blocksMove(vals.x, vals.y)) {
+              level.removeFx(fx);
+              _success(vals, false);
+              tween$1.stop();
+              scene.resume({ update: true });
+          }
+          fx.x = vals.x;
+          fx.y = vals.y;
+          console.log("- >> ", vals);
+          scene.needsDraw = true;
+      })
+          .onFinish((vals) => {
+          level.removeFx(fx);
+          _success(vals, true);
+          scene.resume({ update: true });
+      })
+          .start(game.scene.tweens);
+      return {
+          then(success) {
+              _success = success || NOOP;
           },
       };
   }
@@ -13704,7 +13811,7 @@ void main() {
               return true;
           }
           else {
-              console.log("- diagonal blocked!!!", actor.kind.name, actor.x, actor.y);
+              console.log("- diagonal blocked!!!", actor.kind.id, actor.x, actor.y);
               return false;
           }
       }
@@ -13722,7 +13829,7 @@ void main() {
               return true;
           }
           else {
-              console.log("- nothing!!!", actor.kind.name, actor.x, actor.y);
+              console.log("- nothing!!!", actor.kind.id, actor.x, actor.y);
               return false;
           }
       }
@@ -13734,7 +13841,7 @@ void main() {
               return false;
           }
           else {
-              console.log("- nothing blocked!!!", actor.kind.name, actor.x, actor.y);
+              console.log("- nothing blocked!!!", actor.kind.id, actor.x, actor.y);
               return false;
           }
       }
@@ -13775,12 +13882,24 @@ void main() {
       safety.copy(player.mapToMe);
       safety.update((v) => (v >= index$6.BLOCKED ? v : -1.2 * v));
       safety.rescan((x, y) => actor.moveCost(x, y));
-      const dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+      safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
           return map.hasActor(x, y);
       });
+      console.log(`- move away (${actor.x},${actor.y}) from player (${player.x},${player.y}) - ${dir}`);
+      // if (dir === null) {
+      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+      //     return map.hasActor(x, y);
+      //   });
+      // }
       if (dir) {
-          if (moveDir(game, actor, dir, true)) {
-              return true; // success
+          const spread = xy.dirSpread(dir);
+          for (let d of spread) {
+              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
+              if (moveDir(game, actor, d, true)) {
+                  console.log("- success");
+                  return true; // success
+              }
           }
           if (!quiet) {
               flash(game, actor.x, actor.y, "orange", 150);
@@ -13847,12 +13966,28 @@ void main() {
       return true;
   }
   installBump("attack", attack);
+  function fireAtPlayer(game, actor) {
+      const player = game.player;
+      // if player can't see actor then actor can't see player!
+      if (!player.isInFov(actor.x, actor.y))
+          return false;
+      projectile(game, actor, game.player, { ch: "*", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(game, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              flash(game, xy.x, xy.y, "red", 150);
+          }
+      });
+      game.endTurn(actor, actor.kind.attackSpeed);
+      return true;
+  }
 
   function ai(game, actor) {
-      console.log("Actor.AI", actor.kind.id, actor.x, actor.y, game.scheduler.time);
       const player = game.player;
       const noticeDistance = actor.kind.notice || 10;
       const distToPlayer = xy.distanceBetween(player.x, player.y, actor.x, actor.y);
+      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToPlayer}`);
       if (distToPlayer > noticeDistance) {
           // wander somewhere?  [wanderChance]
           // step randomly [idleMoveChance]
@@ -13862,16 +13997,31 @@ void main() {
           }
           return idle(game, actor);
       }
-      else if (distToPlayer < actor.kind.tooClose) {
+      else if (distToPlayer <= actor.kind.tooClose) {
+          // should there be a random chance on this?
           if (moveAwayFromPlayer(game, actor))
+              return;
+      }
+      // shoot at player?
+      if (actor.kind.rangedDamage) {
+          if (fireAtPlayer(game, actor))
               return;
       }
       if (distToPlayer < 2) {
           // can attack diagonal
-          if (attack(game, actor, player))
+          if (actor.damage > 0) {
+              if (attack(game, actor, player))
+                  return;
+          }
+          if (distToPlayer == 1) {
+              return idle(game, actor);
+          }
+      }
+      if (!actor.kind.tooClose) {
+          if (moveTowardPlayer(game, actor))
               return;
       }
-      return moveTowardPlayer(game, actor);
+      return idle(game, actor);
   }
 
   const kinds = {};
@@ -13908,6 +14058,7 @@ void main() {
           this._turnTime = 0;
           this._level = null;
           this.leader = null;
+          // @ts-ignore
           if (!this.kind)
               throw new Error("Must have kind.");
           this.kind.moveSpeed = this.kind.moveSpeed || 100;
@@ -13960,8 +14111,7 @@ void main() {
               return index$6.OBSTRUCTION;
           if (level.blocksMove(x, y))
               return index$6.BLOCKED;
-          if (level.hasActor(x, y))
-              return index$6.AVOIDED;
+          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
           return index$6.OK;
       }
       pathTo(loc) {
@@ -14087,7 +14237,12 @@ void main() {
       setGoal(x, y) {
           if (!this._level || this.followPath)
               return;
-          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => this.moveCost(i, j));
+          const level = this._level;
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
+              if (level.hasActor(i, j))
+                  return index$6.AVOIDED;
+              return this.moveCost(i, j);
+          });
           if (this.goalPath &&
               this.goalPath.length &&
               xy.equals(this.goalPath[0], this)) {
@@ -14117,8 +14272,18 @@ void main() {
               this.fov = grid.alloc(level.width, level.height);
           }
           index$7.calculate(this.fov, (x, y) => {
-              return this.moveCost(x, y) < 0;
+              return this.moveCost(x, y) >= index$6.BLOCKED;
           }, this.x, this.y, 100);
+      }
+      isInFov(...args) {
+          if (!this.fov)
+              return false;
+          if (args.length == 2) {
+              return this.fov.get(args[0], args[1]) > 0;
+          }
+          else {
+              return this.fov.get(xy.x(args[0]), xy.y(args[1])) > 0;
+          }
       }
   }
   function makePlayer(id) {
@@ -14128,7 +14293,7 @@ void main() {
       return new Player({
           x: 1,
           y: 1,
-          depth: 1,
+          z: 1,
           kind,
           health: kind.health || 10,
           damage: kind.damage || 2,
@@ -15393,7 +15558,7 @@ void main() {
       grid.free(walkableGrid);
       return disrupts;
   }
-  function computeDistanceMap(site, distanceMap, originX, originY, maxDistance) {
+  function computeDistanceMap(site, distanceMap, originX, originY, _maxDistance) {
       distanceMap.reset(site.width, site.height);
       distanceMap.setGoal(originX, originY);
       distanceMap.calculate((x, y) => {
@@ -15404,7 +15569,7 @@ void main() {
           if (site.blocksDiagonal(x, y))
               return index$6.OBSTRUCTION;
           return index$6.BLOCKED;
-      }, false, maxDistance);
+      }, false);
   }
   function clearInteriorFlag(site, machine) {
       for (let i = 0; i < site.width; i++) {
@@ -17313,7 +17478,7 @@ void main() {
                       // map.get(newX, newY) &&
                       site.isPassable(newX, newY) &&
                           j < maxLength) {
-                          computeDistanceMap(site, pathGrid, newX, newY, 999);
+                          computeDistanceMap(site, pathGrid, newX, newY);
                           if (pathGrid.getDistance(x, y) > minDistance &&
                               pathGrid.getDistance(x, y) < index$6.BLOCKED) {
                               // and if the pathing distance between the two flanking floor tiles exceeds minDistance,
@@ -17621,7 +17786,7 @@ void main() {
                           }
                       }
                       if (j < maxLength) {
-                          computeDistanceMap(site, pathGrid, startX, startY, 888);
+                          computeDistanceMap(site, pathGrid, startX, startY);
                           // pathGrid.fill(30000);
                           // pathGrid[startX][startY] = 0;
                           // dijkstraScan(pathGrid, costGrid, false);
@@ -19109,6 +19274,10 @@ void main() {
               click: (e) => this.click(e),
           });
           scene.once("stop", cancelEvents);
+          // @ts-ignore
+          window.LEVEL = level;
+          // @ts-ignore
+          window.PLAYER = this.player;
           level.start(this);
           this.tick();
       }
@@ -19939,7 +20108,7 @@ void main() {
       // attackSpeed: 150
   });
   install$3({
-      id: "Skeleton",
+      id: "SKELETON",
       ch: "s",
       fg: "white",
       moveSpeed: 100,
@@ -20027,6 +20196,11 @@ void main() {
       leader: "ARMOR_ZOMBIE_2",
       members: { ARMOR_ZOMBIE: "1-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
+  });
+  install$1("SKELETON", {
+      leader: "SKELETON",
+      members: { SKELETON: "2-3" },
+      frequency: 100,
   });
 
   function start() {

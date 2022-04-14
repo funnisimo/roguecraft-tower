@@ -18,3 +18,9 @@ install("ZOMBIE3", {
   members: { ARMOR_ZOMBIE: "1-2", ZOMBIE: "1-3" },
   frequency: (l) => 2 * l,
 });
+
+install("SKELETON", {
+  leader: "SKELETON",
+  members: { SKELETON: "2-3" },
+  frequency: 100,
+});

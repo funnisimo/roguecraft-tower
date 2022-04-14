@@ -154,6 +154,11 @@ export class Game {
     });
     scene.once("stop", cancelEvents);
 
+    // @ts-ignore
+    window.LEVEL = level;
+    // @ts-ignore
+    window.PLAYER = this.player;
+
     level.start(this);
     this.tick();
   }

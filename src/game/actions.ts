@@ -47,7 +47,7 @@ export function moveDir(
       idle(game, actor);
       return true;
     } else {
-      console.log("- diagonal blocked!!!", actor.kind.name, actor.x, actor.y);
+      console.log("- diagonal blocked!!!", actor.kind.id, actor.x, actor.y);
       return false;
     }
   }
@@ -65,7 +65,7 @@ export function moveDir(
       idle(game, actor);
       return true;
     } else {
-      console.log("- nothing!!!", actor.kind.name, actor.x, actor.y);
+      console.log("- nothing!!!", actor.kind.id, actor.x, actor.y);
       return false;
     }
   }
@@ -77,7 +77,7 @@ export function moveDir(
       idle(game, actor);
       return false;
     } else {
-      console.log("- nothing blocked!!!", actor.kind.name, actor.x, actor.y);
+      console.log("- nothing blocked!!!", actor.kind.id, actor.x, actor.y);
       return false;
     }
   }
@@ -136,13 +136,35 @@ export function moveAwayFromPlayer(
   safety.copy(player.mapToMe);
   safety.update((v) => (v >= GWU.path.BLOCKED ? v : -1.2 * v));
   safety.rescan((x, y) => actor.moveCost(x, y));
+  safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
 
-  const dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+  let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
     return map.hasActor(x, y);
   });
+
+  console.log(
+    `- move away (${actor.x},${actor.y}) from player (${player.x},${player.y}) - ${dir}`
+  );
+
+  // if (dir === null) {
+  //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+  //     return map.hasActor(x, y);
+  //   });
+  // }
+
   if (dir) {
-    if (moveDir(game, actor, dir, true)) {
-      return true; // success
+    const spread = GWU.xy.dirSpread(dir);
+    for (let d of spread) {
+      console.log(
+        "- try",
+        d,
+        safety.getDistance(actor.x, actor.y),
+        safety.getDistance(actor.x + d[0], actor.y + d[1])
+      );
+      if (moveDir(game, actor, d, true)) {
+        console.log("- success");
+        return true; // success
+      }
     }
 
     if (!quiet) {
@@ -225,6 +247,26 @@ export function attack(
 }
 
 installBump("attack", attack);
+
+export function fireAtPlayer(game: Game, actor: Actor): boolean {
+  const player = game.player;
+
+  // if player can't see actor then actor can't see player!
+  if (!player.isInFov(actor.x, actor.y)) return false;
+
+  FX.projectile(game, actor, game.player, { ch: "*", fg: "white" }, 300).then(
+    (xy, ok) => {
+      if (!ok) {
+        FX.flash(game, xy.x, xy.y, "orange", 150);
+      } else {
+        FX.flash(game, xy.x, xy.y, "red", 150);
+      }
+    }
+  );
+
+  game.endTurn(actor, actor.kind.attackSpeed);
+  return true;
+}
 
 export function climb(game: Game, actor: Actor): boolean {
   const tile = game.level!.getTile(actor.x, actor.y);

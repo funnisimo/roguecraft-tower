@@ -54,7 +54,7 @@ ACTOR.install({
 });
 
 ACTOR.install({
-  id: "Skeleton",
+  id: "SKELETON",
   ch: "s",
   fg: "white",
   moveSpeed: 100,
