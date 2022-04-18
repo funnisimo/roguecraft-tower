@@ -24,6 +24,26 @@ export function projectile(
 
   let _success: ProjectileCb = GWU.NOOP;
 
+  if (sprite.ch && sprite.ch.length == 4) {
+    const dir = GWU.xy.dirFromTo(from, to);
+    let index = 0;
+    if (dir[0] && dir[1]) {
+      index = 2;
+      if (dir[0] != dir[1]) {
+        // remember up is -y
+        index = 3;
+      }
+    } else if (dir[0]) {
+      index = 1;
+    }
+    const ch = sprite.ch[index];
+    sprite = GWU.sprite.make(ch, sprite.fg, sprite.bg);
+  } else if (sprite.ch && sprite.ch.length !== 1) {
+    throw new Error(
+      'projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")'
+    );
+  }
+
   const fx = new FX(sprite);
 
   console.log("- fire", from, to);

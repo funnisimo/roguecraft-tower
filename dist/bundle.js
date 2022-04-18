@@ -4308,6 +4308,9 @@
           return `{ ch: ${this.ch}, fg: ${this.fg.toString()}, bg: ${this.bg.toString()} }`;
       }
   }
+  function makeMixer(base) {
+      return new Mixer(base);
+  }
 
   var options = {
       colorStart: '#{',
@@ -7731,6 +7734,117 @@ void main() {
       }
       return canvas;
   }
+
+  class Sprite {
+      constructor(ch, fg, bg, opacity = 100) {
+          if (!ch)
+              ch = null;
+          this.ch = ch;
+          this.fg = from$2(fg);
+          this.bg = from$2(bg);
+          this.opacity = clamp(opacity, 0, 100);
+      }
+      clone() {
+          return new Sprite(this.ch, this.fg, this.bg, this.opacity);
+      }
+      toString() {
+          const parts = [];
+          if (this.ch)
+              parts.push('ch: ' + this.ch);
+          if (!this.fg.isNull())
+              parts.push('fg: ' + this.fg.toString());
+          if (!this.bg.isNull())
+              parts.push('bg: ' + this.bg.toString());
+          if (this.opacity !== 100)
+              parts.push('opacity: ' + this.opacity);
+          return '{ ' + parts.join(', ') + ' }';
+      }
+  }
+  const sprites = {};
+  function make$5(...args) {
+      let ch = null, fg = -1, bg = -1, opacity;
+      if (args.length == 0) {
+          return new Sprite(null, -1, -1);
+      }
+      else if (args.length == 1 && Array.isArray(args[0])) {
+          args = args[0];
+      }
+      if (args.length > 3) {
+          opacity = args[3];
+          args.pop();
+      }
+      else if (args.length == 2 &&
+          typeof args[1] == 'number' &&
+          args[0].length > 1) {
+          opacity = args.pop();
+      }
+      if (args.length > 1) {
+          ch = args[0] || null;
+          fg = args[1];
+          bg = args[2];
+      }
+      else {
+          if (typeof args[0] === 'string' && args[0].length == 1) {
+              ch = args[0];
+              fg = 'white'; // white is default?
+          }
+          else if ((typeof args[0] === 'string' && args[0].length > 1) ||
+              typeof args[0] === 'number') {
+              bg = args[0];
+          }
+          else if (args[0] instanceof Color) {
+              bg = args[0];
+          }
+          else {
+              const sprite = args[0];
+              ch = sprite.ch || null;
+              fg = sprite.fg || -1;
+              bg = sprite.bg || -1;
+              opacity = sprite.opacity;
+          }
+      }
+      if (typeof fg === 'string')
+          fg = from$2(fg);
+      else if (Array.isArray(fg))
+          fg = make$9(fg);
+      else if (fg === undefined || fg === null)
+          fg = -1;
+      if (typeof bg === 'string')
+          bg = from$2(bg);
+      else if (Array.isArray(bg))
+          bg = make$9(bg);
+      else if (bg === undefined || bg === null)
+          bg = -1;
+      return new Sprite(ch, fg, bg, opacity);
+  }
+  function from$1$1(config) {
+      if (typeof config === 'string') {
+          const sprite = sprites[config];
+          if (!sprite)
+              throw new Error('Failed to find sprite: ' + config);
+          return sprite;
+      }
+      return make$5(config);
+  }
+  function install$1$2(name, ...args) {
+      let sprite;
+      // @ts-ignore
+      sprite = make$5(...args);
+      sprite.name = name;
+      sprites[name] = sprite;
+      return sprite;
+  }
+
+  var index$4 = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	Sprite: Sprite,
+  	sprites: sprites,
+  	make: make$5,
+  	from: from$1$1,
+  	install: install$1$2,
+  	Mixer: Mixer,
+  	makeMixer: makeMixer
+  });
 
   class Cache {
       constructor(opts = {}) {
@@ -13749,6 +13863,25 @@ void main() {
       const toX = xy.x(to);
       const toY = xy.y(to);
       let _success = NOOP;
+      if (sprite.ch && sprite.ch.length == 4) {
+          const dir = xy.dirFromTo(from, to);
+          let index = 0;
+          if (dir[0] && dir[1]) {
+              index = 2;
+              if (dir[0] != dir[1]) {
+                  // remember up is -y
+                  index = 3;
+              }
+          }
+          else if (dir[0]) {
+              index = 1;
+          }
+          const ch = sprite.ch[index];
+          sprite = index$4.make(ch, sprite.fg, sprite.bg);
+      }
+      else if (sprite.ch && sprite.ch.length !== 1) {
+          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
+      }
       const fx = new FX(sprite);
       console.log("- fire", from, to);
       scene.pause({ update: true });
@@ -13893,6 +14026,7 @@ void main() {
               v -= 10;
           return v;
       });
+      safety.setDistance(player.x, player.y, index$6.BLOCKED);
       safety.rescan((x, y) => actor.moveCost(x, y));
       // safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
       let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
@@ -13983,7 +14117,7 @@ void main() {
       // if player can't see actor then actor can't see player!
       if (!player.isInFov(actor.x, actor.y))
           return false;
-      projectile(game, actor, game.player, { ch: "*", fg: "white" }, 300).then((xy, ok) => {
+      projectile(game, actor, game.player, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
           if (!ok) {
               flash(game, xy.x, xy.y, "orange", 150);
           }

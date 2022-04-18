@@ -140,7 +140,7 @@ export function moveAwayFromPlayer(
     if (map.isInLoop(x, y)) v -= 10;
     return v;
   });
-
+  safety.setDistance(player.x, player.y, GWU.path.BLOCKED);
   safety.rescan((x, y) => actor.moveCost(x, y));
   // safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
 
@@ -260,15 +260,19 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
   // if player can't see actor then actor can't see player!
   if (!player.isInFov(actor.x, actor.y)) return false;
 
-  FX.projectile(game, actor, game.player, { ch: "*", fg: "white" }, 300).then(
-    (xy, ok) => {
-      if (!ok) {
-        FX.flash(game, xy.x, xy.y, "orange", 150);
-      } else {
-        FX.flash(game, xy.x, xy.y, "red", 150);
-      }
+  FX.projectile(
+    game,
+    actor,
+    game.player,
+    { ch: "|-\\/", fg: "white" },
+    300
+  ).then((xy, ok) => {
+    if (!ok) {
+      FX.flash(game, xy.x, xy.y, "orange", 150);
+    } else {
+      FX.flash(game, xy.x, xy.y, "red", 150);
     }
-  );
+  });
 
   game.endTurn(actor, actor.kind.attackSpeed);
   return true;
