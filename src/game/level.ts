@@ -8,13 +8,14 @@ import * as FX from "../fx";
 import * as TILE from "./tiles";
 import * as OBJ from "./obj";
 import { Game } from "./game";
+import { getDefaultCompilerOptions } from "typescript";
 
 export interface WaveInfo {
   delay?: number;
   horde?: string;
 }
 
-export class Level {
+export class Level implements GWD.site.LoopSite {
   depth = 0;
   welcome = "";
   proceed = "";
@@ -181,6 +182,10 @@ export class Level {
     return tile.blocksMove || false;
   }
 
+  blocksPathing(x: number, y: number) {
+    return this.blocksMove(x, y);
+  }
+
   blocksDiagonal(x: number, y: number) {
     const tile = this.getTile(x, y);
     return tile.blocksDiagonal || false;
@@ -192,6 +197,23 @@ export class Level {
         return !this.blocksMove(i, j);
       }) > 1
     );
+  }
+
+  isSecretDoor(x: number, y: number): boolean {
+    const tile = this.getTile(x, y);
+    return tile.secretDoor || false;
+  }
+
+  // Loopiness
+
+  setInLoop(x: number, y: number): void {
+    this.flags[x][y] |= GWD.site.Flags.IN_LOOP;
+  }
+  clearInLoop(x: number, y: number): void {
+    this.flags[x][y] &= ~GWD.site.Flags.IN_LOOP;
+  }
+  isInLoop(x: number, y: number): boolean {
+    return ((this.flags[x][y] || 0) & GWD.site.Flags.IN_LOOP) > 0;
   }
 
   //
@@ -567,6 +589,8 @@ function digLevel(level: Level, seed = 12345) {
   digger.create(60, 35, (x, y, v) => {
     level.setTile(x, y, v);
   });
+
+  GWD.site.updateLoopiness(level);
 
   level.locations = digger.locations;
 }

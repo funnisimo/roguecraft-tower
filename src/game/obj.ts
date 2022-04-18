@@ -35,7 +35,7 @@ export class Obj {
   on(event: string, fn: CallbackFn): GWU.app.CancelFn;
   on(...args: any[]): GWU.app.CancelFn {
     if (args.length == 1) {
-      return this.events.load(args[0]);
+      return this.events.on(args[0]);
     }
     return this.events.on(args[0], args[1]);
   }

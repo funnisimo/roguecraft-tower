@@ -147,7 +147,7 @@ export class Game {
     this.scene.needsDraw = true;
 
     // we want the events that the widgets ignore...
-    const cancelEvents = scene.load({
+    const cancelEvents = scene.on({
       update: () => this.update(),
       keypress: (e) => this.keypress(e),
       click: (e) => this.click(e),

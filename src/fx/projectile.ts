@@ -42,9 +42,9 @@ export function projectile(
     .onUpdate((vals) => {
       if (level.blocksMove(vals.x, vals.y)) {
         level.removeFx(fx);
-        _success(vals, false);
-        tween.stop();
         scene.resume({ update: true });
+        tween.stop();
+        _success(vals, false);
       }
       fx.x = vals.x;
       fx.y = vals.y;
@@ -53,8 +53,8 @@ export function projectile(
     })
     .onFinish((vals) => {
       level.removeFx(fx);
-      _success(vals, true);
       scene.resume({ update: true });
+      _success(vals, true);
     })
     .start(game.scene!.tweens);
 

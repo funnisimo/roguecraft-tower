@@ -134,9 +134,15 @@ export function moveAwayFromPlayer(
   // compute safety map
   const safety = new GWU.path.DijkstraMap();
   safety.copy(player.mapToMe);
-  safety.update((v) => (v >= GWU.path.BLOCKED ? v : -1.2 * v));
+  safety.update((v, x, y) => {
+    if (v >= GWU.path.BLOCKED) return v;
+    v = -1.2 * v;
+    if (map.isInLoop(x, y)) v -= 10;
+    return v;
+  });
+
   safety.rescan((x, y) => actor.moveCost(x, y));
-  safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+  // safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
 
   let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
     return map.hasActor(x, y);
