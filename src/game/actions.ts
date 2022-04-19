@@ -1,7 +1,9 @@
 import * as GWU from "gw-utils";
+import * as GWD from "gw-dig";
 import * as FX from "../fx/index";
 import { Game } from "./game";
 import { Actor } from "../actor/actor";
+import { level } from "../scenes";
 
 export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
 const actionsByName: Record<string, ActionFn> = {};
@@ -132,17 +134,19 @@ export function moveAwayFromPlayer(
   const player = game.player;
 
   // compute safety map
-  const safety = new GWU.path.DijkstraMap();
+  const safety = new GWU.path.DijkstraMap(map.width, map.height);
   safety.copy(player.mapToMe);
   safety.update((v, x, y) => {
     if (v >= GWU.path.BLOCKED) return v;
     v = -1.2 * v;
-    if (map.isInLoop(x, y)) v -= 10;
-    return v;
+    if (map.isInLoop(x, y)) v -= 2;
+    if (map.isGateSite(x, y)) v -= 2;
+    return Math.round(v);
   });
+
   safety.setDistance(player.x, player.y, GWU.path.BLOCKED);
   safety.rescan((x, y) => actor.moveCost(x, y));
-  // safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+  safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
 
   let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
     return map.hasActor(x, y);

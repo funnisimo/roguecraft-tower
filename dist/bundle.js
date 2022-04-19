@@ -6064,37 +6064,31 @@
               return NOT_DONE;
           return this._get(x, y).distance;
       }
-      // addObstacle(
-      //     x: number,
-      //     y: number,
-      //     costFn: SimpleCostFn,
-      //     radius: number,
-      //     penalty = radius
-      // ) {
-      //     const done: XY.Loc[] = [[x, y]];
-      //     const todo: XY.Loc[] = [[x, y]];
-      //     while (todo.length) {
-      //         const item = todo.shift()!;
-      //         const dist = XY.distanceBetween(x, y, item[0], item[1]);
-      //         if (dist > radius) {
-      //             continue;
-      //         }
-      //         const stepPenalty = penalty * ((radius - dist) / radius);
-      //         const data = this._get(item);
-      //         data.distance += stepPenalty;
-      //         XY.eachNeighbor(item[0], item[1], (i, j) => {
-      //             const stepCost = costFn(i, j);
-      //             if (done.findIndex((e) => e[0] === i && e[1] === j) >= 0) {
-      //                 return;
-      //             }
-      //             if (stepCost >= BLOCKED) {
-      //                 return;
-      //             }
-      //             done.push([i, j]);
-      //             todo.push([i, j]);
-      //         });
-      //     }
-      // }
+      addObstacle(x, y, costFn, radius, penalty = radius) {
+          const done = [[x, y]];
+          const todo = [[x, y]];
+          while (todo.length) {
+              const item = todo.shift();
+              const dist = distanceBetween(x, y, item[0], item[1]);
+              if (dist > radius) {
+                  continue;
+              }
+              const stepPenalty = penalty * ((radius - dist) / radius);
+              const data = this._get(item);
+              data.distance += stepPenalty;
+              eachNeighbor(item[0], item[1], (i, j) => {
+                  const stepCost = costFn(i, j);
+                  if (done.findIndex((e) => e[0] === i && e[1] === j) >= 0) {
+                      return;
+                  }
+                  if (stepCost >= BLOCKED) {
+                      return;
+                  }
+                  done.push([i, j]);
+                  todo.push([i, j]);
+              });
+          }
+      }
       nextDir(fromX, fromY, isBlocked, only4dirs = false) {
           let newX, newY, bestScore;
           let index;
@@ -14016,19 +14010,21 @@ void main() {
       const map = game.level;
       const player = game.player;
       // compute safety map
-      const safety = new index$6.DijkstraMap();
+      const safety = new index$6.DijkstraMap(map.width, map.height);
       safety.copy(player.mapToMe);
       safety.update((v, x, y) => {
           if (v >= index$6.BLOCKED)
               return v;
           v = -1.2 * v;
           if (map.isInLoop(x, y))
-              v -= 10;
-          return v;
+              v -= 2;
+          if (map.isGateSite(x, y))
+              v -= 2;
+          return Math.round(v);
       });
       safety.setDistance(player.x, player.y, index$6.BLOCKED);
       safety.rescan((x, y) => actor.moveCost(x, y));
-      // safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+      safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
       let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
           return map.hasActor(x, y);
       });
@@ -15735,43 +15731,73 @@ void main() {
   /////////////////////////////////////////////////////
   // TODO - Move to Map?
   function updateChokepoints(map, updateCounts) {
-      const passMap = grid.alloc(map.width, map.height);
+      const blockMap = grid.alloc(map.width, map.height);
       const grid$1 = grid.alloc(map.width, map.height);
       for (let i = 0; i < map.width; i++) {
           for (let j = 0; j < map.height; j++) {
-              if ((map.blocksPathing(i, j) || map.blocksMove(i, j)) &&
+              if (map.blocksDiagonal(i, j)) {
+                  blockMap[i][j] = 2;
+              }
+              else if ((map.blocksPathing(i, j) || map.blocksMove(i, j)) &&
                   !map.isSecretDoor(i, j)) {
                   // cell.flags &= ~Flags.Cell.IS_IN_LOOP;
-                  passMap[i][j] = 0;
+                  blockMap[i][j] = 1;
               }
               else {
                   // cell.flags |= Flags.Cell.IS_IN_LOOP;
-                  passMap[i][j] = 1;
+                  blockMap[i][j] = 0;
               }
           }
       }
       let passableArcCount;
       // done finding loops; now flag chokepoints
-      for (let i = 1; i < passMap.width - 1; i++) {
-          for (let j = 1; j < passMap.height - 1; j++) {
+      for (let i = 1; i < blockMap.width - 1; i++) {
+          for (let j = 1; j < blockMap.height - 1; j++) {
               map.clearChokepoint(i, j);
-              if (passMap[i][j] && !map.isInLoop(i, j)) {
-                  passableArcCount = 0;
-                  for (let dir = 0; dir < 8; dir++) {
-                      const oldX = i + xy.CLOCK_DIRS[(dir + 7) % 8][0];
-                      const oldY = j + xy.CLOCK_DIRS[(dir + 7) % 8][1];
-                      const newX = i + xy.CLOCK_DIRS[dir][0];
-                      const newY = j + xy.CLOCK_DIRS[dir][1];
-                      if ((map.hasXY(newX, newY) && // RUT.Map.makeValidXy(map, newXy) &&
-                          passMap[newX][newY]) !=
-                          (map.hasXY(oldX, oldY) && // RUT.Map.makeValidXy(map, oldXy) &&
-                              passMap[oldX][oldY])) {
-                          if (++passableArcCount > 2) {
-                              if ((!passMap[i - 1][j] && !passMap[i + 1][j]) ||
-                                  (!passMap[i][j - 1] && !passMap[i][j + 1])) {
-                                  map.setChokepoint(i, j);
+              if (!blockMap[i][j]) {
+                  if (!map.isInLoop(i, j)) {
+                      passableArcCount = 0;
+                      for (let dir = 0; dir < 8; dir++) {
+                          const oldX = i + xy.CLOCK_DIRS[(dir + 7) % 8][0];
+                          const oldY = j + xy.CLOCK_DIRS[(dir + 7) % 8][1];
+                          const newX = i + xy.CLOCK_DIRS[dir][0];
+                          const newY = j + xy.CLOCK_DIRS[dir][1];
+                          if ((map.hasXY(newX, newY) && // RUT.Map.makeValidXy(map, newXy) &&
+                              blockMap[newX][newY] > 0) !=
+                              (map.hasXY(oldX, oldY) && // RUT.Map.makeValidXy(map, oldXy) &&
+                                  blockMap[oldX][oldY] > 0)) {
+                              if (++passableArcCount > 2) {
+                                  if ((blockMap[i - 1][j] &&
+                                      blockMap[i + 1][j]) ||
+                                      (blockMap[i][j - 1] && blockMap[i][j + 1])) {
+                                      map.setChokepoint(i, j);
+                                  }
+                                  break;
                               }
-                              break;
+                          }
+                      }
+                  }
+                  const left = i - 1;
+                  const right = i + 1;
+                  const up = j - 1;
+                  const down = j + 1;
+                  if (blockMap[i][up] && blockMap[i][down]) {
+                      if (!blockMap[left][j] && !blockMap[right][j]) {
+                          if (!blockMap[left][up] ||
+                              !blockMap[left][down] ||
+                              !blockMap[right][up] ||
+                              !blockMap[right][down]) {
+                              map.setGateSite(i, j);
+                          }
+                      }
+                  }
+                  else if (blockMap[left][j] && blockMap[right][j]) {
+                      if (!blockMap[i][up] && !blockMap[i][down]) {
+                          if (!blockMap[left][up] ||
+                              !blockMap[left][down] ||
+                              !blockMap[right][up] ||
+                              !blockMap[right][down]) {
+                              map.setGateSite(i, j);
                           }
                       }
                   }
@@ -15799,20 +15825,20 @@ void main() {
           // Scan through and find a chokepoint next to an open point.
           for (let i = 0; i < map.width; i++) {
               for (let j = 0; j < map.height; j++) {
-                  if (passMap[i][j] && map.isChokepoint(i, j)) {
+                  if (!blockMap[i][j] && map.isChokepoint(i, j)) {
                       for (let dir = 0; dir < 4; dir++) {
                           const newX = i + xy.DIRS[dir][0];
                           const newY = j + xy.DIRS[dir][1];
                           if (map.hasXY(newX, newY) && // RUT.Map.makeValidXy(map, newXy) &&
-                              passMap[newX][newY] &&
+                              !blockMap[newX][newY] &&
                               !map.isChokepoint(newX, newY)) {
                               // OK, (newX, newY) is an open point and (i, j) is a chokepoint.
                               // Pretend (i, j) is blocked by changing passMap, and run a flood-fill cell count starting on (newX, newY).
                               // Keep track of the flooded region in grid[][].
                               grid$1.fill(0);
-                              passMap[i][j] = 0;
-                              let cellCount = floodFillCount(map, grid$1, passMap, newX, newY);
-                              passMap[i][j] = 1;
+                              blockMap[i][j] = 1;
+                              let cellCount = floodFillCount(map, grid$1, blockMap, newX, newY);
+                              blockMap[i][j] = 0;
                               // CellCount is the size of the region that would be obstructed if the chokepoint were blocked.
                               // CellCounts less than 4 are not useful, so we skip those cases.
                               if (cellCount >= 4) {
@@ -15823,14 +15849,14 @@ void main() {
                                               cellCount <
                                                   map.getChokeCount(i2, j2)) {
                                               map.setChokeCount(i2, j2, cellCount);
-                                              map.clearGateSite(i2, j2);
+                                              // map.clearGateSite(i2, j2);
                                           }
                                       }
                                   }
                                   // The chokepoint itself should also take the lesser of its current value or the flood count.
                                   if (cellCount < map.getChokeCount(i, j)) {
                                       map.setChokeCount(i, j, cellCount);
-                                      map.setGateSite(i, j);
+                                      // map.setGateSite(i, j);
                                   }
                               }
                           }
@@ -15839,15 +15865,16 @@ void main() {
               }
           }
       }
-      grid.free(passMap);
+      grid.free(blockMap);
       grid.free(grid$1);
   }
   // Assumes it is called with respect to a passable (startX, startY), and that the same is not already included in results.
   // Returns 10000 if the area included an area machine.
-  function floodFillCount(map, results, passMap, startX, startY) {
+  function floodFillCount(map, results, blockMap, startX, startY) {
       function getCount(x, y) {
-          let count = passMap[x][y] == 2 ? 5000 : 1;
+          let count = 1;
           if (map.isAreaMachine(x, y)) {
+              // huh?
               count = 10000;
           }
           return count;
@@ -15868,7 +15895,7 @@ void main() {
               const newX = x + xy.DIRS[dir][0];
               const newY = y + xy.DIRS[dir][1];
               if (map.hasXY(newX, newY) && // RUT.Map.makeValidXy(map, newXy) &&
-                  passMap[newX][newY] &&
+                  !blockMap[newX][newY] &&
                   !results[newX][newY]) {
                   const item = free.pop() || [-1, -1];
                   item[0] = newX;
@@ -18927,7 +18954,8 @@ void main() {
           this.rng = random$1;
           this.locations = {};
           this.tiles = grid.make(width, height);
-          this.flags = grid.make(this.width, this.height);
+          this.flags = grid.make(width, height);
+          this.choke = grid.make(width, height);
           this.data.wavesLeft = 0;
       }
       get width() {
@@ -19059,7 +19087,7 @@ void main() {
           const tile = this.getTile(x, y);
           return tile.secretDoor || false;
       }
-      // Loopiness
+      // AnalysisSite
       setInLoop(x, y) {
           this.flags[x][y] |= index$1.Flags.IN_LOOP;
       }
@@ -19068,6 +19096,33 @@ void main() {
       }
       isInLoop(x, y) {
           return ((this.flags[x][y] || 0) & index$1.Flags.IN_LOOP) > 0;
+      }
+      clearChokepoint(x, y) {
+          this.flags[x][y] &= ~index$1.Flags.CHOKEPOINT;
+      }
+      setChokepoint(x, y) {
+          this.flags[x][y] |= index$1.Flags.CHOKEPOINT;
+      }
+      isChokepoint(x, y) {
+          return !!(this.flags[x][y] & index$1.Flags.CHOKEPOINT);
+      }
+      setChokeCount(x, y, count) {
+          this.choke[x][y] = count;
+      }
+      getChokeCount(x, y) {
+          return this.choke[x][y];
+      }
+      setGateSite(x, y) {
+          this.flags[x][y] |= index$1.Flags.GATE_SITE;
+      }
+      clearGateSite(x, y) {
+          this.flags[x][y] &= ~index$1.Flags.GATE_SITE;
+      }
+      isGateSite(x, y) {
+          return !!(this.flags[x][y] & index$1.Flags.GATE_SITE);
+      }
+      isAreaMachine(x, y) {
+          return !!(this.flags[x][y] & index$1.Flags.IN_AREA_MACHINE);
       }
       //
       drawAt(buf, x, y) {
@@ -19300,7 +19355,7 @@ void main() {
           rooms: { count: 20, first: firstRoom, digger: "PROFILE" },
           doors: false,
           halls: { chance: 50 },
-          loops: { minDistance: 20, maxLength: 5 },
+          loops: { minDistance: 30, maxLength: 5 },
           lakes: false /* {
             count: 5,
             wreathSize: 1,
@@ -19323,7 +19378,7 @@ void main() {
       digger.create(60, 35, (x, y, v) => {
           level.setTile(x, y, v);
       });
-      index$1.updateLoopiness(level);
+      index$1.analyze(level);
       level.locations = digger.locations;
   }
 

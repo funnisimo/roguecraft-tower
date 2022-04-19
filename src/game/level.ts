@@ -15,7 +15,7 @@ export interface WaveInfo {
   horde?: string;
 }
 
-export class Level implements GWD.site.LoopSite {
+export class Level implements GWD.site.AnalysisSite {
   depth = 0;
   welcome = "";
   proceed = "";
@@ -31,6 +31,7 @@ export class Level implements GWD.site.LoopSite {
 
   tiles: GWU.grid.NumGrid;
   flags: GWU.grid.NumGrid;
+  choke: GWU.grid.NumGrid;
 
   game: Game | null = null;
   player: ACTOR.Player | null = null;
@@ -40,7 +41,8 @@ export class Level implements GWD.site.LoopSite {
 
   constructor(width: number, height: number, seed = 0) {
     this.tiles = GWU.grid.make(width, height);
-    this.flags = GWU.grid.make(this.width, this.height);
+    this.flags = GWU.grid.make(width, height);
+    this.choke = GWU.grid.make(width, height);
 
     this.data.wavesLeft = 0;
   }
@@ -204,7 +206,7 @@ export class Level implements GWD.site.LoopSite {
     return tile.secretDoor || false;
   }
 
-  // Loopiness
+  // AnalysisSite
 
   setInLoop(x: number, y: number): void {
     this.flags[x][y] |= GWD.site.Flags.IN_LOOP;
@@ -214,6 +216,36 @@ export class Level implements GWD.site.LoopSite {
   }
   isInLoop(x: number, y: number): boolean {
     return ((this.flags[x][y] || 0) & GWD.site.Flags.IN_LOOP) > 0;
+  }
+
+  clearChokepoint(x: number, y: number): void {
+    this.flags[x][y] &= ~GWD.site.Flags.CHOKEPOINT;
+  }
+  setChokepoint(x: number, y: number): void {
+    this.flags[x][y] |= GWD.site.Flags.CHOKEPOINT;
+  }
+  isChokepoint(x: number, y: number): boolean {
+    return !!(this.flags[x][y] & GWD.site.Flags.CHOKEPOINT);
+  }
+
+  setChokeCount(x: number, y: number, count: number): void {
+    this.choke[x][y] = count;
+  }
+  getChokeCount(x: number, y: number): number {
+    return this.choke[x][y];
+  }
+
+  setGateSite(x: number, y: number): void {
+    this.flags[x][y] |= GWD.site.Flags.GATE_SITE;
+  }
+  clearGateSite(x: number, y: number): void {
+    this.flags[x][y] &= ~GWD.site.Flags.GATE_SITE;
+  }
+  isGateSite(x: number, y: number): boolean {
+    return !!(this.flags[x][y] & GWD.site.Flags.GATE_SITE);
+  }
+  isAreaMachine(x: number, y: number): boolean {
+    return !!(this.flags[x][y] & GWD.site.Flags.IN_AREA_MACHINE);
   }
 
   //
@@ -566,7 +598,7 @@ function digLevel(level: Level, seed = 12345) {
     rooms: { count: 20, first: firstRoom, digger: "PROFILE" },
     doors: false, // { chance: 50 },
     halls: { chance: 50 },
-    loops: { minDistance: 20, maxLength: 5 },
+    loops: { minDistance: 30, maxLength: 5 },
     lakes: false /* {
       count: 5,
       wreathSize: 1,
@@ -590,7 +622,7 @@ function digLevel(level: Level, seed = 12345) {
     level.setTile(x, y, v);
   });
 
-  GWD.site.updateLoopiness(level);
+  GWD.site.analyze(level);
 
   level.locations = digger.locations;
 }
