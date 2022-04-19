@@ -14121,7 +14121,7 @@ void main() {
               flash(game, xy.x, xy.y, "red", 150);
           }
       });
-      game.endTurn(actor, actor.kind.attackSpeed);
+      game.endTurn(actor, actor.kind.rangedAttackSpeed);
       return true;
   }
 
@@ -14187,7 +14187,7 @@ void main() {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
       }
       kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
-      kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.moveSpeed;
+      kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.attackSpeed;
       kinds[cfg.id.toLowerCase()] = kind;
   }
   function getKind(id) {
@@ -20332,13 +20332,39 @@ void main() {
       id: "SKELETON",
       ch: "s",
       fg: "white",
-      moveSpeed: 100,
+      moveSpeed: 125,
       health: 6,
       damage: 0,
       rangedDamage: 3,
       range: 10,
       tooClose: 4,
-      rangedAttackSpeed: 150,
+      rangedAttackSpeed: 200,
+      // notice: 10
+  });
+  install$3({
+      id: "ARMOR_SKELETON",
+      ch: "S",
+      fg: "white",
+      moveSpeed: 125,
+      health: 25,
+      damage: 0,
+      rangedDamage: 4,
+      range: 10,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+  });
+  install$3({
+      id: "ARMOR_SKELETON_2",
+      ch: "S",
+      fg: "white",
+      moveSpeed: 125,
+      health: 50,
+      damage: 0,
+      rangedDamage: 5,
+      range: 10,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
       // notice: 10
   });
   /*
@@ -20415,13 +20441,23 @@ void main() {
   });
   install$1("ZOMBIE3", {
       leader: "ARMOR_ZOMBIE_2",
-      members: { ARMOR_ZOMBIE: "1-2", ZOMBIE: "1-3" },
+      members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
   });
   install$1("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
-      frequency: 100,
+      frequency: 20,
+  });
+  install$1("SKELETON2", {
+      leader: "ARMOR_SKELETON",
+      members: { SKELETON: "2-3" },
+      frequency: (l) => l + 15,
+  });
+  install$1("SKELETON3", {
+      leader: "ARMOR_SKELETON_2",
+      members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
+      frequency: (l) => 4 * l,
   });
 
   function start() {

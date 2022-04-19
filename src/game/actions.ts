@@ -278,7 +278,7 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
     }
   });
 
-  game.endTurn(actor, actor.kind.attackSpeed);
+  game.endTurn(actor, actor.kind.rangedAttackSpeed);
   return true;
 }
 

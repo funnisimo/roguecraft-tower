@@ -82,7 +82,7 @@ export function install(cfg: KindConfig) {
     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
   }
   kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
-  kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.moveSpeed;
+  kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.attackSpeed;
 
   kinds[cfg.id.toLowerCase()] = kind;
 }

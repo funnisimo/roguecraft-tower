@@ -15,12 +15,24 @@ install("ZOMBIE2", {
 
 install("ZOMBIE3", {
   leader: "ARMOR_ZOMBIE_2",
-  members: { ARMOR_ZOMBIE: "1-2", ZOMBIE: "1-3" },
+  members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
   frequency: (l) => 2 * l,
 });
 
 install("SKELETON", {
   leader: "SKELETON",
   members: { SKELETON: "2-3" },
-  frequency: 100,
+  frequency: 20,
+});
+
+install("SKELETON2", {
+  leader: "ARMOR_SKELETON",
+  members: { SKELETON: "2-3" },
+  frequency: (l) => l + 15,
+});
+
+install("SKELETON3", {
+  leader: "ARMOR_SKELETON_2",
+  members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
+  frequency: (l) => 4 * l,
 });

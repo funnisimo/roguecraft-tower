@@ -57,13 +57,41 @@ ACTOR.install({
   id: "SKELETON",
   ch: "s",
   fg: "white",
-  moveSpeed: 100,
+  moveSpeed: 125,
   health: 6,
   damage: 0,
   rangedDamage: 3,
   range: 10,
   tooClose: 4,
-  rangedAttackSpeed: 150,
+  rangedAttackSpeed: 200,
+  // notice: 10
+});
+
+ACTOR.install({
+  id: "ARMOR_SKELETON",
+  ch: "S",
+  fg: "white",
+  moveSpeed: 125,
+  health: 25,
+  damage: 0,
+  rangedDamage: 4,
+  range: 10,
+  tooClose: 4,
+  rangedAttackSpeed: 200,
+  // notice: 10
+});
+
+ACTOR.install({
+  id: "ARMOR_SKELETON_2",
+  ch: "S",
+  fg: "white",
+  moveSpeed: 125,
+  health: 50,
+  damage: 0,
+  rangedDamage: 5,
+  range: 10,
+  tooClose: 4,
+  rangedAttackSpeed: 200,
   // notice: 10
 });
 
