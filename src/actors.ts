@@ -8,7 +8,13 @@ ACTOR.install({
   bg: -1,
   moveSpeed: 100,
   health: 100,
+
   damage: 10,
+  attackSpeed: 100,
+
+  rangedDamage: 3,
+  range: 10,
+  rangedAttackSpeed: 100,
 });
 
 ACTOR.install({

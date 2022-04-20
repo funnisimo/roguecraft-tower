@@ -9293,9 +9293,9 @@ void main() {
       }
       _start(opts = {}) {
           this.stopped = false;
-          this.timers.restart();
-          this.events.restart();
-          this.tweens.clear();
+          // this.timers.restart();
+          // this.events.restart();
+          // this.tweens.clear();
           this.buffer.nullify();
           this.needsDraw = true;
           this.events.trigger('start', opts); // this will start this one in the app.scenes obj
@@ -9870,7 +9870,7 @@ void main() {
 
   class Scenes {
       constructor(gw) {
-          this._scenes = {};
+          // _scenes: Record<string, Scene> = {};
           this._active = [];
           this._busy = false;
           this._pending = [];
@@ -9880,7 +9880,13 @@ void main() {
       get isBusy() {
           return this._busy;
       }
-      add(id, opts) {
+      config(...args) {
+          if (args.length === 1) {
+              const scenes = args[0];
+              Object.entries(scenes).forEach(([id, fns]) => this.config(id, fns));
+              return;
+          }
+          let [id, opts] = args;
           const current = this._config[id] || {};
           if (typeof opts === 'function') {
               opts = { make: opts };
@@ -9888,14 +9894,11 @@ void main() {
           Object.assign(current, opts);
           this._config[id] = current;
       }
-      load(scenes) {
-          Object.entries(scenes).forEach(([id, fns]) => this.add(id, fns));
-      }
       get(id) {
           if (id === undefined) {
               return this._active[this._active.length - 1];
           }
-          return this._scenes[id] || null;
+          return this._active.find((s) => s.id === id) || null;
       }
       trigger(ev, ...args) {
           this._active.forEach((a) => a.trigger(ev, ...args));
@@ -9913,18 +9916,18 @@ void main() {
           scene.on('start', () => this._start(scene));
           scene.on('stop', () => this._stop(scene));
           scene.create(used);
-          this._scenes[scene.id] = scene;
+          // this._scenes[scene.id] = scene;
           return scene;
       }
-      create(id, data = {}) {
-          if (id in this._scenes) {
-              console.log('Scene already created - ' + id);
-              return this._scenes[id];
-          }
-          return this._create(id, data);
-      }
+      // create(id: string, data: CreateOpts = {}): Scene {
+      //     if (id in this._scenes) {
+      //         console.log('Scene already created - ' + id);
+      //         return this._scenes[id];
+      //     }
+      //     return this._create(id, data);
+      // }
       start(id, data) {
-          let scene = this._scenes[id] || this._create(id, data);
+          let scene = this.get(id) || this._create(id, data);
           this._app.io.clear();
           if (this.isBusy) {
               this._pending.push({ action: 'start', scene, data });
@@ -9935,7 +9938,7 @@ void main() {
           return scene;
       }
       run(id, data) {
-          let scene = this._scenes[id] || this._create(id, data);
+          let scene = this.get(id) || this._create(id, data);
           this._app.io.clear();
           if (this.isBusy) {
               this._pending.push({ action: 'run', scene, data });
@@ -9950,7 +9953,7 @@ void main() {
       }
       stop(id, data) {
           if (typeof id === 'string') {
-              const scene = this._scenes[id];
+              const scene = this.get(id);
               if (!scene)
                   throw new Error('Unknown scene:' + id);
               id = scene;
@@ -9971,18 +9974,18 @@ void main() {
           this._active = this._active.filter((s) => s.isActive());
       }
       destroy(id, data) {
-          const scene = this._scenes[id];
+          const scene = this.get(id);
           if (!scene)
               return;
           if (scene.isActive()) {
               scene.stop(data);
           }
           scene.destroy(data);
-          delete this._scenes[id];
+          // delete this._scenes[id];
       }
       pause(id, opts) {
           if (typeof id === 'string') {
-              const scene = this._scenes[id];
+              const scene = this.get(id);
               if (!scene)
                   throw new Error('Unknown scene:' + id);
               scene.pause(opts);
@@ -9993,7 +9996,7 @@ void main() {
       }
       resume(id, opts) {
           if (typeof id === 'string') {
-              const scene = this._scenes[id];
+              const scene = this.get(id);
               if (!scene)
                   throw new Error('Unknown scene:' + id);
               scene.resume(opts);
@@ -13542,7 +13545,7 @@ void main() {
           this.canvas.onkeydown = this.io.enqueue.bind(this.io);
           this.buffer = new Buffer$1(this.canvas.width, this.canvas.height);
           if (opts.scenes) {
-              this.scenes.load(opts.scenes);
+              this.scenes.config(opts.scenes);
               if (typeof opts.start === 'string') {
                   this.scenes.start(opts.start);
               }
@@ -13553,7 +13556,7 @@ void main() {
           else if (opts.scene) {
               if (opts.scene === true)
                   opts.scene = {};
-              this.scenes.add('default', opts.scene);
+              this.scenes.config('default', opts.scene);
               this.scenes.start('default');
               // } else {
               //     this.scenes.install('default', { bg: COLOR.colors.NONE }); // NONE just in case you draw directly on app.buffer
@@ -13913,6 +13916,20 @@ void main() {
       };
   }
 
+  // @returns boolean - indicates whether or not the target dies
+  function damage(game, target, damage) {
+      target.health -= damage.amount || 0;
+      if (target.health <= 0) {
+          target.trigger("death");
+          // do all of these move to event handlers?
+          game.messages.addCombat(`${target.kind.id} dies`);
+          game.level.setTile(target.x, target.y, "CORPSE");
+          game.level.removeActor(target);
+          return true;
+      }
+      return false;
+  }
+
   const actionsByName = {};
   function installBump(name, fn) {
       actionsByName[name] = fn;
@@ -14072,7 +14089,7 @@ void main() {
           else if (targets.length > 1) {
               game
                   .scene.app.scenes.run("target", { game, actor, targets })
-                  .on("stop", (result) => {
+                  .once("stop", (result) => {
                   if (!result) {
                       flash(game, actor.x, actor.y, "orange", 150);
                       game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
@@ -14095,19 +14112,78 @@ void main() {
       // we have an actor and a target
       // Does this move to an event handler?  'damage', { amount: #, type: string }
       game.messages.addCombat(`${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`);
-      target.health -= actor.damage || 0;
       flash(game, target.x, target.y, "red", 150);
+      damage(game, target, { amount: actor.damage });
       game.endTurn(actor, actor.kind.attackSpeed);
-      if (target.health <= 0) {
-          target.trigger("death");
-          // do all of these move to event handlers?
-          game.messages.addCombat(`${target.kind.id} dies`);
-          game.level.setTile(target.x, target.y, "CORPSE");
-          game.level.removeActor(target);
-      }
       return true;
   }
   installBump("attack", attack);
+  function fire(game, actor, target = null) {
+      game.level;
+      const player = game.player;
+      if (!actor.kind.range) {
+          game.addMessage("Nothing to fire.");
+          return false;
+      }
+      if (target) {
+          if (xy.distanceFromTo(actor, target) > actor.kind.range)
+              return false;
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game
+              .level.actors.filter((a) => a !== actor &&
+              actor.health > 0 &&
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) <=
+                  actor.kind.range &&
+              player.isInFov(actor) && // hack for actor.canSee(a)
+              player.isInFov(a))
+              .sort((a, b) => xy.distanceFromTo(player, a) - xy.distanceFromTo(player, b));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              flash(game, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              game
+                  .scene.app.scenes.run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(game, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+                  }
+                  else {
+                      fire(game, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      const actorIsPlayer = actor === game.player;
+      const otherIsPlayer = target === game.player;
+      if (!actorIsPlayer && !otherIsPlayer) {
+          return idle(game, actor); // no attacking
+      }
+      // we have an actor and a target
+      // Does this move to an event handler?  'damage', { amount: #, type: string }
+      projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(game, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              flash(game, xy.x, xy.y, "red", 150);
+              damage(game, target, { amount: actor.kind.rangedDamage });
+              game.messages.addCombat(`${actor.kind.id} shoots ${target.kind.id}#{red [${actor.kind.rangedDamage}]}`);
+          }
+      });
+      game.endTurn(actor, actor.kind.rangedAttackSpeed);
+      return true;
+  }
+  installBump("fire", fire);
   function fireAtPlayer(game, actor) {
       const player = game.player;
       // if player can't see actor then actor can't see player!
@@ -14119,6 +14195,8 @@ void main() {
           }
           else {
               flash(game, xy.x, xy.y, "red", 150);
+              damage(game, player, { amount: actor.kind.rangedDamage });
+              game.messages.addCombat(`${actor.kind.id} shoots ${player.kind.id}#{red [${actor.kind.rangedDamage}]}`);
           }
       });
       game.endTurn(actor, actor.kind.rangedAttackSpeed);
@@ -14421,10 +14499,12 @@ void main() {
           if (!this.fov)
               return false;
           if (args.length == 2) {
-              return this.fov.get(args[0], args[1]) > 0;
+              const [x, y] = args;
+              return this.fov.get(x, y) > 0;
           }
           else {
-              return this.fov.get(xy.x(args[0]), xy.y(args[1])) > 0;
+              const pos = args[0];
+              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
           }
       }
   }
@@ -19424,6 +19504,9 @@ void main() {
           this.events.on("a", (e) => {
               attack(this, this.player);
           });
+          this.events.on("f", (e) => {
+              fire(this, this.player);
+          });
           this.events.on(" ", (e) => {
               idle(this, this.player);
           });
@@ -20289,6 +20372,10 @@ void main() {
       moveSpeed: 100,
       health: 100,
       damage: 10,
+      attackSpeed: 100,
+      rangedDamage: 3,
+      range: 10,
+      rangedAttackSpeed: 100,
   });
   install$3({
       id: "ZOMBIE",

@@ -79,6 +79,9 @@ export class Game {
     this.events.on("a", (e) => {
       ACTIONS.attack(this, this.player);
     });
+    this.events.on("f", (e) => {
+      ACTIONS.fire(this, this.player);
+    });
     this.events.on(" ", (e) => {
       ACTIONS.idle(this, this.player);
     });

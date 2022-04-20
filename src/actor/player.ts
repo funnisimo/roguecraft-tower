@@ -128,9 +128,11 @@ export class Player extends ACTOR.Actor {
     if (!this.fov) return false;
 
     if (args.length == 2) {
-      return this.fov.get(args[0], args[1])! > 0;
+      const [x, y] = args;
+      return this.fov.get(x, y)! > 0;
     } else {
-      return this.fov.get(GWU.xy.x(args[0]), GWU.xy.y(args[1]))! > 0;
+      const pos = args[0];
+      return this.fov.get(GWU.xy.x(pos), GWU.xy.y(pos))! > 0;
     }
   }
 }

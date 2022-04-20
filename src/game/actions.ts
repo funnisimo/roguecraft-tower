@@ -3,7 +3,7 @@ import * as GWD from "gw-dig";
 import * as FX from "../fx/index";
 import { Game } from "./game";
 import { Actor } from "../actor/actor";
-import { level } from "../scenes";
+import * as EFFECT from "../effect";
 
 export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
 const actionsByName: Record<string, ActionFn> = {};
@@ -215,7 +215,7 @@ export function attack(
     } else if (targets.length > 1) {
       game
         .scene!.app.scenes.run("target", { game, actor, targets })
-        .on("stop", (result: Actor | null) => {
+        .once("stop", (result: Actor | null) => {
           if (!result) {
             FX.flash(game, actor.x, actor.y, "orange", 150);
             game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
@@ -241,22 +241,103 @@ export function attack(
   game.messages.addCombat(
     `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
   );
-  target.health -= actor.damage || 0;
 
   FX.flash(game, target.x, target.y, "red", 150);
+  EFFECT.damage(game, target, { amount: actor.damage });
   game.endTurn(actor, actor.kind.attackSpeed);
 
-  if (target.health <= 0) {
-    target.trigger("death");
-    // do all of these move to event handlers?
-    game.messages.addCombat(`${target.kind.id} dies`);
-    game.level!.setTile(target.x, target.y, "CORPSE");
-    game.level!.removeActor(target);
-  }
   return true;
 }
 
 installBump("attack", attack);
+
+export function fire(
+  game: Game,
+  actor: Actor,
+  target: Actor | null = null
+): boolean {
+  const level = game.level!;
+  const player = game.player;
+
+  if (!actor.kind.range) {
+    game.addMessage("Nothing to fire.");
+    return false;
+  }
+
+  if (target) {
+    if (GWU.xy.distanceFromTo(actor, target) > actor.kind.range) return false;
+  } else {
+    // todo - long reach melee -- spear, etc...
+
+    const targets = game
+      .level!.actors.filter(
+        (a) =>
+          a !== actor &&
+          actor.health > 0 &&
+          GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) <=
+            actor.kind.range &&
+          player.isInFov(actor) && // hack for actor.canSee(a)
+          player.isInFov(a)
+      )
+      .sort(
+        (a, b) =>
+          GWU.xy.distanceFromTo(player, a) - GWU.xy.distanceFromTo(player, b)
+      );
+
+    if (targets.length == 0) {
+      game.addMessage("no targets.");
+      FX.flash(game, actor.x, actor.y, "orange", 150);
+      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      return true; // did something
+    } else if (targets.length > 1) {
+      game
+        .scene!.app.scenes.run("target", { game, actor, targets })
+        .once("stop", (result: Actor | null) => {
+          if (!result) {
+            FX.flash(game, actor.x, actor.y, "orange", 150);
+            game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+          } else {
+            fire(game, actor, result);
+          }
+        });
+      return true; // didSomething
+    } else {
+      target = targets[0];
+    }
+  }
+
+  const actorIsPlayer = actor === game.player;
+  const otherIsPlayer = target === game.player;
+
+  if (!actorIsPlayer && !otherIsPlayer) {
+    return idle(game, actor); // no attacking
+  }
+
+  // we have an actor and a target
+  // Does this move to an event handler?  'damage', { amount: #, type: string }
+
+  FX.projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then(
+    (xy, ok) => {
+      if (!ok) {
+        FX.flash(game, xy.x, xy.y, "orange", 150);
+      } else {
+        FX.flash(game, xy.x, xy.y, "red", 150);
+        EFFECT.damage(game, target!, { amount: actor.kind.rangedDamage });
+
+        game.messages.addCombat(
+          `${actor.kind.id} shoots ${target!.kind.id}#{red [${
+            actor.kind.rangedDamage
+          }]}`
+        );
+      }
+    }
+  );
+
+  game.endTurn(actor, actor.kind.rangedAttackSpeed);
+  return true;
+}
+
+installBump("fire", fire);
 
 export function fireAtPlayer(game: Game, actor: Actor): boolean {
   const player = game.player;
@@ -275,6 +356,11 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
       FX.flash(game, xy.x, xy.y, "orange", 150);
     } else {
       FX.flash(game, xy.x, xy.y, "red", 150);
+      EFFECT.damage(game, player, { amount: actor.kind.rangedDamage });
+
+      game.messages.addCombat(
+        `${actor.kind.id} shoots ${player.kind.id}#{red [${actor.kind.rangedDamage}]}`
+      );
     }
   });
 
