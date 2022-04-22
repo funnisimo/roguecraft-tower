@@ -19600,9 +19600,13 @@ void main() {
               return;
           let filter = false;
           let actor = this.scheduler.pop();
+          const startTime = this.scheduler.time;
+          let elapsed = 0;
           while (actor) {
               if (typeof actor === "function") {
                   actor(this);
+                  if (elapsed > 16)
+                      return;
               }
               else if (actor.health <= 0) {
                   // skip
@@ -19626,6 +19630,7 @@ void main() {
                   return;
               }
               actor = this.scheduler.pop();
+              elapsed = this.scheduler.time - startTime;
           }
           // no other actors
           this.needInput = true;
