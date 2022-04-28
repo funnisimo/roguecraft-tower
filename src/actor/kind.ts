@@ -30,6 +30,8 @@ export interface KindConfig {
   rangedDamage?: number;
   tooClose?: number;
   rangedAttackSpeed?: number;
+
+  dropChance?: number;
 }
 
 export interface ActorKind {
@@ -54,6 +56,8 @@ export interface ActorKind {
   rangedDamage: number;
   tooClose: number;
   rangedAttackSpeed: number;
+
+  dropChance: number;
 }
 
 export const kinds: Record<string, ActorKind> = {};
@@ -74,6 +78,7 @@ export function install(cfg: KindConfig) {
       rangedDamage: 0,
       tooClose: 0,
       rangedAttackSpeed: 0,
+      dropChance: 100,
     },
     cfg
   ) as ActorKind;

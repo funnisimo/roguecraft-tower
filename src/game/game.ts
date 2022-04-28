@@ -72,18 +72,27 @@ export class Game {
       } else {
         // pickup?
       }
+      this.scene!.needsDraw = true;
     });
     this.events.on("dir", (e) => {
       ACTIONS.moveDir(this, this.player, e.dir);
+      this.scene!.needsDraw = true;
     });
     this.events.on("a", (e) => {
       ACTIONS.attack(this, this.player);
+      this.scene!.needsDraw = true;
+    });
+    this.events.on("g", (e) => {
+      ACTIONS.pickup(this, this.player);
+      this.scene!.needsDraw = true;
     });
     this.events.on("f", (e) => {
       ACTIONS.fire(this, this.player);
+      this.scene!.needsDraw = true;
     });
     this.events.on(" ", (e) => {
       ACTIONS.idle(this, this.player);
+      this.scene!.needsDraw = true;
     });
     this.events.on(">", (e) => {
       if (!this.level) return;
@@ -101,6 +110,7 @@ export class Game {
         this.player.setGoal(loc[0], loc[1]);
         this.scene!.needsDraw = true;
       }
+      this.scene!.needsDraw = true;
     });
     this.events.on("<", (e) => {
       if (!this.level) return;
@@ -118,10 +128,12 @@ export class Game {
         this.player.setGoal(loc[0], loc[1]);
         this.scene!.needsDraw = true;
       }
+      this.scene!.needsDraw = true;
     });
 
     this.events.on("z", (e) => {
       ACTOR.spawn(this.level!, "zombie", this.player.x, this.player.y);
+      this.scene!.needsDraw = true;
     });
   }
 

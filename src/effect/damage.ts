@@ -1,5 +1,6 @@
 import { Actor } from "../actor";
 import { Game } from "../game";
+import * as ITEM from "../item";
 
 export interface DamageConfig {
   amount: number;
@@ -19,6 +20,10 @@ export function damage(
     game.messages.addCombat(`${target.kind.id} dies`);
     game.level!.setTile(target.x, target.y, "CORPSE");
     game.level!.removeActor(target);
+
+    if (target.kind.dropChance && game.rng.chance(target.kind.dropChance)) {
+      ITEM.place(game.level!, "HEALTH_POTION", target.x, target.y);
+    }
     return true;
   }
 

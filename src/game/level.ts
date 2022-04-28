@@ -6,9 +6,9 @@ import * as HORDE from "../horde";
 import * as FX from "../fx";
 
 import * as TILE from "./tiles";
+import * as ITEM from "../item";
 import * as OBJ from "./obj";
 import { Game } from "./game";
-import { getDefaultCompilerOptions } from "typescript";
 
 export interface WaveInfo {
   delay?: number;
@@ -26,7 +26,7 @@ export class Level implements GWD.site.AnalysisSite {
 
   waves: WaveInfo[] = [];
   actors: ACTOR.Actor[] = [];
-  items: OBJ.Obj[] = [];
+  items: ITEM.Item[] = [];
   fxs: FX.FX[] = [];
 
   tiles: GWU.grid.NumGrid;
@@ -288,13 +288,13 @@ export class Level implements GWD.site.AnalysisSite {
     return this.items.find((i) => i.x === x && i.y === y);
   }
 
-  addItem(obj: OBJ.Obj) {
+  addItem(obj: ITEM.Item) {
     this.items.push(obj);
     obj.trigger("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
   }
 
-  removeItem(obj: OBJ.Obj) {
+  removeItem(obj: ITEM.Item) {
     GWU.arrayDelete(this.items, obj);
     obj.trigger("remove", this);
     // this.scene.needsDraw = true;
@@ -332,10 +332,10 @@ export class Level implements GWD.site.AnalysisSite {
       return `You see a ${actor.kind.id}.`;
     }
 
-    // const item = this.itemAt(x, y);
-    // if (item && item.kind) {
-    //   return `You see a ${item.kind.id}.`;
-    // }
+    const item = this.itemAt(x, y);
+    if (item && item.kind) {
+      return `You see a ${item.kind.id}.`;
+    }
 
     const tile = this.getTile(x, y);
     const text = `You see ${tile.id}.`;

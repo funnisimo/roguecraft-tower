@@ -9,7 +9,6 @@ import * as AI from "./ai";
 import * as ACTIONS from "../game/actions";
 
 import { ActorKind, getKind } from "./kind";
-import { getPositionOfLineAndCharacter } from "typescript";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -27,9 +26,9 @@ export class Actor extends Obj {
 
   leader: Actor | null = null;
 
-  constructor(cfg?: ActorConfig) {
+  constructor(cfg: ActorConfig) {
     super(cfg);
-    // @ts-ignore
+    this.kind = cfg.kind;
     if (!this.kind) throw new Error("Must have kind.");
 
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
@@ -128,7 +127,7 @@ export function make(id: string | ActorKind, opts?: Record<string, any>) {
     {
       x: 1,
       y: 1,
-      depth: 1, // items, actors, player, fx
+      z: 1, // items, actors, player, fx
       kind,
       health: kind.health || 10,
       damage: kind.damage || 2,

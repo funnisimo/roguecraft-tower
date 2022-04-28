@@ -6,10 +6,6 @@ export interface ObjConfig {
   y?: number;
   z?: number;
 
-  ch?: string | null;
-  fg?: GWU.color.ColorBase;
-  bg?: GWU.color.ColorBase;
-
   // [key: string]: any;
 }
 
@@ -20,12 +16,12 @@ export class Obj {
   events: GWU.app.Events;
 
   constructor(cfg: ObjConfig = {}) {
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
+    this.x = cfg.x || 0;
+    this.y = cfg.y || 0;
+    this.z = cfg.z || 0;
     this.events = new GWU.app.Events(this);
 
-    Object.assign(this, cfg);
+    // Object.assign(this, cfg);
   }
 
   draw(buf: GWU.buffer.Buffer) {}

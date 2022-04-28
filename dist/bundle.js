@@ -8320,10 +8320,13 @@ void main() {
 
   // import * as IO from './io';
   class Events {
-      constructor(ctx) {
+      constructor(ctx, events) {
           this._events = {};
           this.onUnhandled = null;
           this._ctx = ctx;
+          if (events) {
+              this.on(events);
+          }
       }
       has(name) {
           const events = this._events[name];
@@ -8410,7 +8413,7 @@ void main() {
       _unhandled(ev, args) {
           if (!this.onUnhandled)
               return false;
-          this.onUnhandled(ev, ...args);
+          this.onUnhandled.call(this._ctx, ev, ...args);
           return true;
       }
       clear() {
@@ -8473,6 +8476,7 @@ void main() {
           this._startTime = 0;
           this._goal = {};
           this._start = {};
+          this._success = true;
           // _startCb: TweenCb | null = null;
           // _updateCb: TweenCb | null = null;
           // _repeatCb: TweenCb | null = null;
@@ -8547,6 +8551,7 @@ void main() {
           return this;
       }
       start(animator) {
+          this._success = true;
           if (this._time > 0) {
               this._time = 0;
               this._startTime = this._delay;
@@ -8601,7 +8606,7 @@ void main() {
                   }
               }
               else if (!this.isRunning()) {
-                  this.stop(true);
+                  this.trigger('stop', this._obj, this._success);
               }
           }
       }
@@ -8624,9 +8629,9 @@ void main() {
       //     return false;
       // }
       stop(success = false) {
+          this._success = success;
           this._time = Number.MAX_SAFE_INTEGER;
-          // if (this._finishCb) this._finishCb.call(this, this._obj, 1);
-          this.trigger('stop', this._obj, success);
+          this.children.forEach((c) => c.stop(success));
       }
       _updateProperties(obj, start, goal, pct) {
           let madeChange = false;
@@ -13722,7 +13727,7 @@ void main() {
           return prompt;
       }
   }
-  function make$3(opts) {
+  function make$8(opts) {
       const app = new App(opts);
       return app;
   }
@@ -13766,16 +13771,16 @@ void main() {
   	scenes: scenes,
   	installScene: installScene,
   	App: App,
-  	make: make$3
+  	make: make$8
   });
 
   class Obj {
       constructor(cfg = {}) {
-          this.x = 0;
-          this.y = 0;
-          this.z = 0;
+          this.x = cfg.x || 0;
+          this.y = cfg.y || 0;
+          this.z = cfg.z || 0;
           this.events = new index.Events(this);
-          Object.assign(this, cfg);
+          // Object.assign(this, cfg);
       }
       draw(buf) { }
       on(...args) {
@@ -13893,20 +13898,17 @@ void main() {
       })
           .onUpdate((vals) => {
           if (level.blocksMove(vals.x, vals.y)) {
-              level.removeFx(fx);
-              scene.resume({ update: true });
-              tween$1.stop();
-              _success(vals, false);
+              tween$1.stop(false);
           }
           fx.x = vals.x;
           fx.y = vals.y;
           console.log("- >> ", vals);
           scene.needsDraw = true;
       })
-          .onFinish((vals) => {
+          .onFinish((vals, isSuccess) => {
           level.removeFx(fx);
           scene.resume({ update: true });
-          _success(vals, true);
+          _success(vals, isSuccess);
       })
           .start(game.scene.tweens);
       return {
@@ -13914,6 +13916,84 @@ void main() {
               _success = success || NOOP;
           },
       };
+  }
+
+  const kinds$1 = {};
+  function install$4(cfg) {
+      const kind = Object.assign({
+          ch: "!",
+          fg: "white",
+          //   bump: ["attack"],
+          on: {},
+      }, cfg);
+      //   if (typeof cfg.bump === "string") {
+      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      //   }
+      kinds$1[cfg.id.toLowerCase()] = kind;
+  }
+  function getKind$1(id) {
+      return kinds$1[id.toLowerCase()] || null;
+  }
+
+  class Item extends Obj {
+      constructor(cfg) {
+          super(cfg);
+          this._turnTime = 0;
+          this._level = null;
+          this.kind = cfg.kind;
+          if (!this.kind)
+              throw new Error("Must have kind.");
+          this.data = {};
+          this.on("add", (level) => {
+              this._level = level;
+          });
+          this.on("remove", (level) => {
+              this._level = null;
+          });
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+  }
+  function make$3(id, opts) {
+      let kind;
+      if (typeof id === "string") {
+          kind = getKind$1(id);
+          if (!kind)
+              throw new Error("Failed to find actor kind - " + id);
+      }
+      else {
+          kind = id;
+      }
+      const config = Object.assign({
+          x: 1,
+          y: 1,
+          z: 1,
+          kind,
+      }, opts);
+      return new Item(config);
+  }
+  function place(level, id, x, y) {
+      const newbie = typeof id === "string" ? make$3(id) : id;
+      newbie.kind.fg;
+      const game = level.game;
+      game.scene;
+      // const level = level.level;
+      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
+          return !level.blocksMove(i, j) && !level.hasItem(i, j);
+      });
+      if (!locs || locs.length == 0)
+          return false;
+      const loc = game.rng.item(locs);
+      newbie.x = loc[0];
+      newbie.y = loc[1];
+      level.addItem(newbie);
+      return true;
   }
 
   // @returns boolean - indicates whether or not the target dies
@@ -13925,6 +14005,9 @@ void main() {
           game.messages.addCombat(`${target.kind.id} dies`);
           game.level.setTile(target.x, target.y, "CORPSE");
           game.level.removeActor(target);
+          if (target.kind.dropChance && game.rng.chance(target.kind.dropChance)) {
+              place(game.level, "HEALTH_POTION", target.x, target.y);
+          }
           return true;
       }
       return false;
@@ -14202,6 +14285,18 @@ void main() {
       game.endTurn(actor, actor.kind.rangedAttackSpeed);
       return true;
   }
+  function pickup(game, actor) {
+      const level = game.level;
+      if (level) {
+          const item = level.itemAt(actor.x, actor.y);
+          if (item) {
+              item.trigger("pickup", game, actor);
+              return true;
+          }
+          game.addMessage("Nothing to pickup.");
+      }
+      return idle(game, actor);
+  }
 
   function ai(game, actor) {
       const player = game.player;
@@ -14260,6 +14355,7 @@ void main() {
           rangedDamage: 0,
           tooClose: 0,
           rangedAttackSpeed: 0,
+          dropChance: 100,
       }, cfg);
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -14278,7 +14374,7 @@ void main() {
           this._turnTime = 0;
           this._level = null;
           this.leader = null;
-          // @ts-ignore
+          this.kind = cfg.kind;
           if (!this.kind)
               throw new Error("Must have kind.");
           this.kind.moveSpeed = this.kind.moveSpeed || 100;
@@ -14369,7 +14465,7 @@ void main() {
       const config = Object.assign({
           x: 1,
           y: 1,
-          depth: 1,
+          z: 1,
           kind,
           health: kind.health || 10,
           damage: kind.damage || 2,
@@ -19270,10 +19366,10 @@ void main() {
           if (actor && actor.kind) {
               return `You see a ${actor.kind.id}.`;
           }
-          // const item = this.itemAt(x, y);
-          // if (item && item.kind) {
-          //   return `You see a ${item.kind.id}.`;
-          // }
+          const item = this.itemAt(x, y);
+          if (item && item.kind) {
+              return `You see a ${item.kind.id}.`;
+          }
           const tile = this.getTile(x, y);
           const text = `You see ${tile.id}.`;
           return text;
@@ -19497,18 +19593,27 @@ void main() {
                   this.player.followPath = true;
                   this.player.act(this);
               }
+              this.scene.needsDraw = true;
           });
           this.events.on("dir", (e) => {
               moveDir(this, this.player, e.dir);
+              this.scene.needsDraw = true;
           });
           this.events.on("a", (e) => {
               attack(this, this.player);
+              this.scene.needsDraw = true;
+          });
+          this.events.on("g", (e) => {
+              pickup(this, this.player);
+              this.scene.needsDraw = true;
           });
           this.events.on("f", (e) => {
               fire(this, this.player);
+              this.scene.needsDraw = true;
           });
           this.events.on(" ", (e) => {
               idle(this, this.player);
+              this.scene.needsDraw = true;
           });
           this.events.on(">", (e) => {
               if (!this.level)
@@ -19527,6 +19632,7 @@ void main() {
                   this.player.setGoal(loc[0], loc[1]);
                   this.scene.needsDraw = true;
               }
+              this.scene.needsDraw = true;
           });
           this.events.on("<", (e) => {
               if (!this.level)
@@ -19545,9 +19651,11 @@ void main() {
                   this.player.setGoal(loc[0], loc[1]);
                   this.scene.needsDraw = true;
               }
+              this.scene.needsDraw = true;
           });
           this.events.on("z", (e) => {
               spawn(this.level, "zombie", this.player.x, this.player.y);
+              this.scene.needsDraw = true;
           });
       }
       startLevel(scene, width, height) {
@@ -20550,6 +20658,20 @@ void main() {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
       frequency: (l) => 4 * l,
+  });
+
+  install$4({
+      id: "HEALTH_POTION",
+      ch: "!",
+      fg: "pink",
+      on: {
+          pickup(game, actor) {
+              actor.health = actor.kind.health;
+              game.addMessage("You drink the potion.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
   });
 
   function start() {

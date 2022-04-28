@@ -2,12 +2,18 @@ import * as GWU from "gw-utils";
 import { Obj, ObjConfig, CallbackFn } from "../game/obj";
 import { Game } from "../game/game";
 
+export interface FXConfig extends ObjConfig {
+  ch?: string | null;
+  fg?: GWU.color.ColorBase;
+  bg?: GWU.color.ColorBase;
+}
+
 export class FX extends Obj {
   ch: string | null;
   fg: GWU.color.ColorBase;
   bg: GWU.color.ColorBase;
 
-  constructor(cfg: ObjConfig) {
+  constructor(cfg: FXConfig) {
     super(cfg);
     this.ch = cfg.ch || null;
     this.fg = cfg.fg || null;

@@ -377,3 +377,16 @@ export function climb(game: Game, actor: Actor): boolean {
     return idle(game, actor);
   }
 }
+
+export function pickup(game: Game, actor: Actor): boolean {
+  const level = game.level;
+  if (level) {
+    const item = level.itemAt(actor.x, actor.y);
+    if (item) {
+      item.trigger("pickup", game, actor);
+      return true;
+    }
+    game.addMessage("Nothing to pickup.");
+  }
+  return idle(game, actor);
+}

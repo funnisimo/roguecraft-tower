@@ -61,20 +61,17 @@ export function projectile(
     })
     .onUpdate((vals) => {
       if (level.blocksMove(vals.x, vals.y)) {
-        level.removeFx(fx);
-        scene.resume({ update: true });
-        tween.stop();
-        _success(vals, false);
+        tween.stop(false);
       }
       fx.x = vals.x;
       fx.y = vals.y;
       console.log("- >> ", vals);
       scene.needsDraw = true;
     })
-    .onFinish((vals) => {
+    .onFinish((vals, isSuccess) => {
       level.removeFx(fx);
       scene.resume({ update: true });
-      _success(vals, true);
+      _success(vals, isSuccess);
     })
     .start(game.scene!.tweens);
 
