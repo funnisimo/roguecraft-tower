@@ -40,17 +40,22 @@ export class Actor extends Obj {
       level.game!.scheduler.push(this, this.kind.moveSpeed);
       this._level = level;
     });
-    this.on("remove", (level) => {
+    this.on("remove", (level: Level) => {
       // console.group("ACTOR REMOVE", this);
       // console.group("before");
       // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
       // console.groupEnd();
-      level.game.scheduler.remove(this);
+      level.game!.scheduler.remove(this);
       this._level = null;
       // console.group("after");
       // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
       // console.groupEnd();
       // console.groupEnd();
+    });
+
+    Object.entries(this.kind.on).forEach(([key, value]) => {
+      if (!value) return;
+      this.on(key, value);
     });
   }
 

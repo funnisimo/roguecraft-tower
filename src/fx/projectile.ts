@@ -17,10 +17,8 @@ export function projectile(
   const level = game.level!;
   const scene = game.scene!;
 
-  const fromX = GWU.xy.x(from);
-  const fromY = GWU.xy.y(from);
-  const toX = GWU.xy.x(to);
-  const toY = GWU.xy.y(to);
+  from = GWU.xy.asXY(from);
+  to = GWU.xy.asXY(to);
 
   let _success: ProjectileCb = GWU.NOOP;
 
@@ -46,26 +44,23 @@ export function projectile(
 
   const fx = new FX(sprite);
 
-  console.log("- fire", from, to);
+  // console.log("- fire", from, to);
 
   scene.pause({ update: true });
 
   const tween = GWU.tween
-    .make({ x: fromX, y: fromY })
-    .to({ x: toX, y: toY })
+    .make(fx)
+    .from(from)
+    .to(to, ["x", "y"])
     .duration(ms)
-    .onStart((vals) => {
-      fx.x = fromX;
-      fx.y = fromY;
+    .onStart((_vals) => {
       level.addFx(fx);
     })
     .onUpdate((vals) => {
       if (level.blocksMove(vals.x, vals.y)) {
         tween.stop(false);
       }
-      fx.x = vals.x;
-      fx.y = vals.y;
-      console.log("- >> ", vals);
+      // console.log("- >> ", vals);
       scene.needsDraw = true;
     })
     .onFinish((vals, isSuccess) => {

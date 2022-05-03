@@ -78,7 +78,7 @@ export function install(cfg: KindConfig) {
       rangedDamage: 0,
       tooClose: 0,
       rangedAttackSpeed: 0,
-      dropChance: 100,
+      dropChance: 0,
     },
     cfg
   ) as ActorKind;

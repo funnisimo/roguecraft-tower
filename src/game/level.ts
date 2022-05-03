@@ -125,6 +125,8 @@ export class Level implements GWD.site.AnalysisSite {
       return game.lose();
     }
 
+    // tick actors?
+
     // Do we have work left to do on the level?
     if (this.data.wavesLeft > 0) return;
     if (this.actors.length > 1) return;

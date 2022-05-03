@@ -39,7 +39,7 @@ export class Item extends Obj {
   }
 }
 
-export function make(id: string | ItemKind, opts?: Record<string, any>) {
+export function make(id: string | ItemKind, opts?: Partial<ItemConfig>) {
   let kind: ItemKind | null;
 
   if (typeof id === "string") {
@@ -57,7 +57,7 @@ export function make(id: string | ItemKind, opts?: Record<string, any>) {
       kind,
     },
     opts
-  );
+  ) as ItemConfig;
 
   return new Item(config);
 }

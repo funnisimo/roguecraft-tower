@@ -525,9 +525,13 @@
       return a && typeof a.x === 'number' && typeof a.y === 'number';
   }
   function asLoc(v) {
+      if (Array.isArray(v))
+          return v;
       return [x(v), y(v)];
   }
   function asXY(v) {
+      if (!Array.isArray(v))
+          return v;
       return { x: x(v), y: y(v) };
   }
   function x(src) {
@@ -8506,18 +8510,45 @@ void main() {
           this.on('stop', cb);
           return this;
       }
-      to(goal, duration) {
-          this._goal = goal;
-          this._from = false;
-          if (duration !== undefined)
-              this._duration = duration;
+      to(goal, dynamic) {
+          if (dynamic) {
+              if (typeof dynamic === 'boolean') {
+                  dynamic = Object.keys(goal);
+              }
+              this._goal = {};
+              dynamic.forEach((key) => {
+                  this._goal[key] = () => goal[key];
+              });
+          }
+          else {
+              this._goal = goal;
+          }
+          // this._from = false;
+          if (Object.keys(this._start).length == 0) {
+              Object.keys(this._goal).forEach((k) => {
+                  this._start[k] = this._obj[k];
+              });
+          }
           return this;
       }
-      from(start, duration) {
-          this._start = start;
-          this._from = true;
-          if (duration !== undefined)
-              this._duration = duration;
+      from(start, dynamic) {
+          if (dynamic) {
+              if (typeof dynamic === 'boolean') {
+                  dynamic = Object.keys(start);
+              }
+              this._start = {};
+              dynamic.forEach((key) => {
+                  this._start[key] = () => start[key];
+              });
+          }
+          else {
+              this._start = start;
+          }
+          if (Object.keys(this._goal).length == 0) {
+              Object.keys(this._start).forEach((k) => {
+                  this._goal[k] = this._obj[k];
+              });
+          }
           return this;
       }
       duration(v) {
@@ -8556,15 +8587,23 @@ void main() {
               this._time = 0;
               this._startTime = this._delay;
               this._count = 0;
-              if (this._from) {
-                  this._goal = {};
-                  Object.keys(this._start).forEach((key) => (this._goal[key] = this._obj[key]));
-                  this._updateProperties(this._obj, this._start, this._goal, 0);
-              }
-              else {
-                  this._start = {};
-                  Object.keys(this._goal).forEach((key) => (this._start[key] = this._obj[key]));
-              }
+              // if (this._from) {
+              // this._goal = {};
+              // Object.keys(this._start).forEach(
+              //     (key) =>
+              //         (this._goal[key as keyof T] = this._obj[key as keyof T])
+              // );
+              // } else {
+              // this._start = {};
+              // Object.keys(this._goal).forEach(
+              //     (key) =>
+              //         (this._start[key as keyof T] = this._obj[
+              //             key as keyof T
+              //         ])
+              // );
+              //     this._updateProperties(this._obj, this._start, this._goal, 0);
+              // }
+              this._updateProperties(this._obj, this._start, this._goal, 0);
           }
           if (animator) {
               animator.add(this);
@@ -8613,10 +8652,11 @@ void main() {
       _restart() {
           ++this._count;
           // reset starting values
-          Object.entries(this._start).forEach(([key, value]) => {
-              // @ts-ignore
-              this._obj[key] = value;
-          });
+          // Object.entries(this._start).forEach(([key, value]) => {
+          //     // @ts-ignore
+          //     this._obj[key] = value;
+          // });
+          this._updateProperties(this._obj, this._start, this._goal, 0);
           if (this._count == 1) {
               this.trigger('start', this._obj, 0);
           }
@@ -8636,8 +8676,14 @@ void main() {
       _updateProperties(obj, start, goal, pct) {
           let madeChange = false;
           Object.entries(goal).forEach(([field, goalV]) => {
-              const currentV = obj[field];
-              const startV = start[field];
+              let currentV = obj[field];
+              let startV = start[field];
+              if (typeof startV === 'function') {
+                  startV = startV.call(start);
+              }
+              if (typeof goalV === 'function') {
+                  goalV = goalV.call(obj);
+              }
               const updatedV = this._interpolate(startV, goalV, pct);
               if (updatedV !== currentV) {
                   obj[field] = updatedV;
@@ -8650,12 +8696,15 @@ void main() {
   function make$2$1(src, duration = 1000) {
       return new Tween(src).duration(duration);
   }
+  const move = make$2$1;
   function linear(pct) {
       return clamp(pct, 0, 1);
   }
   // TODO - string, bool, Color
   function interpolate(start, goal, pct) {
-      if (typeof start === 'boolean' || typeof goal === 'boolean') {
+      const startIsBinary = typeof start !== 'number';
+      const goalIsBinary = typeof goal !== 'number';
+      if (startIsBinary || goalIsBinary) {
           return Math.floor(pct) == 0 ? start : goal;
       }
       return Math.round((goal - start) * pct) + start;
@@ -8666,6 +8715,7 @@ void main() {
   	BaseObj: BaseObj,
   	Tween: Tween,
   	make: make$2$1,
+  	move: move,
   	linear: linear,
   	interpolate: interpolate
   });
@@ -13860,10 +13910,8 @@ void main() {
   function projectile(game, from, to, sprite, ms) {
       const level = game.level;
       const scene = game.scene;
-      const fromX = xy.x(from);
-      const fromY = xy.y(from);
-      const toX = xy.x(to);
-      const toY = xy.y(to);
+      from = xy.asXY(from);
+      to = xy.asXY(to);
       let _success = NOOP;
       if (sprite.ch && sprite.ch.length == 4) {
           const dir = xy.dirFromTo(from, to);
@@ -13885,24 +13933,21 @@ void main() {
           throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
       }
       const fx = new FX(sprite);
-      console.log("- fire", from, to);
+      // console.log("- fire", from, to);
       scene.pause({ update: true });
       const tween$1 = tween
-          .make({ x: fromX, y: fromY })
-          .to({ x: toX, y: toY })
+          .make(fx)
+          .from(from)
+          .to(to, ["x", "y"])
           .duration(ms)
-          .onStart((vals) => {
-          fx.x = fromX;
-          fx.y = fromY;
+          .onStart((_vals) => {
           level.addFx(fx);
       })
           .onUpdate((vals) => {
           if (level.blocksMove(vals.x, vals.y)) {
               tween$1.stop(false);
           }
-          fx.x = vals.x;
-          fx.y = vals.y;
-          console.log("- >> ", vals);
+          // console.log("- >> ", vals);
           scene.needsDraw = true;
       })
           .onFinish((vals, isSuccess) => {
@@ -14355,7 +14400,7 @@ void main() {
           rangedDamage: 0,
           tooClose: 0,
           rangedAttackSpeed: 0,
-          dropChance: 100,
+          dropChance: 0,
       }, cfg);
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -14396,6 +14441,11 @@ void main() {
               // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
               // console.groupEnd();
               // console.groupEnd();
+          });
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
           });
       }
       startTurn(game) {
@@ -19198,6 +19248,7 @@ void main() {
               // lose
               return game.lose();
           }
+          // tick actors?
           // Do we have work left to do on the level?
           if (this.data.wavesLeft > 0)
               return;
@@ -20498,6 +20549,7 @@ void main() {
       health: 6,
       damage: 8,
       // attackSpeed: 200
+      dropChance: 10,
   });
   install$3({
       id: "ARMOR_ZOMBIE",
@@ -20507,6 +20559,7 @@ void main() {
       health: 25,
       damage: 10,
       // attackSpeed: 200
+      dropChance: 10,
   });
   install$3({
       id: "ARMOR_ZOMBIE_2",
@@ -20516,6 +20569,7 @@ void main() {
       health: 50,
       damage: 12,
       // attackSpeed: 200
+      dropChance: 10,
   });
   install$3({
       id: "Vindicator",
@@ -20527,6 +20581,7 @@ void main() {
       // chargeSpeed: 75
       // chargeDistance: 10
       // attackSpeed: 150
+      dropChance: 10,
   });
   install$3({
       id: "SKELETON",
@@ -20540,6 +20595,7 @@ void main() {
       tooClose: 4,
       rangedAttackSpeed: 200,
       // notice: 10
+      dropChance: 10,
   });
   install$3({
       id: "ARMOR_SKELETON",
@@ -20553,6 +20609,7 @@ void main() {
       tooClose: 4,
       rangedAttackSpeed: 200,
       // notice: 10
+      dropChance: 10,
   });
   install$3({
       id: "ARMOR_SKELETON_2",
@@ -20566,6 +20623,7 @@ void main() {
       tooClose: 4,
       rangedAttackSpeed: 200,
       // notice: 10
+      dropChance: 10,
   });
   /*
   PLAYER - health = 100

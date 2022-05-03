@@ -25,6 +25,7 @@ ACTOR.install({
   health: 6,
   damage: 8,
   // attackSpeed: 200
+  dropChance: 10,
 });
 
 ACTOR.install({
@@ -35,6 +36,7 @@ ACTOR.install({
   health: 25,
   damage: 10,
   // attackSpeed: 200
+  dropChance: 10,
 });
 
 ACTOR.install({
@@ -45,6 +47,7 @@ ACTOR.install({
   health: 50,
   damage: 12,
   // attackSpeed: 200
+  dropChance: 10,
 });
 
 ACTOR.install({
@@ -57,6 +60,7 @@ ACTOR.install({
   // chargeSpeed: 75
   // chargeDistance: 10
   // attackSpeed: 150
+  dropChance: 10,
 });
 
 ACTOR.install({
@@ -71,6 +75,7 @@ ACTOR.install({
   tooClose: 4,
   rangedAttackSpeed: 200,
   // notice: 10
+  dropChance: 10,
 });
 
 ACTOR.install({
@@ -85,6 +90,7 @@ ACTOR.install({
   tooClose: 4,
   rangedAttackSpeed: 200,
   // notice: 10
+  dropChance: 10,
 });
 
 ACTOR.install({
@@ -99,6 +105,7 @@ ACTOR.install({
   tooClose: 4,
   rangedAttackSpeed: 200,
   // notice: 10
+  dropChance: 10,
 });
 
 /*
