@@ -2483,7 +2483,7 @@
           });
       }
       randomEach(fn) {
-          const sequence = random$1.sequence(this.width * this.height);
+          const sequence = random$2.sequence(this.width * this.height);
           for (let i = 0; i < sequence.length; ++i) {
               const n = sequence[i];
               const x = n % this.width;
@@ -2657,7 +2657,7 @@
                       bestLoc[1] = j;
                       bestDistance = dist;
                   }
-                  else if (dist == bestDistance && random$1.chance(50)) {
+                  else if (dist == bestDistance && random$2.chance(50)) {
                       bestLoc[0] = i;
                       bestLoc[1] = j;
                   }
@@ -2682,13 +2682,13 @@
           const fn = typeof v === 'function'
               ? (x, y) => v(this[x][y], x, y, this)
               : (x, y) => this.get(x, y) === v;
-          return random$1.matchingLoc(this.width, this.height, fn);
+          return random$2.matchingLoc(this.width, this.height, fn);
       }
       matchingLocNear(x, y, v) {
           const fn = typeof v === 'function'
               ? (x, y) => v(this[x][y], x, y, this)
               : (x, y) => this.get(x, y) === v;
-          return random$1.matchingLocNear(x, y, fn);
+          return random$2.matchingLocNear(x, y, fn);
       }
       // Rotates around the cell, counting up the number of distinct strings of neighbors with the same test result in a single revolution.
       //		Zero means there are no impassable tiles adjacent.
@@ -3005,7 +3005,7 @@
   function configure$1(config = {}) {
       if (config.make) {
           RANDOM_CONFIG.make = config.make;
-          random$1.seed();
+          random$2.seed();
           cosmetic.seed();
       }
   }
@@ -3246,7 +3246,7 @@
           return [-1, -1]; // should never reach this point
       }
   }
-  const random$1 = new Random();
+  const random$2 = new Random();
   const cosmetic = new Random();
   function make$d(seed) {
       return new Random(seed);
@@ -3257,7 +3257,7 @@
   	Alea: Alea,
   	configure: configure$1,
   	Random: Random,
-  	random: random$1,
+  	random: random$2,
   	cosmetic: cosmetic,
   	make: make$d
   });
@@ -3277,7 +3277,7 @@
           this.clumps = clumps || 1;
       }
       value(rng) {
-          rng = rng || random$1;
+          rng = rng || random$2;
           return rng.clumped(this.lo, this.hi, this.clumps);
       }
       max() {
@@ -8154,7 +8154,7 @@ void main() {
   class Blob {
       constructor(opts = {}) {
           this.options = {
-              rng: random$1,
+              rng: random$2,
               rounds: 5,
               minWidth: 10,
               minHeight: 10,
@@ -13970,10 +13970,12 @@ void main() {
           fg: "white",
           //   bump: ["attack"],
           on: {},
+          frequency: 10,
       }, cfg);
       //   if (typeof cfg.bump === "string") {
       //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
       //   }
+      kind.frequency = frequency.make(kind.frequency);
       kinds$1[cfg.id.toLowerCase()] = kind;
   }
   function getKind$1(id) {
@@ -14023,8 +14025,19 @@ void main() {
       }, opts);
       return new Item(config);
   }
-  function place(level, id, x, y) {
-      const newbie = typeof id === "string" ? make$3(id) : id;
+  function place(level, x, y, id = null) {
+      let newbie;
+      if (id === null) {
+          newbie = random$1(level);
+      }
+      else if (typeof id === "string") {
+          newbie = make$3(id);
+      }
+      else {
+          newbie = id;
+      }
+      if (!newbie)
+          return null;
       newbie.kind.fg;
       const game = level.game;
       game.scene;
@@ -14038,7 +14051,18 @@ void main() {
       newbie.x = loc[0];
       newbie.y = loc[1];
       level.addItem(newbie);
-      return true;
+      return newbie;
+  }
+  function random$1(level) {
+      // pick random kind
+      const allKinds = Object.values(kinds$1);
+      const chances = allKinds.map((k) => k.frequency(level.depth));
+      const index = level.rng.weighted(chances);
+      if (index < 0)
+          return null;
+      const kind = allKinds[index];
+      const item = new Item({ kind });
+      return item;
   }
 
   // @returns boolean - indicates whether or not the target dies
@@ -14051,7 +14075,7 @@ void main() {
           game.level.setTile(target.x, target.y, "CORPSE");
           game.level.removeActor(target);
           if (target.kind.dropChance && game.rng.chance(target.kind.dropChance)) {
-              place(game.level, "HEALTH_POTION", target.x, target.y);
+              place(game.level, target.x, target.y, null);
           }
           return true;
       }
@@ -14083,7 +14107,7 @@ void main() {
           if (!quiet) {
               const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
               game.addMessage(`Blocked by a ${tile.id}.`);
-              flash(game, newX, newY, "red", 150);
+              flash(game, newX, newY, "orange", 150);
               idle(game, actor);
               return true;
           }
@@ -14101,7 +14125,7 @@ void main() {
               return true;
           if (!quiet) {
               game.addMessage(`You bump into a ${other.kind.id}.`);
-              flash(game, newX, newY, "red", 150);
+              flash(game, newX, newY, "orange", 150);
               idle(game, actor);
               return true;
           }
@@ -14113,7 +14137,7 @@ void main() {
       if (level.blocksMove(newX, newY)) {
           if (!quiet) {
               game.addMessage("You bump into a wall.");
-              flash(game, newX, newY, "red", 150);
+              flash(game, newX, newY, "orange", 150);
               idle(game, actor);
               return false;
           }
@@ -15334,7 +15358,7 @@ void main() {
       return info;
   }
   function pickHorde(depth, rules, rng) {
-      rng = rng || random$1;
+      rng = rng || random$2;
       let tagMatch;
       if (typeof rules === 'string') {
           tagMatch = tags.makeMatch(rules);
@@ -15489,7 +15513,7 @@ void main() {
       return info;
   }
   function pickItem(depth, tagRules, rng) {
-      rng = rng || random$1;
+      rng = rng || random$2;
       if (typeof tagRules !== 'string' && 'id' in tagRules) {
           // @ts-ignore
           return items.find((i) => i.id === tagRules.id) || null;
@@ -19177,11 +19201,13 @@ void main() {
           this.fxs = [];
           this.game = null;
           this.player = null;
-          this.rng = random$1;
+          // rng: GWU.rng.Random;
           this.locations = {};
           this.tiles = grid.make(width, height);
           this.flags = grid.make(width, height);
           this.choke = grid.make(width, height);
+          this.seed = seed || random$2.number(100000);
+          // this.rng = GWU.rng.make(this.seed);
           this.data.wavesLeft = 0;
       }
       get width() {
@@ -19189,6 +19215,9 @@ void main() {
       }
       get height() {
           return this.tiles.height;
+      }
+      get rng() {
+          return this.game ? this.game.rng : random$2;
       }
       hasXY(x, y) {
           return this.tiles.hasXY(x, y);
@@ -19198,7 +19227,7 @@ void main() {
           this.player = game.player;
           this.done = false;
           this.started = false;
-          this.rng = game.rng;
+          // this.rng = game.rng;
           // put player in starting location
           let startLoc = this.locations.start || [
               Math.floor(this.width / 2),
@@ -19624,8 +19653,11 @@ void main() {
           this.level = null;
           this.depth = 0;
           this.scheduler = new scheduler.Scheduler();
+          this.actors = kinds;
+          this.items = kinds$1;
+          this.hordes = hordes;
           this.inputQueue = new index.Queue();
-          this.seed = opts.seed || random$1.number(100000);
+          this.seed = opts.seed || random$2.number(100000);
           console.log("GAME, seed=", this.seed);
           this.rng = rng.make(this.seed);
           this.seeds = [];
@@ -19708,6 +19740,8 @@ void main() {
               spawn(this.level, "zombie", this.player.x, this.player.y);
               this.scene.needsDraw = true;
           });
+          // @ts-ignore
+          window.GAME = this;
       }
       startLevel(scene, width, height) {
           this.scene = scene;
@@ -20694,7 +20728,7 @@ void main() {
   });
   install$1("ZOMBIE2", {
       leader: "ARMOR_ZOMBIE",
-      members: { ZOMBIE: "2-3" },
+      members: { ZOMBIE: "1-3" },
       frequency: (l) => l + 5,
   });
   install$1("ZOMBIE3", {
@@ -20705,17 +20739,17 @@ void main() {
   install$1("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
-      frequency: 20,
+      frequency: 10,
   });
   install$1("SKELETON2", {
       leader: "ARMOR_SKELETON",
-      members: { SKELETON: "2-3" },
-      frequency: (l) => l + 15,
+      members: { SKELETON: "1-3" },
+      frequency: (l) => l + 5,
   });
   install$1("SKELETON3", {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
-      frequency: (l) => 4 * l,
+      frequency: (l) => 2 * l,
   });
 
   install$4({
@@ -20726,6 +20760,19 @@ void main() {
           pickup(game, actor) {
               actor.health = actor.kind.health;
               game.addMessage("You drink the potion.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+  });
+  install$4({
+      id: "ARROWS",
+      ch: "|",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   actor.health = actor.kind.health;
+              game.addMessage("You pickup some arrows.");
               game.level.removeItem(this);
               return true;
           },

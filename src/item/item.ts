@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 import { Level } from "../game/level";
-import { ItemKind, getKind } from "./kind";
+import { ItemKind, getKind, kinds } from "./kind";
 import { Obj, ObjConfig } from "../game/obj";
 import * as FX from "../fx";
 
@@ -68,8 +68,22 @@ export interface ThenItem {
   then(cb: ItemCallback): void;
 }
 
-export function place(level: Level, id: string | Item, x: number, y: number) {
-  const newbie = typeof id === "string" ? make(id) : id;
+export function place(
+  level: Level,
+  x: number,
+  y: number,
+  id: string | Item | null = null
+) {
+  let newbie: Item | null;
+  if (id === null) {
+    newbie = random(level);
+  } else if (typeof id === "string") {
+    newbie = make(id);
+  } else {
+    newbie = id;
+  }
+
+  if (!newbie) return null;
 
   const bg = newbie.kind.fg;
   const game = level.game!;
@@ -86,52 +100,18 @@ export function place(level: Level, id: string | Item, x: number, y: number) {
   newbie.x = loc[0];
   newbie.y = loc[1];
   level.addItem(newbie);
-  return true;
+  return newbie;
 }
 
-export function spawn(
-  level: Level,
-  id: string | Item,
-  x?: number,
-  y?: number,
-  ms = 0
-): ThenItem {
-  const newbie = typeof id === "string" ? make(id) : id;
+export function random(level: Level): Item | null {
+  // pick random kind
+  const allKinds = Object.values(kinds);
+  const chances = allKinds.map((k) => k.frequency(level.depth));
+  const index = level.rng.weighted(chances);
+  if (index < 0) return null;
 
-  const bg = newbie.kind.fg;
-  const game = level.game!;
-  const scene = game.scene!;
-  // const level = level.level;
+  const kind = allKinds[index];
+  const item = new Item({ kind });
 
-  if (x === undefined) {
-    do {
-      x = level.rng.number(level.width);
-      y = level.rng.number(level.height);
-    } while (!level.hasTile(x, y, "FLOOR") || level.itemAt(x, y));
-  }
-
-  if (ms) {
-    let _success: ItemCallback = GWU.NOOP;
-
-    FX.flashGameTime(game, x, y!, bg).then(() => {
-      newbie.x = x!;
-      newbie.y = y!;
-      level.addItem(newbie);
-      _success(newbie);
-    });
-    return {
-      then(cb: ItemCallback) {
-        _success = cb || GWU.NOOP;
-      },
-    };
-  } else {
-    newbie.x = x!;
-    newbie.y = y!;
-    level.addItem(newbie);
-    return {
-      then(cb: ItemCallback) {
-        cb(newbie);
-      },
-    };
-  }
+  return item;
 }

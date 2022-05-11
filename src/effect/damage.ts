@@ -22,7 +22,7 @@ export function damage(
     game.level!.removeActor(target);
 
     if (target.kind.dropChance && game.rng.chance(target.kind.dropChance)) {
-      ITEM.place(game.level!, "HEALTH_POTION", target.x, target.y);
+      ITEM.place(game.level!, target.x, target.y, null);
     }
     return true;
   }

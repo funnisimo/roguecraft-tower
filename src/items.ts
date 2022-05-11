@@ -15,3 +15,17 @@ ITEM.install({
     },
   },
 });
+
+ITEM.install({
+  id: "ARROWS",
+  ch: "|",
+  fg: "yellow",
+  on: {
+    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+      //   actor.health = actor.kind.health;
+      game.addMessage("You pickup some arrows.");
+      game.level!.removeItem(this);
+      return true;
+    },
+  },
+});

@@ -8,6 +8,8 @@ import { Player } from "../actor/player";
 import { CallbackFn } from "./obj";
 import { FX } from "../fx/flash";
 import * as TILE from "./tiles";
+import * as ITEM from "../item";
+import * as HORDE from "../horde";
 
 export interface GameOpts {
   seed?: number;
@@ -37,6 +39,10 @@ export class Game {
   events: GWU.app.Events;
   needInput = false;
 
+  actors: Record<string, ACTOR.ActorKind>;
+  items: Record<string, ITEM.ItemKind>;
+  hordes: Record<string, HORDE.Horde>;
+
   constructor(opts: GameOpts) {
     this.player = ACTOR.makePlayer("player");
     this.app = opts.app || null;
@@ -44,6 +50,9 @@ export class Game {
     this.level = null;
     this.depth = 0;
     this.scheduler = new GWU.scheduler.Scheduler();
+    this.actors = ACTOR.kinds;
+    this.items = ITEM.kinds;
+    this.hordes = HORDE.hordes;
 
     this.inputQueue = new GWU.app.Queue();
 
@@ -135,6 +144,9 @@ export class Game {
       ACTOR.spawn(this.level!, "zombie", this.player.x, this.player.y);
       this.scene!.needsDraw = true;
     });
+
+    // @ts-ignore
+    window.GAME = this;
   }
 
   startLevel(scene: GWU.app.Scene, width: number, height: number) {

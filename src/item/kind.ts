@@ -18,6 +18,8 @@ export interface KindConfig {
   fg: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
 
+  frequency?: GWU.frequency.FrequencyConfig;
+
   //   bump?: string | string[];
 
   on?: ItemEvents;
@@ -33,6 +35,8 @@ export interface ItemKind {
   //   bump: string[];
 
   on: ItemEvents;
+
+  frequency: GWU.frequency.FrequencyFn;
 
   //   damage: number;
   //   attackSpeed: number;
@@ -52,6 +56,7 @@ export function install(cfg: KindConfig) {
       fg: "white",
       //   bump: ["attack"],
       on: {},
+      frequency: 10,
     },
     cfg
   ) as ItemKind;
@@ -59,6 +64,8 @@ export function install(cfg: KindConfig) {
   //   if (typeof cfg.bump === "string") {
   //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
   //   }
+
+  kind.frequency = GWU.frequency.make(kind.frequency);
 
   kinds[cfg.id.toLowerCase()] = kind;
 }

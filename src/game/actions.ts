@@ -45,7 +45,7 @@ export function moveDir(
     if (!quiet) {
       const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
       game.addMessage(`Blocked by a ${tile.id}.`);
-      FX.flash(game, newX, newY, "red", 150);
+      FX.flash(game, newX, newY, "orange", 150);
       idle(game, actor);
       return true;
     } else {
@@ -63,7 +63,7 @@ export function moveDir(
 
     if (!quiet) {
       game.addMessage(`You bump into a ${other.kind.id}.`);
-      FX.flash(game, newX, newY, "red", 150);
+      FX.flash(game, newX, newY, "orange", 150);
       idle(game, actor);
       return true;
     } else {
@@ -75,7 +75,7 @@ export function moveDir(
   if (level.blocksMove(newX, newY)) {
     if (!quiet) {
       game.addMessage("You bump into a wall.");
-      FX.flash(game, newX, newY, "red", 150);
+      FX.flash(game, newX, newY, "orange", 150);
       idle(game, actor);
       return false;
     } else {

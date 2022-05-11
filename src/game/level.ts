@@ -36,13 +36,17 @@ export class Level implements GWD.site.AnalysisSite {
   game: Game | null = null;
   player: ACTOR.Player | null = null;
 
-  rng = GWU.random;
+  seed: number;
+  // rng: GWU.rng.Random;
   locations: Record<string, GWU.xy.Loc> = {};
 
   constructor(width: number, height: number, seed = 0) {
     this.tiles = GWU.grid.make(width, height);
     this.flags = GWU.grid.make(width, height);
     this.choke = GWU.grid.make(width, height);
+
+    this.seed = seed || GWU.random.number(100000);
+    // this.rng = GWU.rng.make(this.seed);
 
     this.data.wavesLeft = 0;
   }
@@ -54,6 +58,10 @@ export class Level implements GWD.site.AnalysisSite {
     return this.tiles.height;
   }
 
+  get rng() {
+    return this.game ? this.game.rng : GWU.random;
+  }
+
   hasXY(x: number, y: number) {
     return this.tiles.hasXY(x, y);
   }
@@ -63,7 +71,7 @@ export class Level implements GWD.site.AnalysisSite {
     this.player = game.player;
     this.done = false;
     this.started = false;
-    this.rng = game.rng;
+    // this.rng = game.rng;
 
     // put player in starting location
     let startLoc = this.locations.start || [
