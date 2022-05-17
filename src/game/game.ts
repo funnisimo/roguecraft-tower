@@ -146,7 +146,7 @@ export class Game {
     });
 
     // @ts-ignore
-    window.GAME = this;
+    globalThis.GAME = this;
   }
 
   startLevel(scene: GWU.app.Scene, width: number, height: number) {
@@ -182,9 +182,9 @@ export class Game {
     scene.once("stop", cancelEvents);
 
     // @ts-ignore
-    window.LEVEL = level;
+    globalThis.LEVEL = level;
     // @ts-ignore
-    window.PLAYER = this.player;
+    globalThis.PLAYER = this.player;
 
     level.start(this);
     this.tick();

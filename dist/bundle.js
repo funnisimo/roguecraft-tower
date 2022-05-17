@@ -19741,7 +19741,7 @@ void main() {
               this.scene.needsDraw = true;
           });
           // @ts-ignore
-          window.GAME = this;
+          globalThis.GAME = this;
       }
       startLevel(scene, width, height) {
           this.scene = scene;
@@ -19772,9 +19772,9 @@ void main() {
           });
           scene.once("stop", cancelEvents);
           // @ts-ignore
-          window.LEVEL = level;
+          globalThis.LEVEL = level;
           // @ts-ignore
-          window.PLAYER = this.player;
+          globalThis.PLAYER = this.player;
           level.start(this);
           this.tick();
       }
