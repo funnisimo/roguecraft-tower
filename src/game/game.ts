@@ -105,6 +105,7 @@ export class Game {
     });
     this.events.on(">", (e) => {
       if (!this.level) return;
+      console.log(">>>>>>>>");
       // find stairs
       let loc: GWU.xy.Loc = [-1, -1];
       this.level.tiles.forEach((t, x, y) => {
@@ -123,6 +124,7 @@ export class Game {
     });
     this.events.on("<", (e) => {
       if (!this.level) return;
+      console.log("<<<<<<<<<");
       // find stairs
       let loc: GWU.xy.Loc = [-1, -1];
       this.level.tiles.forEach((t, x, y) => {

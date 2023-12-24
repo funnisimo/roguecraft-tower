@@ -21,6 +21,8 @@ export interface KindConfig {
   frequency?: GWU.frequency.FrequencyConfig;
 
   //   bump?: string | string[];
+  speed?: number | number[];
+  damage?: number | number[];
 
   on?: ItemEvents;
 }
@@ -33,6 +35,8 @@ export interface ItemKind {
   bg?: GWU.color.ColorBase;
 
   //   bump: string[];
+  speed: number[];
+  damage: number[];
 
   on: ItemEvents;
 
@@ -50,6 +54,13 @@ export interface ItemKind {
 export const kinds: Record<string, ItemKind> = {};
 
 export function install(cfg: KindConfig) {
+  if (typeof cfg.speed === "number") {
+    cfg.speed = [cfg.speed];
+  }
+  if (typeof cfg.damage === "number") {
+    cfg.damage = [cfg.damage];
+  }
+
   const kind = Object.assign(
     {
       ch: "!",
@@ -57,9 +68,17 @@ export function install(cfg: KindConfig) {
       //   bump: ["attack"],
       on: {},
       frequency: 10,
+      speed: [100],
+      damage: [0],
     },
     cfg
   ) as ItemKind;
+
+  // add damage as necessary
+  while (kind.speed.length > kind.damage.length) {
+    kind.damage.push(kind.damage[0]);
+  }
+  kind.damage.length = kind.speed.length; // truncate any extra damage
 
   //   if (typeof cfg.bump === "string") {
   //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());

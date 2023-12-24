@@ -8,7 +8,7 @@ function start() {
   // create the user interface
 
   // @ts-ignore
-  window.APP = GWU.app.make({
+  globalThis.APP = GWU.app.make({
     width: 90,
     height: 45,
     div: "game",
@@ -27,7 +27,7 @@ function start() {
   });
 }
 
-window.onload = start;
+globalThis.onload = start;
 
 // async function playGame(game) {
 //   // create and dig the map
