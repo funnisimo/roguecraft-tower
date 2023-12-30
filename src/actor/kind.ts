@@ -30,6 +30,9 @@ export interface KindConfig {
   rangedDamage?: number;
   tooClose?: number;
   rangedAttackSpeed?: number;
+  ammo?: number;
+
+  slots?: { [id: string]: string };
 
   dropChance?: number;
 }
@@ -58,6 +61,8 @@ export interface ActorKind {
   rangedAttackSpeed: number;
   ammo: number;
 
+  slots: Map<string, string>;
+
   dropChance: number;
   drop: string[];
 }
@@ -83,6 +88,7 @@ export function install(cfg: KindConfig) {
       rangedAttackSpeed: 0,
       dropChance: 0,
       drop: [],
+      slots: new Map<string, string>(),
     },
     cfg
   ) as ActorKind;

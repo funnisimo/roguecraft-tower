@@ -8,12 +8,15 @@ ITEM.install({
   fg: "pink",
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+      // TODO - vary the messages
+      // TODO - Different healing amounts?
       actor.health = actor.kind.health;
       game.addMessage("You drink the potion.");
       game.level!.removeItem(this);
       return true;
     },
   },
+  tags: "DROP",
 });
 
 ITEM.install({
@@ -25,9 +28,10 @@ ITEM.install({
       //   actor.health = actor.kind.health;
       game.addMessage("You pickup some arrows.");
       game.level!.removeItem(this);
-      // TODO - add ammo to player
+      // TODO - adjust for this.power?
       actor.ammo += 10;
       return true;
     },
   },
+  tags: "DROP",
 });

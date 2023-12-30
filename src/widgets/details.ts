@@ -60,7 +60,46 @@ export class Details extends GWU.widget.Dialog {
   }
 
   showPlayer(player: Player) {
-    this.showActor(player);
+    let text = player.kind.id + "\n";
+    text += "Health: " + player.health + "/" + player.kind.health + "\n";
+    text += "Moves : " + player.kind.moveSpeed + "\n";
+
+    const melee = player.slots.melee;
+    if (melee) {
+      // TODO - Add Hero weapons
+      text += "Melee : " + melee.kind.id + "\n";
+      text += "      : damage=" + player.damage + "\n";
+      text += "      : speed =" + player.attackSpeed + "\n";
+    } else if (player.kind.damage > 0) {
+      // TODO - Add Hero weapons
+      text += "Melee : damage=" + player.damage + "\n";
+      text += "        speed =" + player.attackSpeed + "\n";
+    } else {
+      text += "Melee : None\n";
+    }
+
+    const ranged = player.slots.ranged;
+    if (ranged) {
+      text += "Ranged: " + ranged.kind.id + "\n";
+      text += "      : damage=" + player.rangedDamage + "\n";
+      text += "      : range =" + player.range + "\n";
+      text += "      : speed =" + player.rangedAttackSpeed + "\n";
+      text += "      : ammo  =" + player.ammo + "\n";
+    } else if (player.kind.range > 0) {
+      // TODO - Add Hero weapons
+      // TODO - Add Ammo
+      text += "Ranged: damage=" + player.rangedDamage + "\n";
+      text += "      : speed =" + player.rangedAttackSpeed + "\n";
+      text += "      : range =" + player.range + "\n";
+      text += "      : ammo  =" + player.ammo + "\n";
+    } else {
+      text += "Ranged: None";
+    }
+
+    this._text.text(text);
+
+    this.bounds.height = this._text.bounds.height + 2;
+    this.bounds.width = this._text.bounds.width + 2;
   }
 }
 

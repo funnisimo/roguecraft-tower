@@ -8,13 +8,19 @@ ACTOR.install({
   bg: -1,
   moveSpeed: 100,
   health: 100,
+  ammo: 20,
 
-  damage: 10,
-  attackSpeed: 100,
+  // damage: 10,
+  // attackSpeed: 100,
 
-  rangedDamage: 3,
-  range: 10,
-  rangedAttackSpeed: 100,
+  // rangedDamage: 3,
+  // range: 10,
+  // rangedAttackSpeed: 100,
+
+  slots: {
+    ranged: "SHORTBOW",
+    melee: "DAGGER",
+  },
 });
 
 ACTOR.install({
@@ -23,8 +29,7 @@ ACTOR.install({
   fg: "green",
   moveSpeed: 200,
   health: 6,
-  damage: 8,
-  // attackSpeed: 200
+  damage: 8, // dps=4
   dropChance: 100,
 });
 
@@ -34,8 +39,7 @@ ACTOR.install({
   fg: "green",
   moveSpeed: 200,
   health: 25,
-  damage: 10,
-  // attackSpeed: 200
+  damage: 10, // dps=5
   dropChance: 10,
 });
 
@@ -45,8 +49,7 @@ ACTOR.install({
   fg: "green",
   moveSpeed: 200,
   health: 50,
-  damage: 12,
-  // attackSpeed: 200
+  damage: 12, // dps=6
   dropChance: 10,
 });
 
@@ -58,7 +61,7 @@ ACTOR.install({
   health: 11,
   damage: 9,
   // chargeSpeed: 75
-  // chargeDistance: 10
+  // chargeDistance: 6
   // attackSpeed: 150
   dropChance: 10,
 });

@@ -3,6 +3,7 @@ import * as SCENES from "./scenes/index";
 import "./actors";
 import "./hordes";
 import "./items";
+import "./weapons";
 
 function start() {
   // create the user interface

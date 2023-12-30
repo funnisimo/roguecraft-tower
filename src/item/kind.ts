@@ -23,8 +23,14 @@ export interface KindConfig {
   //   bump?: string | string[];
   speed?: number | number[];
   damage?: number | number[];
+  range?: number;
+
+  defense?: number;
+
+  slot?: string;
 
   on?: ItemEvents;
+  tags?: string | string[];
 }
 
 export interface ItemKind {
@@ -37,10 +43,15 @@ export interface ItemKind {
   //   bump: string[];
   speed: number[];
   damage: number[];
+  range: number;
 
+  defense: number;
+
+  slot: string | null;
   on: ItemEvents;
 
   frequency: GWU.frequency.FrequencyFn;
+  tags: string[];
 
   //   damage: number;
   //   attackSpeed: number;
@@ -70,6 +81,10 @@ export function install(cfg: KindConfig) {
       frequency: 10,
       speed: [100],
       damage: [0],
+      range: 0,
+      defense: 0,
+      slot: null,
+      tags: [],
     },
     cfg
   ) as ItemKind;
@@ -80,11 +95,25 @@ export function install(cfg: KindConfig) {
   }
   kind.damage.length = kind.speed.length; // truncate any extra damage
 
+  if (typeof cfg.tags == "string") {
+    kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+  }
+
   //   if (typeof cfg.bump === "string") {
   //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
   //   }
 
   kind.frequency = GWU.frequency.make(kind.frequency);
+
+  if (kind.slot === null) {
+    if (kind.range > 0) {
+      kind.slot = "ranged";
+    } else if (kind.damage.length > 0 && kind.damage[0] > 0) {
+      kind.slot = "melee";
+    } else if (kind.defense > 0) {
+      kind.slot = "armor";
+    }
+  }
 
   kinds[cfg.id.toLowerCase()] = kind;
 }

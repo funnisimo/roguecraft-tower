@@ -6,6 +6,7 @@ import * as FX from "../fx";
 
 export interface ItemConfig extends ObjConfig {
   kind: ItemKind;
+  power?: number;
 }
 
 export class Item extends Obj {
@@ -13,6 +14,7 @@ export class Item extends Obj {
   _level: Level | null = null;
   kind: ItemKind;
   data: Record<string, any>;
+  power: number;
 
   constructor(cfg: ItemConfig) {
     super(cfg);
@@ -20,6 +22,7 @@ export class Item extends Obj {
     if (!this.kind) throw new Error("Must have kind.");
 
     this.data = {};
+    this.power = cfg.power || 1;
 
     this.on("add", (level: Level) => {
       this._level = level;
@@ -36,6 +39,28 @@ export class Item extends Obj {
 
   draw(buf: GWU.buffer.Buffer) {
     buf.drawSprite(this.x, this.y, this.kind);
+  }
+
+  get damage(): number {
+    // TODO - scale with power
+    return this.kind.damage[0];
+  }
+
+  get range(): number {
+    return this.kind.range;
+  }
+
+  get speed(): number {
+    return this.kind.speed[0];
+  }
+
+  get defense(): number {
+    // TODO - scale with power
+    return this.kind.defense;
+  }
+
+  get slot(): string | null {
+    return this.kind.slot;
   }
 }
 
@@ -76,7 +101,7 @@ export function place(
 ) {
   let newbie: Item | null;
   if (id === null) {
-    newbie = random(level);
+    newbie = random(level, "DROP"); // TODO - #DROP
   } else if (typeof id === "string") {
     newbie = make(id);
   } else {
@@ -103,9 +128,21 @@ export function place(
   return newbie;
 }
 
-export function random(level: Level): Item | null {
+export function random(level: Level, match: string | null = null): Item | null {
   // pick random kind
-  const allKinds = Object.values(kinds);
+  let allKinds = Object.values(kinds);
+  if (typeof match == "string") {
+    let matches = match.split(/[|,]/).map((v) => v.trim());
+    allKinds = allKinds.filter((kind) => {
+      return matches.every((m) => {
+        if (m[0] == "!") {
+          return !kind.tags.includes(m.substring(1));
+        } else {
+          return kind.tags.includes(m);
+        }
+      });
+    });
+  }
   const chances = allKinds.map((k) => k.frequency(level.depth));
   const index = level.rng.weighted(chances);
   if (index < 0) return null;

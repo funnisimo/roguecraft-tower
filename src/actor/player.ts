@@ -5,6 +5,7 @@ import * as KIND from "./kind";
 import * as ACTION from "../game/actions";
 import { Level } from "../game/level";
 import { Game } from "../game/game";
+import * as ITEM from "../item";
 
 export class Player extends ACTOR.Actor {
   mapToMe: GWU.path.DijkstraMap;
@@ -13,12 +14,15 @@ export class Player extends ACTOR.Actor {
   goalPath: GWU.xy.Loc[] | null;
   followPath: boolean;
 
+  slots: { [id: string]: ITEM.Item | null };
+
   constructor(cfg: ACTOR.ActorConfig) {
     super(cfg);
     this.mapToMe = new GWU.path.DijkstraMap();
     this.fov = null;
     this.goalPath = null;
     this.followPath = false;
+    this.slots = {};
 
     this.on("add", (level: Level) => {
       this._level = level;
@@ -37,7 +41,60 @@ export class Player extends ACTOR.Actor {
       }
       this.clearGoal();
     });
+
+    // Need items in slots....
+    Object.entries(cfg.kind.slots).forEach(([slot, id]) => {
+      const item = ITEM.make(id);
+      if (item === null) {
+        console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
+      } else {
+        this.slots[slot] = item;
+        console.log(`player Item = ${item.kind.id} @ ${slot}`);
+      }
+    });
   }
+
+  // attributes
+  get damage(): number {
+    const melee = this.slots.melee;
+    if (melee) {
+      return melee.damage;
+    }
+    return super.damage;
+  }
+
+  get attackSpeed(): number {
+    const melee = this.slots.melee;
+    if (melee) {
+      return melee.speed;
+    }
+    return super.attackSpeed;
+  }
+
+  get range(): number {
+    const ranged = this.slots.ranged;
+    if (ranged) {
+      return ranged.range;
+    }
+    return super.range;
+  }
+
+  get rangedDamage(): number {
+    const ranged = this.slots.ranged;
+    if (ranged) {
+      return ranged.damage;
+    }
+    return super.rangedDamage;
+  }
+
+  get rangedAttackSpeed(): number {
+    const ranged = this.slots.ranged;
+    if (ranged) {
+      return ranged.speed;
+    }
+    return super.rangedAttackSpeed;
+  }
+  //
 
   act(game: Game) {
     this.startTurn(game);
@@ -146,7 +203,5 @@ export function makePlayer(id: string) {
     y: 1,
     z: 1, // items, actors, player, fx
     kind,
-    health: kind.health || 10,
-    damage: kind.damage || 2,
   });
 }

@@ -44,17 +44,11 @@ export class Game {
   hordes: Record<string, HORDE.Horde>;
 
   constructor(opts: GameOpts) {
-    this.player = ACTOR.makePlayer("player");
     this.app = opts.app || null;
     this.scene = null;
     this.level = null;
     this.depth = 0;
     this.scheduler = new GWU.scheduler.Scheduler();
-    this.actors = ACTOR.kinds;
-    this.items = ITEM.kinds;
-    this.hordes = HORDE.hordes;
-
-    this.inputQueue = new GWU.app.Queue();
 
     this.seed = opts.seed || GWU.random.number(100000);
     console.log("GAME, seed=", this.seed);
@@ -68,6 +62,16 @@ export class Game {
       this.seeds.push(levelSeed);
       console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
     }
+
+    // Why??
+    this.actors = ACTOR.kinds;
+    this.items = ITEM.kinds;
+    this.hordes = HORDE.hordes;
+    //
+
+    this.player = ACTOR.makePlayer("player");
+
+    this.inputQueue = new GWU.app.Queue();
 
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);

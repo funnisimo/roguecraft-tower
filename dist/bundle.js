@@ -1657,9 +1657,9 @@
       root = _root;
 
   /* Built-in method references that are verified to be native. */
-  var Map$1 = getNative$1(root, 'Map');
+  var Map$1$1 = getNative$1(root, 'Map');
 
-  var _Map = Map$1;
+  var _Map = Map$1$1;
 
   var Hash = _Hash,
       ListCache = _ListCache,
@@ -14000,133 +14000,15 @@ void main() {
       };
   }
 
-  const kinds$1 = {};
-  function install$4(cfg) {
-      if (typeof cfg.speed === "number") {
-          cfg.speed = [cfg.speed];
-      }
-      if (typeof cfg.damage === "number") {
-          cfg.damage = [cfg.damage];
-      }
-      const kind = Object.assign({
-          ch: "!",
-          fg: "white",
-          //   bump: ["attack"],
-          on: {},
-          frequency: 10,
-          speed: [100],
-          damage: [0],
-      }, cfg);
-      // add damage as necessary
-      while (kind.speed.length > kind.damage.length) {
-          kind.damage.push(kind.damage[0]);
-      }
-      kind.damage.length = kind.speed.length; // truncate any extra damage
-      //   if (typeof cfg.bump === "string") {
-      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      //   }
-      kind.frequency = frequency.make(kind.frequency);
-      kinds$1[cfg.id.toLowerCase()] = kind;
-  }
-  function getKind$1(id) {
-      return kinds$1[id.toLowerCase()] || null;
-  }
-
-  class Item extends Obj {
-      constructor(cfg) {
-          super(cfg);
-          this._turnTime = 0;
-          this._level = null;
-          this.kind = cfg.kind;
-          if (!this.kind)
-              throw new Error("Must have kind.");
-          this.data = {};
-          this.on("add", (level) => {
-              this._level = level;
-          });
-          this.on("remove", (level) => {
-              this._level = null;
-          });
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-  }
-  function make$3(id, opts) {
-      let kind;
-      if (typeof id === "string") {
-          kind = getKind$1(id);
-          if (!kind)
-              throw new Error("Failed to find item kind - " + id);
-      }
-      else {
-          kind = id;
-      }
-      const config = Object.assign({
-          x: 1,
-          y: 1,
-          z: 1,
-          kind,
-      }, opts);
-      return new Item(config);
-  }
-  function place(level, x, y, id = null) {
-      let newbie;
-      if (id === null) {
-          newbie = random$1(level);
-      }
-      else if (typeof id === "string") {
-          newbie = make$3(id);
-      }
-      else {
-          newbie = id;
-      }
-      if (!newbie)
-          return null;
-      newbie.kind.fg;
-      const game = level.game;
-      game.scene;
-      // const level = level.level;
-      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
-          return !level.blocksMove(i, j) && !level.hasItem(i, j);
-      });
-      if (!locs || locs.length == 0)
-          return false;
-      const loc = game.rng.item(locs);
-      newbie.x = loc[0];
-      newbie.y = loc[1];
-      level.addItem(newbie);
-      return newbie;
-  }
-  function random$1(level) {
-      // pick random kind
-      const allKinds = Object.values(kinds$1);
-      const chances = allKinds.map((k) => k.frequency(level.depth));
-      const index = level.rng.weighted(chances);
-      if (index < 0)
-          return null;
-      const kind = allKinds[index];
-      const item = new Item({ kind });
-      return item;
-  }
-
   // @returns boolean - indicates whether or not the target dies
   function damage(game, target, damage) {
       target.health -= damage.amount || 0;
       if (target.health <= 0) {
-          target.trigger("death");
           // do all of these move to event handlers?
           game.messages.addCombat(`${target.kind.id} dies`);
           game.level.setTile(target.x, target.y, "CORPSE");
+          target.trigger("death");
           game.level.removeActor(target);
-          if (target.kind.dropChance && game.rng.chance(target.kind.dropChance)) {
-              place(game.level, target.x, target.y, null);
-          }
           return true;
       }
       return false;
@@ -14323,12 +14205,16 @@ void main() {
   function fire(game, actor, target = null) {
       const level = game.level;
       const player = game.player;
-      if (!actor.kind.range) {
+      if (!actor.range) {
           game.addMessage("Nothing to fire.");
           return false;
       }
+      if (!actor.ammo) {
+          game.addMessage("No ammo.");
+          return false;
+      }
       if (target) {
-          if (xy.distanceFromTo(actor, target) > actor.kind.range)
+          if (xy.distanceFromTo(actor, target) > actor.range)
               return false;
       }
       else {
@@ -14340,8 +14226,8 @@ void main() {
               if (actor.health <= 0)
                   return false;
               const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
-              if (dist > actor.kind.range) {
-                  console.log("too far - %f/%d - %s", dist, actor.kind.range, a.kind.id);
+              if (dist > actor.range) {
+                  console.log("too far - %f/%d - %s", dist, actor.range, a.kind.id);
                   return false;
               }
               console.log("checking fov...");
@@ -14372,11 +14258,11 @@ void main() {
                   },
               });
               // TODO - FOV highlights cells we can't fire into...
-              fov.calculate(actor.x, actor.y, actor.kind.range - 0.9, (x, y) => {
+              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
                   flash(game, x, y, "dark_teal", 125);
               });
               // FX.flash(game, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
               return true; // did something
           }
           else if (targets.length > 1) {
@@ -14385,7 +14271,7 @@ void main() {
                   .once("stop", (result) => {
                   if (!result) {
                       flash(game, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
                   }
                   else {
                       fire(game, actor, result);
@@ -14404,17 +14290,18 @@ void main() {
       }
       // we have an actor and a target
       // Does this move to an event handler?  'damage', { amount: #, type: string }
+      actor.ammo -= 1;
       projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
           if (!ok) {
               flash(game, xy.x, xy.y, "orange", 150);
           }
           else {
               flash(game, xy.x, xy.y, "red", 150);
-              damage(game, target, { amount: actor.kind.rangedDamage });
-              game.messages.addCombat(`${actor.kind.id} shoots ${target.kind.id}#{red [${actor.kind.rangedDamage}]}`);
+              game.messages.addCombat(`${actor.kind.id} shoots ${target.kind.id}#{red [${actor.rangedDamage}]}`);
+              damage(game, target, { amount: actor.rangedDamage });
           }
       });
-      game.endTurn(actor, actor.kind.rangedAttackSpeed);
+      game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
   installBump("fire", fire);
@@ -14423,17 +14310,20 @@ void main() {
       // if player can't see actor then actor can't see player!
       if (!player.isInFov(actor.x, actor.y))
           return false;
+      if (!actor.ammo)
+          return false;
+      actor.ammo -= 1;
       projectile(game, actor, game.player, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
           if (!ok) {
               flash(game, xy.x, xy.y, "orange", 150);
           }
           else {
               flash(game, xy.x, xy.y, "red", 150);
-              damage(game, player, { amount: actor.kind.rangedDamage });
-              game.messages.addCombat(`${actor.kind.id} shoots ${player.kind.id}#{red [${actor.kind.rangedDamage}]}`);
+              game.messages.addCombat(`${actor.kind.id} shoots ${player.kind.id}#{red [${actor.rangedDamage}]}`);
+              damage(game, player, { amount: actor.rangedDamage });
           }
       });
-      game.endTurn(actor, actor.kind.rangedAttackSpeed);
+      game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
   function pickup(game, actor) {
@@ -14490,8 +14380,8 @@ void main() {
       return idle(game, actor);
   }
 
-  const kinds = {};
-  function install$3(cfg) {
+  const kinds$1 = {};
+  function install$4(cfg) {
       const kind = Object.assign({
           health: 10,
           notice: 10,
@@ -14509,6 +14399,7 @@ void main() {
           rangedAttackSpeed: 0,
           dropChance: 0,
           drop: [],
+          slots: new Map(),
       }, cfg);
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -14532,10 +14423,174 @@ void main() {
       if (kind.dropChance == 0 && kind.drop.length > 0) {
           kind.dropChance = 100;
       }
+      kinds$1[cfg.id.toLowerCase()] = kind;
+  }
+  function getKind$1(id) {
+      return kinds$1[id.toLowerCase()] || null;
+  }
+
+  const kinds = {};
+  function install$3(cfg) {
+      if (typeof cfg.speed === "number") {
+          cfg.speed = [cfg.speed];
+      }
+      if (typeof cfg.damage === "number") {
+          cfg.damage = [cfg.damage];
+      }
+      const kind = Object.assign({
+          ch: "!",
+          fg: "white",
+          //   bump: ["attack"],
+          on: {},
+          frequency: 10,
+          speed: [100],
+          damage: [0],
+          range: 0,
+          defense: 0,
+          slot: null,
+          tags: [],
+      }, cfg);
+      // add damage as necessary
+      while (kind.speed.length > kind.damage.length) {
+          kind.damage.push(kind.damage[0]);
+      }
+      kind.damage.length = kind.speed.length; // truncate any extra damage
+      if (typeof cfg.tags == "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      //   if (typeof cfg.bump === "string") {
+      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      //   }
+      kind.frequency = frequency.make(kind.frequency);
+      if (kind.slot === null) {
+          if (kind.range > 0) {
+              kind.slot = "ranged";
+          }
+          else if (kind.damage.length > 0 && kind.damage[0] > 0) {
+              kind.slot = "melee";
+          }
+          else if (kind.defense > 0) {
+              kind.slot = "armor";
+          }
+      }
       kinds[cfg.id.toLowerCase()] = kind;
   }
   function getKind(id) {
       return kinds[id.toLowerCase()] || null;
+  }
+
+  class Item extends Obj {
+      constructor(cfg) {
+          super(cfg);
+          this._turnTime = 0;
+          this._level = null;
+          this.kind = cfg.kind;
+          if (!this.kind)
+              throw new Error("Must have kind.");
+          this.data = {};
+          this.power = cfg.power || 1;
+          this.on("add", (level) => {
+              this._level = level;
+          });
+          this.on("remove", (level) => {
+              this._level = null;
+          });
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      get damage() {
+          // TODO - scale with power
+          return this.kind.damage[0];
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get speed() {
+          return this.kind.speed[0];
+      }
+      get defense() {
+          // TODO - scale with power
+          return this.kind.defense;
+      }
+      get slot() {
+          return this.kind.slot;
+      }
+  }
+  function make$3(id, opts) {
+      let kind;
+      if (typeof id === "string") {
+          kind = getKind(id);
+          if (!kind)
+              throw new Error("Failed to find item kind - " + id);
+      }
+      else {
+          kind = id;
+      }
+      const config = Object.assign({
+          x: 1,
+          y: 1,
+          z: 1,
+          kind,
+      }, opts);
+      return new Item(config);
+  }
+  function place(level, x, y, id = null) {
+      let newbie;
+      if (id === null) {
+          newbie = random$1(level, "DROP"); // TODO - #DROP
+      }
+      else if (typeof id === "string") {
+          newbie = make$3(id);
+      }
+      else {
+          newbie = id;
+      }
+      if (!newbie)
+          return null;
+      newbie.kind.fg;
+      const game = level.game;
+      game.scene;
+      // const level = level.level;
+      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
+          return !level.blocksMove(i, j) && !level.hasItem(i, j);
+      });
+      if (!locs || locs.length == 0)
+          return false;
+      const loc = game.rng.item(locs);
+      newbie.x = loc[0];
+      newbie.y = loc[1];
+      level.addItem(newbie);
+      return newbie;
+  }
+  function random$1(level, match = null) {
+      // pick random kind
+      let allKinds = Object.values(kinds);
+      if (typeof match == "string") {
+          let matches = match.split(/[|,]/).map((v) => v.trim());
+          allKinds = allKinds.filter((kind) => {
+              return matches.every((m) => {
+                  if (m[0] == "!") {
+                      return !kind.tags.includes(m.substring(1));
+                  }
+                  else {
+                      return kind.tags.includes(m);
+                  }
+              });
+          });
+      }
+      const chances = allKinds.map((k) => k.frequency(level.depth));
+      const index = level.rng.weighted(chances);
+      if (index < 0)
+          return null;
+      const kind = allKinds[index];
+      const item = new Item({ kind });
+      return item;
   }
 
   class Actor extends Obj {
@@ -14549,9 +14604,9 @@ void main() {
               throw new Error("Must have kind.");
           this.kind.moveSpeed = this.kind.moveSpeed || 100;
           this.data = {};
-          this.health = this.kind.health || 0;
-          this.damage = this.kind.damage || 0;
-          this.ammo = this.kind.ammo || 0;
+          this.power = cfg.power || 1;
+          this.health = this.kind.health || 0; // TODO - scale with power?
+          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
           this.on("add", (level) => {
               level.game.scheduler.push(this, this.kind.moveSpeed);
               this._level = level;
@@ -14568,12 +14623,39 @@ void main() {
               // console.groupEnd();
               // console.groupEnd();
           });
+          this.on("death", () => {
+              if (this.kind.dropChance &&
+                  this._level.rng.chance(this.kind.dropChance)) {
+                  place(this._level, this.x, this.y, null);
+              }
+          });
           Object.entries(this.kind.on).forEach(([key, value]) => {
               if (!value)
                   return;
               this.on(key, value);
           });
       }
+      // attributes
+      get damage() {
+          // TODO - scale with power
+          return this.kind.damage || 0;
+      }
+      get attackSpeed() {
+          return this.kind.attackSpeed;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get rangedDamage() {
+          return this.kind.rangedDamage;
+      }
+      get rangedAttackSpeed() {
+          return this.kind.rangedAttackSpeed;
+      }
+      get moveSpeed() {
+          return this.kind.moveSpeed;
+      }
+      //
       startTurn(game) {
           this._turnTime = 0;
           this.trigger("start", game);
@@ -14631,7 +14713,7 @@ void main() {
   function make$2(id, opts) {
       let kind;
       if (typeof id === "string") {
-          kind = getKind(id);
+          kind = getKind$1(id);
           if (!kind)
               throw new Error("Failed to find actor kind - " + id);
       }
@@ -14681,6 +14763,7 @@ void main() {
           this.fov = null;
           this.goalPath = null;
           this.followPath = false;
+          this.slots = {};
           this.on("add", (level) => {
               this._level = level;
               this.updateMapToMe();
@@ -14698,7 +14781,55 @@ void main() {
               }
               this.clearGoal();
           });
+          // Need items in slots....
+          Object.entries(cfg.kind.slots).forEach(([slot, id]) => {
+              const item = make$3(id);
+              if (item === null) {
+                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
+              }
+              else {
+                  this.slots[slot] = item;
+                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
+              }
+          });
       }
+      // attributes
+      get damage() {
+          const melee = this.slots.melee;
+          if (melee) {
+              return melee.damage;
+          }
+          return super.damage;
+      }
+      get attackSpeed() {
+          const melee = this.slots.melee;
+          if (melee) {
+              return melee.speed;
+          }
+          return super.attackSpeed;
+      }
+      get range() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.range;
+          }
+          return super.range;
+      }
+      get rangedDamage() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.damage;
+          }
+          return super.rangedDamage;
+      }
+      get rangedAttackSpeed() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.speed;
+          }
+          return super.rangedAttackSpeed;
+      }
+      //
       act(game) {
           this.startTurn(game);
           if (this.goalPath && this.followPath && this.goalPath.length) {
@@ -14781,7 +14912,7 @@ void main() {
       }
   }
   function makePlayer(id) {
-      const kind = getKind(id);
+      const kind = getKind$1(id);
       if (!kind)
           throw new Error("Failed to find actor kind - " + id);
       return new Player({
@@ -14789,8 +14920,6 @@ void main() {
           y: 1,
           z: 1,
           kind,
-          health: kind.health || 10,
-          damage: kind.damage || 2,
       });
   }
 
@@ -18982,7 +19111,7 @@ void main() {
           return leader;
       }
       _spawnLeader(map, x, y, opts) {
-          const leaderKind = getKind(this.leader);
+          const leaderKind = getKind$1(this.leader);
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
@@ -19038,7 +19167,7 @@ void main() {
           return count;
       }
       _spawnMember(kindId, map, leader, opts) {
-          const kind = getKind(kindId);
+          const kind = getKind$1(kindId);
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
@@ -19749,16 +19878,11 @@ void main() {
   class Game {
       constructor(opts) {
           this.needInput = false;
-          this.player = makePlayer("player");
           this.app = opts.app || null;
           this.scene = null;
           this.level = null;
           this.depth = 0;
           this.scheduler = new scheduler.Scheduler();
-          this.actors = kinds;
-          this.items = kinds$1;
-          this.hordes = hordes;
-          this.inputQueue = new index.Queue();
           this.seed = opts.seed || random$2.number(100000);
           console.log("GAME, seed=", this.seed);
           this.rng = rng.make(this.seed);
@@ -19769,6 +19893,13 @@ void main() {
               this.seeds.push(levelSeed);
               console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
           }
+          // Why??
+          this.actors = kinds$1;
+          this.items = kinds;
+          this.hordes = hordes;
+          //
+          this.player = makePlayer("player");
+          this.inputQueue = new index.Queue();
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
           // TODO - Get these as parameters...
@@ -20045,7 +20176,7 @@ void main() {
       return widget;
   }
 
-  class Map extends index.Widget {
+  class Map$1 extends index.Widget {
       constructor(opts) {
           super(opts);
           this._focus = [-1, -1];
@@ -20084,7 +20215,7 @@ void main() {
       }
   }
   function map(scene, width, height) {
-      const widget = new Map({
+      const widget = new Map$1({
           id: "MAP",
           tag: "map",
           x: 0,
@@ -20322,7 +20453,46 @@ void main() {
           this.bounds.width = this._text.bounds.width + 2;
       }
       showPlayer(player) {
-          this.showActor(player);
+          let text = player.kind.id + "\n";
+          text += "Health: " + player.health + "/" + player.kind.health + "\n";
+          text += "Moves : " + player.kind.moveSpeed + "\n";
+          const melee = player.slots.melee;
+          if (melee) {
+              // TODO - Add Hero weapons
+              text += "Melee : " + melee.kind.id + "\n";
+              text += "      : damage=" + player.damage + "\n";
+              text += "      : speed =" + player.attackSpeed + "\n";
+          }
+          else if (player.kind.damage > 0) {
+              // TODO - Add Hero weapons
+              text += "Melee : damage=" + player.damage + "\n";
+              text += "        speed =" + player.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          const ranged = player.slots.ranged;
+          if (ranged) {
+              text += "Ranged: " + ranged.kind.id + "\n";
+              text += "      : damage=" + player.rangedDamage + "\n";
+              text += "      : range =" + player.range + "\n";
+              text += "      : speed =" + player.rangedAttackSpeed + "\n";
+              text += "      : ammo  =" + player.ammo + "\n";
+          }
+          else if (player.kind.range > 0) {
+              // TODO - Add Hero weapons
+              // TODO - Add Ammo
+              text += "Ranged: damage=" + player.rangedDamage + "\n";
+              text += "      : speed =" + player.rangedAttackSpeed + "\n";
+              text += "      : range =" + player.range + "\n";
+              text += "      : ammo  =" + player.ammo + "\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
       }
   }
   function details(scene, width, height) {
@@ -20720,50 +20890,52 @@ void main() {
       }
   }
 
-  install$3({
+  install$4({
       id: "Player",
       ch: "@",
       fg: "white",
       bg: -1,
       moveSpeed: 100,
       health: 100,
-      damage: 10,
-      attackSpeed: 100,
-      rangedDamage: 3,
-      range: 10,
-      rangedAttackSpeed: 100,
+      ammo: 20,
+      // damage: 10,
+      // attackSpeed: 100,
+      // rangedDamage: 3,
+      // range: 10,
+      // rangedAttackSpeed: 100,
+      slots: {
+          ranged: "SHORTBOW",
+          melee: "DAGGER",
+      },
   });
-  install$3({
+  install$4({
       id: "ZOMBIE",
       ch: "z",
       fg: "green",
       moveSpeed: 200,
       health: 6,
       damage: 8,
-      // attackSpeed: 200
       dropChance: 100,
   });
-  install$3({
+  install$4({
       id: "ARMOR_ZOMBIE",
       ch: "Z",
       fg: "green",
       moveSpeed: 200,
       health: 25,
       damage: 10,
-      // attackSpeed: 200
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "ARMOR_ZOMBIE_2",
       ch: "Z",
       fg: "green",
       moveSpeed: 200,
       health: 50,
       damage: 12,
-      // attackSpeed: 200
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "Vindicator",
       ch: "v",
       fg: "blue",
@@ -20771,11 +20943,11 @@ void main() {
       health: 11,
       damage: 9,
       // chargeSpeed: 75
-      // chargeDistance: 10
+      // chargeDistance: 6
       // attackSpeed: 150
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "SKELETON",
       ch: "s",
       fg: "white",
@@ -20789,7 +20961,7 @@ void main() {
       // notice: 10
       dropChance: 100,
   });
-  install$3({
+  install$4({
       id: "ARMOR_SKELETON",
       ch: "S",
       fg: "white",
@@ -20803,7 +20975,7 @@ void main() {
       // notice: 10
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "ARMOR_SKELETON_2",
       ch: "S",
       fg: "white",
@@ -20910,20 +21082,23 @@ void main() {
       frequency: (l) => 2 * l,
   });
 
-  install$4({
+  install$3({
       id: "HEALTH_POTION",
       ch: "!",
       fg: "pink",
       on: {
           pickup(game, actor) {
+              // TODO - vary the messages
+              // TODO - Different healing amounts?
               actor.health = actor.kind.health;
               game.addMessage("You drink the potion.");
               game.level.removeItem(this);
               return true;
           },
       },
+      tags: "DROP",
   });
-  install$4({
+  install$3({
       id: "ARROWS",
       ch: "|",
       fg: "yellow",
@@ -20932,11 +21107,58 @@ void main() {
               //   actor.health = actor.kind.health;
               game.addMessage("You pickup some arrows.");
               game.level.removeItem(this);
-              // TODO - add ammo to player
+              // TODO - adjust for this.power?
               actor.ammo += 10;
               return true;
           },
       },
+      tags: "DROP",
+  });
+
+  install$3({
+      id: "DAGGER",
+      ch: "/",
+      fg: "yellow",
+      speed: 60,
+      damage: 5, // dps = 5 * 100 / 60 = 8.3
+  });
+  install$3({
+      id: "SWORD",
+      ch: "/",
+      fg: "yellow",
+      speed: 100,
+      damage: 10, // dps = 10 * 100 / 100 = 10
+  });
+  install$3({
+      id: "CUTLASS",
+      ch: "/",
+      fg: "yellow",
+      speed: [100, 100, 150],
+      damage: [9, 9, 18], // dps = 9/9/12 [net=10]
+  });
+  install$3({
+      id: "SHORTBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 60,
+      damage: 5,
+      range: 10, // TODO - shrink to ?6?
+  });
+  install$3({
+      id: "BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 100,
+      damage: 10,
+      range: 10,
+  });
+  install$3({
+      id: "LONGBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 150,
+      damage: 24,
+      range: 15,
   });
 
   function start() {

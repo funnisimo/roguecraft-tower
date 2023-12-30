@@ -15,15 +15,11 @@ export function damage(
   target.health -= damage.amount || 0;
 
   if (target.health <= 0) {
-    target.trigger("death");
     // do all of these move to event handlers?
     game.messages.addCombat(`${target.kind.id} dies`);
     game.level!.setTile(target.x, target.y, "CORPSE");
+    target.trigger("death");
     game.level!.removeActor(target);
-
-    if (target.kind.dropChance && game.rng.chance(target.kind.dropChance)) {
-      ITEM.place(game.level!, target.x, target.y, null);
-    }
     return true;
   }
 

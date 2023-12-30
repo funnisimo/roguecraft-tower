@@ -9,12 +9,11 @@ import * as AI from "./ai";
 import * as ACTIONS from "../game/actions";
 
 import { ActorKind, getKind } from "./kind";
+import { Item, place } from "../item";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
-  health?: number;
-  damage?: number;
-  ammo?: number;
+  power?: number;
 }
 
 export class Actor extends Obj {
@@ -23,8 +22,8 @@ export class Actor extends Obj {
   kind: ActorKind;
   data: Record<string, any>;
   health: number;
-  damage: number;
   ammo: number;
+  power: number;
 
   leader: Actor | null = null;
 
@@ -35,9 +34,9 @@ export class Actor extends Obj {
 
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
     this.data = {};
-    this.health = this.kind.health || 0;
-    this.damage = this.kind.damage || 0;
-    this.ammo = this.kind.ammo || 0;
+    this.power = cfg.power || 1;
+    this.health = this.kind.health || 0; // TODO - scale with power?
+    this.ammo = this.kind.ammo || 0; // TODO - scale with power?
 
     this.on("add", (level: Level) => {
       level.game!.scheduler.push(this, this.kind.moveSpeed);
@@ -55,12 +54,47 @@ export class Actor extends Obj {
       // console.groupEnd();
       // console.groupEnd();
     });
+    this.on("death", () => {
+      if (
+        this.kind.dropChance &&
+        this._level!.rng.chance(this.kind.dropChance)
+      ) {
+        place(this._level!, this.x, this.y, null);
+      }
+    });
 
     Object.entries(this.kind.on).forEach(([key, value]) => {
       if (!value) return;
       this.on(key, value);
     });
   }
+
+  // attributes
+  get damage(): number {
+    // TODO - scale with power
+    return this.kind.damage || 0;
+  }
+
+  get attackSpeed(): number {
+    return this.kind.attackSpeed;
+  }
+
+  get range(): number {
+    return this.kind.range;
+  }
+
+  get rangedDamage(): number {
+    return this.kind.rangedDamage;
+  }
+
+  get rangedAttackSpeed(): number {
+    return this.kind.rangedAttackSpeed;
+  }
+
+  get moveSpeed(): number {
+    return this.kind.moveSpeed;
+  }
+  //
 
   startTurn(game: Game) {
     this._turnTime = 0;

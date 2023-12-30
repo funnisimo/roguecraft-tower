@@ -259,13 +259,17 @@ export function fire(
   const level = game.level!;
   const player = game.player;
 
-  if (!actor.kind.range) {
+  if (!actor.range) {
     game.addMessage("Nothing to fire.");
+    return false;
+  }
+  if (!actor.ammo) {
+    game.addMessage("No ammo.");
     return false;
   }
 
   if (target) {
-    if (GWU.xy.distanceFromTo(actor, target) > actor.kind.range) return false;
+    if (GWU.xy.distanceFromTo(actor, target) > actor.range) return false;
   } else {
     // todo - long reach melee -- spear, etc...
 
@@ -274,13 +278,8 @@ export function fire(
         if (a === actor) return false;
         if (actor.health <= 0) return false;
         const dist = GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y);
-        if (dist > actor.kind.range) {
-          console.log(
-            "too far - %f/%d - %s",
-            dist,
-            actor.kind.range,
-            a.kind.id
-          );
+        if (dist > actor.range) {
+          console.log("too far - %f/%d - %s", dist, actor.range, a.kind.id);
           return false;
         }
         console.log("checking fov...");
@@ -319,13 +318,13 @@ export function fire(
       });
 
       // TODO - FOV highlights cells we can't fire into...
-      fov.calculate(actor.x, actor.y, actor.kind.range - 0.9, (x, y) => {
+      fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
         FX.flash(game, x, y, "dark_teal", 125);
       });
 
       // FX.flash(game, actor.x, actor.y, "orange", 150);
 
-      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
       return true; // did something
     } else if (targets.length > 1) {
       game
@@ -333,7 +332,7 @@ export function fire(
         .once("stop", (result: Actor | null) => {
           if (!result) {
             FX.flash(game, actor.x, actor.y, "orange", 150);
-            game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+            game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
           } else {
             fire(game, actor, result);
           }
@@ -354,24 +353,25 @@ export function fire(
   // we have an actor and a target
   // Does this move to an event handler?  'damage', { amount: #, type: string }
 
+  actor.ammo -= 1;
+
   FX.projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then(
     (xy, ok) => {
       if (!ok) {
         FX.flash(game, xy.x, xy.y, "orange", 150);
       } else {
         FX.flash(game, xy.x, xy.y, "red", 150);
-        EFFECT.damage(game, target!, { amount: actor.kind.rangedDamage });
-
         game.messages.addCombat(
           `${actor.kind.id} shoots ${target!.kind.id}#{red [${
-            actor.kind.rangedDamage
+            actor.rangedDamage
           }]}`
         );
+        EFFECT.damage(game, target!, { amount: actor.rangedDamage });
       }
     }
   );
 
-  game.endTurn(actor, actor.kind.rangedAttackSpeed);
+  game.endTurn(actor, actor.rangedAttackSpeed);
   return true;
 }
 
@@ -382,6 +382,8 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
 
   // if player can't see actor then actor can't see player!
   if (!player.isInFov(actor.x, actor.y)) return false;
+  if (!actor.ammo) return false;
+  actor.ammo -= 1;
 
   FX.projectile(
     game,
@@ -394,15 +396,14 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
       FX.flash(game, xy.x, xy.y, "orange", 150);
     } else {
       FX.flash(game, xy.x, xy.y, "red", 150);
-      EFFECT.damage(game, player, { amount: actor.kind.rangedDamage });
-
       game.messages.addCombat(
-        `${actor.kind.id} shoots ${player.kind.id}#{red [${actor.kind.rangedDamage}]}`
+        `${actor.kind.id} shoots ${player.kind.id}#{red [${actor.rangedDamage}]}`
       );
+      EFFECT.damage(game, player, { amount: actor.rangedDamage });
     }
   });
 
-  game.endTurn(actor, actor.kind.rangedAttackSpeed);
+  game.endTurn(actor, actor.rangedAttackSpeed);
   return true;
 }
 
