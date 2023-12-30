@@ -25,6 +25,8 @@ ITEM.install({
       //   actor.health = actor.kind.health;
       game.addMessage("You pickup some arrows.");
       game.level!.removeItem(this);
+      // TODO - add ammo to player
+      actor.ammo += 10;
       return true;
     },
   },

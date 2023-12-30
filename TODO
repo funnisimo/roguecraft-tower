@@ -1,0 +1,11 @@
+Items:
+[] Drop Config
+[]
+
+Levels:
+[] Pick items after level creation
+
+Player:
+- Inventory Items
+  [] Melee
+  [] Ranged

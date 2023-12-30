@@ -14503,15 +14503,30 @@ void main() {
           on: {},
           range: 0,
           rangedDamage: 0,
+          ammo: 0,
           tooClose: 0,
           rangedAttackSpeed: 0,
           dropChance: 0,
+          drop: [],
       }, cfg);
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
       }
       kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
       kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.attackSpeed;
+      if (kind.ammo == 0 && kind.rangedDamage > 0) {
+          kind.ammo = 10; // You get 10 shots by default
+      }
+      // TODO - drop = 50   (chance)
+      //      - drop = ARROWS (specific item)
+      //      - drop = { ARROWS: 50, HEALTH_POTION: 20} (50% drop ARROWS, 20% drop HEALTH)
+      //      - drop = { chance: 50, items: [ARROWS] } (50% chance ARROWS)
+      //      - drop = { chance: 50, items: [{ARROWS: 50, HEALTH_POTION: 20}]} (50% chance of dropping arrows (5/7) or health potion (2/7))
+      // TODO - Need ability to drop from a group of items
+      // TODO - Need ability to setup reusable drop configs
+      if (kind.dropChance == 0 && kind.drop.length > 0) {
+          kind.dropChance = 100;
+      }
       kinds[cfg.id.toLowerCase()] = kind;
   }
   function getKind(id) {
@@ -14531,6 +14546,7 @@ void main() {
           this.data = {};
           this.health = this.kind.health || 0;
           this.damage = this.kind.damage || 0;
+          this.ammo = this.kind.ammo || 0;
           this.on("add", (level) => {
               level.game.scheduler.push(this, this.kind.moveSpeed);
               this._level = level;
@@ -20288,6 +20304,9 @@ void main() {
                       "\n" +
                       "      : range =" +
                       actor.kind.range +
+                      "\n" +
+                      "      : ammo=" +
+                      actor.ammo +
                       "\n";
           }
           else {
@@ -20717,7 +20736,7 @@ void main() {
       health: 6,
       damage: 8,
       // attackSpeed: 200
-      dropChance: 10,
+      dropChance: 100,
   });
   install$3({
       id: "ARMOR_ZOMBIE",
@@ -20763,7 +20782,7 @@ void main() {
       tooClose: 4,
       rangedAttackSpeed: 200,
       // notice: 10
-      dropChance: 10,
+      dropChance: 100,
   });
   install$3({
       id: "ARMOR_SKELETON",
@@ -20908,6 +20927,8 @@ void main() {
               //   actor.health = actor.kind.health;
               game.addMessage("You pickup some arrows.");
               game.level.removeItem(this);
+              // TODO - add ammo to player
+              actor.ammo += 10;
               return true;
           },
       },

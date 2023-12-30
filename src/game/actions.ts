@@ -285,8 +285,8 @@ export function fire(
         }
         console.log("checking fov...");
 
+        // HACK - for actor.canSee(a)
         if (!player.isInFov(actor)) {
-          // hack for actor.canSee(a)
           console.log("actor not visible");
           return false;
         }
@@ -294,6 +294,8 @@ export function fire(
           console.log("target not visible");
           return false;
         }
+        // end hack
+
         console.log("ok - ", a.kind.id);
         return true;
       })

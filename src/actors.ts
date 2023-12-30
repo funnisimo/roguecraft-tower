@@ -25,7 +25,7 @@ ACTOR.install({
   health: 6,
   damage: 8,
   // attackSpeed: 200
-  dropChance: 10,
+  dropChance: 100,
 });
 
 ACTOR.install({
@@ -75,7 +75,7 @@ ACTOR.install({
   tooClose: 4,
   rangedAttackSpeed: 200,
   // notice: 10
-  dropChance: 10,
+  dropChance: 100,
 });
 
 ACTOR.install({

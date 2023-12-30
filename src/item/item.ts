@@ -44,7 +44,7 @@ export function make(id: string | ItemKind, opts?: Partial<ItemConfig>) {
 
   if (typeof id === "string") {
     kind = getKind(id);
-    if (!kind) throw new Error("Failed to find actor kind - " + id);
+    if (!kind) throw new Error("Failed to find item kind - " + id);
   } else {
     kind = id;
   }

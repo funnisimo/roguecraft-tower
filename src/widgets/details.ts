@@ -45,6 +45,9 @@ export class Details extends GWU.widget.Dialog {
         "\n" +
         "      : range =" +
         actor.kind.range +
+        "\n" +
+        "      : ammo=" +
+        actor.ammo +
         "\n";
     } else {
       text += "Ranged: None";

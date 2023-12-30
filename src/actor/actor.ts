@@ -14,6 +14,7 @@ export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
   health?: number;
   damage?: number;
+  ammo?: number;
 }
 
 export class Actor extends Obj {
@@ -23,6 +24,7 @@ export class Actor extends Obj {
   data: Record<string, any>;
   health: number;
   damage: number;
+  ammo: number;
 
   leader: Actor | null = null;
 
@@ -35,6 +37,7 @@ export class Actor extends Obj {
     this.data = {};
     this.health = this.kind.health || 0;
     this.damage = this.kind.damage || 0;
+    this.ammo = this.kind.ammo || 0;
 
     this.on("add", (level: Level) => {
       level.game!.scheduler.push(this, this.kind.moveSpeed);

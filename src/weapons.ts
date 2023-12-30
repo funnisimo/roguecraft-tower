@@ -7,7 +7,7 @@ ITEM.install({
   ch: "/",
   fg: "yellow",
   speed: 60,
-  damage: 5,
+  damage: 5, // dps = 5 * 100 / 60 = 8.3
 });
 
 ITEM.install({
@@ -15,7 +15,7 @@ ITEM.install({
   ch: "/",
   fg: "yellow",
   speed: 100,
-  damage: 10,
+  damage: 10, // dps = 10 * 100 / 100 = 10
 });
 
 ITEM.install({
@@ -23,5 +23,5 @@ ITEM.install({
   ch: "/",
   fg: "yellow",
   speed: [100, 100, 150],
-  damage: [9, 9, 17],
+  damage: [9, 9, 18], // dps = 9/9/12 [net=10]
 });
