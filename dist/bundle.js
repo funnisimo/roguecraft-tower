@@ -14321,7 +14321,7 @@ void main() {
   }
   installBump("attack", attack);
   function fire(game, actor, target = null) {
-      game.level;
+      const level = game.level;
       const player = game.player;
       if (!actor.kind.range) {
           game.addMessage("Nothing to fire.");
@@ -14334,16 +14334,47 @@ void main() {
       else {
           // todo - long reach melee -- spear, etc...
           const targets = game
-              .level.actors.filter((a) => a !== actor &&
-              actor.health > 0 &&
-              xy.distanceBetween(a.x, a.y, actor.x, actor.y) <=
-                  actor.kind.range &&
-              player.isInFov(actor) && // hack for actor.canSee(a)
-              player.isInFov(a))
+              .level.actors.filter((a) => {
+              if (a === actor)
+                  return false;
+              if (actor.health <= 0)
+                  return false;
+              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
+              if (dist > actor.kind.range) {
+                  console.log("too far - %f/%d - %s", dist, actor.kind.range, a.kind.id);
+                  return false;
+              }
+              console.log("checking fov...");
+              if (!player.isInFov(actor)) {
+                  // hack for actor.canSee(a)
+                  console.log("actor not visible");
+                  return false;
+              }
+              if (!player.isInFov(a)) {
+                  console.log("target not visible");
+                  return false;
+              }
+              console.log("ok - ", a.kind.id);
+              return true;
+          })
               .sort((a, b) => xy.distanceFromTo(player, a) - xy.distanceFromTo(player, b));
           if (targets.length == 0) {
               game.addMessage("no targets.");
-              flash(game, actor.x, actor.y, "orange", 150);
+              // flash tiles you can fire into
+              const fov = new index$7.FOV({
+                  isBlocked(x, y) {
+                      // TODO - This should be more about visible than move
+                      return actor.moveCost(x, y) >= index$6.BLOCKED;
+                  },
+                  hasXY(x, y) {
+                      return level.hasXY(x, y);
+                  },
+              });
+              // TODO - FOV highlights cells we can't fire into...
+              fov.calculate(actor.x, actor.y, actor.kind.range - 0.9, (x, y) => {
+                  flash(game, x, y, "dark_teal", 125);
+              });
+              // FX.flash(game, actor.x, actor.y, "orange", 150);
               game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
               return true; // did something
           }
@@ -14437,7 +14468,7 @@ void main() {
               return;
       }
       // shoot at player?
-      if (actor.kind.rangedDamage) {
+      if (actor.kind.rangedDamage && distToPlayer <= actor.kind.range) {
           if (fireAtPlayer(game, actor))
               return;
       }
@@ -19736,13 +19767,16 @@ void main() {
               attack(this, this.player);
               this.scene.needsDraw = true;
           });
+          this.events.on("f", (e) => {
+              fire(this, this.player);
+              this.scene.needsDraw = true;
+          });
           this.events.on("g", (e) => {
               pickup(this, this.player);
               this.scene.needsDraw = true;
           });
-          this.events.on("f", (e) => {
-              fire(this, this.player);
-              this.scene.needsDraw = true;
+          this.events.on("i", (e) => {
+              console.log(">> INVENTORY <<");
           });
           this.events.on(" ", (e) => {
               idle(this, this.player);
@@ -20677,7 +20711,7 @@ void main() {
       health: 6,
       damage: 0,
       rangedDamage: 3,
-      range: 10,
+      range: 8,
       tooClose: 4,
       rangedAttackSpeed: 200,
       // notice: 10
@@ -20691,7 +20725,7 @@ void main() {
       health: 25,
       damage: 0,
       rangedDamage: 4,
-      range: 10,
+      range: 9,
       tooClose: 4,
       rangedAttackSpeed: 200,
       // notice: 10

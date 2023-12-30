@@ -91,13 +91,16 @@ export class Game {
       ACTIONS.attack(this, this.player);
       this.scene!.needsDraw = true;
     });
+    this.events.on("f", (e) => {
+      ACTIONS.fire(this, this.player);
+      this.scene!.needsDraw = true;
+    });
     this.events.on("g", (e) => {
       ACTIONS.pickup(this, this.player);
       this.scene!.needsDraw = true;
     });
-    this.events.on("f", (e) => {
-      ACTIONS.fire(this, this.player);
-      this.scene!.needsDraw = true;
+    this.events.on("i", (e) => {
+      console.log(">> INVENTORY <<");
     });
     this.events.on(" ", (e) => {
       ACTIONS.idle(this, this.player);

@@ -270,15 +270,33 @@ export function fire(
     // todo - long reach melee -- spear, etc...
 
     const targets = game
-      .level!.actors.filter(
-        (a) =>
-          a !== actor &&
-          actor.health > 0 &&
-          GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y) <=
-            actor.kind.range &&
-          player.isInFov(actor) && // hack for actor.canSee(a)
-          player.isInFov(a)
-      )
+      .level!.actors.filter((a) => {
+        if (a === actor) return false;
+        if (actor.health <= 0) return false;
+        const dist = GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y);
+        if (dist > actor.kind.range) {
+          console.log(
+            "too far - %f/%d - %s",
+            dist,
+            actor.kind.range,
+            a.kind.id
+          );
+          return false;
+        }
+        console.log("checking fov...");
+
+        if (!player.isInFov(actor)) {
+          // hack for actor.canSee(a)
+          console.log("actor not visible");
+          return false;
+        }
+        if (!player.isInFov(a)) {
+          console.log("target not visible");
+          return false;
+        }
+        console.log("ok - ", a.kind.id);
+        return true;
+      })
       .sort(
         (a, b) =>
           GWU.xy.distanceFromTo(player, a) - GWU.xy.distanceFromTo(player, b)
@@ -286,7 +304,25 @@ export function fire(
 
     if (targets.length == 0) {
       game.addMessage("no targets.");
-      FX.flash(game, actor.x, actor.y, "orange", 150);
+
+      // flash tiles you can fire into
+      const fov = new GWU.fov.FOV({
+        isBlocked(x: number, y: number) {
+          // TODO - This should be more about visible than move
+          return actor.moveCost(x, y) >= GWU.path.BLOCKED;
+        },
+        hasXY(x: number, y: number) {
+          return level.hasXY(x, y);
+        },
+      });
+
+      // TODO - FOV highlights cells we can't fire into...
+      fov.calculate(actor.x, actor.y, actor.kind.range - 0.9, (x, y) => {
+        FX.flash(game, x, y, "dark_teal", 125);
+      });
+
+      // FX.flash(game, actor.x, actor.y, "orange", 150);
+
       game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
       return true; // did something
     } else if (targets.length > 1) {

@@ -32,7 +32,7 @@ export function ai(game: Game, actor: Actor) {
   }
 
   // shoot at player?
-  if (actor.kind.rangedDamage) {
+  if (actor.kind.rangedDamage && distToPlayer <= actor.kind.range) {
     if (ACTIONS.fireAtPlayer(game, actor)) return;
   }
 

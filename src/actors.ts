@@ -71,7 +71,7 @@ ACTOR.install({
   health: 6,
   damage: 0,
   rangedDamage: 3,
-  range: 10,
+  range: 8,
   tooClose: 4,
   rangedAttackSpeed: 200,
   // notice: 10
@@ -86,7 +86,7 @@ ACTOR.install({
   health: 25,
   damage: 0,
   rangedDamage: 4,
-  range: 10,
+  range: 9,
   tooClose: 4,
   rangedAttackSpeed: 200,
   // notice: 10
