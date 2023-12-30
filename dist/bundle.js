@@ -5412,12 +5412,12 @@
           // uses the diagonals
           for (let i = 4; i < 8; ++i) {
               const d = DIRS$2[i];
-              this.castLight(1, 1.0, 0.0, 0, d[0], d[1], 0);
-              this.castLight(1, 1.0, 0.0, d[0], 0, 0, d[1]);
+              this._castLight(1, 1.0, 0.0, 0, d[0], d[1], 0);
+              this._castLight(1, 1.0, 0.0, d[0], 0, 0, d[1]);
           }
       }
       // NOTE: slope starts a 1 and ends at 0.
-      castLight(row, startSlope, endSlope, xx, xy, yx, yy) {
+      _castLight(row, startSlope, endSlope, xx, xy, yx, yy) {
           if (row >= this._maxRadius) {
               this._debug('CAST: row=%d, start=%d, end=%d, row >= maxRadius => cancel', row, startSlope.toFixed(2), endSlope.toFixed(2));
               return;
@@ -5476,13 +5476,13 @@
                       //hit a wall within sight line
                       this._debug('       - blocked ... start:%d, end:%d, nextStart: %d', nextStart.toFixed(2), outerSlope.toFixed(2), innerSlope.toFixed(2));
                       blocked = true;
-                      this.castLight(row + 1, nextStart, outerSlope, xx, xy, yx, yy);
+                      this._castLight(row + 1, nextStart, outerSlope, xx, xy, yx, yy);
                       nextStart = innerSlope;
                   }
               }
           }
           if (!blocked) {
-              this.castLight(row + 1, nextStart, endSlope, xx, xy, yx, yy);
+              this._castLight(row + 1, nextStart, endSlope, xx, xy, yx, yy);
           }
       }
   }
@@ -14062,7 +14062,7 @@ void main() {
       if (typeof id === "string") {
           kind = getKind$1(id);
           if (!kind)
-              throw new Error("Failed to find actor kind - " + id);
+              throw new Error("Failed to find item kind - " + id);
       }
       else {
           kind = id;
@@ -14345,8 +14345,8 @@ void main() {
                   return false;
               }
               console.log("checking fov...");
+              // HACK - for actor.canSee(a)
               if (!player.isInFov(actor)) {
-                  // hack for actor.canSee(a)
                   console.log("actor not visible");
                   return false;
               }
@@ -14354,6 +14354,7 @@ void main() {
                   console.log("target not visible");
                   return false;
               }
+              // end hack
               console.log("ok - ", a.kind.id);
               return true;
           })
@@ -14517,13 +14518,17 @@ void main() {
       if (kind.ammo == 0 && kind.rangedDamage > 0) {
           kind.ammo = 10; // You get 10 shots by default
       }
-      // TODO - drop = 50   (chance)
-      //      - drop = ARROWS (specific item)
-      //      - drop = { ARROWS: 50, HEALTH_POTION: 20} (50% drop ARROWS, 20% drop HEALTH)
-      //      - drop = { chance: 50, items: [ARROWS] } (50% chance ARROWS)
-      //      - drop = { chance: 50, items: [{ARROWS: 50, HEALTH_POTION: 20}]} (50% chance of dropping arrows (5/7) or health potion (2/7))
-      // TODO - Need ability to drop from a group of items
-      // TODO - Need ability to setup reusable drop configs
+      // TODO: Create drop language
+      //      - 50 (drop default treasure 50% of time)
+      //      - ARROWS (always drop arrows)
+      //      - ARROWS@35 (35% drop arrows)
+      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
+      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
+      //      - #TREASURE@50% (50% drop from the TREASURE tag)
+      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
+      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
+      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
+      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
       if (kind.dropChance == 0 && kind.drop.length > 0) {
           kind.dropChance = 100;
       }
