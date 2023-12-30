@@ -35,6 +35,7 @@ export interface KindConfig {
   slots?: { [id: string]: string };
 
   dropChance?: number;
+  dropMatch?: string | string[];
 }
 
 export interface ActorKind {
@@ -64,7 +65,7 @@ export interface ActorKind {
   slots: Map<string, string>;
 
   dropChance: number;
-  drop: string[];
+  dropMatch: string[];
 }
 
 export const kinds: Record<string, ActorKind> = {};
@@ -87,7 +88,7 @@ export function install(cfg: KindConfig) {
       tooClose: 0,
       rangedAttackSpeed: 0,
       dropChance: 0,
-      drop: [],
+      dropMatch: [],
       slots: new Map<string, string>(),
     },
     cfg
@@ -95,6 +96,12 @@ export function install(cfg: KindConfig) {
 
   if (typeof cfg.bump === "string") {
     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+  }
+  if (typeof cfg.dropMatch === "string") {
+    kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
+  }
+  if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
+    kind.dropMatch.push("DROP"); // Default drops
   }
   kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
   kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.attackSpeed;
@@ -113,7 +120,7 @@ export function install(cfg: KindConfig) {
   //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
   //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
   //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
-  if (kind.dropChance == 0 && kind.drop.length > 0) {
+  if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
     kind.dropChance = 100;
   }
 

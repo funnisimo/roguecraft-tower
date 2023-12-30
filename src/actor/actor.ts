@@ -9,7 +9,7 @@ import * as AI from "./ai";
 import * as ACTIONS from "../game/actions";
 
 import { ActorKind, getKind } from "./kind";
-import { Item, place } from "../item";
+import { Item, placeRandom } from "../item";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -59,7 +59,7 @@ export class Actor extends Obj {
         this.kind.dropChance &&
         this._level!.rng.chance(this.kind.dropChance)
       ) {
-        place(this._level!, this.x, this.y, null);
+        placeRandom(this._level!, this.x, this.y, this.kind.dropMatch);
       }
     });
 

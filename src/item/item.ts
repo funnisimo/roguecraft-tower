@@ -98,10 +98,10 @@ export function place(
   x: number,
   y: number,
   id: string | Item | null = null
-) {
+): Item | null {
   let newbie: Item | null;
   if (id === null) {
-    newbie = random(level, "DROP"); // TODO - #DROP
+    newbie = random(level); // TODO - default match?
   } else if (typeof id === "string") {
     newbie = make(id);
   } else {
@@ -119,7 +119,7 @@ export function place(
     return !level.blocksMove(i, j) && !level.hasItem(i, j);
   });
 
-  if (!locs || locs.length == 0) return false;
+  if (!locs || locs.length == 0) return null;
   const loc = game.rng.item(locs);
 
   newbie.x = loc[0];
@@ -128,11 +128,34 @@ export function place(
   return newbie;
 }
 
-export function random(level: Level, match: string | null = null): Item | null {
+export function placeRandom(
+  level: Level,
+  x: number,
+  y: number,
+  match: string | string[] | null = null
+): Item | null {
+  let item = random(level, match);
+  if (!item) {
+    return null;
+  }
+  return place(level, x, y, item);
+}
+
+export function random(
+  level: Level,
+  match: string[] | string | null = null
+): Item | null {
   // pick random kind
   let allKinds = Object.values(kinds);
-  if (typeof match == "string") {
-    let matches = match.split(/[|,]/).map((v) => v.trim());
+  let matches: string[];
+  if (match === null) {
+    matches = [];
+  } else if (typeof match == "string") {
+    matches = match.split(/[|,]/).map((v) => v.trim());
+  } else {
+    matches = match.map((v) => v.trim());
+  }
+  if (matches.length > 0) {
     allKinds = allKinds.filter((kind) => {
       return matches.every((m) => {
         if (m[0] == "!") {
@@ -143,6 +166,7 @@ export function random(level: Level, match: string | null = null): Item | null {
       });
     });
   }
+
   const chances = allKinds.map((k) => k.frequency(level.depth));
   const index = level.rng.weighted(chances);
   if (index < 0) return null;

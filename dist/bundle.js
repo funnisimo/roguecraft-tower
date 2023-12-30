@@ -14398,11 +14398,17 @@ void main() {
           tooClose: 0,
           rangedAttackSpeed: 0,
           dropChance: 0,
-          drop: [],
+          dropMatch: [],
           slots: new Map(),
       }, cfg);
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      }
+      if (typeof cfg.dropMatch === "string") {
+          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
+      }
+      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
+          kind.dropMatch.push("DROP"); // Default drops
       }
       kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
       kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.attackSpeed;
@@ -14420,7 +14426,7 @@ void main() {
       //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
       //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
       //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
-      if (kind.dropChance == 0 && kind.drop.length > 0) {
+      if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
           kind.dropChance = 100;
       }
       kinds$1[cfg.id.toLowerCase()] = kind;
@@ -14543,7 +14549,7 @@ void main() {
   function place(level, x, y, id = null) {
       let newbie;
       if (id === null) {
-          newbie = random$1(level, "DROP"); // TODO - #DROP
+          newbie = random$1(level); // TODO - default match?
       }
       else if (typeof id === "string") {
           newbie = make$3(id);
@@ -14561,18 +14567,34 @@ void main() {
           return !level.blocksMove(i, j) && !level.hasItem(i, j);
       });
       if (!locs || locs.length == 0)
-          return false;
+          return null;
       const loc = game.rng.item(locs);
       newbie.x = loc[0];
       newbie.y = loc[1];
       level.addItem(newbie);
       return newbie;
   }
+  function placeRandom(level, x, y, match = null) {
+      let item = random$1(level, match);
+      if (!item) {
+          return null;
+      }
+      return place(level, x, y, item);
+  }
   function random$1(level, match = null) {
       // pick random kind
       let allKinds = Object.values(kinds);
-      if (typeof match == "string") {
-          let matches = match.split(/[|,]/).map((v) => v.trim());
+      let matches;
+      if (match === null) {
+          matches = [];
+      }
+      else if (typeof match == "string") {
+          matches = match.split(/[|,]/).map((v) => v.trim());
+      }
+      else {
+          matches = match.map((v) => v.trim());
+      }
+      if (matches.length > 0) {
           allKinds = allKinds.filter((kind) => {
               return matches.every((m) => {
                   if (m[0] == "!") {
@@ -14626,7 +14648,7 @@ void main() {
           this.on("death", () => {
               if (this.kind.dropChance &&
                   this._level.rng.chance(this.kind.dropChance)) {
-                  place(this._level, this.x, this.y, null);
+                  placeRandom(this._level, this.x, this.y, this.kind.dropMatch);
               }
           });
           Object.entries(this.kind.on).forEach(([key, value]) => {
