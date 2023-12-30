@@ -36,7 +36,11 @@ export const level = {
       const actor = game.level!.actorAt(loc[0], loc[1]);
       if (actor) {
         details.hidden = false;
-        details.showActor(actor);
+        if (actor === player) {
+          details.showPlayer(player);
+        } else {
+          details.showActor(actor);
+        }
       } else {
         details.hidden = true;
       }
@@ -119,6 +123,13 @@ export const level = {
     // z() {
     //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
     // },
+
+    inventory(this: GWU.app.Scene) {
+      const game = this.data as Game;
+      const player = game.player;
+      const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
+      sidebar.setFocus(player.x, player.y);
+    },
 
     win(this: GWU.app.Scene) {
       const game = this.data as Game;

@@ -13,13 +13,23 @@ export class Sidebar extends GWU.app.Widget {
   }
 
   setFocus(x: number, y: number) {
+    const wasFocus = this._focus.slice() as GWU.xy.Loc;
     this._focus[0] = x;
     this._focus[1] = y;
+    if (!GWU.xy.equals(wasFocus, this._focus)) {
+      this.trigger("focus", this._focus);
+      this.needsDraw = true;
+    }
   }
 
   clearFocus() {
+    const wasFocus = this._focus.slice() as GWU.xy.Loc;
     this._focus[0] = -1;
     this._focus[1] = -1;
+    if (!GWU.xy.equals(wasFocus, this._focus)) {
+      this.trigger("focus", this._focus);
+      this.needsDraw = true;
+    }
   }
 
   drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Player) {
@@ -178,10 +188,10 @@ export class Sidebar extends GWU.app.Widget {
         }
       });
     }
-    if (!GWU.xy.equals(wasFocus, this._focus)) {
-      this.trigger("focus", this._focus);
-      this.needsDraw = true;
-    }
+    // if (!GWU.xy.equals(wasFocus, this._focus)) {
+    //   this.trigger("focus", this._focus);
+    //   this.needsDraw = true;
+    // }
     e.stopPropagation();
   }
 

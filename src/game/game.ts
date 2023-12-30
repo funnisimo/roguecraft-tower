@@ -101,6 +101,9 @@ export class Game {
     });
     this.events.on("i", (e) => {
       console.log(">> INVENTORY <<");
+      // TODO - Set focus to the player so that it shows their info
+      //      - Send event to level scene?
+      this.scene!.trigger("inventory", this);
     });
     this.events.on(" ", (e) => {
       ACTIONS.idle(this, this.player);

@@ -24,8 +24,32 @@ export class Details extends GWU.widget.Dialog {
   showActor(actor: Actor) {
     let text = actor.kind.id + "\n";
     text += "Health: " + actor.health + "/" + actor.kind.health + "\n";
-    text += "Damage: " + actor.damage + "\n";
     text += "Moves : " + actor.kind.moveSpeed + "\n";
+
+    if (actor.kind.damage > 0) {
+      // TODO - Add Hero weapons
+      text += "Melee : damage=" + actor.damage + "\n";
+      text += "        speed =" + actor.kind.attackSpeed + "\n";
+    } else {
+      text += "Melee : None\n";
+    }
+    if (actor.kind.range > 0) {
+      // TODO - Add Hero weapons
+      // TODO - Add Ammo
+      text +=
+        "Ranged: damage=" +
+        actor.kind.rangedDamage +
+        "\n" +
+        "      : speed =" +
+        actor.kind.rangedAttackSpeed +
+        "\n" +
+        "      : range =" +
+        actor.kind.range +
+        "\n";
+    } else {
+      text += "Ranged: None";
+    }
+
     this._text.text(text);
 
     this.bounds.height = this._text.bounds.height + 2;

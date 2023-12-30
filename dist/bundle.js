@@ -19777,6 +19777,9 @@ void main() {
           });
           this.events.on("i", (e) => {
               console.log(">> INVENTORY <<");
+              // TODO - Set focus to the player so that it shows their info
+              //      - Send event to level scene?
+              this.scene.trigger("inventory", this);
           });
           this.events.on(" ", (e) => {
               idle(this, this.player);
@@ -20080,12 +20083,22 @@ void main() {
           this.entries = [];
       }
       setFocus(x, y) {
+          const wasFocus = this._focus.slice();
           this._focus[0] = x;
           this._focus[1] = y;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.trigger("focus", this._focus);
+              this.needsDraw = true;
+          }
       }
       clearFocus() {
+          const wasFocus = this._focus.slice();
           this._focus[0] = -1;
           this._focus[1] = -1;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.trigger("focus", this._focus);
+              this.needsDraw = true;
+          }
       }
       drawPlayer(buf, x, y, player) {
           buf.drawText(x, y, "Hero");
@@ -20167,7 +20180,7 @@ void main() {
           super._mousemove(e);
           if (e.defaultPrevented || e.propagationStopped)
               return;
-          const wasFocus = this._focus.slice();
+          this._focus.slice();
           this.clearFocus();
           const game = this.scene.data;
           const player = game.player;
@@ -20182,10 +20195,10 @@ void main() {
                   }
               });
           }
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.trigger("focus", this._focus);
-              this.needsDraw = true;
-          }
+          // if (!GWU.xy.equals(wasFocus, this._focus)) {
+          //   this.trigger("focus", this._focus);
+          //   this.needsDraw = true;
+          // }
           e.stopPropagation();
       }
       _click(e) {
@@ -20254,8 +20267,32 @@ void main() {
       showActor(actor) {
           let text = actor.kind.id + "\n";
           text += "Health: " + actor.health + "/" + actor.kind.health + "\n";
-          text += "Damage: " + actor.damage + "\n";
           text += "Moves : " + actor.kind.moveSpeed + "\n";
+          if (actor.kind.damage > 0) {
+              // TODO - Add Hero weapons
+              text += "Melee : damage=" + actor.damage + "\n";
+              text += "        speed =" + actor.kind.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          if (actor.kind.range > 0) {
+              // TODO - Add Hero weapons
+              // TODO - Add Ammo
+              text +=
+                  "Ranged: damage=" +
+                      actor.kind.rangedDamage +
+                      "\n" +
+                      "      : speed =" +
+                      actor.kind.rangedAttackSpeed +
+                      "\n" +
+                      "      : range =" +
+                      actor.kind.range +
+                      "\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
           this._text.text(text);
           this.bounds.height = this._text.bounds.height + 2;
           this.bounds.width = this._text.bounds.width + 2;
@@ -20306,7 +20343,12 @@ void main() {
               const actor = game.level.actorAt(loc[0], loc[1]);
               if (actor) {
                   details$1.hidden = false;
-                  details$1.showActor(actor);
+                  if (actor === player) {
+                      details$1.showPlayer(player);
+                  }
+                  else {
+                      details$1.showActor(actor);
+                  }
               }
               else {
                   details$1.hidden = true;
@@ -20383,6 +20425,12 @@ void main() {
           // z() {
           //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
           // },
+          inventory() {
+              const game = this.data;
+              const player = game.player;
+              const sidebar = this.get("SIDEBAR");
+              sidebar.setFocus(player.x, player.y);
+          },
           win() {
               const game = this.data;
               game.messages.confirmAll();
