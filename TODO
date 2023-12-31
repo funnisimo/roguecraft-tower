@@ -3,12 +3,33 @@ Move:
 
 General:
 [] Emeralds (for score)
+[] How does time convert to turn based? 1s = 200 speed?
+[] Add regeneration status to sidebar - how? on/off? {Regen}
+[] Add temporary speedup to sidebar - how? on/off? {Fast}
+[] Can sidebar do mouseover for items? Mouseover {Regen} gives details - maybe even from multiple sources.
 
 Items:
 [X] Tags
 [] Need more weapons and Armor
 [] Cooldowns?
 [] Souls?
+
+Consumables:
+[] Apples - 20%/3s
+[] Bread - 100%/30s
+[] Pork - 50%/10s
+[] Salmon - 35%/8s
+[] Berries - 20%/5s + speedup
+[] Melon - 75%/15s
+[] Fruit - 30%/1s
+[] Fish - 20%/2s + 10% oxygen
+
+Potion:
+[] Make potion innate - 75% heal
+[] Press 'h' to activate?
+[] Potion cooldown - 40s (8000 time units?)
+[] Add potion status to sidebar
+
 
 Artifacts:
   [] Fireworks Arrow
