@@ -1,11 +1,154 @@
+Move:
+[] Roll (moves 2 spaces quickly in DIR4 - with '*' glyph during mid roll)
+
+General:
+[] Emeralds (for score)
+
 Items:
-[] Drop Config
-[]
+[X] Tags
+[] Need more weapons and Armor
+[] Cooldowns?
+[] Souls?
+
+Artifacts:
+  [] Fireworks Arrow
+  [] Boots of Swiftness
+  [] Wind Horn
+  [] ...
+
+Armors:
+[] Guards Armor
+[] Hunters Armor
+[] Archers Armor
+[] Mercenary Armor
+[] Reinforced Armor
+[] Stalwart Armor
+[] Scale Mail
+[] Plate Armor
+[] Full Metal Armor
+[] Champions Armor
+[] Heros Armor
+
+[] Climbing Gear
+[] Goat Gear
+[] Rugged Climbing Gear
+[] Emerald Gear
+[] Guilded Glory
+[] Opulent Armor
+[] Entertainers Garb
+[] Troubador Garb
+[] Evocation Robe
+[] Ember Robe
+[] Verdant Robe
+[] Grim Armor
+[] Wither Armor
+[] Renegade Armor
+[] Mystery Armor
+[] Ocelot Armor
+[] Shadow Walker
+[] Piglin Armor
+[] Golden Piglin Armor
+[] Root Rot Armor
+[] Black Spot Armor
+[] Highland Armor
+[] Shulker Armor
+[] Sturdy Shulker Armor
+[] Snow Armor
+[] Frost Armor
+[] Soul Robe
+[] Souldancer Robe
+[] Spelunker Armor
+[] Cave Crawler 
+[] Sprout Armor
+[] Living Vines Armor
+[] Thief Armor
+[] Spider Armor
+[] Teleportation Robes
+[] Unstable Robes
+[] Turtle Armor
+[] Nimble Turtle Armor
+[] Wolf Armor
+[] Black Wolf Armor
+[] Fox Armor
+[] Phantom Armor
+[] Frostbite Armor
+[] Squid Armor
+[] Glow Squid Armor
+[] Battle Robe
+[] Splendid Robe
+[] Dark Amor
+[] Titans Shroud
+[] Ghostly Armor
+[] Ghost Kindler
+[] Beenest Armor
+[] Beehive Armor
+
+Item Effects:
+- Armor:
+  [] Artifact Cooldown
+  [] Pushback resistance
+  [] Extra Roll
+  [] Environmental Damage resistance
+  [] Freezing Resistance
+  [] Spawn Emeralds when exploring
+  [] + Melee attack speed
+  [] Spend emeralds to cheat death
+  [] Invulnerability on emerald collection
+  [] Health potions heal nearby allies
+  [] + positive effect duration
+  [] - negative effect duration
+  [] + move speed
+  [] burns nearby enemies
+  [] increase maximum souls
+  [] +1 soul gathering
+  [] +50% souls gathered
+  [] 6% life steal
+  [] 35% damage reduction
+  [] +10 arrows per bundle
+  [] +30% ranged damage
+  [] +20% weapon damage
+  [] 50% faster roll
+  [] invulnerable while rolling
+  [] reset artifact cooldown on potion use
+  [] +50% artifact damage
+  [] can get consumable on potion use
+  [] create food on potion use
+  [] 30% chance to negate hits
+  [] +100% longer roll cooldown
+  [] Potion use boosts defense (iron hide)
+  [] Gain speed after dodge
+  [] Deflect enemy projectiles
+  [] Take less damage when swarmed
+  [] Mobs target you more
+  [] Fire shulker projectiles at nearby enemies (???)
+  [] Emit chilling aura
+  [] Pet bat
+  [] Trap and poison nearby mobs when rolling
+  [] Roll to teleport
+  [] Trigger explosion on roll start
+  [] +25% healing boost
+  [] Boost speed after hit
+  [] Snowball
+  [] 40% faster potion cooldown
+  [] spawn fire on roll
+  [] 30% summon bee when hit
+
 
 Levels:
 [] Pick items after level creation
+[] Ensure spawns have enough total challenge for level
+[] More variety in levels
+
+
 
 Player:
-- Inventory Items
-  [] Melee
-  [] Ranged
+- Inventory:
+  [X] Melee
+  [X] Ranged
+  [] Armor
+
+Actor:
+[] Adjust strength for power
+[] Set power by level on spawn
+
+
