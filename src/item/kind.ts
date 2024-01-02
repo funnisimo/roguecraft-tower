@@ -38,6 +38,7 @@ export interface KindConfig {
 
 export interface ItemKind {
   id: string;
+  name: string;
 
   ch: string;
   fg: GWU.color.ColorBase;
@@ -78,6 +79,7 @@ export function install(cfg: KindConfig) {
 
   const kind = Object.assign(
     {
+      name: "",
       ch: "!",
       fg: "white",
       //   bump: ["attack"],
@@ -93,6 +95,11 @@ export function install(cfg: KindConfig) {
     },
     cfg
   ) as ItemKind;
+
+  if (kind.name.length == 0) {
+    // TODO - fix capitalization
+    kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
+  }
 
   // add damage as necessary
   while (kind.speed.length > kind.damage.length) {

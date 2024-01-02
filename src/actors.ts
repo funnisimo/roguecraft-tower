@@ -20,12 +20,13 @@ ACTOR.install({
   slots: {
     ranged: "SHORTBOW",
     melee: "DAGGER",
-    armor: "SCALE_MAIL",
+    armor: "SCALE_MAIL^10",
   },
 });
 
 ACTOR.install({
   id: "ZOMBIE",
+  name: "Zombie",
   ch: "z",
   fg: "green",
   moveSpeed: 200,

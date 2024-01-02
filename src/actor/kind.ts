@@ -8,6 +8,7 @@ export interface ActorEvents {
 
 export interface KindConfig {
   id: string;
+  name?: string;
   health?: number;
 
   notice?: number;
@@ -40,6 +41,8 @@ export interface KindConfig {
 
 export interface ActorKind {
   id: string;
+  name: string;
+
   health: number;
 
   notice: number;
@@ -73,6 +76,7 @@ export const kinds: Record<string, ActorKind> = {};
 export function install(cfg: KindConfig) {
   const kind = Object.assign(
     {
+      name: "",
       health: 10,
       notice: 10,
       moveSpeed: 100,
@@ -98,6 +102,10 @@ export function install(cfg: KindConfig) {
     },
     cfg
   ) as ActorKind;
+
+  if (kind.name == "") {
+    kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
+  }
 
   if (typeof cfg.bump === "string") {
     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());

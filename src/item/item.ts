@@ -47,6 +47,10 @@ export class Item extends Obj {
     buf.drawSprite(this.x, this.y, this.kind);
   }
 
+  get name(): string {
+    return this.kind.name;
+  }
+
   get power(): number {
     return this._power;
   }
@@ -55,10 +59,11 @@ export class Item extends Obj {
     val = val || 1;
     this._power = val;
 
+    // Value = POWER * BASE * Math.pow(1.025,POWER)
     this._damage = this.kind.damage.map((v) =>
-      Math.round(v * Math.pow(1.025, val))
+      Math.round(val * v * Math.pow(1.025, val))
     );
-    this._defense = Math.round(this.kind.defense * Math.pow(1.025, val));
+    this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
   }
 
   get damage(): number[] {
@@ -84,9 +89,13 @@ export class Item extends Obj {
 
 export function make(id: string | ItemKind, opts?: Partial<ItemConfig>) {
   let kind: ItemKind | null;
+  let power = 1;
 
   if (typeof id === "string") {
-    kind = getKind(id);
+    const parts = id.split("^").map((v) => v.trim());
+    const kind_id = parts[0];
+    power = Number.parseInt(parts[1] || "1");
+    kind = getKind(parts[0]);
     if (!kind) throw new Error("Failed to find item kind - " + id);
   } else {
     kind = id;
@@ -98,6 +107,7 @@ export function make(id: string | ItemKind, opts?: Partial<ItemConfig>) {
       y: 1,
       z: 1, // items, actors, player, fx
       kind,
+      power,
     },
     opts
   ) as ItemConfig;

@@ -41,7 +41,7 @@ export class Sidebar extends GWU.app.Widget {
   }
 
   drawActor(buf: GWU.buffer.Buffer, x: number, y: number, actor: Actor) {
-    buf.drawText(x, y, actor.kind.id, actor.kind.fg);
+    buf.drawText(x, y, actor.name, actor.kind.fg);
     this.drawHealth(buf, x, y + 1, 28, actor);
     // buf.drawText(x, y + 1, "" + actor.health, "red");
     return 2;
@@ -77,7 +77,7 @@ export class Sidebar extends GWU.app.Widget {
     w: number,
     actor: Actor
   ) {
-    const pct = actor.health / actor.kind.health;
+    const pct = actor.health / actor.health_max;
     const bg = GWU.color.colors.green.mix(
       GWU.color.colors.red,
       100 * (1 - pct)
@@ -90,7 +90,7 @@ export class Sidebar extends GWU.app.Widget {
       "white",
       bg,
       actor.health,
-      actor.kind.health,
+      actor.health_max,
       "HEALTH"
     );
   }

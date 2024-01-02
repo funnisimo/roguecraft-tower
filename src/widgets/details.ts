@@ -22,20 +22,17 @@ export class Details extends GWU.widget.Dialog {
   }
 
   showActor(actor: Actor) {
-    let text = actor.kind.id + "\n";
+    let text = actor.name + "\n";
     text += "Health: " + actor.health + "/" + actor.health_max + "\n";
     text += "Moves : " + actor.moveSpeed + "\n";
 
     if (actor.damage.length > 0) {
-      // TODO - Add Hero weapons
       text += "Melee : damage=" + actor.damage + "\n";
       text += "        speed =" + actor.attackSpeed + "\n";
     } else {
       text += "Melee : None\n";
     }
     if (actor.range > 0) {
-      // TODO - Add Hero weapons
-      // TODO - Add Ammo
       text +=
         "Ranged: damage=" +
         actor.rangedDamage +
@@ -60,10 +57,10 @@ export class Details extends GWU.widget.Dialog {
   }
 
   showPlayer(player: Player) {
-    let text = player.kind.id + "\n";
+    let text = player.name + "\n";
     const armor = player.slots.armor;
     if (armor) {
-      text += "Health: " + armor.kind.id + "\n";
+      text += "Health: " + armor.name + "^" + armor.power + "\n";
       text += "      : " + player.health + "/" + player.health_max + "\n";
     } else {
       text += "Health: " + player.health + "/" + player.health_max + "\n";
@@ -72,7 +69,7 @@ export class Details extends GWU.widget.Dialog {
 
     const melee = player.slots.melee;
     if (melee) {
-      text += "Melee : " + melee.kind.id + "\n";
+      text += "Melee : " + melee.name + "^" + melee.power + "\n";
       text += "      : damage=" + player.damage + "\n";
       text += "      : speed =" + player.attackSpeed + "\n";
     } else if (player.damage.length > 0) {
@@ -84,7 +81,7 @@ export class Details extends GWU.widget.Dialog {
 
     const ranged = player.slots.ranged;
     if (ranged) {
-      text += "Ranged: " + ranged.kind.id + "\n";
+      text += "Ranged: " + ranged.name + "^" + ranged.power + "\n";
       text += "      : damage=" + player.rangedDamage + "\n";
       text += "      : range =" + player.range + "\n";
       text += "      : speed =" + player.rangedAttackSpeed + "\n";

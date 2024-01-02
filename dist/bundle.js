@@ -4672,7 +4672,13 @@
       }
       return len;
   }
-  // let inColor = false;
+  /**
+   * Advances the number of chars given by passing any color information in the text
+   * @param {string} text - The text to scan
+   * @param {number} start - The index to start from
+   * @param {number} count - The number of characters to skip
+   * @returns - The new index in the string
+   */
   function advanceChars(text, start, count) {
       let len = 0;
       let inside = false;
@@ -4868,6 +4874,12 @@
       }
       return text.substring(0, index) + (colorCount ? '#{}' : '');
   }
+  /**
+   * Capitalizes the first letter in the given text.
+   *
+   * @param {string} text - The text to capitalize
+   * @returns {string} - The text with the first word capitalized
+   */
   function capitalize(text) {
       // TODO - better test for first letter
       const i = findChar(text, (ch) => ch !== ' ');
@@ -4875,6 +4887,23 @@
           return text;
       const ch = text.charAt(i);
       return text.substring(0, i) + ch.toUpperCase() + text.substring(i + 1);
+  }
+  /**
+   * Capitalizes the first letter all words of the given text.
+   *
+   * @param {string} text - The text to capitalize
+   * @returns {string} - The text with the words capitalized
+   */
+  function title_case(text) {
+      // TODO - better test for first letter
+      let i = findChar(text, (ch) => ch !== ' ');
+      while (i >= 0) {
+          const ch = text.charAt(i);
+          text = text.substring(0, i) + ch.toUpperCase() + text.substring(i + 1);
+          let next_space = findChar(text, (ch) => ch === ' ', i + 1);
+          i = findChar(text, (ch) => ch !== ' ', next_space);
+      }
+      return text;
   }
   function removeColors(text) {
       let out = '';
@@ -5652,6 +5681,7 @@
   	center: center,
   	truncate: truncate,
   	capitalize: capitalize,
+  	title_case: title_case,
   	removeColors: removeColors,
   	spliceRaw: spliceRaw,
   	hash: hash,
@@ -15733,6 +15763,7 @@ void main() {
   const kinds$1 = {};
   function install$4(cfg) {
       const kind = Object.assign({
+          name: "",
           health: 10,
           notice: 10,
           moveSpeed: 100,
@@ -15751,6 +15782,9 @@ void main() {
           dropMatch: [],
           slots: new Map(),
       }, cfg);
+      if (kind.name == "") {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+      }
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
       }
@@ -15873,6 +15907,7 @@ void main() {
           cfg.damage = [cfg.damage];
       }
       const kind = Object.assign({
+          name: "",
           ch: "!",
           fg: "white",
           //   bump: ["attack"],
@@ -15886,6 +15921,10 @@ void main() {
           tags: [],
           flags: 0,
       }, cfg);
+      if (kind.name.length == 0) {
+          // TODO - fix capitalization
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+      }
       // add damage as necessary
       while (kind.speed.length > kind.damage.length) {
           kind.damage.push(kind.damage[0]);
@@ -15946,14 +15985,18 @@ void main() {
       draw(buf) {
           buf.drawSprite(this.x, this.y, this.kind);
       }
+      get name() {
+          return this.kind.name;
+      }
       get power() {
           return this._power;
       }
       set power(val) {
           val = val || 1;
           this._power = val;
-          this._damage = this.kind.damage.map((v) => Math.round(v * Math.pow(1.025, val)));
-          this._defense = Math.round(this.kind.defense * Math.pow(1.025, val));
+          // Value = POWER * BASE * Math.pow(1.025,POWER)
+          this._damage = this.kind.damage.map((v) => Math.round(val * v * Math.pow(1.025, val)));
+          this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
       }
       get damage() {
           return this._damage;
@@ -15973,8 +16016,12 @@ void main() {
   }
   function make$3(id, opts) {
       let kind;
+      let power = 1;
       if (typeof id === "string") {
-          kind = getKind(id);
+          const parts = id.split("^").map((v) => v.trim());
+          parts[0];
+          power = Number.parseInt(parts[1] || "1");
+          kind = getKind(parts[0]);
           if (!kind)
               throw new Error("Failed to find item kind - " + id);
       }
@@ -15986,6 +16033,7 @@ void main() {
           y: 1,
           z: 1,
           kind,
+          power,
       }, opts);
       return new Item(config);
   }
@@ -16103,6 +16151,9 @@ void main() {
           });
       }
       // attributes
+      get name() {
+          return this.kind.name;
+      }
       get damage() {
           // TODO - scale with power
           return this.kind.damage;
@@ -21764,7 +21815,7 @@ void main() {
           return 2;
       }
       drawActor(buf, x, y, actor) {
-          buf.drawText(x, y, actor.kind.id, actor.kind.fg);
+          buf.drawText(x, y, actor.name, actor.kind.fg);
           this.drawHealth(buf, x, y + 1, 28, actor);
           // buf.drawText(x, y + 1, "" + actor.health, "red");
           return 2;
@@ -21780,9 +21831,9 @@ void main() {
           }
       }
       drawHealth(buf, x, y, w, actor) {
-          const pct = actor.health / actor.kind.health;
+          const pct = actor.health / actor.health_max;
           const bg = index$9.colors.green.mix(index$9.colors.red, 100 * (1 - pct));
-          this.drawProgress(buf, x, y, w, "white", bg, actor.health, actor.kind.health, "HEALTH");
+          this.drawProgress(buf, x, y, w, "white", bg, actor.health, actor.health_max, "HEALTH");
       }
       _draw(buf) {
           const game = this.scene.data;
@@ -21922,11 +21973,10 @@ void main() {
           this.hidden = true;
       }
       showActor(actor) {
-          let text = actor.kind.id + "\n";
+          let text = actor.name + "\n";
           text += "Health: " + actor.health + "/" + actor.health_max + "\n";
           text += "Moves : " + actor.moveSpeed + "\n";
           if (actor.damage.length > 0) {
-              // TODO - Add Hero weapons
               text += "Melee : damage=" + actor.damage + "\n";
               text += "        speed =" + actor.attackSpeed + "\n";
           }
@@ -21934,8 +21984,6 @@ void main() {
               text += "Melee : None\n";
           }
           if (actor.range > 0) {
-              // TODO - Add Hero weapons
-              // TODO - Add Ammo
               text +=
                   "Ranged: damage=" +
                       actor.rangedDamage +
@@ -21958,10 +22006,10 @@ void main() {
           this.bounds.width = this._text.bounds.width + 2;
       }
       showPlayer(player) {
-          let text = player.kind.id + "\n";
+          let text = player.name + "\n";
           const armor = player.slots.armor;
           if (armor) {
-              text += "Health: " + armor.kind.id + "\n";
+              text += "Health: " + armor.name + "^" + armor.power + "\n";
               text += "      : " + player.health + "/" + player.health_max + "\n";
           }
           else {
@@ -21970,7 +22018,7 @@ void main() {
           text += "Moves : " + player.moveSpeed + "\n";
           const melee = player.slots.melee;
           if (melee) {
-              text += "Melee : " + melee.kind.id + "\n";
+              text += "Melee : " + melee.name + "^" + melee.power + "\n";
               text += "      : damage=" + player.damage + "\n";
               text += "      : speed =" + player.attackSpeed + "\n";
           }
@@ -21983,7 +22031,7 @@ void main() {
           }
           const ranged = player.slots.ranged;
           if (ranged) {
-              text += "Ranged: " + ranged.kind.id + "\n";
+              text += "Ranged: " + ranged.name + "^" + ranged.power + "\n";
               text += "      : damage=" + player.rangedDamage + "\n";
               text += "      : range =" + player.range + "\n";
               text += "      : speed =" + player.rangedAttackSpeed + "\n";
@@ -22414,11 +22462,12 @@ void main() {
       slots: {
           ranged: "SHORTBOW",
           melee: "DAGGER",
-          armor: "SCALE_MAIL",
+          armor: "SCALE_MAIL^10",
       },
   });
   install$4({
       id: "ZOMBIE",
+      name: "Zombie",
       ch: "z",
       fg: "green",
       moveSpeed: 200,

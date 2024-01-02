@@ -74,6 +74,10 @@ export class Actor extends Obj {
   }
 
   // attributes
+  get name(): string {
+    return this.kind.name;
+  }
+
   get damage(): number[] {
     // TODO - scale with power
     return this.kind.damage;
