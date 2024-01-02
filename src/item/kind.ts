@@ -3,6 +3,7 @@ import { Actor } from "../actor";
 import { Game } from "../game";
 import { Item } from "./item";
 import { CallbackFn } from "../game/obj";
+import { FLAGS } from "./flags";
 
 export interface ItemEvents {
   // bump?: (game: Game, actor: Item, other: Item) => void;
@@ -13,6 +14,7 @@ export interface ItemEvents {
 
 export interface KindConfig {
   id: string;
+  name?: string;
 
   ch: string;
   fg: GWU.color.ColorBase;
@@ -31,6 +33,7 @@ export interface KindConfig {
 
   on?: ItemEvents;
   tags?: string | string[];
+  flags?: string | string[];
 }
 
 export interface ItemKind {
@@ -52,6 +55,7 @@ export interface ItemKind {
 
   frequency: GWU.frequency.FrequencyFn;
   tags: string[];
+  flags: number;
 
   //   damage: number;
   //   attackSpeed: number;
@@ -85,6 +89,7 @@ export function install(cfg: KindConfig) {
       defense: 0,
       slot: null,
       tags: [],
+      flags: 0,
     },
     cfg
   ) as ItemKind;
@@ -97,6 +102,10 @@ export function install(cfg: KindConfig) {
 
   if (typeof cfg.tags == "string") {
     kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+  }
+
+  if (typeof cfg.flags !== "number") {
+    kind.flags = GWU.flag.from_safe(FLAGS, cfg.flags);
   }
 
   //   if (typeof cfg.bump === "string") {

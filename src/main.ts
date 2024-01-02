@@ -4,6 +4,7 @@ import "./actors";
 import "./hordes";
 import "./items";
 import "./weapons";
+import "./armor";
 
 function start() {
   // create the user interface
@@ -29,6 +30,9 @@ function start() {
 }
 
 globalThis.onload = start;
+
+// @ts-ignore
+globalThis.GWU = GWU;
 
 // async function playGame(game) {
 //   // create and dig the map

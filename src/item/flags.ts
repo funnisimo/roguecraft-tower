@@ -1,0 +1,22 @@
+import * as GWU from "gw-utils";
+
+const FLAGS = GWU.flag.make([
+  "ARTIFACT_COOLDOWN_40",
+  "ARROWS_10",
+  "LONGER_ROLL_100",
+  "MELEE_DAMAGE_30",
+  "MOBS_TARGET_YOU_MORE", // add ?? MOBS_AVOID_YOU_MORE ??
+  "MOVESPEED_AURA_15",
+  "NEGATE_HITS_30",
+  "POTION_COOLDOWN_40",
+  "POTION_BOOSTS_DEFENSE",
+  "POTION_HEALS_NEARBY_ALLIES",
+  "RANGED_DAMAGE_30",
+  "REDUCE_DAMAGE_35",
+  "WEAPON_DAMAGE_AURA_20",
+]);
+
+// @ts-ignore
+globalThis.ITEM_FLAGS = FLAGS;
+
+export { FLAGS };

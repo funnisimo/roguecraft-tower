@@ -48,14 +48,14 @@ export class Player extends ACTOR.Actor {
       if (item === null) {
         console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
       } else {
-        this.slots[slot] = item;
+        this.equip(item);
         console.log(`player Item = ${item.kind.id} @ ${slot}`);
       }
     });
   }
 
   // attributes
-  get damage(): number {
+  get damage(): number[] {
     const melee = this.slots.melee;
     if (melee) {
       return melee.damage;
@@ -63,7 +63,7 @@ export class Player extends ACTOR.Actor {
     return super.damage;
   }
 
-  get attackSpeed(): number {
+  get attackSpeed(): number[] {
     const melee = this.slots.melee;
     if (melee) {
       return melee.speed;
@@ -79,7 +79,7 @@ export class Player extends ACTOR.Actor {
     return super.range;
   }
 
-  get rangedDamage(): number {
+  get rangedDamage(): number[] {
     const ranged = this.slots.ranged;
     if (ranged) {
       return ranged.damage;
@@ -87,7 +87,7 @@ export class Player extends ACTOR.Actor {
     return super.rangedDamage;
   }
 
-  get rangedAttackSpeed(): number {
+  get rangedAttackSpeed(): number[] {
     const ranged = this.slots.ranged;
     if (ranged) {
       return ranged.speed;
@@ -95,6 +95,39 @@ export class Player extends ACTOR.Actor {
     return super.rangedAttackSpeed;
   }
   //
+
+  equip(item: ITEM.Item) {
+    if (item.slot === null) {
+      throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
+    }
+    this.slots[item.slot] = item;
+    this.item_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+    const health_pct = this.health / this.health_max;
+    let new_health_max = this.kind.health;
+    Object.entries(this.slots).forEach(([s, i]) => {
+      if (i) {
+        this.item_flags |= i.kind.flags;
+        new_health_max += i.defense;
+      }
+    });
+    this.health_max = new_health_max;
+    this.health = Math.round(new_health_max * health_pct);
+  }
+
+  unequip_slot(slot: string) {
+    this.slots[slot] = null;
+    this.item_flags = 0;
+    const health_pct = this.health / this.health_max;
+    let new_health_max = this.kind.health;
+    Object.entries(this.slots).forEach(([s, i]) => {
+      if (i) {
+        this.item_flags |= i.kind.flags;
+        new_health_max += i.defense;
+      }
+    });
+    this.health_max = new_health_max;
+    this.health = Math.round(new_health_max * health_pct);
+  }
 
   act(game: Game) {
     this.startTurn(game);

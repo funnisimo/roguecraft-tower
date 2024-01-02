@@ -38,7 +38,7 @@ export function ai(game: Game, actor: Actor) {
 
   if (distToPlayer < 2) {
     // can attack diagonal
-    if (actor.damage > 0) {
+    if (actor.can_melee_attack) {
       if (ACTIONS.attack(game, actor, player)) return;
     }
     if (distToPlayer == 1) {

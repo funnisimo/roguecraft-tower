@@ -8,6 +8,7 @@ ITEM.install({
   fg: "yellow",
   speed: 60,
   damage: 5, // dps = 5 * 100 / 60 = 8.3
+  tags: "melee",
 });
 
 ITEM.install({
@@ -16,6 +17,7 @@ ITEM.install({
   fg: "yellow",
   speed: 100,
   damage: 10, // dps = 10 * 100 / 100 = 10
+  tags: "melee",
 });
 
 ITEM.install({
@@ -24,6 +26,7 @@ ITEM.install({
   fg: "yellow",
   speed: [100, 100, 150],
   damage: [9, 9, 18], // dps = 9/9/12 [net=10]
+  tags: "melee",
 });
 
 ITEM.install({
@@ -33,6 +36,7 @@ ITEM.install({
   speed: 60,
   damage: 5, // dps = 5 * 100 / 60 = 8.3
   range: 10, // TODO - shrink to ?6?
+  tags: "ranged",
 });
 
 ITEM.install({
@@ -42,6 +46,7 @@ ITEM.install({
   speed: 100,
   damage: 10, // dps = 10
   range: 10,
+  tags: "ranged",
 });
 
 ITEM.install({
@@ -51,4 +56,5 @@ ITEM.install({
   speed: 150,
   damage: 24, // dps = 24 * 100 / 150 = 16
   range: 15,
+  tags: "ranged",
 });

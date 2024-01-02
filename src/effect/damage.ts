@@ -12,12 +12,14 @@ export function damage(
   target: Actor,
   damage: DamageConfig
 ): boolean {
+  // TODO - apply defenses...
+
   target.health -= damage.amount || 0;
 
   if (target.health <= 0) {
     // do all of these move to event handlers?
     game.messages.addCombat(`${target.kind.id} dies`);
-    game.level!.setTile(target.x, target.y, "CORPSE");
+    game.level!.setTile(target.x, target.y, "CORPSE"); // TODO - This should be above the floor (FIXTURE)
     target.trigger("death");
     game.level!.removeActor(target);
     return true;

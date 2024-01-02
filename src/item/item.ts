@@ -14,7 +14,9 @@ export class Item extends Obj {
   _level: Level | null = null;
   kind: ItemKind;
   data: Record<string, any>;
-  power: number;
+  _power: number;
+  _damage: number[];
+  _defense: number;
 
   constructor(cfg: ItemConfig) {
     super(cfg);
@@ -22,7 +24,9 @@ export class Item extends Obj {
     if (!this.kind) throw new Error("Must have kind.");
 
     this.data = {};
-    this.power = cfg.power || 1;
+    this._damage = this.kind.damage.slice();
+    this._defense = this.kind.defense;
+    this._power = cfg.power || 1;
 
     this.on("add", (level: Level) => {
       this._level = level;
@@ -35,28 +39,42 @@ export class Item extends Obj {
       if (!value) return;
       this.on(key, value);
     });
+
+    this.power = this._power; // cause calculations to fire
   }
 
   draw(buf: GWU.buffer.Buffer) {
     buf.drawSprite(this.x, this.y, this.kind);
   }
 
-  get damage(): number {
-    // TODO - scale with power
-    return this.kind.damage[0];
+  get power(): number {
+    return this._power;
+  }
+
+  set power(val: number) {
+    val = val || 1;
+    this._power = val;
+
+    this._damage = this.kind.damage.map((v) =>
+      Math.round(v * Math.pow(1.025, val))
+    );
+    this._defense = Math.round(this.kind.defense * Math.pow(1.025, val));
+  }
+
+  get damage(): number[] {
+    return this._damage;
   }
 
   get range(): number {
     return this.kind.range;
   }
 
-  get speed(): number {
-    return this.kind.speed[0];
+  get speed(): number[] {
+    return this.kind.speed;
   }
 
   get defense(): number {
-    // TODO - scale with power
-    return this.kind.defense;
+    return this._defense;
   }
 
   get slot(): string | null {

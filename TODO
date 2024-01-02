@@ -1,5 +1,6 @@
 Move:
 [] Roll (moves 2 spaces quickly in DIR4 - with '*' glyph during mid roll)
+  - Press 'r' then direction?
 
 General:
 [] Emeralds (for score)
@@ -7,6 +8,10 @@ General:
 [] Add regeneration status to sidebar - how? on/off? {Regen}
 [] Add temporary speedup to sidebar - how? on/off? {Fast}
 [] Can sidebar do mouseover for items? Mouseover {Regen} gives details - maybe even from multiple sources.
+[] Charged Shot for bows - 'F' vs 'f'
+   - [] Charge then target
+   - [] Can cancel at targeting
+   - [] Is charge time configurable?
 
 Items:
 [X] Tags
@@ -38,17 +43,49 @@ Artifacts:
   [] ...
 
 Armors:
+[] Scale Mail - 3
+  - 35% Damage Reduction
+  - +30% Melee Damage
+[] Mercenary Armor - 3
+  - 35% Damage Reduction
+  - 20% Weapon Damage Boost Aura 
 [] Guards Armor
+  - -40% artifact cooldown
+  - +10 arrows per bundle
 [] Hunters Armor
+  - +10 arrows per bundle
+  - +30% ranged damage
 [] Archers Armor
-[] Mercenary Armor
-[] Reinforced Armor
+  - +15% movespeed aura
+  - +10 arrows per bundle
+  - +30% ranged damage
+[] Reinforced Mail - 3
+  - 35% damage reduction
+  - 30% negate hits
+  - +100% longer roll cooldown
 [] Stalwart Armor
-[] Scale Mail
+  - Potion use boosts defense
+  - 35% damage reduction
+  - 30% negate hits
+  - +100% longer roll cooldown
 [] Plate Armor
+  - 35% damage reduction
+  - 30% negate hits
+  - +100% longer roll cooldown
 [] Full Metal Armor
-[] Champions Armor
+  - 35% damage reduction
+  - 30% negate hits
+  - +100% longer roll cooldown
+  - +30% melee damage
+[] Champions Armor - 3
+  - 35% damage reduction
+  - -40% potion cooldown
+  - mobs target you more
 [] Heros Armor
+  - 35% damage reduction
+  - -40% potion cooldown
+  - mobs target you more
+  - Health potions heal nearby allies
 
 [] Climbing Gear
 [] Goat Gear
@@ -112,13 +149,13 @@ Item Effects:
   [] Environmental Damage resistance
   [] Freezing Resistance
   [] Spawn Emeralds when exploring
-  [] + Melee attack speed
+  [] +30% Melee attack speed
   [] Spend emeralds to cheat death
   [] Invulnerability on emerald collection
   [] Health potions heal nearby allies
-  [] + positive effect duration
-  [] - negative effect duration
-  [] + move speed
+  [] +30% positive effect duration
+  [] -30% negative effect duration
+  [] +15% move speed aura
   [] burns nearby enemies
   [] increase maximum souls
   [] +1 soul gathering
@@ -127,7 +164,8 @@ Item Effects:
   [] 35% damage reduction
   [] +10 arrows per bundle
   [] +30% ranged damage
-  [] +20% weapon damage
+  [] +30% melee damage
+  [] +20% weapon damage boost aura [How is this different?]
   [] 50% faster roll
   [] invulnerable while rolling
   [] reset artifact cooldown on potion use

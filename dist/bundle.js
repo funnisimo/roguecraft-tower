@@ -404,8 +404,17 @@
   function ONE() {
       return 1;
   }
+  function ZERO() {
+      return 0;
+  }
   function IDENTITY(x) {
       return x;
+  }
+  function IS_ZERO(x) {
+      return x == 0;
+  }
+  function IS_NONZERO(x) {
+      return x != 0;
   }
   /**
    * clamps a value between min and max (inclusive)
@@ -415,8 +424,26 @@
    * @returns {Number} the clamped value
    */
   const clamp = clamp_1;
+  // export function clamp(v: number, min: number, max: number) {
+  //     if (v < min) return min;
+  //     if (v > max) return max;
+  //     return v;
+  // }
+  function lerp$1(from, to, pct) {
+      if (pct > 1)
+          pct = 1;
+      if (pct < 0)
+          pct = 0;
+      return Math.floor(from + (to - from) * pct);
+  }
+  function xave(rate, value, newValue) {
+      return value * rate + newValue * (1 - rate);
+  }
   function ERROR(message) {
       throw new Error(message);
+  }
+  function WARN(...args) {
+      console.warn(...args);
   }
   function first(...args) {
       return args.find((v) => v !== undefined);
@@ -446,6 +473,19 @@
       a[index] = null;
       return true;
   }
+  function arrayInsert(a, b, beforeFn) {
+      if (!beforeFn) {
+          a.push(b);
+          return;
+      }
+      const index = a.findIndex(beforeFn);
+      if (index < 0) {
+          a.push(b);
+      }
+      else {
+          a.splice(index, 0, b);
+      }
+  }
   function arrayFindRight(a, fn) {
       for (let i = a.length - 1; i >= 0; --i) {
           const e = a[i];
@@ -453,6 +493,9 @@
               return e;
       }
       return undefined;
+  }
+  function sum(arr) {
+      return arr.reduce((a, b) => a + b);
   }
   function arrayNext(a, current, fn, wrap = true, forward = true) {
       const len = a.length;
@@ -473,6 +516,26 @@
   }
   function arrayPrev(a, current, fn, wrap = true) {
       return arrayNext(a, current, fn, wrap, false);
+  }
+  function nextIndex(index, length, wrap = true) {
+      ++index;
+      if (index >= length) {
+          if (wrap)
+              return index % length;
+          return -1;
+      }
+      return index;
+  }
+  function prevIndex(index, length, wrap = true) {
+      if (index < 0)
+          return length - 1; // start in back
+      --index;
+      if (index < 0) {
+          if (wrap)
+              return length - 1;
+          return -1;
+      }
+      return index;
   }
 
   // DIRS are organized clockwise
@@ -1055,6 +1118,139 @@
   	forBorder: forBorder,
   	arcCount: arcCount,
   	closestMatchingLocs: closestMatchingLocs
+  });
+
+  // CHAIN
+  function length$1(root) {
+      let count = 0;
+      while (root) {
+          count += 1;
+          root = root.next;
+      }
+      return count;
+  }
+  function at(root, index) {
+      while (root && index) {
+          root = root.next;
+          --index;
+      }
+      return root;
+  }
+  function includes(root, entry) {
+      while (root && root !== entry) {
+          root = root.next;
+      }
+      return root === entry;
+  }
+  function forEach(root, fn) {
+      let index = 0;
+      while (root) {
+          const next = root.next;
+          fn(root, index++);
+          root = next;
+      }
+      return index; // really count
+  }
+  function push(obj, name, entry) {
+      entry.next = obj[name] || null;
+      obj[name] = entry;
+      return true;
+  }
+  function remove(obj, name, entry) {
+      const root = obj[name];
+      if (root === entry) {
+          obj[name] = entry.next || null;
+          entry.next = null;
+          return true;
+      }
+      else if (!root) {
+          return false;
+      }
+      else {
+          let prev = root;
+          let current = prev.next;
+          while (current && current !== entry) {
+              prev = current;
+              current = prev.next;
+          }
+          if (current === entry) {
+              prev.next = current.next;
+              entry.next = null;
+              return true;
+          }
+      }
+      return false;
+  }
+  function find(root, cb) {
+      while (root && !cb(root)) {
+          root = root.next;
+      }
+      return root;
+  }
+  function insert(obj, name, entry, sort) {
+      let root = obj[name];
+      sort = sort || (() => -1); // always insert first
+      if (!root || sort(root, entry) < 0) {
+          entry.next = root;
+          obj[name] = entry;
+          return true;
+      }
+      let prev = root;
+      let current = root.next;
+      while (current && sort(current, entry) > 0) {
+          prev = current;
+          current = current.next;
+      }
+      entry.next = current;
+      prev.next = entry;
+      return true;
+  }
+  function reduce(root, cb, out) {
+      let current = root;
+      if (out === undefined) {
+          if (!current)
+              throw new TypeError('Empty list reduce without initial value not allowed.');
+          out = current;
+          current = current.next;
+      }
+      while (current) {
+          out = cb(out, current);
+          current = current.next;
+      }
+      return out;
+  }
+  function some(root, cb) {
+      let current = root;
+      while (current) {
+          if (cb(current))
+              return true;
+          current = current.next;
+      }
+      return false;
+  }
+  function every(root, cb) {
+      let current = root;
+      while (current) {
+          if (!cb(current))
+              return false;
+          current = current.next;
+      }
+      return true;
+  }
+
+  var list = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	length: length$1,
+  	at: at,
+  	includes: includes,
+  	forEach: forEach,
+  	push: push,
+  	remove: remove,
+  	find: find,
+  	insert: insert,
+  	reduce: reduce,
+  	some: some,
+  	every: every
   });
 
   /**
@@ -3441,7 +3637,7 @@
   ///////////////////////////////////
   // FLAG
   function fl(N) {
-      return 1 << N;
+      return 2 ** N;
   }
   function toString(flagObj, value) {
       const inverse = Object.entries(flagObj).reduce((out, entry) => {
@@ -3465,7 +3661,7 @@
       }
       return out.join(' | ');
   }
-  function from$3(obj, ...args) {
+  function from_base(obj, throws, ...args) {
       let result = 0;
       for (let index = 0; index < args.length; ++index) {
           let value = args[index];
@@ -3492,7 +3688,7 @@
                       v = v.trim();
                       const parts = v.split(/[,|]/);
                       if (parts.length > 1) {
-                          result = from$3(obj, result, parts);
+                          result = from_base(obj, throws, result, parts);
                       }
                       else if (v.startsWith('!')) {
                           // @ts-ignore
@@ -3510,6 +3706,11 @@
                           if (f) {
                               result |= f;
                           }
+                          else {
+                              if (throws) {
+                                  throw new Error(`Unknown flag - ${v}`);
+                              }
+                          }
                       }
                   }
                   else if (v === 0) {
@@ -3524,8 +3725,32 @@
       }
       return result;
   }
+  /**
+   * Converts from a flag base to a flag.
+   *
+   * @param {Object} flagObj - The flag we are getting values from
+   * @param {...FlagSource | FlagSource[]} args - The args to concatenate from flagObj
+   * @returns {number}
+   * @throws {Error} - If it encounters an unknown flag in args
+   */
+  function from$3(obj, ...args) {
+      return from_base(obj, true, ...args);
+  }
+  /**
+   * Converts from a flag base to a flag.  Will not throw if an unknown flag is encountered.
+   *
+   * @param {Object} flagObj - The flag we are getting values from
+   * @param {...FlagSource | FlagSource[]} args - The args to concatenate from flagObj
+   * @returns {number}
+   */
+  function from_safe(flagObj, ...args) {
+      return from_base(flagObj, false, ...args);
+  }
   function make$a(obj) {
       const out = {};
+      if (typeof obj === 'string') {
+          obj = obj.split(/[|,]/).map((v) => v.trim());
+      }
       if (Array.isArray(obj)) {
           const arr = obj;
           const flags = {};
@@ -3583,7 +3808,64 @@
   	fl: fl,
   	toString: toString,
   	from: from$3,
+  	from_safe: from_safe,
   	make: make$a
+  });
+
+  class AsyncQueue {
+      constructor() {
+          this._waiting = null;
+          this._data = [];
+      }
+      get length() {
+          return this._data.length;
+      }
+      clear() {
+          this._data.length = 0;
+      }
+      get last() {
+          return this._data[this._data.length - 1];
+      }
+      get first() {
+          return this._data[0];
+      }
+      enqueue(obj) {
+          if (this._waiting) {
+              const fn = this._waiting;
+              this._waiting = null;
+              fn(obj);
+          }
+          else {
+              this._data.push(obj);
+          }
+      }
+      prepend(obj) {
+          if (this._waiting) {
+              this._waiting(obj);
+              this._waiting = null;
+          }
+          else {
+              this._data.unshift(obj);
+          }
+      }
+      dequeue() {
+          const t = this._data.shift();
+          if (t) {
+              return Promise.resolve(t);
+          }
+          if (this._waiting) {
+              throw new Error('Too many requesters.');
+          }
+          const p = new Promise((resolve) => {
+              this._waiting = resolve;
+          });
+          return p;
+      }
+  }
+
+  var queue = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	AsyncQueue: AsyncQueue
   });
 
   // function toColorInt(r: number, g: number, b: number, base256: boolean) {
@@ -4340,6 +4622,9 @@
           return `{{${name}}}`;
       },
   };
+  function addHelper(name, fn) {
+      helpers[name] = fn;
+  }
 
   function length(text) {
       if (!text || text.length == 0)
@@ -4386,6 +4671,53 @@
           }
       }
       return len;
+  }
+  // let inColor = false;
+  function advanceChars(text, start, count) {
+      let len = 0;
+      let inside = false;
+      let inline = false;
+      let index = start || 0;
+      while (len < count) {
+          const ch = text.charAt(index);
+          if (inline) {
+              if (ch === '}') {
+                  inline = false;
+                  inside = false;
+              }
+              else {
+                  len += 1;
+              }
+          }
+          else if (inside) {
+              if (ch === ' ') {
+                  inline = true;
+              }
+              else if (ch === '}') {
+                  inside = false;
+              }
+          }
+          else if (ch === '#') {
+              if (text.charAt(index + 1) === '{') {
+                  inside = true;
+                  index += 1;
+              }
+              else {
+                  len += 1;
+              }
+          }
+          else if (ch === '\\') {
+              if (text.charAt(index + 1) === '#') {
+                  index += 1; // skip next char
+              }
+              len += 1;
+          }
+          else {
+              len += 1;
+          }
+          ++index;
+      }
+      return index;
   }
   function findChar(text, matchFn, start = 0) {
       let inside = false;
@@ -4437,12 +4769,104 @@
       }
       return -1;
   }
+  function firstChar(text) {
+      const index = findChar(text, TRUE);
+      if (index < 0)
+          return '';
+      return text.charAt(index);
+  }
+  function startsWith(text, match) {
+      if (typeof match === 'string') {
+          if (match.length === 1) {
+              return firstChar(text) === match;
+          }
+      }
+      const noColors = removeColors(text);
+      if (typeof match === 'string') {
+          return noColors.startsWith(match);
+      }
+      return match.exec(noColors) !== null;
+  }
+  function padStart(text, width, pad = ' ') {
+      const len = length(text);
+      if (len >= width)
+          return text;
+      const colorLen = text.length - len;
+      return text.padStart(width + colorLen, pad);
+  }
   function padEnd(text, width, pad = ' ') {
       const len = length(text);
       if (len >= width)
           return text;
       const colorLen = text.length - len;
       return text.padEnd(width + colorLen, pad);
+  }
+  function center(text, width, pad = ' ') {
+      const rawLen = text.length;
+      const len = length(text);
+      const padLen = width - len;
+      if (padLen <= 0)
+          return text;
+      const left = Math.floor(padLen / 2);
+      return text.padStart(rawLen + left, pad).padEnd(rawLen + padLen, pad);
+  }
+  function truncate(text, width) {
+      let len = 0;
+      let inside = false;
+      let inline = false;
+      let index = 0;
+      let colorCount = 0;
+      while (len < width) {
+          const ch = text.charAt(index);
+          if (inline) {
+              if (ch === '}') {
+                  inline = false;
+                  inside = false;
+                  colorCount -= 1;
+              }
+              else {
+                  len += 1;
+              }
+          }
+          else if (inside) {
+              if (ch === ' ') {
+                  inline = true;
+              }
+              else if (ch === '}') {
+                  inside = false;
+              }
+          }
+          else if (ch === '#') {
+              if (text.charAt(index + 1) === '{') {
+                  if (text.charAt(index + 2) === '}') {
+                      index += 2;
+                      colorCount = 0;
+                  }
+                  else {
+                      inside = true;
+                      index += 1;
+                      colorCount += 1;
+                  }
+              }
+              else {
+                  len += 1;
+              }
+          }
+          else if (ch === '\\') {
+              if (text.charAt(index + 1) === '#') {
+                  index += 1; // skip next char
+              }
+              len += 1;
+          }
+          else {
+              len += 1;
+          }
+          ++index;
+      }
+      if (inline) {
+          return text.substring(0, index) + '}' + (colorCount > 1 ? '#{}' : '');
+      }
+      return text.substring(0, index) + (colorCount ? '#{}' : '');
   }
   function capitalize(text) {
       // TODO - better test for first letter
@@ -4451,6 +4875,54 @@
           return text;
       const ch = text.charAt(i);
       return text.substring(0, i) + ch.toUpperCase() + text.substring(i + 1);
+  }
+  function removeColors(text) {
+      let out = '';
+      let inside = false;
+      let inline = false;
+      let index = 0;
+      while (index < text.length) {
+          let ch = text.charAt(index);
+          if (inline) {
+              if (ch === '}') {
+                  inline = false;
+                  inside = false;
+              }
+              else {
+                  out += ch;
+              }
+          }
+          else if (inside) {
+              if (ch === ' ') {
+                  inline = true;
+              }
+              else if (ch === '}') {
+                  inside = false;
+              }
+          }
+          else if (ch === '#') {
+              if (text.charAt(index + 1) === '{') {
+                  inside = true;
+                  index += 1;
+              }
+              else {
+                  out += ch;
+              }
+          }
+          else if (ch === '\\') {
+              if (text.charAt(index + 1) === '#') {
+                  out += ch;
+                  index += 1; // skip next char
+                  ch = text.charAt(index);
+              }
+              out += ch;
+          }
+          else {
+              out += ch;
+          }
+          ++index;
+      }
+      return out;
   }
   function spliceRaw(msg, begin, deleteLength, add = '') {
       const maxLen = msg.length;
@@ -4462,6 +4934,16 @@
       }
       const postText = msg.substring(begin + deleteLength);
       return preText + add + postText;
+  }
+  // https://stackoverflow.com/questions/7616461/generate-a-hash-from-string-in-javascript
+  function hash(str) {
+      let hash = 0;
+      const len = str.length;
+      for (let i = 0; i < len; i++) {
+          hash = (hash << 5) - hash + str.charCodeAt(i);
+          hash |= 0; // Convert to 32bit integer
+      }
+      return hash;
   }
   function splitArgs(text) {
       const output = [];
@@ -5049,6 +5531,138 @@
       return updated.split('\n');
   }
 
+  //
+  // Formats:
+  // moose
+  // taco~
+  // tomatoe[s]
+  // |goose|geese|
+  // go[es]
+  const RE_BRACKETS = /\[(\w+)(?:\|(\w+))?\]/;
+  const RE_ALTS = /\|(\w+)\|(\w+)\|/;
+  // VERBS
+  function toSingularVerb(text) {
+      if (text.includes('~')) {
+          return text.replace('~', 's');
+      }
+      let match = RE_BRACKETS.exec(text);
+      if (match) {
+          return text.replace(match[0], match[1]);
+      }
+      match = RE_ALTS.exec(text);
+      if (match) {
+          return match[1];
+      }
+      return text;
+  }
+  function toPluralVerb(text) {
+      if (text.includes('~')) {
+          return text.replace('~', '');
+      }
+      let match = RE_BRACKETS.exec(text);
+      if (match) {
+          return text.replace(match[0], match[2] || '');
+      }
+      match = RE_ALTS.exec(text);
+      if (match) {
+          return match[2];
+      }
+      return text;
+  }
+  // NOUNS
+  function toSingularNoun(text) {
+      text = text.replace('& ', '');
+      if (text.includes('~')) {
+          return text.replace('~', '');
+      }
+      let match = RE_BRACKETS.exec(text);
+      if (match) {
+          return text.replace(match[0], match[2] || '');
+      }
+      match = RE_ALTS.exec(text);
+      if (match) {
+          return match[1];
+      }
+      return text;
+  }
+  function toPluralNoun(text) {
+      text = text.replace('& ', '');
+      if (text.includes('~')) {
+          return text.replace('~', 's');
+      }
+      let match = RE_BRACKETS.exec(text);
+      if (match) {
+          return text.replace(match[0], match[1]);
+      }
+      match = RE_ALTS.exec(text);
+      if (match) {
+          return match[2];
+      }
+      return text;
+  }
+  function toQuantity(text, count) {
+      if (count == 1) {
+          text = toSingularNoun(text);
+      }
+      else {
+          text = toPluralNoun(text);
+      }
+      const countText = count > 1 ? '' + count : 'a';
+      if (text.includes('&')) {
+          return text.replace('&', countText);
+      }
+      return countText + ' ' + text;
+  }
+
+  function configure(opts = {}) {
+      if (opts.fg !== undefined) {
+          options.defaultFg = opts.fg;
+      }
+      if (opts.bg !== undefined) {
+          options.defaultBg = opts.bg;
+      }
+      if (opts.colorStart) {
+          options.colorStart = opts.colorStart;
+      }
+      if (opts.colorEnd) {
+          options.colorEnd = opts.colorEnd;
+      }
+      if (opts.field) {
+          options.field = opts.field;
+      }
+  }
+
+  var index$8 = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	configure: configure,
+  	compile: compile$1,
+  	apply: apply,
+  	eachChar: eachChar,
+  	wordWrap: wordWrap,
+  	splitIntoLines: splitIntoLines,
+  	addHelper: addHelper,
+  	options: options,
+  	length: length,
+  	advanceChars: advanceChars,
+  	findChar: findChar,
+  	firstChar: firstChar,
+  	startsWith: startsWith,
+  	padStart: padStart,
+  	padEnd: padEnd,
+  	center: center,
+  	truncate: truncate,
+  	capitalize: capitalize,
+  	removeColors: removeColors,
+  	spliceRaw: spliceRaw,
+  	hash: hash,
+  	splitArgs: splitArgs,
+  	toSingularVerb: toSingularVerb,
+  	toPluralVerb: toPluralVerb,
+  	toSingularNoun: toSingularNoun,
+  	toPluralNoun: toPluralNoun,
+  	toQuantity: toQuantity
+  });
+
   class BufferBase {
       constructor(width, height) {
           this._clip = null;
@@ -5361,6 +5975,16 @@
           console.log(data.join('\n'));
       }
   }
+  function make$8(...args) {
+      return new Buffer$1(args[0], args[1]);
+  }
+
+  var buffer = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	BufferBase: BufferBase,
+  	Buffer: Buffer$1,
+  	make: make$8
+  });
 
   const FovFlags = make$a([
       'VISIBLE',
@@ -6360,6 +6984,171 @@
   	alloc: alloc,
   	free: free,
   	fromTo: fromTo
+  });
+
+  /**
+   * Data for an event listener.
+   */
+  class EventListener {
+      /**
+       * Creates a Listener.
+       * @param {EventFn} fn The listener function.
+       * @param {any} [context=null] The context to invoke the listener with.
+       * @param {boolean} [once=false] Specify if the listener is a one-time listener.
+       */
+      constructor(fn, context, once = false) {
+          this.fn = fn;
+          this.context = context || null;
+          this.once = once || false;
+          this.next = null;
+      }
+      /**
+       * Compares this Listener to the parameters.
+       * @param {EventFn} fn - The function
+       * @param {any} [context] - The context Object.
+       * @param {boolean} [once] - Whether or not it is a one time handler.
+       * @returns Whether or not this Listener matches the parameters.
+       */
+      matches(fn, context, once) {
+          return (this.fn === fn &&
+              (once === undefined || once == this.once) &&
+              (!context || this.context === context));
+      }
+  }
+  class EventEmitter {
+      constructor() {
+          this._events = {};
+      }
+      /**
+       * Add a listener for a given event.
+       *
+       * @param {String} event The event name.
+       * @param {EventFn} fn The listener function.
+       * @param {*} context The context to invoke the listener with.
+       * @param {boolean} once Specify if the listener is a one-time listener.
+       * @returns {Listener}
+       */
+      addListener(event, fn, context, once = false) {
+          if (typeof fn !== 'function') {
+              throw new TypeError('The listener must be a function');
+          }
+          const listener = new EventListener(fn, context || null, once);
+          push(this._events, event, listener);
+          return this;
+      }
+      /**
+       * Add a listener for a given event.
+       *
+       * @param {String} event The event name.
+       * @param {EventFn} fn The listener function.
+       * @param {*} context The context to invoke the listener with.
+       * @param {boolean} once Specify if the listener is a one-time listener.
+       * @returns {Listener}
+       */
+      on(event, fn, context, once = false) {
+          return this.addListener(event, fn, context, once);
+      }
+      /**
+       * Add a one-time listener for a given event.
+       *
+       * @param {(String|Symbol)} event The event name.
+       * @param {EventFn} fn The listener function.
+       * @param {*} [context=this] The context to invoke the listener with.
+       * @returns {EventEmitter} `this`.
+       * @public
+       */
+      once(event, fn, context) {
+          return this.addListener(event, fn, context, true);
+      }
+      /**
+       * Remove the listeners of a given event.
+       *
+       * @param {String} event The event name.
+       * @param {EventFn} fn Only remove the listeners that match this function.
+       * @param {*} context Only remove the listeners that have this context.
+       * @param {boolean} once Only remove one-time listeners.
+       * @returns {EventEmitter} `this`.
+       * @public
+       */
+      removeListener(event, fn, context, once = false) {
+          if (!this._events[event])
+              return this;
+          if (!fn)
+              return this;
+          forEach(this._events[event], (obj) => {
+              if (obj.matches(fn, context, once)) {
+                  remove(this._events, event, obj);
+              }
+          });
+          return this;
+      }
+      /**
+       * Remove the listeners of a given event.
+       *
+       * @param {String} event The event name.
+       * @param {EventFn} fn Only remove the listeners that match this function.
+       * @param {*} context Only remove the listeners that have this context.
+       * @param {boolean} once Only remove one-time listeners.
+       * @returns {EventEmitter} `this`.
+       * @public
+       */
+      off(event, fn, context, once = false) {
+          return this.removeListener(event, fn, context, once);
+      }
+      /**
+       * Clear event by name.
+       *
+       * @param {String} evt The Event name.
+       */
+      clearEvent(event) {
+          if (this._events[event]) {
+              this._events[event] = null;
+          }
+          return this;
+      }
+      /**
+       * Remove all listeners, or those of the specified event.
+       *
+       * @param {(String|Symbol)} [event] The event name.
+       * @returns {EventEmitter} `this`.
+       * @public
+       */
+      removeAllListeners(event) {
+          if (event) {
+              this.clearEvent(event);
+          }
+          else {
+              this._events = {};
+          }
+          return this;
+      }
+      /**
+       * Calls each of the listeners registered for a given event.
+       *
+       * @param {String} event The event name.
+       * @param {...*} args The additional arguments to the event handlers.
+       * @returns {boolean} `true` if the event had listeners, else `false`.
+       * @public
+       */
+      emit(event, ...args) {
+          if (!this._events[event])
+              return false; // no events to send
+          let listener = this._events[event];
+          while (listener) {
+              let next = listener.next;
+              if (listener.once)
+                  remove(this._events, event, listener);
+              listener.fn.apply(listener.context, args);
+              listener = next;
+          }
+          return true;
+      }
+  }
+
+  var events = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	EventListener: EventListener,
+  	EventEmitter: EventEmitter
   });
 
   function make$7(v) {
@@ -7501,6 +8290,29 @@ void main() {
           });
       }
   }
+  function withImage(image) {
+      let opts = {};
+      if (typeof image === 'string') {
+          opts.glyphs = Glyphs.fromImage(image);
+      }
+      else if (image instanceof HTMLImageElement) {
+          opts.glyphs = Glyphs.fromImage(image);
+      }
+      else {
+          if (!image.image)
+              throw new Error('You must supply the image.');
+          Object.assign(opts, image);
+          opts.glyphs = Glyphs.fromImage(image.image);
+      }
+      return new Canvas(opts);
+  }
+  function withFont(src) {
+      if (typeof src === 'string') {
+          src = { font: src };
+      }
+      src.glyphs = Glyphs.fromFont(src);
+      return new Canvas(src);
+  }
   // Copy of: https://github.com/ondras/fastiles/blob/master/ts/utils.ts (v2.1.0)
   function createProgram(gl, ...sources) {
       const p = gl.createProgram();
@@ -7705,6 +8517,28 @@ void main() {
       }
   }
 
+  class Buffer extends Buffer$1 {
+      constructor(layer) {
+          super(layer.width, layer.height);
+          this._layer = layer;
+          layer.copyTo(this);
+      }
+      // get canvas() { return this._target; }
+      toGlyph(ch) {
+          if (typeof ch === 'number')
+              return ch;
+          return this._layer.toGlyph(ch);
+      }
+      render() {
+          this._layer.copy(this);
+          return this;
+      }
+      copyFromLayer() {
+          this._layer.copyTo(this);
+          return this;
+      }
+  }
+
   function make$6(...args) {
       let width = args[0];
       let height = args[1];
@@ -7740,6 +8574,22 @@ void main() {
       }
       return canvas;
   }
+
+  var index$5 = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	Glyphs: Glyphs,
+  	initGlyphs: initGlyphs,
+  	Layer: Layer,
+  	Buffer: Buffer,
+  	VERTICES_PER_TILE: VERTICES_PER_TILE,
+  	NotSupportedError: NotSupportedError,
+  	Canvas: Canvas,
+  	withImage: withImage,
+  	withFont: withFont,
+  	createProgram: createProgram,
+  	QUAD: QUAD,
+  	make: make$6
+  });
 
   class Sprite {
       constructor(ch, fg, bg, opacity = 100) {
@@ -7850,6 +8700,10 @@ void main() {
   	install: install$1$2,
   	Mixer: Mixer,
   	makeMixer: makeMixer
+  });
+
+  var types$1 = /*#__PURE__*/Object.freeze({
+  	__proto__: null
   });
 
   class Cache {
@@ -8159,6 +9013,11 @@ void main() {
       }
   }
 
+  var data = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	Data: Data
+  });
+
   class Blob {
       constructor(opts = {}) {
           this.options = {
@@ -8306,7 +9165,152 @@ void main() {
   //     INTENSITY_DARK: 20,
   //     INTENSITY_SHADOW: 50,
   // }); // less than 20% for highest color in rgb
-  make$9();
+  let LIGHT_COMPONENTS = make$9();
+  class Light {
+      constructor(color, radius = 1, fadeTo = 0, pass = false) {
+          this.fadeTo = 0;
+          this.passThroughActors = false;
+          this.id = null;
+          this.color = from$2(color); /* color */
+          this.radius = make$c(radius);
+          this.fadeTo = fadeTo;
+          this.passThroughActors = pass; // generally no, but miner light does (TODO - string parameter?  'false' or 'true')
+      }
+      copy(other) {
+          this.color = other.color;
+          this.radius.copy(other.radius);
+          this.fadeTo = other.fadeTo;
+          this.passThroughActors = other.passThroughActors;
+      }
+      get intensity() {
+          return intensity(this.color);
+      }
+      // Returns true if any part of the light hit cells that are in the player's field of view.
+      paint(site, x, y, maintainShadows = false, isMinersLight = false) {
+          if (!site)
+              return false;
+          let k;
+          // let colorComponents = [0,0,0];
+          let lightMultiplier = 0;
+          let radius = this.radius.value();
+          let outerRadius = Math.ceil(radius);
+          if (outerRadius < 1)
+              return false;
+          // calcLightComponents(colorComponents, this);
+          LIGHT_COMPONENTS = this.color.bake();
+          // console.log('paint', LIGHT_COMPONENTS.toString(true), x, y, outerRadius);
+          // the miner's light does not dispel IS_IN_SHADOW,
+          // so the player can be in shadow despite casting his own light.
+          const dispelShadows = !isMinersLight &&
+              !maintainShadows &&
+              !isDarkLight(LIGHT_COMPONENTS);
+          const fadeToPercent = this.fadeTo;
+          const grid$1 = alloc$1(site.width, site.height, 0);
+          site.calcFov(x, y, outerRadius, this.passThroughActors, (i, j) => {
+              grid$1[i][j] = 1;
+          });
+          // let overlappedFieldOfView = false;
+          const lightValue = [0, 0, 0];
+          grid$1.forCircle(x, y, outerRadius, (v, i, j) => {
+              if (!v)
+                  return;
+              // const cell = map.cell(i, j);
+              lightMultiplier = Math.floor(100 -
+                  (100 - fadeToPercent) *
+                      (distanceBetween(x, y, i, j) / radius));
+              for (k = 0; k < 3; ++k) {
+                  lightValue[k] = Math.floor((LIGHT_COMPONENTS._data[k] * lightMultiplier) / 100);
+              }
+              site.addCellLight(i, j, lightValue, dispelShadows);
+              // if (dispelShadows) {
+              //     map.clearCellFlag(i, j, CellFlags.IS_IN_SHADOW);
+              // }
+              // if (map.isVisible(i, j)) {
+              //     overlappedFieldOfView = true;
+              // }
+              // console.log(i, j, lightMultiplier, cell.light);
+          });
+          // if (dispelShadows) {
+          //     map.clearCellFlag(x, y, CellFlags.IS_IN_SHADOW);
+          // }
+          free$1(grid$1);
+          // return overlappedFieldOfView;
+          return true;
+      }
+  }
+  function intensity(light) {
+      let data = light;
+      if (light instanceof Color) {
+          data = light._data;
+      }
+      return Math.max(data[0], data[1], data[2]);
+  }
+  function isDarkLight(light, threshold = 20) {
+      return intensity(light) <= threshold;
+  }
+  function isShadowLight(light, threshold = 40) {
+      return intensity(light) <= threshold;
+  }
+  function make$3$1(...args) {
+      if (args.length == 1) {
+          const config = args[0];
+          if (typeof config === 'string') {
+              const cached = lights[config];
+              if (cached)
+                  return cached;
+              const [color, radius, fadeTo, pass] = config
+                  .split(/[,|]/)
+                  .map((t) => t.trim());
+              return new Light(from$2(color), from$4(radius || 1), Number.parseInt(fadeTo || '0'), !!pass && pass !== 'false');
+          }
+          else if (Array.isArray(config)) {
+              const [color, radius, fadeTo, pass] = config;
+              return new Light(color, radius, fadeTo, pass);
+          }
+          else if (config && config.color) {
+              return new Light(from$2(config.color), from$4(config.radius), Number.parseInt(config.fadeTo || '0'), config.pass);
+          }
+          else {
+              throw new Error('Unknown Light config - ' + config);
+          }
+      }
+      else {
+          const [color, radius, fadeTo, pass] = args;
+          return new Light(color, radius, fadeTo, pass);
+      }
+  }
+  const lights = {};
+  function from$5(...args) {
+      if (args.length != 1)
+          ERROR('Unknown Light config: ' + JSON.stringify(args));
+      const arg = args[0];
+      if (typeof arg === 'string') {
+          const cached = lights[arg];
+          if (cached)
+              return cached;
+      }
+      if (arg && arg.paint)
+          return arg;
+      return make$3$1(arg);
+  }
+  function install$5(id, ...args) {
+      let source;
+      if (args.length == 1) {
+          source = make$3$1(args[0]);
+      }
+      else {
+          source = make$3$1(args[0], args[1], args[2], args[3]);
+      }
+      lights[id] = source;
+      source.id = id;
+      return source;
+  }
+  function installAll(config) {
+      const entries = Object.entries(config);
+      entries.forEach(([name, info]) => {
+          install$5(name, info);
+      });
+  }
   // // TODO - Move?
   // export function playerInDarkness(
   //     map: Types.LightSite,
@@ -8322,13 +9326,286 @@ void main() {
   //     // );
   // }
 
-  make$a([
+  const LightFlags = make$a([
       'LIT',
       'IN_SHADOW',
       'DARK',
       // 'MAGIC_DARK',
       'CHANGED',
   ]);
+  class LightSystem {
+      constructor(map, opts = {}) {
+          this.staticLights = null;
+          this.site = map;
+          this.ambient = from$2(opts.ambient || 'white').toLight();
+          this.changed = false;
+          this.glowLightChanged = false;
+          this.dynamicLightChanged = false;
+          this.light = make$e(map.width, map.height, () => this.ambient.slice());
+          this.glowLight = make$e(map.width, map.height, () => this.ambient.slice());
+          this.oldLight = make$e(map.width, map.height, () => this.ambient.slice());
+          this.flags = make$e(map.width, map.height);
+          this.finishLightUpdate();
+      }
+      copy(other) {
+          this.setAmbient(other.ambient);
+          this.glowLightChanged = true;
+          this.dynamicLightChanged = true;
+          this.changed = true;
+          this.staticLights = null;
+          forEach(other.staticLights, (info) => this.addStatic(info.x, info.y, info.light));
+      }
+      getAmbient() {
+          return this.ambient;
+      }
+      setAmbient(light) {
+          if (light instanceof Color) {
+              light = light.toLight();
+          }
+          else if (!Array.isArray(light)) {
+              light = from$2(light).toLight();
+          }
+          for (let i = 0; i < 3; ++i) {
+              this.ambient[i] = light[i];
+          }
+          this.glowLightChanged = true;
+      }
+      get needsUpdate() {
+          return this.glowLightChanged || this.dynamicLightChanged;
+      }
+      getLight(x, y) {
+          return this.light[x][y];
+      }
+      setLight(x, y, light) {
+          const val = this.light[x][y];
+          for (let i = 0; i < 3; ++i) {
+              val[i] = light[i];
+          }
+      }
+      isLit(x, y) {
+          return !!(this.flags[x][y] & LightFlags.LIT);
+      }
+      isDark(x, y) {
+          return !!(this.flags[x][y] & LightFlags.DARK);
+      }
+      isInShadow(x, y) {
+          return !!(this.flags[x][y] & LightFlags.IN_SHADOW);
+      }
+      // isMagicDark(x: number, y: number): boolean {
+      //     return !!(this.flags[x][y] & LightFlags.MAGIC_DARK);
+      // }
+      lightChanged(x, y) {
+          return !!(this.flags[x][y] & LightFlags.CHANGED);
+      }
+      // setMagicDark(x: number, y: number, isDark = true) {
+      //     if (isDark) {
+      //         this.flags[x][y] |= LightFlags.MAGIC_DARK;
+      //     } else {
+      //         this.flags[x][y] &= ~LightFlags.MAGIC_DARK;
+      //     }
+      // }
+      get width() {
+          return this.site.width;
+      }
+      get height() {
+          return this.site.height;
+      }
+      addStatic(x, y, light) {
+          const info = {
+              x,
+              y,
+              light: from$5(light),
+              next: this.staticLights,
+          };
+          this.staticLights = info;
+          this.glowLightChanged = true;
+          return info;
+      }
+      removeStatic(x, y, light) {
+          let prev = this.staticLights;
+          if (!prev)
+              return;
+          function matches(info) {
+              if (info.x != x || info.y != y)
+                  return false;
+              return !light || light === info.light;
+          }
+          this.glowLightChanged = true;
+          while (prev && matches(prev)) {
+              prev = this.staticLights = prev.next;
+          }
+          if (!prev)
+              return;
+          let current = prev.next;
+          while (current) {
+              if (matches(current)) {
+                  prev.next = current.next;
+              }
+              else {
+                  prev = current;
+              }
+              current = current.next;
+          }
+      }
+      eachStaticLight(fn) {
+          forEach(this.staticLights, (info) => fn(info.x, info.y, info.light));
+          this.site.eachGlowLight((x, y, light) => {
+              fn(x, y, light);
+          });
+      }
+      eachDynamicLight(fn) {
+          this.site.eachDynamicLight(fn);
+      }
+      update(force = false) {
+          this.changed = false;
+          if (!force && !this.needsUpdate)
+              return false;
+          // Copy Light over oldLight
+          this.startLightUpdate();
+          if (!this.glowLightChanged) {
+              this.restoreGlowLights();
+          }
+          else {
+              // GW.debug.log('painting glow lights.');
+              // Paint all glowing tiles.
+              this.eachStaticLight((x, y, light) => {
+                  light.paint(this, x, y);
+              });
+              this.recordGlowLights();
+              this.glowLightChanged = false;
+          }
+          // Cycle through monsters and paint their lights:
+          this.eachDynamicLight((x, y, light) => light.paint(this, x, y)
+          // if (monst.mutationIndex >= 0 && mutationCatalog[monst.mutationIndex].light != lights['NO_LIGHT']) {
+          //     paint(map, mutationCatalog[monst.mutationIndex].light, actor.x, actor.y, false, false);
+          // }
+          // if (actor.isBurning()) { // monst.status.burning && !(actor.kind.flags & Flags.Actor.AF_FIERY)) {
+          // 	paint(map, lights.BURNING_CREATURE, actor.x, actor.y, false, false);
+          // }
+          // if (actor.isTelepathicallyRevealed()) {
+          // 	paint(map, lights['TELEPATHY_LIGHT'], actor.x, actor.y, false, true);
+          // }
+          );
+          // Also paint telepathy lights for dormant monsters.
+          // for (monst of map.dormantMonsters) {
+          //     if (monsterTelepathicallyRevealed(monst)) {
+          //         paint(map, lights['TELEPATHY_LIGHT'], monst.xLoc, monst.yLoc, false, true);
+          //     }
+          // }
+          this.finishLightUpdate();
+          // Miner's light:
+          this.site.eachMinersLight((x, y, light) => {
+              light.paint(this, x, y, true, true);
+          });
+          // const PLAYER = DATA.player;
+          // if (PLAYER) {
+          //     const PLAYERS_LIGHT = Light.lights.PLAYERS_LIGHT;
+          //     if (PLAYERS_LIGHT) {
+          //         PLAYERS_LIGHT.paint(this, PLAYER.x, PLAYER.y, true, true);
+          //     }
+          // }
+          this.dynamicLightChanged = false;
+          this.changed = true;
+          // if (PLAYER.status.invisible) {
+          //     PLAYER.info.foreColor = playerInvisibleColor;
+          // } else if (playerInDarkness()) {
+          // 	PLAYER.info.foreColor = playerInDarknessColor;
+          // } else if (pmap[PLAYER.xLoc][PLAYER.yLoc].flags & IS_IN_SHADOW) {
+          // 	PLAYER.info.foreColor = playerInShadowColor;
+          // } else {
+          // 	PLAYER.info.foreColor = playerInLightColor;
+          // }
+          return true;
+      }
+      startLightUpdate() {
+          // record Old Lights
+          // and then zero out Light.
+          let i = 0;
+          const flag = isShadowLight(this.ambient)
+              ? LightFlags.IN_SHADOW
+              : 0;
+          this.light.forEach((val, x, y) => {
+              for (i = 0; i < 3; ++i) {
+                  this.oldLight[x][y][i] = val[i];
+                  val[i] = this.ambient[i];
+              }
+              this.flags[x][y] = flag;
+          });
+      }
+      finishLightUpdate() {
+          forRect(this.width, this.height, (x, y) => {
+              // clear light flags
+              // this.flags[x][y] &= ~(LightFlags.LIT | LightFlags.DARK);
+              const oldLight = this.oldLight[x][y];
+              const light = this.light[x][y];
+              if (light.some((v, i) => v !== oldLight[i])) {
+                  this.flags[x][y] |= LightFlags.CHANGED;
+              }
+              if (isDarkLight(light)) {
+                  this.flags[x][y] |= LightFlags.DARK;
+              }
+              else if (!isShadowLight(light)) {
+                  this.flags[x][y] |= LightFlags.LIT;
+              }
+          });
+      }
+      recordGlowLights() {
+          let i = 0;
+          this.light.forEach((val, x, y) => {
+              const glowLight = this.glowLight[x][y];
+              for (i = 0; i < 3; ++i) {
+                  glowLight[i] = val[i];
+              }
+          });
+      }
+      restoreGlowLights() {
+          let i = 0;
+          this.light.forEach((val, x, y) => {
+              const glowLight = this.glowLight[x][y];
+              for (i = 0; i < 3; ++i) {
+                  val[i] = glowLight[i];
+              }
+          });
+      }
+      // PaintSite
+      calcFov(x, y, radius, passThroughActors, cb) {
+          const site = this.site;
+          const fov = new FOV({
+              isBlocked(x, y) {
+                  if (!passThroughActors && site.hasActor(x, y))
+                      return false;
+                  return site.blocksVision(x, y);
+              },
+              hasXY(x, y) {
+                  return site.hasXY(x, y);
+              },
+          });
+          fov.calculate(x, y, radius, cb);
+      }
+      addCellLight(x, y, light, dispelShadows) {
+          const val = this.light[x][y];
+          for (let i = 0; i < 3; ++i) {
+              val[i] += light[i];
+          }
+          if (dispelShadows && !isShadowLight(light)) {
+              this.flags[x][y] &= ~LightFlags.IN_SHADOW;
+          }
+      }
+  }
+
+  var index$3 = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	Light: Light,
+  	intensity: intensity,
+  	isDarkLight: isDarkLight,
+  	isShadowLight: isShadowLight,
+  	make: make$3$1,
+  	lights: lights,
+  	from: from$5,
+  	install: install$5,
+  	installAll: installAll,
+  	LightSystem: LightSystem
+  });
 
   // import * as IO from './io';
   class Events {
@@ -11591,6 +12868,14 @@ void main() {
   };
   installScene('menu', MenuScene);
 
+  var index$2$1 = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	AlertScene: AlertScene,
+  	ConfirmScene: ConfirmScene,
+  	PromptScene: PromptScene,
+  	MenuScene: MenuScene
+  });
+
   // import * as GWU from 'gw-utils';
   class Fieldset extends Dialog {
       constructor(opts) {
@@ -13814,7 +15099,7 @@ void main() {
           return prompt;
       }
   }
-  function make$8(opts) {
+  function make$f(opts) {
       const app = new App(opts);
       return app;
   }
@@ -13858,7 +15143,68 @@ void main() {
   	scenes: scenes,
   	installScene: installScene,
   	App: App,
-  	make: make$8
+  	make: make$f
+  });
+
+  var GWU = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    ERROR: ERROR,
+    FALSE: FALSE,
+    IDENTITY: IDENTITY,
+    IS_NONZERO: IS_NONZERO,
+    IS_ZERO: IS_ZERO,
+    NOOP: NOOP,
+    ONE: ONE,
+    TRUE: TRUE,
+    WARN: WARN,
+    ZERO: ZERO,
+    app: index,
+    arrayDelete: arrayDelete,
+    arrayFindRight: arrayFindRight,
+    arrayIncludesAll: arrayIncludesAll,
+    arrayInsert: arrayInsert,
+    arrayNext: arrayNext,
+    arrayNullify: arrayNullify,
+    arrayPrev: arrayPrev,
+    arrayRevEach: arrayRevEach,
+    arraysIntersect: arraysIntersect,
+    blob: blob,
+    buffer: buffer,
+    canvas: index$5,
+    clamp: clamp,
+    color: index$9,
+    colors: colors,
+    cosmetic: cosmetic,
+    data: data,
+    events: events,
+    first: first,
+    flag: flag,
+    fov: index$7,
+    frequency: frequency,
+    grid: grid,
+    lerp: lerp$1,
+    light: index$3,
+    list: list,
+    message: message,
+    nextIndex: nextIndex,
+    object: object,
+    path: index$6,
+    prevIndex: prevIndex,
+    queue: queue,
+    random: random$2,
+    range: range,
+    rng: rng,
+    scheduler: scheduler,
+    sprite: index$4,
+    sum: sum,
+    tags: tags,
+    text: index$8,
+    tween: tween,
+    types: types$1,
+    ui: index$2$1,
+    widget: index$1$1,
+    xave: xave,
+    xy: xy
   });
 
   class Obj {
@@ -14002,11 +15348,12 @@ void main() {
 
   // @returns boolean - indicates whether or not the target dies
   function damage(game, target, damage) {
+      // TODO - apply defenses...
       target.health -= damage.amount || 0;
       if (target.health <= 0) {
           // do all of these move to event handlers?
           game.messages.addCombat(`${target.kind.id} dies`);
-          game.level.setTile(target.x, target.y, "CORPSE");
+          game.level.setTile(target.x, target.y, "CORPSE"); // TODO - This should be above the floor (FIXTURE)
           target.trigger("death");
           game.level.removeActor(target);
           return true;
@@ -14195,10 +15542,11 @@ void main() {
       }
       // we have an actor and a target
       // Does this move to an event handler?  'damage', { amount: #, type: string }
-      game.messages.addCombat(`${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`);
       flash(game, target.x, target.y, "red", 150);
-      damage(game, target, { amount: actor.damage });
-      game.endTurn(actor, actor.kind.attackSpeed);
+      game.messages.addCombat(`${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`);
+      // TODO - Get 'next' attack details (and increment counter in actor)
+      damage(game, target, { amount: actor.damage[0] });
+      game.endTurn(actor, actor.attackSpeed[0]);
       return true;
   }
   installBump("attack", attack);
@@ -14291,6 +15639,7 @@ void main() {
       // we have an actor and a target
       // Does this move to an event handler?  'damage', { amount: #, type: string }
       actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
       projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
           if (!ok) {
               flash(game, xy.x, xy.y, "orange", 150);
@@ -14298,10 +15647,10 @@ void main() {
           else {
               flash(game, xy.x, xy.y, "red", 150);
               game.messages.addCombat(`${actor.kind.id} shoots ${target.kind.id}#{red [${actor.rangedDamage}]}`);
-              damage(game, target, { amount: actor.rangedDamage });
+              damage(game, target, { amount: actor.rangedDamage[0] });
           }
       });
-      game.endTurn(actor, actor.rangedAttackSpeed);
+      game.endTurn(actor, actor.rangedAttackSpeed[0]);
       return true;
   }
   installBump("fire", fire);
@@ -14313,6 +15662,7 @@ void main() {
       if (!actor.ammo)
           return false;
       actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
       projectile(game, actor, game.player, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
           if (!ok) {
               flash(game, xy.x, xy.y, "orange", 150);
@@ -14320,10 +15670,10 @@ void main() {
           else {
               flash(game, xy.x, xy.y, "red", 150);
               game.messages.addCombat(`${actor.kind.id} shoots ${player.kind.id}#{red [${actor.rangedDamage}]}`);
-              damage(game, player, { amount: actor.rangedDamage });
+              damage(game, player, { amount: actor.rangedDamage[0] });
           }
       });
-      game.endTurn(actor, actor.rangedAttackSpeed);
+      game.endTurn(actor, actor.rangedAttackSpeed[0]);
       return true;
   }
   function pickup(game, actor) {
@@ -14365,7 +15715,7 @@ void main() {
       }
       if (distToPlayer < 2) {
           // can attack diagonal
-          if (actor.damage > 0) {
+          if (actor.can_melee_attack) {
               if (attack(game, actor, player))
                   return;
           }
@@ -14385,18 +15735,18 @@ void main() {
       const kind = Object.assign({
           health: 10,
           notice: 10,
-          damage: 1,
           moveSpeed: 100,
-          attackSpeed: 0,
           ch: "!",
           fg: "white",
           bump: ["attack"],
           on: {},
+          damage: [],
+          attackSpeed: [],
           range: 0,
-          rangedDamage: 0,
+          rangedDamage: [],
+          rangedAttackSpeed: [],
           ammo: 0,
           tooClose: 0,
-          rangedAttackSpeed: 0,
           dropChance: 0,
           dropMatch: [],
           slots: new Map(),
@@ -14408,11 +15758,72 @@ void main() {
           kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
       }
       if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
-          kind.dropMatch.push("DROP"); // Default drops
+          kind.dropMatch.push("drop"); // Default drops
       }
-      kind.attackSpeed = kind.attackSpeed || kind.moveSpeed;
-      kind.rangedAttackSpeed = kind.rangedAttackSpeed || kind.attackSpeed;
-      if (kind.ammo == 0 && kind.rangedDamage > 0) {
+      // normalize attackSpeed
+      if (typeof cfg.attackSpeed === "undefined") {
+          kind.attackSpeed = [];
+      }
+      else if (typeof cfg.attackSpeed == "number") {
+          if (cfg.attackSpeed == 0) {
+              kind.attackSpeed = [];
+          }
+          else {
+              kind.attackSpeed = [cfg.attackSpeed];
+          }
+      }
+      else {
+          kind.attackSpeed = cfg.attackSpeed;
+      }
+      // normalize rangedAttackSpeed
+      if (typeof cfg.rangedAttackSpeed === "undefined") {
+          kind.rangedAttackSpeed = [];
+      }
+      else if (typeof cfg.rangedAttackSpeed == "number") {
+          if (cfg.rangedAttackSpeed == 0) {
+              kind.rangedAttackSpeed = [];
+          }
+          else {
+              kind.rangedAttackSpeed = [cfg.rangedAttackSpeed];
+          }
+      }
+      else {
+          kind.rangedAttackSpeed = cfg.rangedAttackSpeed;
+      }
+      if (typeof cfg.damage == "number") {
+          kind.damage = [cfg.damage];
+      }
+      if (typeof cfg.rangedDamage == "number") {
+          kind.rangedDamage = [cfg.rangedDamage];
+      }
+      if (kind.damage.length == 1 && kind.damage[0] == 0) {
+          kind.damage = [];
+          kind.attackSpeed = [];
+      }
+      else {
+          // normalize damage and attackSpeed
+          while (kind.damage.length > kind.attackSpeed.length) {
+              kind.attackSpeed.push(kind.attackSpeed[0] || kind.moveSpeed);
+          }
+      }
+      if (kind.range == 0 ||
+          (kind.rangedDamage.length == 1 && kind.rangedDamage[0] == 0)) {
+          kind.rangedDamage = [];
+          kind.rangedAttackSpeed = [];
+      }
+      else {
+          while (kind.attackSpeed.length > kind.damage.length) {
+              kind.damage.push(kind.damage[0]);
+          }
+      }
+      // normalize rangedDamage and rangedAttackSpeed
+      while (kind.rangedAttackSpeed.length > kind.rangedDamage.length) {
+          kind.rangedDamage.push(kind.rangedDamage[0]);
+      }
+      while (kind.rangedDamage.length > kind.rangedAttackSpeed.length) {
+          kind.rangedAttackSpeed.push(kind.rangedAttackSpeed[0] || kind.attackSpeed[0] || kind.moveSpeed);
+      }
+      if (kind.ammo == 0 && kind.range > 0) {
           kind.ammo = 10; // You get 10 shots by default
       }
       // TODO: Create drop language
@@ -14435,6 +15846,24 @@ void main() {
       return kinds$1[id.toLowerCase()] || null;
   }
 
+  const FLAGS = flag.make([
+      "ARTIFACT_COOLDOWN_40",
+      "ARROWS_10",
+      "LONGER_ROLL_100",
+      "MELEE_DAMAGE_30",
+      "MOBS_TARGET_YOU_MORE",
+      "MOVESPEED_AURA_15",
+      "NEGATE_HITS_30",
+      "POTION_COOLDOWN_40",
+      "POTION_BOOSTS_DEFENSE",
+      "POTION_HEALS_NEARBY_ALLIES",
+      "RANGED_DAMAGE_30",
+      "REDUCE_DAMAGE_35",
+      "WEAPON_DAMAGE_AURA_20",
+  ]);
+  // @ts-ignore
+  globalThis.ITEM_FLAGS = FLAGS;
+
   const kinds = {};
   function install$3(cfg) {
       if (typeof cfg.speed === "number") {
@@ -14455,6 +15884,7 @@ void main() {
           defense: 0,
           slot: null,
           tags: [],
+          flags: 0,
       }, cfg);
       // add damage as necessary
       while (kind.speed.length > kind.damage.length) {
@@ -14463,6 +15893,9 @@ void main() {
       kind.damage.length = kind.speed.length; // truncate any extra damage
       if (typeof cfg.tags == "string") {
           kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      if (typeof cfg.flags !== "number") {
+          kind.flags = flag.from_safe(FLAGS, cfg.flags);
       }
       //   if (typeof cfg.bump === "string") {
       //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -14494,7 +15927,9 @@ void main() {
           if (!this.kind)
               throw new Error("Must have kind.");
           this.data = {};
-          this.power = cfg.power || 1;
+          this._damage = this.kind.damage.slice();
+          this._defense = this.kind.defense;
+          this._power = cfg.power || 1;
           this.on("add", (level) => {
               this._level = level;
           });
@@ -14506,23 +15941,31 @@ void main() {
                   return;
               this.on(key, value);
           });
+          this.power = this._power; // cause calculations to fire
       }
       draw(buf) {
           buf.drawSprite(this.x, this.y, this.kind);
       }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          val = val || 1;
+          this._power = val;
+          this._damage = this.kind.damage.map((v) => Math.round(v * Math.pow(1.025, val)));
+          this._defense = Math.round(this.kind.defense * Math.pow(1.025, val));
+      }
       get damage() {
-          // TODO - scale with power
-          return this.kind.damage[0];
+          return this._damage;
       }
       get range() {
           return this.kind.range;
       }
       get speed() {
-          return this.kind.speed[0];
+          return this.kind.speed;
       }
       get defense() {
-          // TODO - scale with power
-          return this.kind.defense;
+          return this._defense;
       }
       get slot() {
           return this.kind.slot;
@@ -14625,9 +16068,11 @@ void main() {
           if (!this.kind)
               throw new Error("Must have kind.");
           this.kind.moveSpeed = this.kind.moveSpeed || 100;
+          this.item_flags = 0;
           this.data = {};
           this.power = cfg.power || 1;
-          this.health = this.kind.health || 0; // TODO - scale with power?
+          this.health_max = this.kind.health || 1; // TODO - scale with power?
+          this.health = this.health_max;
           this.ammo = this.kind.ammo || 0; // TODO - scale with power?
           this.on("add", (level) => {
               level.game.scheduler.push(this, this.kind.moveSpeed);
@@ -14660,7 +16105,7 @@ void main() {
       // attributes
       get damage() {
           // TODO - scale with power
-          return this.kind.damage || 0;
+          return this.kind.damage;
       }
       get attackSpeed() {
           return this.kind.attackSpeed;
@@ -14678,6 +16123,13 @@ void main() {
           return this.kind.moveSpeed;
       }
       //
+      has_item_flag(flag) {
+          return (this.item_flags & flag) > 0;
+      }
+      // TODO - Should this be a method instead of a property?
+      get can_melee_attack() {
+          return this.damage.length > 0 && this.damage[0] > 0;
+      }
       startTurn(game) {
           this._turnTime = 0;
           this.trigger("start", game);
@@ -14810,7 +16262,7 @@ void main() {
                   console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
               }
               else {
-                  this.slots[slot] = item;
+                  this.equip(item);
                   console.log(`player Item = ${item.kind.id} @ ${slot}`);
               }
           });
@@ -14852,6 +16304,37 @@ void main() {
           return super.rangedAttackSpeed;
       }
       //
+      equip(item) {
+          if (item.slot === null) {
+              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
+          }
+          this.slots[item.slot] = item;
+          this.item_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.item_flags |= i.kind.flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+      }
+      unequip_slot(slot) {
+          this.slots[slot] = null;
+          this.item_flags = 0;
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.item_flags |= i.kind.flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+      }
       act(game) {
           this.startTurn(game);
           if (this.goalPath && this.followPath && this.goalPath.length) {
@@ -20440,28 +21923,28 @@ void main() {
       }
       showActor(actor) {
           let text = actor.kind.id + "\n";
-          text += "Health: " + actor.health + "/" + actor.kind.health + "\n";
-          text += "Moves : " + actor.kind.moveSpeed + "\n";
-          if (actor.kind.damage > 0) {
+          text += "Health: " + actor.health + "/" + actor.health_max + "\n";
+          text += "Moves : " + actor.moveSpeed + "\n";
+          if (actor.damage.length > 0) {
               // TODO - Add Hero weapons
               text += "Melee : damage=" + actor.damage + "\n";
-              text += "        speed =" + actor.kind.attackSpeed + "\n";
+              text += "        speed =" + actor.attackSpeed + "\n";
           }
           else {
               text += "Melee : None\n";
           }
-          if (actor.kind.range > 0) {
+          if (actor.range > 0) {
               // TODO - Add Hero weapons
               // TODO - Add Ammo
               text +=
                   "Ranged: damage=" +
-                      actor.kind.rangedDamage +
+                      actor.rangedDamage +
                       "\n" +
                       "      : speed =" +
-                      actor.kind.rangedAttackSpeed +
+                      actor.rangedAttackSpeed +
                       "\n" +
                       "      : range =" +
-                      actor.kind.range +
+                      actor.range +
                       "\n" +
                       "      : ammo=" +
                       actor.ammo +
@@ -20476,17 +21959,22 @@ void main() {
       }
       showPlayer(player) {
           let text = player.kind.id + "\n";
-          text += "Health: " + player.health + "/" + player.kind.health + "\n";
-          text += "Moves : " + player.kind.moveSpeed + "\n";
+          const armor = player.slots.armor;
+          if (armor) {
+              text += "Health: " + armor.kind.id + "\n";
+              text += "      : " + player.health + "/" + player.health_max + "\n";
+          }
+          else {
+              text += "Health: " + player.health + "/" + player.health_max + "\n";
+          }
+          text += "Moves : " + player.moveSpeed + "\n";
           const melee = player.slots.melee;
           if (melee) {
-              // TODO - Add Hero weapons
               text += "Melee : " + melee.kind.id + "\n";
               text += "      : damage=" + player.damage + "\n";
               text += "      : speed =" + player.attackSpeed + "\n";
           }
-          else if (player.kind.damage > 0) {
-              // TODO - Add Hero weapons
+          else if (player.damage.length > 0) {
               text += "Melee : damage=" + player.damage + "\n";
               text += "        speed =" + player.attackSpeed + "\n";
           }
@@ -20501,9 +21989,7 @@ void main() {
               text += "      : speed =" + player.rangedAttackSpeed + "\n";
               text += "      : ammo  =" + player.ammo + "\n";
           }
-          else if (player.kind.range > 0) {
-              // TODO - Add Hero weapons
-              // TODO - Add Ammo
+          else if (player.range > 0) {
               text += "Ranged: damage=" + player.rangedDamage + "\n";
               text += "      : speed =" + player.rangedAttackSpeed + "\n";
               text += "      : range =" + player.range + "\n";
@@ -20928,6 +22414,7 @@ void main() {
       slots: {
           ranged: "SHORTBOW",
           melee: "DAGGER",
+          armor: "SCALE_MAIL",
       },
   });
   install$4({
@@ -21118,7 +22605,7 @@ void main() {
               return true;
           },
       },
-      tags: "DROP",
+      tags: "drop",
   });
   install$3({
       id: "ARROWS",
@@ -21134,7 +22621,7 @@ void main() {
               return true;
           },
       },
-      tags: "DROP",
+      tags: "drop",
   });
 
   install$3({
@@ -21142,21 +22629,24 @@ void main() {
       ch: "/",
       fg: "yellow",
       speed: 60,
-      damage: 5, // dps = 5 * 100 / 60 = 8.3
+      damage: 5,
+      tags: "melee",
   });
   install$3({
       id: "SWORD",
       ch: "/",
       fg: "yellow",
       speed: 100,
-      damage: 10, // dps = 10 * 100 / 100 = 10
+      damage: 10,
+      tags: "melee",
   });
   install$3({
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
       speed: [100, 100, 150],
-      damage: [9, 9, 18], // dps = 9/9/12 [net=10]
+      damage: [9, 9, 18],
+      tags: "melee",
   });
   install$3({
       id: "SHORTBOW",
@@ -21164,7 +22654,8 @@ void main() {
       fg: "yellow",
       speed: 60,
       damage: 5,
-      range: 10, // TODO - shrink to ?6?
+      range: 10,
+      tags: "ranged",
   });
   install$3({
       id: "BOW",
@@ -21173,6 +22664,7 @@ void main() {
       speed: 100,
       damage: 10,
       range: 10,
+      tags: "ranged",
   });
   install$3({
       id: "LONGBOW",
@@ -21181,6 +22673,107 @@ void main() {
       speed: 150,
       damage: 24,
       range: 15,
+      tags: "ranged",
+  });
+
+  install$3({
+      id: "SCALE_MAIL",
+      name: "Scale Mail",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
+      tags: "armor",
+  });
+  install$3({
+      id: "MERCENARY_ARMOR",
+      name: "Mercenary Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
+      tags: "armor",
+  });
+  install$3({
+      id: "GUARDS_ARMOR",
+      name: "Guards Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
+      tags: "armor",
+  });
+  install$3({
+      id: "HUNTERS_ARMOR",
+      name: "Hunters Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "RANGED_DAMAGE_30 | ARROWS_10",
+      tags: "armor",
+  });
+  install$3({
+      id: "ARCHERS_ARMOR",
+      name: "Archers Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
+      tags: "armor",
+  });
+  install$3({
+      id: "REINFORCED_MAIL",
+      name: "Reinforced Mail",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+      tags: "armor",
+  });
+  install$3({
+      id: "STALWART_ARMOR",
+      name: "Stalwart Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
+      tags: "armor",
+  });
+  install$3({
+      id: "PLATE_ARMOR",
+      name: "Plate Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+      tags: "armor",
+  });
+  install$3({
+      id: "FULL_METAL_ARMOR",
+      name: "Full Metal Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
+      tags: "armor",
+  });
+  install$3({
+      id: "CHAMPIONS_ARMOR",
+      name: "Champions Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
+      tags: "armor",
+  });
+  install$3({
+      id: "HEROS_ARMOR",
+      name: "Heros Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 3,
+      flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
+      tags: "armor",
   });
 
   function start() {
@@ -21205,6 +22798,8 @@ void main() {
       });
   }
   globalThis.onload = start;
+  // @ts-ignore
+  globalThis.GWU = GWU;
   // async function playGame(game) {
   //   // create and dig the map
   //   return game.start();

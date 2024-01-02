@@ -238,13 +238,13 @@ export function attack(
 
   // we have an actor and a target
   // Does this move to an event handler?  'damage', { amount: #, type: string }
+  FX.flash(game, target.x, target.y, "red", 150);
   game.messages.addCombat(
     `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
   );
-
-  FX.flash(game, target.x, target.y, "red", 150);
-  EFFECT.damage(game, target, { amount: actor.damage });
-  game.endTurn(actor, actor.kind.attackSpeed);
+  // TODO - Get 'next' attack details (and increment counter in actor)
+  EFFECT.damage(game, target, { amount: actor.damage[0] });
+  game.endTurn(actor, actor.attackSpeed[0]);
 
   return true;
 }
@@ -355,6 +355,7 @@ export function fire(
 
   actor.ammo -= 1;
 
+  // TODO - get next attack details (and increment counter in actor)
   FX.projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then(
     (xy, ok) => {
       if (!ok) {
@@ -366,12 +367,13 @@ export function fire(
             actor.rangedDamage
           }]}`
         );
-        EFFECT.damage(game, target!, { amount: actor.rangedDamage });
+
+        EFFECT.damage(game, target!, { amount: actor.rangedDamage[0] });
       }
     }
   );
 
-  game.endTurn(actor, actor.rangedAttackSpeed);
+  game.endTurn(actor, actor.rangedAttackSpeed[0]);
   return true;
 }
 
@@ -385,6 +387,7 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
   if (!actor.ammo) return false;
   actor.ammo -= 1;
 
+  // TODO - get next attack details (and increment counter in actor)
   FX.projectile(
     game,
     actor,
@@ -399,11 +402,11 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
       game.messages.addCombat(
         `${actor.kind.id} shoots ${player.kind.id}#{red [${actor.rangedDamage}]}`
       );
-      EFFECT.damage(game, player, { amount: actor.rangedDamage });
+      EFFECT.damage(game, player, { amount: actor.rangedDamage[0] });
     }
   });
 
-  game.endTurn(actor, actor.rangedAttackSpeed);
+  game.endTurn(actor, actor.rangedAttackSpeed[0]);
   return true;
 }
 

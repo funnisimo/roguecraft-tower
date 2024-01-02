@@ -22,8 +22,10 @@ export class Actor extends Obj {
   kind: ActorKind;
   data: Record<string, any>;
   health: number;
+  health_max: number;
   ammo: number;
   power: number;
+  item_flags: number;
 
   leader: Actor | null = null;
 
@@ -33,9 +35,11 @@ export class Actor extends Obj {
     if (!this.kind) throw new Error("Must have kind.");
 
     this.kind.moveSpeed = this.kind.moveSpeed || 100;
+    this.item_flags = 0;
     this.data = {};
     this.power = cfg.power || 1;
-    this.health = this.kind.health || 0; // TODO - scale with power?
+    this.health_max = this.kind.health || 1; // TODO - scale with power?
+    this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
 
     this.on("add", (level: Level) => {
@@ -70,12 +74,12 @@ export class Actor extends Obj {
   }
 
   // attributes
-  get damage(): number {
+  get damage(): number[] {
     // TODO - scale with power
-    return this.kind.damage || 0;
+    return this.kind.damage;
   }
 
-  get attackSpeed(): number {
+  get attackSpeed(): number[] {
     return this.kind.attackSpeed;
   }
 
@@ -83,11 +87,11 @@ export class Actor extends Obj {
     return this.kind.range;
   }
 
-  get rangedDamage(): number {
+  get rangedDamage(): number[] {
     return this.kind.rangedDamage;
   }
 
-  get rangedAttackSpeed(): number {
+  get rangedAttackSpeed(): number[] {
     return this.kind.rangedAttackSpeed;
   }
 
@@ -95,6 +99,15 @@ export class Actor extends Obj {
     return this.kind.moveSpeed;
   }
   //
+
+  has_item_flag(flag: number): boolean {
+    return (this.item_flags & flag) > 0;
+  }
+
+  // TODO - Should this be a method instead of a property?
+  get can_melee_attack(): boolean {
+    return this.damage.length > 0 && this.damage[0] > 0;
+  }
 
   startTurn(game: Game) {
     this._turnTime = 0;

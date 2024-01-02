@@ -16,7 +16,7 @@ ITEM.install({
       return true;
     },
   },
-  tags: "DROP",
+  tags: "drop",
 });
 
 ITEM.install({
@@ -33,5 +33,5 @@ ITEM.install({
       return true;
     },
   },
-  tags: "DROP",
+  tags: "drop",
 });
