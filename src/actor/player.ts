@@ -11,6 +11,9 @@ export class Player extends ACTOR.Actor {
   mapToMe: GWU.path.DijkstraMap;
   fov: GWU.grid.NumGrid | null;
 
+  potion: number;
+  potion_max: number;
+
   goalPath: GWU.xy.Loc[] | null;
   followPath: boolean;
 
@@ -23,6 +26,8 @@ export class Player extends ACTOR.Actor {
     this.goalPath = null;
     this.followPath = false;
     this.slots = {};
+    this.potion_max = 40 * 200;
+    this.potion = this.potion_max; // Potion is ready
 
     this.on("add", (level: Level) => {
       this._level = level;
@@ -40,6 +45,9 @@ export class Player extends ACTOR.Actor {
         this.fov = null;
       }
       this.clearGoal();
+    });
+    this.on("turn_end", (game: Game, time: number) => {
+      this.potion = Math.min(this.potion + time, this.potion_max);
     });
 
     // Need items in slots....
@@ -93,6 +101,10 @@ export class Player extends ACTOR.Actor {
       return ranged.speed;
     }
     return super.rangedAttackSpeed;
+  }
+
+  get can_use_potion(): boolean {
+    return this.potion >= this.potion_max;
   }
   //
 

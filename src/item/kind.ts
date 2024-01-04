@@ -97,7 +97,6 @@ export function install(cfg: KindConfig) {
   ) as ItemKind;
 
   if (kind.name.length == 0) {
-    // TODO - fix capitalization
     kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
   }
 

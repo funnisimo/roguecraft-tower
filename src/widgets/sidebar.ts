@@ -36,7 +36,7 @@ export class Sidebar extends GWU.app.Widget {
     buf.drawText(x, y, "Hero");
 
     this.drawHealth(buf, x, y + 1, 28, player);
-    // buf.drawText(x, y + 1, "" + player.health);
+    this.drawPotion(buf, x, y + 2, 28, player);
     return 2;
   }
 
@@ -92,6 +92,26 @@ export class Sidebar extends GWU.app.Widget {
       actor.health,
       actor.health_max,
       "HEALTH"
+    );
+  }
+
+  drawPotion(
+    buf: GWU.buffer.Buffer,
+    x: number,
+    y: number,
+    w: number,
+    player: Player
+  ) {
+    this.drawProgress(
+      buf,
+      x,
+      y,
+      w,
+      "white",
+      GWU.color.colors.blue,
+      player.potion,
+      player.potion_max,
+      "Potion"
     );
   }
 

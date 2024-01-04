@@ -4,6 +4,7 @@ import * as FX from "../fx/index";
 import { Game } from "./game";
 import { Actor } from "../actor/actor";
 import * as EFFECT from "../effect";
+import { Player } from "../actor/player";
 
 export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
 const actionsByName: Record<string, ActionFn> = {};
@@ -431,4 +432,23 @@ export function pickup(game: Game, actor: Actor): boolean {
     game.addMessage("Nothing to pickup.");
   }
   return idle(game, actor);
+}
+
+export function potion(game: Game, player: Player): boolean {
+  if (!player.can_use_potion) {
+    game.addMessage("Not ready.");
+    // TODO - spend time? idle?
+    return false;
+  }
+  if (player.health >= player.health_max) {
+    game.addMessage("You do not need to drink a potion.");
+    // TODO - spend time? idle?
+    return false;
+  }
+
+  const heal = Math.floor(player.health_max * 0.75);
+  player.health = Math.min(player.health + heal, player.health_max);
+  game.addMessage("You feel much better.");
+  game.endTurn(player, player.moveSpeed);
+  return true;
 }

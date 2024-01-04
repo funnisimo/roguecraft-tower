@@ -15718,6 +15718,23 @@ void main() {
       }
       return idle(game, actor);
   }
+  function potion(game, player) {
+      if (!player.can_use_potion) {
+          game.addMessage("Not ready.");
+          // TODO - spend time? idle?
+          return false;
+      }
+      if (player.health >= player.health_max) {
+          game.addMessage("You do not need to drink a potion.");
+          // TODO - spend time? idle?
+          return false;
+      }
+      const heal = Math.floor(player.health_max * 0.75);
+      player.health = Math.min(player.health + heal, player.health_max);
+      game.addMessage("You feel much better.");
+      game.endTurn(player, player.moveSpeed);
+      return true;
+  }
 
   function ai(game, actor) {
       const player = game.player;
@@ -15922,7 +15939,6 @@ void main() {
           flags: 0,
       }, cfg);
       if (kind.name.length == 0) {
-          // TODO - fix capitalization
           kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
       }
       // add damage as necessary
@@ -16183,11 +16199,11 @@ void main() {
       }
       startTurn(game) {
           this._turnTime = 0;
-          this.trigger("start", game);
+          this.trigger("turn_start", game);
       }
       endTurn(game, time) {
           this._turnTime = time;
-          this.trigger("end", game, time);
+          this.trigger("turn_end", game, time);
       }
       hasActed() {
           return this._turnTime > 0;
@@ -16289,6 +16305,8 @@ void main() {
           this.goalPath = null;
           this.followPath = false;
           this.slots = {};
+          this.potion_max = 40 * 200;
+          this.potion = this.potion_max; // Potion is ready
           this.on("add", (level) => {
               this._level = level;
               this.updateMapToMe();
@@ -16305,6 +16323,9 @@ void main() {
                   this.fov = null;
               }
               this.clearGoal();
+          });
+          this.on("turn_end", (game, time) => {
+              this.potion = Math.min(this.potion + time, this.potion_max);
           });
           // Need items in slots....
           Object.entries(cfg.kind.slots).forEach(([slot, id]) => {
@@ -16353,6 +16374,9 @@ void main() {
               return ranged.speed;
           }
           return super.rangedAttackSpeed;
+      }
+      get can_use_potion() {
+          return this.potion >= this.potion_max;
       }
       //
       equip(item) {
@@ -21489,6 +21513,10 @@ void main() {
               //      - Send event to level scene?
               this.scene.trigger("inventory", this);
           });
+          this.events.on("p", (e) => {
+              console.log("POTION");
+              potion(this, this.player);
+          });
           this.events.on(" ", (e) => {
               idle(this, this.player);
               this.scene.needsDraw = true;
@@ -21811,7 +21839,7 @@ void main() {
       drawPlayer(buf, x, y, player) {
           buf.drawText(x, y, "Hero");
           this.drawHealth(buf, x, y + 1, 28, player);
-          // buf.drawText(x, y + 1, "" + player.health);
+          this.drawPotion(buf, x, y + 2, 28, player);
           return 2;
       }
       drawActor(buf, x, y, actor) {
@@ -21834,6 +21862,9 @@ void main() {
           const pct = actor.health / actor.health_max;
           const bg = index$9.colors.green.mix(index$9.colors.red, 100 * (1 - pct));
           this.drawProgress(buf, x, y, w, "white", bg, actor.health, actor.health_max, "HEALTH");
+      }
+      drawPotion(buf, x, y, w, player) {
+          this.drawProgress(buf, x, y, w, "white", index$9.colors.blue, player.potion, player.potion_max, "Potion");
       }
       _draw(buf) {
           const game = this.scene.data;
@@ -21984,19 +22015,10 @@ void main() {
               text += "Melee : None\n";
           }
           if (actor.range > 0) {
-              text +=
-                  "Ranged: damage=" +
-                      actor.rangedDamage +
-                      "\n" +
-                      "      : speed =" +
-                      actor.rangedAttackSpeed +
-                      "\n" +
-                      "      : range =" +
-                      actor.range +
-                      "\n" +
-                      "      : ammo=" +
-                      actor.ammo +
-                      "\n";
+              text += "Ranged: damage=" + actor.rangedDamage + "\n";
+              text += "      : speed =" + actor.rangedAttackSpeed + "\n";
+              text += "      : range =" + actor.range + "\n";
+              text += "      : ammo=" + actor.ammo + "\n";
           }
           else {
               text += "Ranged: None";

@@ -33,19 +33,10 @@ export class Details extends GWU.widget.Dialog {
       text += "Melee : None\n";
     }
     if (actor.range > 0) {
-      text +=
-        "Ranged: damage=" +
-        actor.rangedDamage +
-        "\n" +
-        "      : speed =" +
-        actor.rangedAttackSpeed +
-        "\n" +
-        "      : range =" +
-        actor.range +
-        "\n" +
-        "      : ammo=" +
-        actor.ammo +
-        "\n";
+      text += "Ranged: damage=" + actor.rangedDamage + "\n";
+      text += "      : speed =" + actor.rangedAttackSpeed + "\n";
+      text += "      : range =" + actor.range + "\n";
+      text += "      : ammo=" + actor.ammo + "\n";
     } else {
       text += "Ranged: None";
     }

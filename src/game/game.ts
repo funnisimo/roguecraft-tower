@@ -109,6 +109,10 @@ export class Game {
       //      - Send event to level scene?
       this.scene!.trigger("inventory", this);
     });
+    this.events.on("p", (e) => {
+      console.log("POTION");
+      ACTIONS.potion(this, this.player);
+    });
     this.events.on(" ", (e) => {
       ACTIONS.idle(this, this.player);
       this.scene!.needsDraw = true;

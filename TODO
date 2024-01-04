@@ -30,8 +30,8 @@ Consumables:
 [] Fish - 20%/2s + 10% oxygen
 
 Potion:
-[] Make potion innate - 75% heal
-[] Press 'h' to activate?
+[] Make potion innate - 75% heal immediate
+[] Press 'h' to activate? 'p'?
 [] Potion cooldown - 40s (8000 time units?)
 [] Add potion status to sidebar
 

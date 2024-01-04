@@ -115,12 +115,12 @@ export class Actor extends Obj {
 
   startTurn(game: Game) {
     this._turnTime = 0;
-    this.trigger("start", game);
+    this.trigger("turn_start", game);
   }
 
   endTurn(game: Game, time: number) {
     this._turnTime = time;
-    this.trigger("end", game, time);
+    this.trigger("turn_end", game, time);
   }
 
   hasActed() {
