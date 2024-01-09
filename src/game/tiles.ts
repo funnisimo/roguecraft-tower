@@ -7,7 +7,8 @@ import { Obj } from "./obj";
 export interface TileEvents {
   // tile is this
   place?: (this: TileInfo, game: Game, x: number, y: number) => void;
-  tick?: (this: TileInfo, game: Game, x: number, y: number) => void;
+
+  tick?: (this: TileInfo, game: Game, x: number, y: number, dt: number) => void;
 
   // x, y from actor, tile is this
   enter?: (this: TileInfo, game: Game, actor: Actor) => void;

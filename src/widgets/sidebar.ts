@@ -37,14 +37,29 @@ export class Sidebar extends GWU.app.Widget {
 
     this.drawHealth(buf, x, y + 1, 28, player);
     this.drawPotion(buf, x, y + 2, 28, player);
-    return 3; // Hero + health + potion
+
+    let lines = 3; // Hero + health + potion
+    player.statuses.forEach((status) => {
+      if (status) {
+        lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+      }
+    });
+
+    return lines;
   }
 
   drawActor(buf: GWU.buffer.Buffer, x: number, y: number, actor: Actor) {
     buf.drawText(x, y, actor.name, actor.kind.fg);
     this.drawHealth(buf, x, y + 1, 28, actor);
-    // buf.drawText(x, y + 1, "" + actor.health, "red");
-    return 2; // name + health
+
+    let lines = 2; // name + health
+    actor.statuses.forEach((status) => {
+      if (status) {
+        lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+      }
+    });
+
+    return lines;
   }
 
   drawProgress(

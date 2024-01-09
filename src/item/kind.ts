@@ -10,6 +10,9 @@ export interface ItemEvents {
   // bump?: (game: Game, actor: Item, other: Item) => void;
   use?: (this: Item, game: Game, actor: Actor) => boolean;
   pickup?: (this: Item, game: Game, actor: Actor) => boolean;
+
+  // TODO - equip?  unequip?
+
   [key: string]: CallbackFn | undefined;
 }
 

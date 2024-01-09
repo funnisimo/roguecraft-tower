@@ -10,6 +10,7 @@ import * as ACTIONS from "../game/actions";
 
 import { ActorKind, getKind } from "./kind";
 import { Item, placeRandom } from "../item";
+import { Status } from "./status";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -26,6 +27,7 @@ export class Actor extends Obj {
   ammo: number;
   power: number;
   item_flags: number;
+  statuses: (Status | null)[];
 
   leader: Actor | null = null;
 
@@ -41,6 +43,7 @@ export class Actor extends Obj {
     this.health_max = this.kind.health || 1; // TODO - scale with power?
     this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
+    this.statuses = [];
 
     this.on("add", (level: Level) => {
       level.game!.scheduler.push(this, this.kind.moveSpeed);
@@ -113,6 +116,28 @@ export class Actor extends Obj {
     return this.damage.length > 0 && this.damage[0] > 0;
   }
 
+  add_status(status: Status) {
+    const current = this.statuses.findIndex(
+      (current) => current && current.merge(status)
+    );
+    if (current >= 0) {
+      return;
+    }
+    const empty = this.statuses.findIndex((s) => !s);
+    if (empty >= 0) {
+      this.statuses[empty] = status;
+    } else {
+      this.statuses.push(status);
+    }
+  }
+
+  remove_status(status: Status) {
+    const index = this.statuses.indexOf(status);
+    if (index >= 0) {
+      this.statuses[index] = null;
+    }
+  }
+
   startTurn(game: Game) {
     this._turnTime = 0;
     this.trigger("turn_start", game);
@@ -170,6 +195,16 @@ export class Actor extends Obj {
     }
 
     return false; // did nothing
+  }
+
+  tick(game: Game, time: number) {
+    Object.values(this.statuses).forEach((status, i) => {
+      if (status) {
+        if (!status.tick(this, game, time)) {
+          this.statuses[i] = null;
+        }
+      }
+    });
   }
 }
 

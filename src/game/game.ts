@@ -276,9 +276,9 @@ export class Game {
     e.stopPropagation();
   }
 
-  tick() {
-    this.level!.tick(this);
-    this.wait(100, () => this.tick());
+  tick(dt: number = 50) {
+    this.level!.tick(this, dt);
+    this.wait(dt, () => this.tick(dt));
   }
 
   endTurn(actor: ACTOR.Actor, time: number) {

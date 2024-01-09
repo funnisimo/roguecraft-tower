@@ -15523,6 +15523,13 @@ void main() {
       return false;
   }
 
+  function heal(game, target, heal) {
+      if (heal.amount <= 0)
+          return;
+      heal.amount = Math.min(heal.amount, target.health_max - target.health);
+      target.health += heal.amount;
+  }
+
   const actionsByName = {};
   function installBump(name, fn) {
       actionsByName[name] = fn;
@@ -16045,6 +16052,7 @@ void main() {
           this.health_max = this.kind.health || 1; // TODO - scale with power?
           this.health = this.health_max;
           this.ammo = this.kind.ammo || 0; // TODO - scale with power?
+          this.statuses = [];
           this.on("add", (level) => {
               level.game.scheduler.push(this, this.kind.moveSpeed);
               this._level = level;
@@ -16104,6 +16112,25 @@ void main() {
       get can_melee_attack() {
           return this.damage.length > 0 && this.damage[0] > 0;
       }
+      add_status(status) {
+          const current = this.statuses.findIndex((current) => current && current.merge(status));
+          if (current >= 0) {
+              return;
+          }
+          const empty = this.statuses.findIndex((s) => !s);
+          if (empty >= 0) {
+              this.statuses[empty] = status;
+          }
+          else {
+              this.statuses.push(status);
+          }
+      }
+      remove_status(status) {
+          const index = this.statuses.indexOf(status);
+          if (index >= 0) {
+              this.statuses[index] = null;
+          }
+      }
       startTurn(game) {
           this._turnTime = 0;
           this.trigger("turn_start", game);
@@ -16156,6 +16183,15 @@ void main() {
               }
           }
           return false; // did nothing
+      }
+      tick(game, time) {
+          Object.values(this.statuses).forEach((status, i) => {
+              if (status) {
+                  if (!status.tick(this, game, time)) {
+                      this.statuses[i] = null;
+                  }
+              }
+          });
       }
   }
   function make$2(id, opts) {
@@ -16408,6 +16444,59 @@ void main() {
           z: 1,
           kind,
       });
+  }
+
+  class Status {
+      start(actor, game) { }
+      tick(actor, game, time) {
+          return false; // no longer active
+      }
+      stop(actor, game) { }
+      merge(status) {
+          return false;
+      }
+      draw_sidebar(buf, x, y, width, actor) {
+          return 0;
+      }
+      draw_details() { }
+  }
+  class RegenData {
+      constructor(amount, time) {
+          this.amount = amount;
+          this.time = time;
+      }
+  }
+  class RegenStatus extends Status {
+      constructor(amount, time) {
+          super();
+          this.data = [new RegenData(amount / time, time)];
+      }
+      tick(actor, game, time) {
+          console.log("Regen tick");
+          let still_active = false;
+          this.data.forEach((d) => {
+              if (d.amount > 0.0 && d.time > 0) {
+                  still_active = true;
+                  const amount = Math.round(d.amount * Math.min(d.time, time));
+                  d.time -= time;
+                  heal(game, actor, { amount });
+              }
+          });
+          return still_active;
+      }
+      merge(status) {
+          if (status instanceof RegenStatus) {
+              // do merge
+              this.data = this.data.concat(status.data);
+              status.data = [];
+              return true;
+          }
+          return false;
+      }
+      draw_sidebar(buf, x, y, width, actor) {
+          buf.drawText(x, y, "{Regen}", "red");
+          return 1;
+      }
   }
 
   const tileIds = {};
@@ -20982,20 +21071,24 @@ void main() {
       stop(game) {
           this.game = null;
       }
-      tick(game) {
-          if (this.done || !this.started)
-              return;
+      tick(game, dt) {
+          // tick actors
+          this.actors.forEach((a) => {
+              a.tick(game, dt);
+          });
+          // tick tiles
           this.tiles.forEach((index, x, y) => {
               const tile = tilesByIndex[index];
               if (tile.on && tile.on.tick) {
-                  tile.on.tick.call(tile, game, x, y);
+                  tile.on.tick.call(tile, game, x, y, dt);
               }
           });
+          if (this.done || !this.started)
+              return;
           if (!this.actors.includes(game.player)) {
               // lose
               return game.lose();
           }
-          // tick actors?
           // Do we have work left to do on the level?
           if (this.data.wavesLeft > 0)
               return;
@@ -21572,9 +21665,9 @@ void main() {
           this.inputQueue.enqueue(e.clone());
           e.stopPropagation();
       }
-      tick() {
-          this.level.tick(this);
-          this.wait(100, () => this.tick());
+      tick(dt = 50) {
+          this.level.tick(this, dt);
+          this.wait(dt, () => this.tick(dt));
       }
       endTurn(actor, time) {
           if (!actor.hasActed()) {
@@ -21747,13 +21840,24 @@ void main() {
           buf.drawText(x, y, "Hero");
           this.drawHealth(buf, x, y + 1, 28, player);
           this.drawPotion(buf, x, y + 2, 28, player);
-          return 3; // Hero + health + potion
+          let lines = 3; // Hero + health + potion
+          player.statuses.forEach((status) => {
+              if (status) {
+                  lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+              }
+          });
+          return lines;
       }
       drawActor(buf, x, y, actor) {
           buf.drawText(x, y, actor.name, actor.kind.fg);
           this.drawHealth(buf, x, y + 1, 28, actor);
-          // buf.drawText(x, y + 1, "" + actor.health, "red");
-          return 2; // name + health
+          let lines = 2; // name + health
+          actor.statuses.forEach((status) => {
+              if (status) {
+                  lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+              }
+          });
+          return lines;
       }
       drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
           const pct = val / max;
@@ -22651,6 +22755,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Apples - 20%/3s
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
               game.addMessage("You eat an apple.");
               game.level.removeItem(this);
               return true;
@@ -22665,6 +22770,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Bread - 100%/30s
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
               game.addMessage("You eat some bread.");
               game.level.removeItem(this);
               return true;
@@ -22679,6 +22785,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Pork - 50%/10s
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
               game.addMessage("You eat some pork.");
               game.level.removeItem(this);
               return true;
@@ -22693,6 +22800,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Salmon - 35%/8s
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
               game.addMessage("You eat some salmon.");
               game.level.removeItem(this);
               return true;
@@ -22707,6 +22815,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Berries - 20%/5s + speedup
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
               game.addMessage("You eat some berries.");
               game.level.removeItem(this);
               return true;
@@ -22721,6 +22830,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Melon - 75%/15s
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
               game.addMessage("You eat some melon.");
               game.level.removeItem(this);
               return true;
@@ -22735,6 +22845,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Fruit - 30%/1s
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
               game.addMessage("You eat some fruit.");
               game.level.removeItem(this);
               return true;
@@ -22749,6 +22860,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Fish - 20%/2s + 10% oxygen
+              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
               game.addMessage("You eat some fish.");
               game.level.removeItem(this);
               return true;

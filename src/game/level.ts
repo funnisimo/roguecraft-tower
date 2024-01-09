@@ -118,22 +118,26 @@ export class Level implements GWD.site.AnalysisSite {
     this.game = null;
   }
 
-  tick(game: Game) {
-    if (this.done || !this.started) return;
+  tick(game: Game, dt: number) {
+    // tick actors
+    this.actors.forEach((a) => {
+      a.tick(game, dt);
+    });
 
+    // tick tiles
     this.tiles.forEach((index, x, y) => {
       const tile = TILE.tilesByIndex[index];
       if (tile.on && tile.on.tick) {
-        tile.on.tick.call(tile, game, x, y);
+        tile.on.tick.call(tile, game, x, y, dt);
       }
     });
+
+    if (this.done || !this.started) return;
 
     if (!this.actors.includes(game.player)) {
       // lose
       return game.lose();
     }
-
-    // tick actors?
 
     // Do we have work left to do on the level?
     if (this.data.wavesLeft > 0) return;
