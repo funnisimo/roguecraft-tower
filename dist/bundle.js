@@ -537,6 +537,56 @@
       }
       return index;
   }
+  function valueType(a) {
+      const ta = typeof a;
+      if (ta == 'object') {
+          if (Array.isArray(a)) {
+              return 'array';
+          }
+      }
+      return ta;
+  }
+  function combineValues(a, b) {
+      if (a == undefined) {
+          return b;
+      }
+      if (b == undefined) {
+          return a;
+      }
+      const ta = valueType(a);
+      const tb = valueType(b);
+      if (ta == 'array' && tb == 'array') {
+          if (a.length >= b.length) {
+              // @ts-ignore
+              return a.map((v, i) => combineValues(v, b[i]));
+          }
+          else {
+              // @ts-ignore
+              return b.map((v, i) => combineValues(a[i], v));
+          }
+      }
+      if (ta != 'array' && tb != 'array') {
+          if (ta != tb) {
+              return b; // second one
+          }
+          if (ta == 'number') {
+              return Math.max(a, b);
+          }
+          else {
+              return b;
+          }
+      }
+      if (ta == 'array') {
+          let out = a.slice();
+          out[0] = combineValues(a[0], b);
+          return out;
+      }
+      else {
+          let out = b.slice();
+          out[0] = combineValues(a, b[0]);
+          return out;
+      }
+  }
 
   // DIRS are organized clockwise
   // - first 4 are arrow directions
@@ -7016,171 +7066,6 @@
   	fromTo: fromTo
   });
 
-  /**
-   * Data for an event listener.
-   */
-  class EventListener {
-      /**
-       * Creates a Listener.
-       * @param {EventFn} fn The listener function.
-       * @param {any} [context=null] The context to invoke the listener with.
-       * @param {boolean} [once=false] Specify if the listener is a one-time listener.
-       */
-      constructor(fn, context, once = false) {
-          this.fn = fn;
-          this.context = context || null;
-          this.once = once || false;
-          this.next = null;
-      }
-      /**
-       * Compares this Listener to the parameters.
-       * @param {EventFn} fn - The function
-       * @param {any} [context] - The context Object.
-       * @param {boolean} [once] - Whether or not it is a one time handler.
-       * @returns Whether or not this Listener matches the parameters.
-       */
-      matches(fn, context, once) {
-          return (this.fn === fn &&
-              (once === undefined || once == this.once) &&
-              (!context || this.context === context));
-      }
-  }
-  class EventEmitter {
-      constructor() {
-          this._events = {};
-      }
-      /**
-       * Add a listener for a given event.
-       *
-       * @param {String} event The event name.
-       * @param {EventFn} fn The listener function.
-       * @param {*} context The context to invoke the listener with.
-       * @param {boolean} once Specify if the listener is a one-time listener.
-       * @returns {Listener}
-       */
-      addListener(event, fn, context, once = false) {
-          if (typeof fn !== 'function') {
-              throw new TypeError('The listener must be a function');
-          }
-          const listener = new EventListener(fn, context || null, once);
-          push(this._events, event, listener);
-          return this;
-      }
-      /**
-       * Add a listener for a given event.
-       *
-       * @param {String} event The event name.
-       * @param {EventFn} fn The listener function.
-       * @param {*} context The context to invoke the listener with.
-       * @param {boolean} once Specify if the listener is a one-time listener.
-       * @returns {Listener}
-       */
-      on(event, fn, context, once = false) {
-          return this.addListener(event, fn, context, once);
-      }
-      /**
-       * Add a one-time listener for a given event.
-       *
-       * @param {(String|Symbol)} event The event name.
-       * @param {EventFn} fn The listener function.
-       * @param {*} [context=this] The context to invoke the listener with.
-       * @returns {EventEmitter} `this`.
-       * @public
-       */
-      once(event, fn, context) {
-          return this.addListener(event, fn, context, true);
-      }
-      /**
-       * Remove the listeners of a given event.
-       *
-       * @param {String} event The event name.
-       * @param {EventFn} fn Only remove the listeners that match this function.
-       * @param {*} context Only remove the listeners that have this context.
-       * @param {boolean} once Only remove one-time listeners.
-       * @returns {EventEmitter} `this`.
-       * @public
-       */
-      removeListener(event, fn, context, once = false) {
-          if (!this._events[event])
-              return this;
-          if (!fn)
-              return this;
-          forEach(this._events[event], (obj) => {
-              if (obj.matches(fn, context, once)) {
-                  remove(this._events, event, obj);
-              }
-          });
-          return this;
-      }
-      /**
-       * Remove the listeners of a given event.
-       *
-       * @param {String} event The event name.
-       * @param {EventFn} fn Only remove the listeners that match this function.
-       * @param {*} context Only remove the listeners that have this context.
-       * @param {boolean} once Only remove one-time listeners.
-       * @returns {EventEmitter} `this`.
-       * @public
-       */
-      off(event, fn, context, once = false) {
-          return this.removeListener(event, fn, context, once);
-      }
-      /**
-       * Clear event by name.
-       *
-       * @param {String} evt The Event name.
-       */
-      clearEvent(event) {
-          if (this._events[event]) {
-              this._events[event] = null;
-          }
-          return this;
-      }
-      /**
-       * Remove all listeners, or those of the specified event.
-       *
-       * @param {(String|Symbol)} [event] The event name.
-       * @returns {EventEmitter} `this`.
-       * @public
-       */
-      removeAllListeners(event) {
-          if (event) {
-              this.clearEvent(event);
-          }
-          else {
-              this._events = {};
-          }
-          return this;
-      }
-      /**
-       * Calls each of the listeners registered for a given event.
-       *
-       * @param {String} event The event name.
-       * @param {...*} args The additional arguments to the event handlers.
-       * @returns {boolean} `true` if the event had listeners, else `false`.
-       * @public
-       */
-      emit(event, ...args) {
-          if (!this._events[event])
-              return false; // no events to send
-          let listener = this._events[event];
-          while (listener) {
-              let next = listener.next;
-              if (listener.once)
-                  remove(this._events, event, listener);
-              listener.fn.apply(listener.context, args);
-              listener = next;
-          }
-          return true;
-      }
-  }
-
-  var events = /*#__PURE__*/Object.freeze({
-  	__proto__: null,
-  	EventListener: EventListener,
-  	EventEmitter: EventEmitter
-  });
-
   function make$7(v) {
       if (v === undefined)
           return () => 100;
@@ -7395,7 +7280,7 @@
           this._ctx.fillRect(0, 0, this.pxWidth, this.pxHeight);
           const size = opts.fontSize ||
               opts.size ||
-              Math.max(this.tileWidth, this.tileHeight);
+              Math.min(this.tileWidth, this.tileHeight);
           this._ctx.font = '' + size + 'px ' + opts.font;
           this._ctx.textAlign = 'center';
           this._ctx.textBaseline = 'middle';
@@ -9739,6 +9624,11 @@ void main() {
       clear() {
           this._events = {};
           this.onUnhandled = null;
+      }
+      clear_event(name) {
+          if (name in this._events) {
+              this._events[name] = this._events[name].map(() => null);
+          }
       }
       restart() {
           Object.keys(this._events).forEach((ev) => {
@@ -15204,9 +15094,9 @@ void main() {
     clamp: clamp,
     color: index$9,
     colors: colors,
+    combineValues: combineValues,
     cosmetic: cosmetic,
     data: data,
-    events: events,
     first: first,
     flag: flag,
     fov: index$7,
@@ -15232,6 +15122,7 @@ void main() {
     tween: tween,
     types: types$1,
     ui: index$2$1,
+    valueType: valueType,
     widget: index$1$1,
     xave: xave,
     xy: xy
@@ -15376,9 +15267,250 @@ void main() {
       };
   }
 
+  const FLAGS = flag.make([
+      "ARTIFACT_COOLDOWN_40",
+      "ARROWS_10",
+      "LONGER_ROLL_100",
+      "MELEE_DAMAGE_30",
+      "MOBS_TARGET_YOU_MORE",
+      "MOVESPEED_AURA_15",
+      "NEGATE_HITS_30",
+      "POTION_COOLDOWN_40",
+      "POTION_BOOSTS_DEFENSE",
+      "POTION_HEALS_NEARBY_ALLIES",
+      "RANGED_DAMAGE_30",
+      "REDUCE_DAMAGE_35",
+      "WEAPON_DAMAGE_AURA_20",
+  ]);
+  // @ts-ignore
+  globalThis.ITEM_FLAGS = FLAGS;
+
+  const kinds$1 = {};
+  function install$4(cfg) {
+      if (typeof cfg.speed === "number") {
+          cfg.speed = [cfg.speed];
+      }
+      if (typeof cfg.damage === "number") {
+          cfg.damage = [cfg.damage];
+      }
+      const kind = Object.assign({
+          name: "",
+          ch: "!",
+          fg: "white",
+          //   bump: ["attack"],
+          on: {},
+          frequency: 10,
+          speed: [100],
+          damage: [0],
+          range: 0,
+          defense: 0,
+          slot: null,
+          tags: [],
+          flags: 0,
+          effects: {},
+      }, cfg);
+      if (kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+      }
+      // add damage as necessary
+      while (kind.speed.length > kind.damage.length) {
+          kind.damage.push(kind.damage[0]);
+      }
+      kind.damage.length = kind.speed.length; // truncate any extra damage
+      if (typeof cfg.tags == "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      if (typeof cfg.flags !== "number") {
+          kind.flags = flag.from_safe(FLAGS, cfg.flags);
+      }
+      //   if (typeof cfg.bump === "string") {
+      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      //   }
+      kind.frequency = frequency.make(kind.frequency);
+      if (kind.slot === null) {
+          if (kind.range > 0) {
+              kind.slot = "ranged";
+          }
+          else if (kind.damage.length > 0 && kind.damage[0] > 0) {
+              kind.slot = "melee";
+          }
+          else if (kind.defense > 0) {
+              kind.slot = "armor";
+          }
+      }
+      kinds$1[cfg.id.toLowerCase()] = kind;
+  }
+  function getKind$1(id) {
+      return kinds$1[id.toLowerCase()] || null;
+  }
+
+  class Item extends Obj {
+      constructor(cfg) {
+          super(cfg);
+          this._turnTime = 0;
+          this._level = null;
+          this.kind = cfg.kind;
+          if (!this.kind)
+              throw new Error("Must have kind.");
+          this.data = {};
+          this._damage = this.kind.damage.slice();
+          this._defense = this.kind.defense;
+          this._power = cfg.power || 1;
+          this.on("add", (level) => {
+              this._level = level;
+          });
+          this.on("remove", (level) => {
+              this._level = null;
+          });
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+          this.power = this._power; // cause calculations to fire
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      get name() {
+          return this.kind.name;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          val = val || 1;
+          this._power = val;
+          // Value = POWER * BASE * Math.pow(1.025,POWER)
+          this._damage = this.kind.damage.map((v) => Math.round(val * v * Math.pow(1.025, val)));
+          this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
+      }
+      get damage() {
+          return this._damage;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get speed() {
+          return this.kind.speed;
+      }
+      get defense() {
+          return this._defense;
+      }
+      get slot() {
+          return this.kind.slot;
+      }
+  }
+  function make$3(id, opts) {
+      let kind;
+      let power = 1;
+      if (typeof id === "string") {
+          const parts = id.split("^").map((v) => v.trim());
+          parts[0];
+          power = Number.parseInt(parts[1] || "1");
+          kind = getKind$1(parts[0]);
+          if (!kind)
+              throw new Error("Failed to find item kind - " + id);
+      }
+      else {
+          kind = id;
+      }
+      const config = Object.assign({
+          x: 1,
+          y: 1,
+          z: 1,
+          kind,
+          power,
+      }, opts);
+      return new Item(config);
+  }
+  function place(level, x, y, id = null) {
+      let newbie;
+      if (id === null) {
+          newbie = random$1(level); // TODO - default match?
+      }
+      else if (typeof id === "string") {
+          newbie = make$3(id);
+      }
+      else {
+          newbie = id;
+      }
+      if (!newbie)
+          return null;
+      newbie.kind.fg;
+      const game = level.game;
+      game.scene;
+      // const level = level.level;
+      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
+          return !level.blocksMove(i, j) && !level.hasItem(i, j);
+      });
+      if (!locs || locs.length == 0)
+          return null;
+      const loc = game.rng.item(locs);
+      newbie.x = loc[0];
+      newbie.y = loc[1];
+      level.addItem(newbie);
+      return newbie;
+  }
+  function placeRandom(level, x, y, match = null) {
+      let item = random$1(level, match);
+      if (!item) {
+          return null;
+      }
+      return place(level, x, y, item);
+  }
+  function random$1(level, match = null) {
+      // pick random kind
+      let allKinds = Object.values(kinds$1);
+      let matches;
+      if (match === null) {
+          matches = [];
+      }
+      else if (typeof match == "string") {
+          matches = match.split(/[|,]/).map((v) => v.trim());
+      }
+      else {
+          matches = match.map((v) => v.trim());
+      }
+      if (matches.length > 0) {
+          allKinds = allKinds.filter((kind) => {
+              return matches.every((m) => {
+                  if (m[0] == "!") {
+                      return !kind.tags.includes(m.substring(1));
+                  }
+                  else {
+                      return kind.tags.includes(m);
+                  }
+              });
+          });
+      }
+      const chances = allKinds.map((k) => k.frequency(level.depth));
+      const index = level.rng.weighted(chances);
+      if (index < 0)
+          return null;
+      const kind = allKinds[index];
+      const item = new Item({ kind });
+      return item;
+  }
+
   // @returns boolean - indicates whether or not the target dies
   function damage(game, target, damage) {
-      // TODO - apply defenses...
+      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
+      const effects = target.item_flags;
+      damage.amount = damage.amount || 0;
+      if (effects & FLAGS.NEGATE_HITS_30) {
+          if (game.rng.chance(30)) {
+              game.messages.addCombat("Blocked.");
+              damage.amount = 0;
+              return false;
+          }
+      }
+      if (effects & FLAGS.REDUCE_DAMAGE_35) {
+          damage.amount = Math.round(damage.amount * 0.65);
+      }
+      if (damage.amount <= 0) {
+          return false;
+      }
       target.health -= damage.amount || 0;
       if (target.health <= 0) {
           // do all of these move to event handlers?
@@ -15777,8 +15909,8 @@ void main() {
       return idle(game, actor);
   }
 
-  const kinds$1 = {};
-  function install$4(cfg) {
+  const kinds = {};
+  function install$3(cfg) {
       const kind = Object.assign({
           name: "",
           health: 10,
@@ -15891,235 +16023,10 @@ void main() {
       if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
           kind.dropChance = 100;
       }
-      kinds$1[cfg.id.toLowerCase()] = kind;
-  }
-  function getKind$1(id) {
-      return kinds$1[id.toLowerCase()] || null;
-  }
-
-  const FLAGS = flag.make([
-      "ARTIFACT_COOLDOWN_40",
-      "ARROWS_10",
-      "LONGER_ROLL_100",
-      "MELEE_DAMAGE_30",
-      "MOBS_TARGET_YOU_MORE",
-      "MOVESPEED_AURA_15",
-      "NEGATE_HITS_30",
-      "POTION_COOLDOWN_40",
-      "POTION_BOOSTS_DEFENSE",
-      "POTION_HEALS_NEARBY_ALLIES",
-      "RANGED_DAMAGE_30",
-      "REDUCE_DAMAGE_35",
-      "WEAPON_DAMAGE_AURA_20",
-  ]);
-  // @ts-ignore
-  globalThis.ITEM_FLAGS = FLAGS;
-
-  const kinds = {};
-  function install$3(cfg) {
-      if (typeof cfg.speed === "number") {
-          cfg.speed = [cfg.speed];
-      }
-      if (typeof cfg.damage === "number") {
-          cfg.damage = [cfg.damage];
-      }
-      const kind = Object.assign({
-          name: "",
-          ch: "!",
-          fg: "white",
-          //   bump: ["attack"],
-          on: {},
-          frequency: 10,
-          speed: [100],
-          damage: [0],
-          range: 0,
-          defense: 0,
-          slot: null,
-          tags: [],
-          flags: 0,
-      }, cfg);
-      if (kind.name.length == 0) {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
-      }
-      // add damage as necessary
-      while (kind.speed.length > kind.damage.length) {
-          kind.damage.push(kind.damage[0]);
-      }
-      kind.damage.length = kind.speed.length; // truncate any extra damage
-      if (typeof cfg.tags == "string") {
-          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
-      }
-      if (typeof cfg.flags !== "number") {
-          kind.flags = flag.from_safe(FLAGS, cfg.flags);
-      }
-      //   if (typeof cfg.bump === "string") {
-      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      //   }
-      kind.frequency = frequency.make(kind.frequency);
-      if (kind.slot === null) {
-          if (kind.range > 0) {
-              kind.slot = "ranged";
-          }
-          else if (kind.damage.length > 0 && kind.damage[0] > 0) {
-              kind.slot = "melee";
-          }
-          else if (kind.defense > 0) {
-              kind.slot = "armor";
-          }
-      }
       kinds[cfg.id.toLowerCase()] = kind;
   }
   function getKind(id) {
       return kinds[id.toLowerCase()] || null;
-  }
-
-  class Item extends Obj {
-      constructor(cfg) {
-          super(cfg);
-          this._turnTime = 0;
-          this._level = null;
-          this.kind = cfg.kind;
-          if (!this.kind)
-              throw new Error("Must have kind.");
-          this.data = {};
-          this._damage = this.kind.damage.slice();
-          this._defense = this.kind.defense;
-          this._power = cfg.power || 1;
-          this.on("add", (level) => {
-              this._level = level;
-          });
-          this.on("remove", (level) => {
-              this._level = null;
-          });
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-          this.power = this._power; // cause calculations to fire
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      get name() {
-          return this.kind.name;
-      }
-      get power() {
-          return this._power;
-      }
-      set power(val) {
-          val = val || 1;
-          this._power = val;
-          // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = this.kind.damage.map((v) => Math.round(val * v * Math.pow(1.025, val)));
-          this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
-      }
-      get damage() {
-          return this._damage;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get speed() {
-          return this.kind.speed;
-      }
-      get defense() {
-          return this._defense;
-      }
-      get slot() {
-          return this.kind.slot;
-      }
-  }
-  function make$3(id, opts) {
-      let kind;
-      let power = 1;
-      if (typeof id === "string") {
-          const parts = id.split("^").map((v) => v.trim());
-          parts[0];
-          power = Number.parseInt(parts[1] || "1");
-          kind = getKind(parts[0]);
-          if (!kind)
-              throw new Error("Failed to find item kind - " + id);
-      }
-      else {
-          kind = id;
-      }
-      const config = Object.assign({
-          x: 1,
-          y: 1,
-          z: 1,
-          kind,
-          power,
-      }, opts);
-      return new Item(config);
-  }
-  function place(level, x, y, id = null) {
-      let newbie;
-      if (id === null) {
-          newbie = random$1(level); // TODO - default match?
-      }
-      else if (typeof id === "string") {
-          newbie = make$3(id);
-      }
-      else {
-          newbie = id;
-      }
-      if (!newbie)
-          return null;
-      newbie.kind.fg;
-      const game = level.game;
-      game.scene;
-      // const level = level.level;
-      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
-          return !level.blocksMove(i, j) && !level.hasItem(i, j);
-      });
-      if (!locs || locs.length == 0)
-          return null;
-      const loc = game.rng.item(locs);
-      newbie.x = loc[0];
-      newbie.y = loc[1];
-      level.addItem(newbie);
-      return newbie;
-  }
-  function placeRandom(level, x, y, match = null) {
-      let item = random$1(level, match);
-      if (!item) {
-          return null;
-      }
-      return place(level, x, y, item);
-  }
-  function random$1(level, match = null) {
-      // pick random kind
-      let allKinds = Object.values(kinds);
-      let matches;
-      if (match === null) {
-          matches = [];
-      }
-      else if (typeof match == "string") {
-          matches = match.split(/[|,]/).map((v) => v.trim());
-      }
-      else {
-          matches = match.map((v) => v.trim());
-      }
-      if (matches.length > 0) {
-          allKinds = allKinds.filter((kind) => {
-              return matches.every((m) => {
-                  if (m[0] == "!") {
-                      return !kind.tags.includes(m.substring(1));
-                  }
-                  else {
-                      return kind.tags.includes(m);
-                  }
-              });
-          });
-      }
-      const chances = allKinds.map((k) => k.frequency(level.depth));
-      const index = level.rng.weighted(chances);
-      if (index < 0)
-          return null;
-      const kind = allKinds[index];
-      const item = new Item({ kind });
-      return item;
   }
 
   class Actor extends Obj {
@@ -16254,7 +16161,7 @@ void main() {
   function make$2(id, opts) {
       let kind;
       if (typeof id === "string") {
-          kind = getKind$1(id);
+          kind = getKind(id);
           if (!kind)
               throw new Error("Failed to find actor kind - " + id);
       }
@@ -16492,7 +16399,7 @@ void main() {
       }
   }
   function makePlayer(id) {
-      const kind = getKind$1(id);
+      const kind = getKind(id);
       if (!kind)
           throw new Error("Failed to find actor kind - " + id);
       return new Player({
@@ -20691,7 +20598,7 @@ void main() {
           return leader;
       }
       _spawnLeader(map, x, y, opts) {
-          const leaderKind = getKind$1(this.leader);
+          const leaderKind = getKind(this.leader);
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
@@ -20747,7 +20654,7 @@ void main() {
           return count;
       }
       _spawnMember(kindId, map, leader, opts) {
-          const kind = getKind$1(kindId);
+          const kind = getKind(kindId);
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
@@ -21474,8 +21381,8 @@ void main() {
               console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
           }
           // Why??
-          this.actors = kinds$1;
-          this.items = kinds;
+          this.actors = kinds;
+          this.items = kinds$1;
           this.hordes = hordes;
           //
           this.player = makePlayer("player");
@@ -21840,13 +21747,13 @@ void main() {
           buf.drawText(x, y, "Hero");
           this.drawHealth(buf, x, y + 1, 28, player);
           this.drawPotion(buf, x, y + 2, 28, player);
-          return 2;
+          return 3; // Hero + health + potion
       }
       drawActor(buf, x, y, actor) {
           buf.drawText(x, y, actor.name, actor.kind.fg);
           this.drawHealth(buf, x, y + 1, 28, actor);
           // buf.drawText(x, y + 1, "" + actor.health, "red");
-          return 2;
+          return 2; // name + health
       }
       drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
           const pct = val / max;
@@ -22031,8 +21938,51 @@ void main() {
           let text = player.name + "\n";
           const armor = player.slots.armor;
           if (armor) {
-              text += "Health: " + armor.name + "^" + armor.power + "\n";
-              text += "      : " + player.health + "/" + player.health_max + "\n";
+              text += "Health: " + player.health + "/" + player.health_max + "\n";
+              text += "#{teal}";
+              text += "  " + armor.name + " [" + armor.power + "]\n";
+              if (armor.kind.flags != 0) {
+                  if (armor.kind.flags & FLAGS.REDUCE_DAMAGE_35) {
+                      text += "  {-35% Damage Received}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.NEGATE_HITS_30) {
+                      text += "  {30% Negate Hits}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.ARTIFACT_COOLDOWN_40) {
+                      text += "  {-40% Artifact Cooldown}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.ARROWS_10) {
+                      text += "  {+10 Arrows Per Bundle}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.LONGER_ROLL_100) {
+                      text += "  {100% Longer Roll Cooldown}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.MELEE_DAMAGE_30) {
+                      text += "  {+30% Melee Damage}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.MOBS_TARGET_YOU_MORE) {
+                      text += "  {Mobs Target You More}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.MOVESPEED_AURA_15) {
+                      text += "  {+15% Move Speed Aura}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.POTION_COOLDOWN_40) {
+                      text += "  {-40% Potion Cooldown}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.POTION_BOOSTS_DEFENSE) {
+                      text += "  {Potion Boosts Defense}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                      text += "  {Potion Heals Nearby Allies}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.RANGED_DAMAGE_30) {
+                      text += "  {+30% Ranged Damage}\n";
+                  }
+                  if (armor.kind.flags & FLAGS.WEAPON_DAMAGE_AURA_20) {
+                      text += "  {+20% Weapon Damage Aura}\n";
+                  }
+              }
+              text += "#{}";
           }
           else {
               text += "Health: " + player.health + "/" + player.health_max + "\n";
@@ -22040,7 +21990,7 @@ void main() {
           text += "Moves : " + player.moveSpeed + "\n";
           const melee = player.slots.melee;
           if (melee) {
-              text += "Melee : " + melee.name + "^" + melee.power + "\n";
+              text += "Melee : " + melee.name + " [" + melee.power + "]\n";
               text += "      : damage=" + player.damage + "\n";
               text += "      : speed =" + player.attackSpeed + "\n";
           }
@@ -22053,7 +22003,7 @@ void main() {
           }
           const ranged = player.slots.ranged;
           if (ranged) {
-              text += "Ranged: " + ranged.name + "^" + ranged.power + "\n";
+              text += "Ranged: " + ranged.name + " [" + ranged.power + "]\n";
               text += "      : damage=" + player.rangedDamage + "\n";
               text += "      : range =" + player.range + "\n";
               text += "      : speed =" + player.rangedAttackSpeed + "\n";
@@ -22468,7 +22418,7 @@ void main() {
       }
   }
 
-  install$4({
+  install$3({
       id: "Player",
       ch: "@",
       fg: "white",
@@ -22487,7 +22437,7 @@ void main() {
           armor: "SCALE_MAIL^10",
       },
   });
-  install$4({
+  install$3({
       id: "ZOMBIE",
       name: "Zombie",
       ch: "z",
@@ -22497,7 +22447,7 @@ void main() {
       damage: 8,
       dropChance: 100,
   });
-  install$4({
+  install$3({
       id: "ARMOR_ZOMBIE",
       ch: "Z",
       fg: "green",
@@ -22506,7 +22456,7 @@ void main() {
       damage: 10,
       dropChance: 10,
   });
-  install$4({
+  install$3({
       id: "ARMOR_ZOMBIE_2",
       ch: "Z",
       fg: "green",
@@ -22515,7 +22465,7 @@ void main() {
       damage: 12,
       dropChance: 10,
   });
-  install$4({
+  install$3({
       id: "Vindicator",
       ch: "v",
       fg: "blue",
@@ -22527,7 +22477,7 @@ void main() {
       // attackSpeed: 150
       dropChance: 10,
   });
-  install$4({
+  install$3({
       id: "SKELETON",
       ch: "s",
       fg: "white",
@@ -22541,7 +22491,7 @@ void main() {
       // notice: 10
       dropChance: 100,
   });
-  install$4({
+  install$3({
       id: "ARMOR_SKELETON",
       ch: "S",
       fg: "white",
@@ -22555,7 +22505,7 @@ void main() {
       // notice: 10
       dropChance: 10,
   });
-  install$4({
+  install$3({
       id: "ARMOR_SKELETON_2",
       ch: "S",
       fg: "white",
@@ -22662,7 +22612,7 @@ void main() {
       frequency: (l) => 2 * l,
   });
 
-  install$3({
+  install$4({
       id: "HEALTH_POTION",
       ch: "!",
       fg: "pink",
@@ -22670,15 +22620,15 @@ void main() {
           pickup(game, actor) {
               // TODO - vary the messages
               // TODO - Different healing amounts?
-              actor.health = actor.kind.health;
+              actor.health = actor.kind.health; // TODO - move this to an effect
               game.addMessage("You drink the potion.");
               game.level.removeItem(this);
               return true;
           },
       },
-      tags: "drop",
+      tags: "", // Not a drop because it is innate
   });
-  install$3({
+  install$4({
       id: "ARROWS",
       ch: "|",
       fg: "yellow",
@@ -22687,15 +22637,127 @@ void main() {
               //   actor.health = actor.kind.health;
               game.addMessage("You pickup some arrows.");
               game.level.removeItem(this);
-              // TODO - adjust for this.power?
+              // TODO - adjust for arrows.power?
               actor.ammo += 10;
               return true;
           },
       },
       tags: "drop",
   });
+  install$4({
+      id: "APPLE",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Apples - 20%/3s
+              game.addMessage("You eat an apple.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "BREAD",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Bread - 100%/30s
+              game.addMessage("You eat some bread.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "PORK",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Pork - 50%/10s
+              game.addMessage("You eat some pork.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "SALMON",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Salmon - 35%/8s
+              game.addMessage("You eat some salmon.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "BERRIES",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Berries - 20%/5s + speedup
+              game.addMessage("You eat some berries.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "MELON",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Melon - 75%/15s
+              game.addMessage("You eat some melon.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "FRUIT",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Fruit - 30%/1s
+              game.addMessage("You eat some fruit.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$4({
+      id: "FISH",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(game, actor) {
+              //   [] Fish - 20%/2s + 10% oxygen
+              game.addMessage("You eat some fish.");
+              game.level.removeItem(this);
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
 
-  install$3({
+  install$4({
       id: "DAGGER",
       ch: "/",
       fg: "yellow",
@@ -22703,7 +22765,7 @@ void main() {
       damage: 5,
       tags: "melee",
   });
-  install$3({
+  install$4({
       id: "SWORD",
       ch: "/",
       fg: "yellow",
@@ -22711,7 +22773,7 @@ void main() {
       damage: 10,
       tags: "melee",
   });
-  install$3({
+  install$4({
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
@@ -22719,7 +22781,7 @@ void main() {
       damage: [9, 9, 18],
       tags: "melee",
   });
-  install$3({
+  install$4({
       id: "SHORTBOW",
       ch: "}",
       fg: "yellow",
@@ -22728,7 +22790,7 @@ void main() {
       range: 10,
       tags: "ranged",
   });
-  install$3({
+  install$4({
       id: "BOW",
       ch: "}",
       fg: "yellow",
@@ -22737,7 +22799,7 @@ void main() {
       range: 10,
       tags: "ranged",
   });
-  install$3({
+  install$4({
       id: "LONGBOW",
       ch: "}",
       fg: "yellow",
@@ -22747,7 +22809,7 @@ void main() {
       tags: "ranged",
   });
 
-  install$3({
+  install$4({
       id: "SCALE_MAIL",
       name: "Scale Mail",
       ch: "]",
@@ -22755,8 +22817,12 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          melee_damage: 30,
+      },
   });
-  install$3({
+  install$4({
       id: "MERCENARY_ARMOR",
       name: "Mercenary Armor",
       ch: "]",
@@ -22764,8 +22830,12 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          weapon_damage_aura: 20,
+      },
   });
-  install$3({
+  install$4({
       id: "GUARDS_ARMOR",
       name: "Guards Armor",
       ch: "]",
@@ -22773,8 +22843,12 @@ void main() {
       defense: 3,
       flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
       tags: "armor",
+      effects: {
+          artifact_cooldown: 40,
+          arrows: 10,
+      },
   });
-  install$3({
+  install$4({
       id: "HUNTERS_ARMOR",
       name: "Hunters Armor",
       ch: "]",
@@ -22782,8 +22856,12 @@ void main() {
       defense: 3,
       flags: "RANGED_DAMAGE_30 | ARROWS_10",
       tags: "armor",
+      effects: {
+          ranged_damage: 30,
+          arrows: 10,
+      },
   });
-  install$3({
+  install$4({
       id: "ARCHERS_ARMOR",
       name: "Archers Armor",
       ch: "]",
@@ -22791,8 +22869,13 @@ void main() {
       defense: 3,
       flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
       tags: "armor",
+      effects: {
+          ranged_damage: 30,
+          arrows: 10,
+          move_speed_aura: 15,
+      },
   });
-  install$3({
+  install$4({
       id: "REINFORCED_MAIL",
       name: "Reinforced Mail",
       ch: "]",
@@ -22800,8 +22883,13 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+      },
   });
-  install$3({
+  install$4({
       id: "STALWART_ARMOR",
       name: "Stalwart Armor",
       ch: "]",
@@ -22809,8 +22897,14 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+          potion_boosts_defense: [90, 5 * 200],
+      },
   });
-  install$3({
+  install$4({
       id: "PLATE_ARMOR",
       name: "Plate Armor",
       ch: "]",
@@ -22818,8 +22912,13 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+      },
   });
-  install$3({
+  install$4({
       id: "FULL_METAL_ARMOR",
       name: "Full Metal Armor",
       ch: "]",
@@ -22827,8 +22926,14 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+          melee_damage: 30,
+      },
   });
-  install$3({
+  install$4({
       id: "CHAMPIONS_ARMOR",
       name: "Champions Armor",
       ch: "]",
@@ -22836,8 +22941,13 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          potion_cooldown: 40,
+          mobs_target_you: 50, // 50%?
+      },
   });
-  install$3({
+  install$4({
       id: "HEROS_ARMOR",
       name: "Heros Armor",
       ch: "]",
@@ -22845,6 +22955,12 @@ void main() {
       defense: 3,
       flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
       tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          potion_cooldown: 40,
+          mobs_target_you: 50,
+          potion_heals_allies: 3,
+      },
   });
 
   function start() {

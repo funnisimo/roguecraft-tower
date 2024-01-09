@@ -182,23 +182,23 @@ export class Level implements GWD.site.AnalysisSite {
     return this.tiles.get(x, y) === tile;
   }
 
-  getTile(x: number, y: number) {
+  getTile(x: number, y: number): TILE.TileInfo {
     const id = this.tiles.get(x, y) || 0;
     return TILE.tilesByIndex[id];
   }
 
   //
 
-  blocksMove(x: number, y: number) {
+  blocksMove(x: number, y: number): boolean {
     const tile = this.getTile(x, y);
     return tile.blocksMove || false;
   }
 
-  blocksPathing(x: number, y: number) {
+  blocksPathing(x: number, y: number): boolean {
     return this.blocksMove(x, y);
   }
 
-  blocksDiagonal(x: number, y: number) {
+  blocksDiagonal(x: number, y: number): boolean {
     const tile = this.getTile(x, y);
     return tile.blocksDiagonal || false;
   }
@@ -274,7 +274,7 @@ export class Level implements GWD.site.AnalysisSite {
     fx && fx.draw(buf);
   }
 
-  actorAt(x: number, y: number) {
+  actorAt(x: number, y: number): ACTOR.Actor | undefined {
     return this.actors.find((a) => a.x === x && a.y === y);
   }
 
@@ -290,11 +290,11 @@ export class Level implements GWD.site.AnalysisSite {
     // this.scene.needsDraw = true;
   }
 
-  hasActor(x: number, y: number) {
+  hasActor(x: number, y: number): boolean {
     return this.actors.some((a) => a.x === x && a.y === y);
   }
 
-  itemAt(x: number, y: number) {
+  itemAt(x: number, y: number): ITEM.Item | undefined {
     return this.items.find((i) => i.x === x && i.y === y);
   }
 
@@ -310,11 +310,11 @@ export class Level implements GWD.site.AnalysisSite {
     // this.scene.needsDraw = true;
   }
 
-  hasItem(x: number, y: number) {
+  hasItem(x: number, y: number): boolean {
     return this.items.some((i) => i.x === x && i.y === y);
   }
 
-  fxAt(x: number, y: number) {
+  fxAt(x: number, y: number): FX.FX | undefined {
     return this.fxs.find((i) => i.x === x && i.y === y);
   }
 
@@ -330,11 +330,11 @@ export class Level implements GWD.site.AnalysisSite {
     // this.scene.needsDraw = true;
   }
 
-  hasFx(x: number, y: number) {
+  hasFx(x: number, y: number): boolean {
     return this.fxs.some((f) => f.x === x && f.y === y);
   }
 
-  getFlavor(x: number, y: number) {
+  getFlavor(x: number, y: number): string {
     if (!this.hasXY(x, y)) return "";
 
     const actor = this.actorAt(x, y);

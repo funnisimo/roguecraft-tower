@@ -4,6 +4,7 @@ import { Game } from "../game";
 import { Item } from "./item";
 import { CallbackFn } from "../game/obj";
 import { FLAGS } from "./flags";
+import { EffectConfig } from "../effect";
 
 export interface ItemEvents {
   // bump?: (game: Game, actor: Item, other: Item) => void;
@@ -34,6 +35,7 @@ export interface KindConfig {
   on?: ItemEvents;
   tags?: string | string[];
   flags?: string | string[];
+  effects?: EffectConfig;
 }
 
 export interface ItemKind {
@@ -57,6 +59,7 @@ export interface ItemKind {
   frequency: GWU.frequency.FrequencyFn;
   tags: string[];
   flags: number;
+  effects: EffectConfig;
 
   //   damage: number;
   //   attackSpeed: number;
@@ -92,6 +95,7 @@ export function install(cfg: KindConfig) {
       slot: null,
       tags: [],
       flags: 0,
+      effects: {},
     },
     cfg
   ) as ItemKind;

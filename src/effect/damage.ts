@@ -4,6 +4,7 @@ import * as ITEM from "../item";
 
 export interface DamageConfig {
   amount: number;
+  // TODO - type?  source?  is_environmental?
 }
 
 // @returns boolean - indicates whether or not the target dies
@@ -12,7 +13,25 @@ export function damage(
   target: Actor,
   damage: DamageConfig
 ): boolean {
-  // TODO - apply defenses...
+  // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
+  const effects = target.item_flags;
+
+  damage.amount = damage.amount || 0;
+
+  if (effects & ITEM.FLAGS.NEGATE_HITS_30) {
+    if (game.rng.chance(30)) {
+      game.messages.addCombat("Blocked.");
+      damage.amount = 0;
+      return false;
+    }
+  }
+  if (effects & ITEM.FLAGS.REDUCE_DAMAGE_35) {
+    damage.amount = Math.round(damage.amount * 0.65);
+  }
+
+  if (damage.amount <= 0) {
+    return false;
+  }
 
   target.health -= damage.amount || 0;
 

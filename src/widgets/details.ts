@@ -2,6 +2,7 @@ import * as GWU from "gw-utils";
 
 import { Actor } from "../actor/actor";
 import { Player } from "../actor/player";
+import { FLAGS as ItemFlags } from "../item";
 
 export class Details extends GWU.widget.Dialog {
   _text: GWU.widget.Text;
@@ -51,8 +52,52 @@ export class Details extends GWU.widget.Dialog {
     let text = player.name + "\n";
     const armor = player.slots.armor;
     if (armor) {
-      text += "Health: " + armor.name + "^" + armor.power + "\n";
-      text += "      : " + player.health + "/" + player.health_max + "\n";
+      text += "Health: " + player.health + "/" + player.health_max + "\n";
+      text += "#{teal}";
+      text += "  " + armor.name + " [" + armor.power + "]\n";
+
+      if (armor.kind.flags != 0) {
+        if (armor.kind.flags & ItemFlags.REDUCE_DAMAGE_35) {
+          text += "  {-35% Damage Received}\n";
+        }
+        if (armor.kind.flags & ItemFlags.NEGATE_HITS_30) {
+          text += "  {30% Negate Hits}\n";
+        }
+        if (armor.kind.flags & ItemFlags.ARTIFACT_COOLDOWN_40) {
+          text += "  {-40% Artifact Cooldown}\n";
+        }
+        if (armor.kind.flags & ItemFlags.ARROWS_10) {
+          text += "  {+10 Arrows Per Bundle}\n";
+        }
+        if (armor.kind.flags & ItemFlags.LONGER_ROLL_100) {
+          text += "  {100% Longer Roll Cooldown}\n";
+        }
+        if (armor.kind.flags & ItemFlags.MELEE_DAMAGE_30) {
+          text += "  {+30% Melee Damage}\n";
+        }
+        if (armor.kind.flags & ItemFlags.MOBS_TARGET_YOU_MORE) {
+          text += "  {Mobs Target You More}\n";
+        }
+        if (armor.kind.flags & ItemFlags.MOVESPEED_AURA_15) {
+          text += "  {+15% Move Speed Aura}\n";
+        }
+        if (armor.kind.flags & ItemFlags.POTION_COOLDOWN_40) {
+          text += "  {-40% Potion Cooldown}\n";
+        }
+        if (armor.kind.flags & ItemFlags.POTION_BOOSTS_DEFENSE) {
+          text += "  {Potion Boosts Defense}\n";
+        }
+        if (armor.kind.flags & ItemFlags.POTION_HEALS_NEARBY_ALLIES) {
+          text += "  {Potion Heals Nearby Allies}\n";
+        }
+        if (armor.kind.flags & ItemFlags.RANGED_DAMAGE_30) {
+          text += "  {+30% Ranged Damage}\n";
+        }
+        if (armor.kind.flags & ItemFlags.WEAPON_DAMAGE_AURA_20) {
+          text += "  {+20% Weapon Damage Aura}\n";
+        }
+      }
+      text += "#{}";
     } else {
       text += "Health: " + player.health + "/" + player.health_max + "\n";
     }
@@ -60,7 +105,7 @@ export class Details extends GWU.widget.Dialog {
 
     const melee = player.slots.melee;
     if (melee) {
-      text += "Melee : " + melee.name + "^" + melee.power + "\n";
+      text += "Melee : " + melee.name + " [" + melee.power + "]\n";
       text += "      : damage=" + player.damage + "\n";
       text += "      : speed =" + player.attackSpeed + "\n";
     } else if (player.damage.length > 0) {
@@ -72,7 +117,7 @@ export class Details extends GWU.widget.Dialog {
 
     const ranged = player.slots.ranged;
     if (ranged) {
-      text += "Ranged: " + ranged.name + "^" + ranged.power + "\n";
+      text += "Ranged: " + ranged.name + " [" + ranged.power + "]\n";
       text += "      : damage=" + player.rangedDamage + "\n";
       text += "      : range =" + player.range + "\n";
       text += "      : speed =" + player.rangedAttackSpeed + "\n";
