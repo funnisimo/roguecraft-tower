@@ -27,6 +27,9 @@ export class Status {
     return 0;
   }
 
+  // TODO - Wrap this with higher level interface
+  //      - Allow modifying other parts
+  //      - Allow set text { set_status("Regen") }
   draw_details(): void {}
 }
 
@@ -49,7 +52,6 @@ export class RegenStatus extends Status {
   }
 
   tick(actor: Actor, game: Game, time: number): boolean {
-    console.log("Regen tick");
     let still_active = false;
     this.data.forEach((d) => {
       if (d.amount > 0.0 && d.time > 0) {

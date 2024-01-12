@@ -15514,7 +15514,7 @@ void main() {
       target.health -= damage.amount || 0;
       if (target.health <= 0) {
           // do all of these move to event handlers?
-          game.messages.addCombat(`${target.kind.id} dies`);
+          game.messages.addCombat(`${target.name} dies`);
           game.level.setTile(target.x, target.y, "CORPSE"); // TODO - This should be above the floor (FIXTURE)
           target.trigger("death");
           game.level.removeActor(target);
@@ -15538,7 +15538,7 @@ void main() {
       return actionsByName[name] || null;
   }
   function idle(game, actor) {
-      console.log("- idle", actor.kind.id, actor.x, actor.y);
+      console.log("- idle", actor.name, actor.x, actor.y);
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }
@@ -15560,7 +15560,7 @@ void main() {
               return true;
           }
           else {
-              console.log("- diagonal blocked!!!", actor.kind.id, actor.x, actor.y);
+              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
               return false;
           }
       }
@@ -15572,13 +15572,13 @@ void main() {
           if (actor.hasActed())
               return true;
           if (!quiet) {
-              game.addMessage(`You bump into a ${other.kind.id}.`);
+              game.addMessage(`You bump into a ${other.name}.`);
               flash(game, newX, newY, "orange", 150);
               idle(game, actor);
               return true;
           }
           else {
-              console.log("- nothing!!!", actor.kind.id, actor.x, actor.y);
+              console.log("- nothing!!!", actor.name, actor.x, actor.y);
               return false;
           }
       }
@@ -15590,7 +15590,7 @@ void main() {
               return false;
           }
           else {
-              console.log("- nothing blocked!!!", actor.kind.id, actor.x, actor.y);
+              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
               return false;
           }
       }
@@ -15712,7 +15712,7 @@ void main() {
       // we have an actor and a target
       // Does this move to an event handler?  'damage', { amount: #, type: string }
       flash(game, target.x, target.y, "red", 150);
-      game.messages.addCombat(`${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`);
+      game.messages.addCombat(`${actor.name} attacks ${target.name}#{red [${actor.damage}]}`);
       // TODO - Get 'next' attack details (and increment counter in actor)
       damage(game, target, { amount: actor.damage[0] });
       game.endTurn(actor, actor.attackSpeed[0]);
@@ -15744,7 +15744,7 @@ void main() {
                   return false;
               const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
               if (dist > actor.range) {
-                  console.log("too far - %f/%d - %s", dist, actor.range, a.kind.id);
+                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
                   return false;
               }
               console.log("checking fov...");
@@ -15758,7 +15758,7 @@ void main() {
                   return false;
               }
               // end hack
-              console.log("ok - ", a.kind.id);
+              console.log("ok - ", a.name);
               return true;
           })
               .sort((a, b) => xy.distanceFromTo(player, a) - xy.distanceFromTo(player, b));
@@ -15815,7 +15815,7 @@ void main() {
           }
           else {
               flash(game, xy.x, xy.y, "red", 150);
-              game.messages.addCombat(`${actor.kind.id} shoots ${target.kind.id}#{red [${actor.rangedDamage}]}`);
+              game.messages.addCombat(`${actor.name} shoots ${target.name}#{red [${actor.rangedDamage}]}`);
               damage(game, target, { amount: actor.rangedDamage[0] });
           }
       });
@@ -15838,7 +15838,7 @@ void main() {
           }
           else {
               flash(game, xy.x, xy.y, "red", 150);
-              game.messages.addCombat(`${actor.kind.id} shoots ${player.kind.id}#{red [${actor.rangedDamage}]}`);
+              game.messages.addCombat(`${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`);
               damage(game, player, { amount: actor.rangedDamage[0] });
           }
       });
@@ -16455,9 +16455,15 @@ void main() {
       merge(status) {
           return false;
       }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying the health bar
+      //      - Allow set text { set_status("Regen") }
       draw_sidebar(buf, x, y, width, actor) {
           return 0;
       }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying other parts
+      //      - Allow set text { set_status("Regen") }
       draw_details() { }
   }
   class RegenData {
@@ -16472,7 +16478,6 @@ void main() {
           this.data = [new RegenData(amount / time, time)];
       }
       tick(actor, game, time) {
-          console.log("Regen tick");
           let still_active = false;
           this.data.forEach((d) => {
               if (d.amount > 0.0 && d.time > 0) {
@@ -22016,20 +22021,25 @@ void main() {
       }
       showActor(actor) {
           let text = actor.name + "\n";
-          text += "Health: " + actor.health + "/" + actor.health_max + "\n";
+          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
           text += "Moves : " + actor.moveSpeed + "\n";
           if (actor.damage.length > 0) {
-              text += "Melee : damage=" + actor.damage + "\n";
-              text += "        speed =" + actor.attackSpeed + "\n";
+              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
           }
           else {
               text += "Melee : None\n";
           }
           if (actor.range > 0) {
-              text += "Ranged: damage=" + actor.rangedDamage + "\n";
-              text += "      : speed =" + actor.rangedAttackSpeed + "\n";
-              text += "      : range =" + actor.range + "\n";
-              text += "      : ammo=" + actor.ammo + "\n";
+              text +=
+                  "Ranged: " +
+                      actor.rangedDamage +
+                      " / " +
+                      actor.rangedAttackSpeed +
+                      " @ " +
+                      actor.range +
+                      " [" +
+                      actor.ammo +
+                      "]\n";
           }
           else {
               text += "Ranged: None";
@@ -22042,7 +22052,7 @@ void main() {
           let text = player.name + "\n";
           const armor = player.slots.armor;
           if (armor) {
-              text += "Health: " + player.health + "/" + player.health_max + "\n";
+              text += "Health: " + player.health + " / " + player.health_max + "\n";
               text += "#{teal}";
               text += "  " + armor.name + " [" + armor.power + "]\n";
               if (armor.kind.flags != 0) {
@@ -22094,30 +22104,43 @@ void main() {
           text += "Moves : " + player.moveSpeed + "\n";
           const melee = player.slots.melee;
           if (melee) {
-              text += "Melee : " + melee.name + " [" + melee.power + "]\n";
-              text += "      : damage=" + player.damage + "\n";
-              text += "      : speed =" + player.attackSpeed + "\n";
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+              text += "#{teal}";
+              text += `  ${melee.name} [${melee.power}]\n`;
+              text += "#{}";
           }
           else if (player.damage.length > 0) {
-              text += "Melee : damage=" + player.damage + "\n";
-              text += "        speed =" + player.attackSpeed + "\n";
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
           }
           else {
               text += "Melee : None\n";
           }
           const ranged = player.slots.ranged;
           if (ranged) {
-              text += "Ranged: " + ranged.name + " [" + ranged.power + "]\n";
-              text += "      : damage=" + player.rangedDamage + "\n";
-              text += "      : range =" + player.range + "\n";
-              text += "      : speed =" + player.rangedAttackSpeed + "\n";
-              text += "      : ammo  =" + player.ammo + "\n";
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      " / " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " [" +
+                      player.ammo +
+                      "]\n";
+              text += "#{teal}";
+              text += "  " + ranged.name + " [" + ranged.power + "]\n";
           }
           else if (player.range > 0) {
-              text += "Ranged: damage=" + player.rangedDamage + "\n";
-              text += "      : speed =" + player.rangedAttackSpeed + "\n";
-              text += "      : range =" + player.range + "\n";
-              text += "      : ammo  =" + player.ammo + "\n";
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      "  " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " [" +
+                      player.ammo +
+                      "]\n";
           }
           else {
               text += "Ranged: None";

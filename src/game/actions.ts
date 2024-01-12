@@ -18,7 +18,7 @@ export function getBump(name: string): ActionFn | null {
 }
 
 export function idle(game: Game, actor: Actor): boolean {
-  console.log("- idle", actor.kind.id, actor.x, actor.y);
+  console.log("- idle", actor.name, actor.x, actor.y);
   game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
   return true;
 }
@@ -50,7 +50,7 @@ export function moveDir(
       idle(game, actor);
       return true;
     } else {
-      console.log("- diagonal blocked!!!", actor.kind.id, actor.x, actor.y);
+      console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
       return false;
     }
   }
@@ -63,12 +63,12 @@ export function moveDir(
     if (actor.hasActed()) return true;
 
     if (!quiet) {
-      game.addMessage(`You bump into a ${other.kind.id}.`);
+      game.addMessage(`You bump into a ${other.name}.`);
       FX.flash(game, newX, newY, "orange", 150);
       idle(game, actor);
       return true;
     } else {
-      console.log("- nothing!!!", actor.kind.id, actor.x, actor.y);
+      console.log("- nothing!!!", actor.name, actor.x, actor.y);
       return false;
     }
   }
@@ -80,7 +80,7 @@ export function moveDir(
       idle(game, actor);
       return false;
     } else {
-      console.log("- nothing blocked!!!", actor.kind.id, actor.x, actor.y);
+      console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
       return false;
     }
   }
@@ -241,7 +241,7 @@ export function attack(
   // Does this move to an event handler?  'damage', { amount: #, type: string }
   FX.flash(game, target.x, target.y, "red", 150);
   game.messages.addCombat(
-    `${actor.kind.id} attacks ${target.kind.id}#{red [${actor.damage}]}`
+    `${actor.name} attacks ${target.name}#{red [${actor.damage}]}`
   );
   // TODO - Get 'next' attack details (and increment counter in actor)
   EFFECT.damage(game, target, { amount: actor.damage[0] });
@@ -280,7 +280,7 @@ export function fire(
         if (actor.health <= 0) return false;
         const dist = GWU.xy.distanceBetween(a.x, a.y, actor.x, actor.y);
         if (dist > actor.range) {
-          console.log("too far - %f/%d - %s", dist, actor.range, a.kind.id);
+          console.log("too far - %f/%d - %s", dist, actor.range, a.name);
           return false;
         }
         console.log("checking fov...");
@@ -296,7 +296,7 @@ export function fire(
         }
         // end hack
 
-        console.log("ok - ", a.kind.id);
+        console.log("ok - ", a.name);
         return true;
       })
       .sort(
@@ -364,9 +364,7 @@ export function fire(
       } else {
         FX.flash(game, xy.x, xy.y, "red", 150);
         game.messages.addCombat(
-          `${actor.kind.id} shoots ${target!.kind.id}#{red [${
-            actor.rangedDamage
-          }]}`
+          `${actor.name} shoots ${target!.name}#{red [${actor.rangedDamage}]}`
         );
 
         EFFECT.damage(game, target!, { amount: actor.rangedDamage[0] });
@@ -401,7 +399,7 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
     } else {
       FX.flash(game, xy.x, xy.y, "red", 150);
       game.messages.addCombat(
-        `${actor.kind.id} shoots ${player.kind.id}#{red [${actor.rangedDamage}]}`
+        `${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`
       );
       EFFECT.damage(game, player, { amount: actor.rangedDamage[0] });
     }

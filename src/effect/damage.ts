@@ -37,7 +37,7 @@ export function damage(
 
   if (target.health <= 0) {
     // do all of these move to event handlers?
-    game.messages.addCombat(`${target.kind.id} dies`);
+    game.messages.addCombat(`${target.name} dies`);
     game.level!.setTile(target.x, target.y, "CORPSE"); // TODO - This should be above the floor (FIXTURE)
     target.trigger("death");
     game.level!.removeActor(target);

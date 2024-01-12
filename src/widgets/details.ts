@@ -24,20 +24,25 @@ export class Details extends GWU.widget.Dialog {
 
   showActor(actor: Actor) {
     let text = actor.name + "\n";
-    text += "Health: " + actor.health + "/" + actor.health_max + "\n";
+    text += "Health: " + actor.health + " / " + actor.health_max + "\n";
     text += "Moves : " + actor.moveSpeed + "\n";
 
     if (actor.damage.length > 0) {
-      text += "Melee : damage=" + actor.damage + "\n";
-      text += "        speed =" + actor.attackSpeed + "\n";
+      text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
     } else {
       text += "Melee : None\n";
     }
     if (actor.range > 0) {
-      text += "Ranged: damage=" + actor.rangedDamage + "\n";
-      text += "      : speed =" + actor.rangedAttackSpeed + "\n";
-      text += "      : range =" + actor.range + "\n";
-      text += "      : ammo=" + actor.ammo + "\n";
+      text +=
+        "Ranged: " +
+        actor.rangedDamage +
+        " / " +
+        actor.rangedAttackSpeed +
+        " @ " +
+        actor.range +
+        " [" +
+        actor.ammo +
+        "]\n";
     } else {
       text += "Ranged: None";
     }
@@ -52,7 +57,7 @@ export class Details extends GWU.widget.Dialog {
     let text = player.name + "\n";
     const armor = player.slots.armor;
     if (armor) {
-      text += "Health: " + player.health + "/" + player.health_max + "\n";
+      text += "Health: " + player.health + " / " + player.health_max + "\n";
       text += "#{teal}";
       text += "  " + armor.name + " [" + armor.power + "]\n";
 
@@ -105,28 +110,41 @@ export class Details extends GWU.widget.Dialog {
 
     const melee = player.slots.melee;
     if (melee) {
-      text += "Melee : " + melee.name + " [" + melee.power + "]\n";
-      text += "      : damage=" + player.damage + "\n";
-      text += "      : speed =" + player.attackSpeed + "\n";
+      text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+      text += "#{teal}";
+      text += `  ${melee.name} [${melee.power}]\n`;
+      text += "#{}";
     } else if (player.damage.length > 0) {
-      text += "Melee : damage=" + player.damage + "\n";
-      text += "        speed =" + player.attackSpeed + "\n";
+      text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
     } else {
       text += "Melee : None\n";
     }
 
     const ranged = player.slots.ranged;
     if (ranged) {
-      text += "Ranged: " + ranged.name + " [" + ranged.power + "]\n";
-      text += "      : damage=" + player.rangedDamage + "\n";
-      text += "      : range =" + player.range + "\n";
-      text += "      : speed =" + player.rangedAttackSpeed + "\n";
-      text += "      : ammo  =" + player.ammo + "\n";
+      text +=
+        "Ranged: " +
+        player.rangedDamage +
+        " / " +
+        player.rangedAttackSpeed +
+        " @ " +
+        player.range +
+        " [" +
+        player.ammo +
+        "]\n";
+      text += "#{teal}";
+      text += "  " + ranged.name + " [" + ranged.power + "]\n";
     } else if (player.range > 0) {
-      text += "Ranged: damage=" + player.rangedDamage + "\n";
-      text += "      : speed =" + player.rangedAttackSpeed + "\n";
-      text += "      : range =" + player.range + "\n";
-      text += "      : ammo  =" + player.ammo + "\n";
+      text +=
+        "Ranged: " +
+        player.rangedDamage +
+        "  " +
+        player.rangedAttackSpeed +
+        " @ " +
+        player.range +
+        " [" +
+        player.ammo +
+        "]\n";
     } else {
       text += "Ranged: None";
     }
