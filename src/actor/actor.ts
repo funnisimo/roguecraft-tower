@@ -81,12 +81,12 @@ export class Actor extends Obj {
     return this.kind.name;
   }
 
-  get damage(): number[] {
+  get damage(): number {
     // TODO - scale with power
     return this.kind.damage;
   }
 
-  get attackSpeed(): number[] {
+  get attackSpeed(): number {
     return this.kind.attackSpeed;
   }
 
@@ -94,11 +94,11 @@ export class Actor extends Obj {
     return this.kind.range;
   }
 
-  get rangedDamage(): number[] {
+  get rangedDamage(): number {
     return this.kind.rangedDamage;
   }
 
-  get rangedAttackSpeed(): number[] {
+  get rangedAttackSpeed(): number {
     return this.kind.rangedAttackSpeed;
   }
 
@@ -113,7 +113,7 @@ export class Actor extends Obj {
 
   // TODO - Should this be a method instead of a property?
   get can_melee_attack(): boolean {
-    return this.damage.length > 0 && this.damage[0] > 0;
+    return this.damage > 0 && this.attackSpeed > 0;
   }
 
   add_status(status: Status) {

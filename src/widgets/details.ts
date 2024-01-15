@@ -27,7 +27,7 @@ export class Details extends GWU.widget.Dialog {
     text += "Health: " + actor.health + " / " + actor.health_max + "\n";
     text += "Moves : " + actor.moveSpeed + "\n";
 
-    if (actor.damage.length > 0) {
+    if (actor.damage > 0) {
       text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
     } else {
       text += "Melee : None\n";
@@ -40,9 +40,9 @@ export class Details extends GWU.widget.Dialog {
         actor.rangedAttackSpeed +
         " @ " +
         actor.range +
-        " [" +
+        " (" +
         actor.ammo +
-        "]\n";
+        ")\n";
     } else {
       text += "Ranged: None";
     }
@@ -114,7 +114,7 @@ export class Details extends GWU.widget.Dialog {
       text += "#{teal}";
       text += `  ${melee.name} [${melee.power}]\n`;
       text += "#{}";
-    } else if (player.damage.length > 0) {
+    } else if (player.damage > 0) {
       text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
     } else {
       text += "Melee : None\n";
@@ -129,9 +129,9 @@ export class Details extends GWU.widget.Dialog {
         player.rangedAttackSpeed +
         " @ " +
         player.range +
-        " [" +
+        " (" +
         player.ammo +
-        "]\n";
+        ")\n";
       text += "#{teal}";
       text += "  " + ranged.name + " [" + ranged.power + "]\n";
     } else if (player.range > 0) {
@@ -142,9 +142,9 @@ export class Details extends GWU.widget.Dialog {
         player.rangedAttackSpeed +
         " @ " +
         player.range +
-        " [" +
+        " (" +
         player.ammo +
-        "]\n";
+        ")\n";
     } else {
       text += "Ranged: None";
     }

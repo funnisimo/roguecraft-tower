@@ -15348,12 +15348,6 @@ void main() {
 
   const kinds$1 = {};
   function install$4(cfg) {
-      if (typeof cfg.speed === "number") {
-          cfg.speed = [cfg.speed];
-      }
-      if (typeof cfg.damage === "number") {
-          cfg.damage = [cfg.damage];
-      }
       const kind = Object.assign({
           name: "",
           ch: "!",
@@ -15361,8 +15355,11 @@ void main() {
           //   bump: ["attack"],
           on: {},
           frequency: 10,
-          speed: [100],
-          damage: [0],
+          speed: 100,
+          damage: 0,
+          combo: 0,
+          combo_speed: 0,
+          combo_damage: 0,
           range: 0,
           defense: 0,
           slot: null,
@@ -15373,11 +15370,6 @@ void main() {
       if (kind.name.length == 0) {
           kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
       }
-      // add damage as necessary
-      while (kind.speed.length > kind.damage.length) {
-          kind.damage.push(kind.damage[0]);
-      }
-      kind.damage.length = kind.speed.length; // truncate any extra damage
       if (typeof cfg.tags == "string") {
           kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
       }
@@ -15392,7 +15384,7 @@ void main() {
           if (kind.range > 0) {
               kind.slot = "ranged";
           }
-          else if (kind.damage.length > 0 && kind.damage[0] > 0) {
+          else if (kind.damage > 0) {
               kind.slot = "melee";
           }
           else if (kind.defense > 0) {
@@ -15414,7 +15406,8 @@ void main() {
           if (!this.kind)
               throw new Error("Must have kind.");
           this.data = {};
-          this._damage = this.kind.damage.slice();
+          this._damage = this.kind.damage;
+          this._comboDamage = this.kind.combo_damage;
           this._defense = this.kind.defense;
           this._power = cfg.power || 1;
           this.on("add", (level) => {
@@ -15443,17 +15436,27 @@ void main() {
           val = val || 1;
           this._power = val;
           // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = this.kind.damage.map((v) => Math.round(val * v * Math.pow(1.025, val)));
+          this._damage = Math.round(val * this.kind.damage * Math.pow(1.025, val));
+          this._comboDamage = Math.round(val * this.kind.combo_damage * Math.pow(1.025, val));
           this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
       }
       get damage() {
           return this._damage;
+      }
+      get comboDamage() {
+          return this._comboDamage;
       }
       get range() {
           return this.kind.range;
       }
       get speed() {
           return this.kind.speed;
+      }
+      get comboSpeed() {
+          return this.kind.combo_speed;
+      }
+      get combo() {
+          return this.kind.combo;
       }
       get defense() {
           return this._defense;
@@ -15775,8 +15778,8 @@ void main() {
       flash(game, target.x, target.y, "red", 150);
       game.messages.addCombat(`${actor.name} attacks ${target.name}#{red [${actor.damage}]}`);
       // TODO - Get 'next' attack details (and increment counter in actor)
-      damage(game, target, { amount: actor.damage[0] });
-      game.endTurn(actor, actor.attackSpeed[0]);
+      damage(game, target, { amount: actor.damage });
+      game.endTurn(actor, actor.attackSpeed);
       return true;
   }
   installBump("attack", attack);
@@ -15877,10 +15880,10 @@ void main() {
           else {
               flash(game, xy.x, xy.y, "red", 150);
               game.messages.addCombat(`${actor.name} shoots ${target.name}#{red [${actor.rangedDamage}]}`);
-              damage(game, target, { amount: actor.rangedDamage[0] });
+              damage(game, target, { amount: actor.rangedDamage });
           }
       });
-      game.endTurn(actor, actor.rangedAttackSpeed[0]);
+      game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
   installBump("fire", fire);
@@ -15900,10 +15903,10 @@ void main() {
           else {
               flash(game, xy.x, xy.y, "red", 150);
               game.messages.addCombat(`${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`);
-              damage(game, player, { amount: actor.rangedDamage[0] });
+              damage(game, player, { amount: actor.rangedDamage });
           }
       });
-      game.endTurn(actor, actor.rangedAttackSpeed[0]);
+      game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
   function pickup(game, actor) {
@@ -15988,11 +15991,14 @@ void main() {
           fg: "white",
           bump: ["attack"],
           on: {},
-          damage: [],
-          attackSpeed: [],
+          damage: 0,
+          attackSpeed: 0,
+          combo: 0,
+          comboDamage: 0,
+          comboSpeed: 0,
           range: 0,
-          rangedDamage: [],
-          rangedAttackSpeed: [],
+          rangedDamage: 0,
+          rangedAttackSpeed: 0,
           ammo: 0,
           tooClose: 0,
           dropChance: 0,
@@ -16011,68 +16017,19 @@ void main() {
       if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
           kind.dropMatch.push("drop"); // Default drops
       }
-      // normalize attackSpeed
-      if (typeof cfg.attackSpeed === "undefined") {
-          kind.attackSpeed = [];
+      if (kind.attackSpeed == 0 && kind.damage > 0) {
+          kind.attackSpeed = kind.moveSpeed;
       }
-      else if (typeof cfg.attackSpeed == "number") {
-          if (cfg.attackSpeed == 0) {
-              kind.attackSpeed = [];
-          }
-          else {
-              kind.attackSpeed = [cfg.attackSpeed];
-          }
+      if (kind.comboDamage == 0) {
+          kind.combo = 0;
+          kind.comboSpeed = 0;
       }
-      else {
-          kind.attackSpeed = cfg.attackSpeed;
+      else if (kind.combo < 2) {
+          kind.comboDamage = 0;
+          kind.comboSpeed = 0;
       }
-      // normalize rangedAttackSpeed
-      if (typeof cfg.rangedAttackSpeed === "undefined") {
-          kind.rangedAttackSpeed = [];
-      }
-      else if (typeof cfg.rangedAttackSpeed == "number") {
-          if (cfg.rangedAttackSpeed == 0) {
-              kind.rangedAttackSpeed = [];
-          }
-          else {
-              kind.rangedAttackSpeed = [cfg.rangedAttackSpeed];
-          }
-      }
-      else {
-          kind.rangedAttackSpeed = cfg.rangedAttackSpeed;
-      }
-      if (typeof cfg.damage == "number") {
-          kind.damage = [cfg.damage];
-      }
-      if (typeof cfg.rangedDamage == "number") {
-          kind.rangedDamage = [cfg.rangedDamage];
-      }
-      if (kind.damage.length == 1 && kind.damage[0] == 0) {
-          kind.damage = [];
-          kind.attackSpeed = [];
-      }
-      else {
-          // normalize damage and attackSpeed
-          while (kind.damage.length > kind.attackSpeed.length) {
-              kind.attackSpeed.push(kind.attackSpeed[0] || kind.moveSpeed);
-          }
-      }
-      if (kind.range == 0 ||
-          (kind.rangedDamage.length == 1 && kind.rangedDamage[0] == 0)) {
-          kind.rangedDamage = [];
-          kind.rangedAttackSpeed = [];
-      }
-      else {
-          while (kind.attackSpeed.length > kind.damage.length) {
-              kind.damage.push(kind.damage[0]);
-          }
-      }
-      // normalize rangedDamage and rangedAttackSpeed
-      while (kind.rangedAttackSpeed.length > kind.rangedDamage.length) {
-          kind.rangedDamage.push(kind.rangedDamage[0]);
-      }
-      while (kind.rangedDamage.length > kind.rangedAttackSpeed.length) {
-          kind.rangedAttackSpeed.push(kind.rangedAttackSpeed[0] || kind.attackSpeed[0] || kind.moveSpeed);
+      else if (kind.comboSpeed == 0) {
+          kind.comboSpeed = kind.attackSpeed;
       }
       if (kind.ammo == 0 && kind.range > 0) {
           kind.ammo = 10; // You get 10 shots by default
@@ -16171,7 +16128,7 @@ void main() {
       }
       // TODO - Should this be a method instead of a property?
       get can_melee_attack() {
-          return this.damage.length > 0 && this.damage[0] > 0;
+          return this.damage > 0 && this.attackSpeed > 0;
       }
       add_status(status) {
           const current = this.statuses.findIndex((current) => current && current.merge(status));
@@ -22084,7 +22041,7 @@ void main() {
           let text = actor.name + "\n";
           text += "Health: " + actor.health + " / " + actor.health_max + "\n";
           text += "Moves : " + actor.moveSpeed + "\n";
-          if (actor.damage.length > 0) {
+          if (actor.damage > 0) {
               text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
           }
           else {
@@ -22170,7 +22127,7 @@ void main() {
               text += `  ${melee.name} [${melee.power}]\n`;
               text += "#{}";
           }
-          else if (player.damage.length > 0) {
+          else if (player.damage > 0) {
               text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
           }
           else {
@@ -22185,9 +22142,9 @@ void main() {
                       player.rangedAttackSpeed +
                       " @ " +
                       player.range +
-                      " [" +
+                      " (" +
                       player.ammo +
-                      "]\n";
+                      ")\n";
               text += "#{teal}";
               text += "  " + ranged.name + " [" + ranged.power + "]\n";
           }
@@ -22199,9 +22156,9 @@ void main() {
                       player.rangedAttackSpeed +
                       " @ " +
                       player.range +
-                      " [" +
+                      " (" +
                       player.ammo +
-                      "]\n";
+                      ")\n";
           }
           else {
               text += "Ranged: None";
@@ -22994,8 +22951,11 @@ void main() {
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
-      speed: [100, 100, 150],
-      damage: [9, 9, 18],
+      speed: 100,
+      damage: 9,
+      combo: 3,
+      combo_speed: 150,
+      combo_damage: 18,
       tags: "melee",
   });
   // AXE
@@ -23058,36 +23018,6 @@ void main() {
   // RAPIER
   // BEE_STINGER
   // FREEZING_FOIL
-  //////////////////////////////////////////////////////
-  // RANGED
-  //////////////////////////////////////////////////////
-  install$4({
-      id: "SHORTBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 60,
-      damage: 5,
-      range: 10,
-      tags: "ranged",
-  });
-  install$4({
-      id: "BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 100,
-      damage: 10,
-      range: 10,
-      tags: "ranged",
-  });
-  install$4({
-      id: "LONGBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 150,
-      damage: 24,
-      range: 15,
-      tags: "ranged",
-  });
 
   install$4({
       id: "SCALE_MAIL",

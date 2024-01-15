@@ -27,8 +27,11 @@ export interface KindConfig {
   frequency?: GWU.frequency.FrequencyConfig;
 
   //   bump?: string | string[];
-  speed?: number | number[];
-  damage?: number | number[];
+  speed?: number;
+  damage?: number;
+  combo?: number;
+  combo_speed?: number;
+  combo_damage?: number;
   range?: number;
 
   defense?: number;
@@ -50,8 +53,11 @@ export interface ItemKind {
   bg?: GWU.color.ColorBase;
 
   //   bump: string[];
-  speed: number[];
-  damage: number[];
+  speed: number;
+  damage: number;
+  combo: number;
+  combo_speed: number;
+  combo_damage: number;
   range: number;
 
   defense: number;
@@ -76,13 +82,6 @@ export interface ItemKind {
 export const kinds: Record<string, ItemKind> = {};
 
 export function install(cfg: KindConfig) {
-  if (typeof cfg.speed === "number") {
-    cfg.speed = [cfg.speed];
-  }
-  if (typeof cfg.damage === "number") {
-    cfg.damage = [cfg.damage];
-  }
-
   const kind = Object.assign(
     {
       name: "",
@@ -91,8 +90,11 @@ export function install(cfg: KindConfig) {
       //   bump: ["attack"],
       on: {},
       frequency: 10,
-      speed: [100],
-      damage: [0],
+      speed: 100,
+      damage: 0,
+      combo: 0,
+      combo_speed: 0,
+      combo_damage: 0,
       range: 0,
       defense: 0,
       slot: null,
@@ -106,12 +108,6 @@ export function install(cfg: KindConfig) {
   if (kind.name.length == 0) {
     kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
   }
-
-  // add damage as necessary
-  while (kind.speed.length > kind.damage.length) {
-    kind.damage.push(kind.damage[0]);
-  }
-  kind.damage.length = kind.speed.length; // truncate any extra damage
 
   if (typeof cfg.tags == "string") {
     kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
@@ -130,7 +126,7 @@ export function install(cfg: KindConfig) {
   if (kind.slot === null) {
     if (kind.range > 0) {
       kind.slot = "ranged";
-    } else if (kind.damage.length > 0 && kind.damage[0] > 0) {
+    } else if (kind.damage > 0) {
       kind.slot = "melee";
     } else if (kind.defense > 0) {
       kind.slot = "armor";

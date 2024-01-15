@@ -23,14 +23,17 @@ export interface KindConfig {
   on?: ActorEvents;
 
   // melee
-  damage?: number | number[];
-  attackSpeed?: number | number[];
+  damage?: number;
+  attackSpeed?: number;
+  combo?: number;
+  comboDamage?: number;
+  comboSpeed?: number;
 
   // ranged
   range?: number;
-  rangedDamage?: number | number[];
+  rangedDamage?: number;
   tooClose?: number;
-  rangedAttackSpeed?: number | number[];
+  rangedAttackSpeed?: number;
   ammo?: number;
 
   slots?: { [id: string]: string };
@@ -56,13 +59,16 @@ export interface ActorKind {
 
   on: ActorEvents;
 
-  damage: number[];
-  attackSpeed: number[];
+  damage: number;
+  attackSpeed: number;
+  combo: number;
+  comboDamage: number;
+  comboSpeed: number;
 
   range: number;
-  rangedDamage: number[];
+  rangedDamage: number;
   tooClose: number;
-  rangedAttackSpeed: number[];
+  rangedAttackSpeed: number;
   ammo: number;
 
   slots: Map<string, string>;
@@ -85,12 +91,15 @@ export function install(cfg: KindConfig) {
       bump: ["attack"],
       on: {},
 
-      damage: [],
-      attackSpeed: [],
+      damage: 0,
+      attackSpeed: 0,
+      combo: 0,
+      comboDamage: 0,
+      comboSpeed: 0,
 
       range: 0,
-      rangedDamage: [],
-      rangedAttackSpeed: [],
+      rangedDamage: 0,
+      rangedAttackSpeed: 0,
       ammo: 0,
 
       tooClose: 0,
@@ -117,69 +126,18 @@ export function install(cfg: KindConfig) {
     kind.dropMatch.push("drop"); // Default drops
   }
 
-  // normalize attackSpeed
-  if (typeof cfg.attackSpeed === "undefined") {
-    kind.attackSpeed = [];
-  } else if (typeof cfg.attackSpeed == "number") {
-    if (cfg.attackSpeed == 0) {
-      kind.attackSpeed = [];
-    } else {
-      kind.attackSpeed = [cfg.attackSpeed];
-    }
-  } else {
-    kind.attackSpeed = cfg.attackSpeed;
+  if (kind.attackSpeed == 0 && kind.damage > 0) {
+    kind.attackSpeed = kind.moveSpeed;
   }
 
-  // normalize rangedAttackSpeed
-  if (typeof cfg.rangedAttackSpeed === "undefined") {
-    kind.rangedAttackSpeed = [];
-  } else if (typeof cfg.rangedAttackSpeed == "number") {
-    if (cfg.rangedAttackSpeed == 0) {
-      kind.rangedAttackSpeed = [];
-    } else {
-      kind.rangedAttackSpeed = [cfg.rangedAttackSpeed];
-    }
-  } else {
-    kind.rangedAttackSpeed = cfg.rangedAttackSpeed;
-  }
-
-  if (typeof cfg.damage == "number") {
-    kind.damage = [cfg.damage];
-  }
-  if (typeof cfg.rangedDamage == "number") {
-    kind.rangedDamage = [cfg.rangedDamage];
-  }
-
-  if (kind.damage.length == 1 && kind.damage[0] == 0) {
-    kind.damage = [];
-    kind.attackSpeed = [];
-  } else {
-    // normalize damage and attackSpeed
-    while (kind.damage.length > kind.attackSpeed.length) {
-      kind.attackSpeed.push(kind.attackSpeed[0] || kind.moveSpeed);
-    }
-  }
-
-  if (
-    kind.range == 0 ||
-    (kind.rangedDamage.length == 1 && kind.rangedDamage[0] == 0)
-  ) {
-    kind.rangedDamage = [];
-    kind.rangedAttackSpeed = [];
-  } else {
-    while (kind.attackSpeed.length > kind.damage.length) {
-      kind.damage.push(kind.damage[0]);
-    }
-  }
-
-  // normalize rangedDamage and rangedAttackSpeed
-  while (kind.rangedAttackSpeed.length > kind.rangedDamage.length) {
-    kind.rangedDamage.push(kind.rangedDamage[0]);
-  }
-  while (kind.rangedDamage.length > kind.rangedAttackSpeed.length) {
-    kind.rangedAttackSpeed.push(
-      kind.rangedAttackSpeed[0] || kind.attackSpeed[0] || kind.moveSpeed
-    );
+  if (kind.comboDamage == 0) {
+    kind.combo = 0;
+    kind.comboSpeed = 0;
+  } else if (kind.combo < 2) {
+    kind.comboDamage = 0;
+    kind.comboSpeed = 0;
+  } else if (kind.comboSpeed == 0) {
+    kind.comboSpeed = kind.attackSpeed;
   }
 
   if (kind.ammo == 0 && kind.range > 0) {

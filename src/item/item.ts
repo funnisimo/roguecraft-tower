@@ -15,7 +15,8 @@ export class Item extends Obj {
   kind: ItemKind;
   data: Record<string, any>;
   _power: number;
-  _damage: number[];
+  _damage: number;
+  _comboDamage: number;
   _defense: number;
 
   constructor(cfg: ItemConfig) {
@@ -24,7 +25,8 @@ export class Item extends Obj {
     if (!this.kind) throw new Error("Must have kind.");
 
     this.data = {};
-    this._damage = this.kind.damage.slice();
+    this._damage = this.kind.damage;
+    this._comboDamage = this.kind.combo_damage;
     this._defense = this.kind.defense;
     this._power = cfg.power || 1;
 
@@ -60,22 +62,35 @@ export class Item extends Obj {
     this._power = val;
 
     // Value = POWER * BASE * Math.pow(1.025,POWER)
-    this._damage = this.kind.damage.map((v) =>
-      Math.round(val * v * Math.pow(1.025, val))
+    this._damage = Math.round(val * this.kind.damage * Math.pow(1.025, val));
+    this._comboDamage = Math.round(
+      val * this.kind.combo_damage * Math.pow(1.025, val)
     );
     this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
   }
 
-  get damage(): number[] {
+  get damage(): number {
     return this._damage;
+  }
+
+  get comboDamage(): number {
+    return this._comboDamage;
   }
 
   get range(): number {
     return this.kind.range;
   }
 
-  get speed(): number[] {
+  get speed(): number {
     return this.kind.speed;
+  }
+
+  get comboSpeed(): number {
+    return this.kind.combo_speed;
+  }
+
+  get combo(): number {
+    return this.kind.combo;
   }
 
   get defense(): number {

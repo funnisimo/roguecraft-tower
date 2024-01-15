@@ -63,7 +63,7 @@ export class Player extends ACTOR.Actor {
   }
 
   // attributes
-  get damage(): number[] {
+  get damage(): number {
     const melee = this.slots.melee;
     if (melee) {
       return melee.damage;
@@ -71,7 +71,7 @@ export class Player extends ACTOR.Actor {
     return super.damage;
   }
 
-  get attackSpeed(): number[] {
+  get attackSpeed(): number {
     const melee = this.slots.melee;
     if (melee) {
       return melee.speed;
@@ -87,7 +87,7 @@ export class Player extends ACTOR.Actor {
     return super.range;
   }
 
-  get rangedDamage(): number[] {
+  get rangedDamage(): number {
     const ranged = this.slots.ranged;
     if (ranged) {
       return ranged.damage;
@@ -95,7 +95,7 @@ export class Player extends ACTOR.Actor {
     return super.rangedDamage;
   }
 
-  get rangedAttackSpeed(): number[] {
+  get rangedAttackSpeed(): number {
     const ranged = this.slots.ranged;
     if (ranged) {
       return ranged.speed;

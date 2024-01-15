@@ -244,8 +244,8 @@ export function attack(
     `${actor.name} attacks ${target.name}#{red [${actor.damage}]}`
   );
   // TODO - Get 'next' attack details (and increment counter in actor)
-  EFFECT.damage(game, target, { amount: actor.damage[0] });
-  game.endTurn(actor, actor.attackSpeed[0]);
+  EFFECT.damage(game, target, { amount: actor.damage });
+  game.endTurn(actor, actor.attackSpeed);
 
   return true;
 }
@@ -367,12 +367,12 @@ export function fire(
           `${actor.name} shoots ${target!.name}#{red [${actor.rangedDamage}]}`
         );
 
-        EFFECT.damage(game, target!, { amount: actor.rangedDamage[0] });
+        EFFECT.damage(game, target!, { amount: actor.rangedDamage });
       }
     }
   );
 
-  game.endTurn(actor, actor.rangedAttackSpeed[0]);
+  game.endTurn(actor, actor.rangedAttackSpeed);
   return true;
 }
 
@@ -401,11 +401,11 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
       game.messages.addCombat(
         `${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`
       );
-      EFFECT.damage(game, player, { amount: actor.rangedDamage[0] });
+      EFFECT.damage(game, player, { amount: actor.rangedDamage });
     }
   });
 
-  game.endTurn(actor, actor.rangedAttackSpeed[0]);
+  game.endTurn(actor, actor.rangedAttackSpeed);
   return true;
 }
 
