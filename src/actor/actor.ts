@@ -28,6 +28,7 @@ export class Actor extends Obj {
   power: number;
   item_flags: number;
   statuses: (Status | null)[];
+  combo_index: number;
 
   leader: Actor | null = null;
 
@@ -36,7 +37,7 @@ export class Actor extends Obj {
     this.kind = cfg.kind;
     if (!this.kind) throw new Error("Must have kind.");
 
-    this.kind.moveSpeed = this.kind.moveSpeed || 100;
+    this.combo_index = 0;
     this.item_flags = 0;
     this.data = {};
     this.power = cfg.power || 1;
@@ -106,6 +107,11 @@ export class Actor extends Obj {
     return this.kind.moveSpeed;
   }
   //
+
+  finish_attack() {
+    this.combo_index += 1;
+    this.combo_index = this.combo_index % this.kind.combo;
+  }
 
   has_item_flag(flag: number): boolean {
     return (this.item_flags & flag) > 0;

@@ -79,6 +79,9 @@ export interface ActorKind {
 
 export const kinds: Record<string, ActorKind> = {};
 
+// @ts-ignore
+globalThis.ActorKinds = kinds;
+
 export function install(cfg: KindConfig) {
   const kind = Object.assign(
     {

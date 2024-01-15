@@ -107,7 +107,7 @@ export function make(id: string | ItemKind, opts?: Partial<ItemConfig>) {
   let power = 1;
 
   if (typeof id === "string") {
-    const parts = id.split("^").map((v) => v.trim());
+    const parts = id.split(/[\^\[]/).map((v) => v.trim());
     const kind_id = parts[0];
     power = Number.parseInt(parts[1] || "1");
     kind = getKind(parts[0]);

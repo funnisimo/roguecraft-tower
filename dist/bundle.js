@@ -15347,6 +15347,8 @@ void main() {
   globalThis.RANGED_FLAGS = RANGED_FLAGS;
 
   const kinds$1 = {};
+  // @ts-ignore
+  globalThis.ItemKinds = kinds$1;
   function install$4(cfg) {
       const kind = Object.assign({
           name: "",
@@ -15469,7 +15471,7 @@ void main() {
       let kind;
       let power = 1;
       if (typeof id === "string") {
-          const parts = id.split("^").map((v) => v.trim());
+          const parts = id.split(/[\^\[]/).map((v) => v.trim());
           parts[0];
           power = Number.parseInt(parts[1] || "1");
           kind = getKind$1(parts[0]);
@@ -15981,6 +15983,8 @@ void main() {
   }
 
   const kinds = {};
+  // @ts-ignore
+  globalThis.ActorKinds = kinds;
   function install$3(cfg) {
       const kind = Object.assign({
           name: "",
@@ -16063,7 +16067,7 @@ void main() {
           this.kind = cfg.kind;
           if (!this.kind)
               throw new Error("Must have kind.");
-          this.kind.moveSpeed = this.kind.moveSpeed || 100;
+          this.combo_index = 0;
           this.item_flags = 0;
           this.data = {};
           this.power = cfg.power || 1;
@@ -16123,6 +16127,10 @@ void main() {
           return this.kind.moveSpeed;
       }
       //
+      finish_attack() {
+          this.combo_index += 1;
+          this.combo_index = this.combo_index % this.kind.combo;
+      }
       has_item_flag(flag) {
           return (this.item_flags & flag) > 0;
       }
@@ -16304,6 +16312,7 @@ void main() {
       get damage() {
           const melee = this.slots.melee;
           if (melee) {
+              // track combo...
               return melee.damage;
           }
           return super.damage;
@@ -16311,6 +16320,7 @@ void main() {
       get attackSpeed() {
           const melee = this.slots.melee;
           if (melee) {
+              // track combo...
               return melee.speed;
           }
           return super.attackSpeed;
@@ -16340,6 +16350,15 @@ void main() {
           return this.potion >= this.potion_max;
       }
       //
+      finish_attack() {
+          const melee = this.slots.melee;
+          let combo = this.kind.combo;
+          if (melee) {
+              combo = melee.combo;
+          }
+          this.combo_index += 1;
+          this.combo_index = this.combo_index % combo;
+      }
       equip(item) {
           if (item.slot === null) {
               throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -16356,6 +16375,7 @@ void main() {
           });
           this.health_max = new_health_max;
           this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
       }
       unequip_slot(slot) {
           this.slots[slot] = null;
@@ -16370,6 +16390,7 @@ void main() {
           });
           this.health_max = new_health_max;
           this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
       }
       act(game) {
           this.startTurn(game);
@@ -22055,9 +22076,9 @@ void main() {
                       actor.rangedAttackSpeed +
                       " @ " +
                       actor.range +
-                      " [" +
+                      " (" +
                       actor.ammo +
-                      "]\n";
+                      ")\n";
           }
           else {
               text += "Ranged: None";

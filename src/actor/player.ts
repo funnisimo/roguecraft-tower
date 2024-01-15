@@ -66,6 +66,7 @@ export class Player extends ACTOR.Actor {
   get damage(): number {
     const melee = this.slots.melee;
     if (melee) {
+      // track combo...
       return melee.damage;
     }
     return super.damage;
@@ -74,6 +75,7 @@ export class Player extends ACTOR.Actor {
   get attackSpeed(): number {
     const melee = this.slots.melee;
     if (melee) {
+      // track combo...
       return melee.speed;
     }
     return super.attackSpeed;
@@ -108,6 +110,16 @@ export class Player extends ACTOR.Actor {
   }
   //
 
+  finish_attack(): void {
+    const melee = this.slots.melee;
+    let combo = this.kind.combo;
+    if (melee) {
+      combo = melee.combo;
+    }
+    this.combo_index += 1;
+    this.combo_index = this.combo_index % combo;
+  }
+
   equip(item: ITEM.Item) {
     if (item.slot === null) {
       throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -124,6 +136,7 @@ export class Player extends ACTOR.Actor {
     });
     this.health_max = new_health_max;
     this.health = Math.round(new_health_max * health_pct);
+    this.combo_index = 0;
   }
 
   unequip_slot(slot: string) {
@@ -139,6 +152,7 @@ export class Player extends ACTOR.Actor {
     });
     this.health_max = new_health_max;
     this.health = Math.round(new_health_max * health_pct);
+    this.combo_index = 0;
   }
 
   act(game: Game) {

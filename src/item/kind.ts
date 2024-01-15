@@ -81,6 +81,9 @@ export interface ItemKind {
 
 export const kinds: Record<string, ItemKind> = {};
 
+// @ts-ignore
+globalThis.ItemKinds = kinds;
+
 export function install(cfg: KindConfig) {
   const kind = Object.assign(
     {
