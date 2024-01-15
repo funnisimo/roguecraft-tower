@@ -3,8 +3,9 @@ import * as SCENES from "./scenes/index";
 import "./actors";
 import "./hordes";
 import "./items";
-import "./weapons";
+import "./melee";
 import "./armor";
+import "./ranged";
 
 function start() {
   // create the user interface

@@ -18,14 +18,14 @@ export function damage(
 
   damage.amount = damage.amount || 0;
 
-  if (effects & ITEM.FLAGS.NEGATE_HITS_30) {
+  if (effects & ITEM.MELEE_FLAGS.NEGATE_HITS_30) {
     if (game.rng.chance(30)) {
       game.messages.addCombat("Blocked.");
       damage.amount = 0;
       return false;
     }
   }
-  if (effects & ITEM.FLAGS.REDUCE_DAMAGE_35) {
+  if (effects & ITEM.MELEE_FLAGS.REDUCE_DAMAGE_35) {
     damage.amount = Math.round(damage.amount * 0.65);
   }
 

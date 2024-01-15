@@ -15267,7 +15267,7 @@ void main() {
       };
   }
 
-  const FLAGS = flag.make([
+  const ARMOR_FLAGS = flag.make([
       "ARTIFACT_COOLDOWN_40",
       "ARROWS_10",
       "LONGER_ROLL_100",
@@ -15283,7 +15283,68 @@ void main() {
       "WEAPON_DAMAGE_AURA_20",
   ]);
   // @ts-ignore
-  globalThis.ITEM_FLAGS = FLAGS;
+  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
+  const MELEE_FLAGS = flag.make([
+      "SPIN_ATTACK",
+      "THRUST",
+      "SWIRLING",
+      "LONGER_REACH",
+      "SHOCKWAVE",
+      "BURNS",
+      "STUNS",
+      "AMBUSH",
+      "ECHO",
+      "EXPLODING",
+      "COMMITTED",
+      "PUSHBACK",
+      "SHARPNESS",
+      "LEECHING",
+      "RAMPAGING",
+      "WEAKENING",
+      "FREEZING",
+      "POISON_CLOUD",
+      "POISONS",
+      "SPLASH",
+      "GRAVITY",
+      "LIGHTNING_BOLTS",
+      "CHAINS",
+      "RADIANCE",
+      "SHARED_PAIN",
+      "PROSPECTOR",
+      "CRITICAL_HIT",
+      "SPEED_RUSH",
+      "LOOTING",
+      "SPAWN_BEE", // chance to spawn bee
+  ]);
+  // @ts-ignore
+  globalThis.MELEE_FLAGS = MELEE_FLAGS;
+  const RANGED_FLAGS = flag.make([
+      // "GROWING", // Not going to use
+      "EXTRA_SHOT",
+      "INFINITE_SHOTS",
+      "POWER",
+      "SUPERCHARGED",
+      "EXPLODING",
+      "RADIANCE_SHOT",
+      "ENRAGES",
+      "ACCELERATE",
+      "RAPID_FIRE",
+      "FREEZES",
+      "TRIPLE_SHOT",
+      "CHAINS_HITS",
+      "POISON_CLOUD",
+      "POISONS",
+      "ENRAGES",
+      "ROLL_CHARGES",
+      "GRAVITY_SHOT",
+      "RICOCHET",
+      "TEMPO_THEFT",
+      "PIERCING",
+      "CHAIN_REACTION",
+      "KNOCKBACK",
+  ]);
+  // @ts-ignore
+  globalThis.RANGED_FLAGS = RANGED_FLAGS;
 
   const kinds$1 = {};
   function install$4(cfg) {
@@ -15321,7 +15382,7 @@ void main() {
           kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
       }
       if (typeof cfg.flags !== "number") {
-          kind.flags = flag.from_safe(FLAGS, cfg.flags);
+          kind.flags = flag.from_safe(ARMOR_FLAGS, cfg.flags);
       }
       //   if (typeof cfg.bump === "string") {
       //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -15498,14 +15559,14 @@ void main() {
       // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
       const effects = target.item_flags;
       damage.amount = damage.amount || 0;
-      if (effects & FLAGS.NEGATE_HITS_30) {
+      if (effects & MELEE_FLAGS.NEGATE_HITS_30) {
           if (game.rng.chance(30)) {
               game.messages.addCombat("Blocked.");
               damage.amount = 0;
               return false;
           }
       }
-      if (effects & FLAGS.REDUCE_DAMAGE_35) {
+      if (effects & MELEE_FLAGS.REDUCE_DAMAGE_35) {
           damage.amount = Math.round(damage.amount * 0.65);
       }
       if (damage.amount <= 0) {
@@ -22056,43 +22117,43 @@ void main() {
               text += "#{teal}";
               text += "  " + armor.name + " [" + armor.power + "]\n";
               if (armor.kind.flags != 0) {
-                  if (armor.kind.flags & FLAGS.REDUCE_DAMAGE_35) {
+                  if (armor.kind.flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
                       text += "  {-35% Damage Received}\n";
                   }
-                  if (armor.kind.flags & FLAGS.NEGATE_HITS_30) {
+                  if (armor.kind.flags & ARMOR_FLAGS.NEGATE_HITS_30) {
                       text += "  {30% Negate Hits}\n";
                   }
-                  if (armor.kind.flags & FLAGS.ARTIFACT_COOLDOWN_40) {
+                  if (armor.kind.flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
                       text += "  {-40% Artifact Cooldown}\n";
                   }
-                  if (armor.kind.flags & FLAGS.ARROWS_10) {
+                  if (armor.kind.flags & ARMOR_FLAGS.ARROWS_10) {
                       text += "  {+10 Arrows Per Bundle}\n";
                   }
-                  if (armor.kind.flags & FLAGS.LONGER_ROLL_100) {
+                  if (armor.kind.flags & ARMOR_FLAGS.LONGER_ROLL_100) {
                       text += "  {100% Longer Roll Cooldown}\n";
                   }
-                  if (armor.kind.flags & FLAGS.MELEE_DAMAGE_30) {
+                  if (armor.kind.flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
                       text += "  {+30% Melee Damage}\n";
                   }
-                  if (armor.kind.flags & FLAGS.MOBS_TARGET_YOU_MORE) {
+                  if (armor.kind.flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
                       text += "  {Mobs Target You More}\n";
                   }
-                  if (armor.kind.flags & FLAGS.MOVESPEED_AURA_15) {
+                  if (armor.kind.flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
                       text += "  {+15% Move Speed Aura}\n";
                   }
-                  if (armor.kind.flags & FLAGS.POTION_COOLDOWN_40) {
+                  if (armor.kind.flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
                       text += "  {-40% Potion Cooldown}\n";
                   }
-                  if (armor.kind.flags & FLAGS.POTION_BOOSTS_DEFENSE) {
+                  if (armor.kind.flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
                       text += "  {Potion Boosts Defense}\n";
                   }
-                  if (armor.kind.flags & FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                  if (armor.kind.flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
                       text += "  {Potion Heals Nearby Allies}\n";
                   }
-                  if (armor.kind.flags & FLAGS.RANGED_DAMAGE_30) {
+                  if (armor.kind.flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
                       text += "  {+30% Ranged Damage}\n";
                   }
-                  if (armor.kind.flags & FLAGS.WEAPON_DAMAGE_AURA_20) {
+                  if (armor.kind.flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
                       text += "  {+20% Weapon Damage Aura}\n";
                   }
               }
@@ -22354,7 +22415,7 @@ void main() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
           build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-          build.pos(10, 17).text("STUFF", { fg: "green" });
+          build.pos(10, 17).text("STUFF", { fg: "green", id: "STUFF" });
           build.pos(10, 22).text("For Level: {}", { fg: "pink", id: "LEVEL" });
           build.pos(10, 30).text("Press any key to goto next level.");
           this.on("keypress", () => {
@@ -22363,8 +22424,14 @@ void main() {
       },
       start(game) {
           this.data = game;
+          const depth = game.level.depth;
           const w = this.get("LEVEL");
-          w && w.text("For Level: " + game.level.depth);
+          w.text("For Level: " + depth);
+          const s = this.get("STUFF");
+          const armor = random$1(game.level, "armor");
+          if (armor) {
+              s.text("Stuff for level: " + armor.name);
+          }
       },
   };
 
@@ -22560,7 +22627,7 @@ void main() {
       // rangedAttackSpeed: 100,
       slots: {
           ranged: "SHORTBOW",
-          melee: "DAGGER",
+          melee: "DAGGERS",
           armor: "SCALE_MAIL^10",
       },
   });
@@ -22892,14 +22959,26 @@ void main() {
       tags: "drop, food",
   });
 
+  //////////////////////////////////////////////////////
+  // MELEE
+  //////////////////////////////////////////////////////
   install$4({
-      id: "DAGGER",
+      id: "DAGGERS",
       ch: "/",
       fg: "yellow",
       speed: 60,
       damage: 5,
       tags: "melee",
   });
+  // FANGS_OF_FROST
+  // MOON_DAGGERS
+  // SHEER_DAGGERS
+  // VOID_BLADES
+  // BEGINNING_AND_END
+  // KNIFE
+  // TEMPEST_KNIFE
+  // CHILL_KNIFE
+  // RESOLUTE_KNIFE
   install$4({
       id: "SWORD",
       ch: "/",
@@ -22908,6 +22987,9 @@ void main() {
       damage: 10,
       tags: "melee",
   });
+  // DIAMOND_SWORD
+  // HAWKBRAND
+  // SINISTER_SWORD
   install$4({
       id: "CUTLASS",
       ch: "/",
@@ -22916,6 +22998,69 @@ void main() {
       damage: [9, 9, 18],
       tags: "melee",
   });
+  // AXE
+  // HIGHLAND_AXE
+  // FIREBRAND_AXE
+  // DOUBLE_AXE
+  // CURSED_AXE
+  // WHIRLWIND
+  // BACKSTABBER
+  // SWIFT_STRIKER
+  // BATTLESTAFF
+  // BATTLESTAFF_OF_TERROR
+  // GROWING_STAFF
+  // BONE_CLUB
+  // BONE_CUDGEL
+  // CLAYMORE
+  // BROADSWORD
+  // GREAT_AXEBLADE
+  // HEARTSTEALER
+  // OBSIDIAN_CLAYMORE
+  // STARLESS_NIGHT
+  // FROST_SLAYER
+  // CORAL_BLADE
+  // SPONGE_STRIKER
+  // DANCERS_SWORD
+  // NAMELESS_BLADE
+  // GLAIVE
+  // GRAVE_BANE
+  // VENOM_GLAIVE
+  // GREAT_HAMMER
+  // HAMMER_OF_GRAVITY
+  // STORMLANDER
+  // MACE
+  // FLAIL
+  // SUNS_GRACE
+  // PICKAXE
+  // DIAMOND_PICKAXE
+  // SICKLES
+  // NIGHTMARES_BITE
+  // LAST_LAUGH
+  // SOUL_KNIFE
+  // ETERNAL_KNIFE
+  // TRUTHSEEKER
+  // WHIP
+  // VINE_WHIP
+  // GAUNTLETS
+  // FIGHTERS_BINDINGS
+  // MAULERS
+  // SOUL_FISTS
+  // SCYTHE
+  // SOUL_SCYTHE
+  // FROST_SCYTHE
+  // JAILORS_SCYTHE
+  // KATANA
+  // DARK_KATANA
+  // MASTERS_KATANA
+  // SPEAR
+  // FORTUNE_SPEAR
+  // WHISPERING_SPEAR
+  // RAPIER
+  // BEE_STINGER
+  // FREEZING_FOIL
+  //////////////////////////////////////////////////////
+  // RANGED
+  //////////////////////////////////////////////////////
   install$4({
       id: "SHORTBOW",
       ch: "}",
@@ -23096,6 +23241,37 @@ void main() {
           mobs_target_you: 50,
           potion_heals_allies: 3,
       },
+  });
+
+  //////////////////////////////////////////////////////
+  // RANGED
+  //////////////////////////////////////////////////////
+  install$4({
+      id: "SHORTBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 60,
+      damage: 5,
+      range: 10,
+      tags: "ranged",
+  });
+  install$4({
+      id: "BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 100,
+      damage: 10,
+      range: 10,
+      tags: "ranged",
+  });
+  install$4({
+      id: "LONGBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 150,
+      damage: 24,
+      range: 15,
+      tags: "ranged",
   });
 
   function start() {

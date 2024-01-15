@@ -1,17 +1,34 @@
-Move:
-  [] Roll (moves 2 spaces quickly in DIR4 - with '*' glyph during mid roll)
-    - Press 'r' then direction?
-
 General:
-  [] Emeralds (for score)
+  [] Emeralds (for score & eventually shops)
   [] How does time convert to turn based? 1s = 200 speed?
-  [] Add regeneration status to sidebar - how? on/off? {Regen}
+  [X] Add regeneration status to sidebar - how? on/off? {Regen}
   [] Add temporary speedup to sidebar - how? on/off? {Fast}
   [] Can sidebar do mouseover for items? Mouseover {Regen} gives details - maybe even from multiple sources.
   [] Charged Shot for bows - 'F' vs 'f'
     [] Charge then target
     [] Can cancel at targeting
     [] Is charge time configurable?
+
+    
+Levels:
+  [] Pick items after level creation
+  [] Ensure spawns have enough total challenge for level
+  [] More variety in levels
+
+
+Player:
+  Inventory:
+    [X] Melee
+    [X] Ranged
+    [X] Armor
+  [] Roll (moves 2 spaces quickly in DIR4 - with '*' glyph during mid roll)
+    - Press 'r' then direction?
+
+Mobs:
+  [] Adjust strength for power
+  [] Set power by level on spawn
+
+
 
 Items:
   [X] Tags
@@ -20,25 +37,25 @@ Items:
   [] Souls?
 
 Consumables:
-  [] Apples - 20%/3s
-  [] Bread - 100%/30s
-  [] Pork - 50%/10s
-  [] Salmon - 35%/8s
-  [] Berries - 20%/5s + speedup
-  [] Melon - 75%/15s
-  [] Fruit - 30%/1s
-  [] Fish - 20%/2s + 10% oxygen
+  [X] Apples - 20%/3s
+  [X] Bread - 100%/30s
+  [X] Pork - 50%/10s
+  [X] Salmon - 35%/8s
+  [X] Berries - 20%/5s + speedup
+  [X] Melon - 75%/15s
+  [X] Fruit - 30%/1s
+  [X] Fish - 20%/2s + 10% oxygen
 
 Potion:
   [X] Make potion innate - 75% heal immediate
   [X] Press 'p' to activate?
   [X] Potion cooldown - 40s (8000 time units?)
   [X] Add potion status to sidebar
-  [] Update potion length - seems too short now
+  [] Update potion reset length - seems too short now
   [] Make Potion more generic 
     - No numbers in the player class (use data)
     - logic contained in a separate file (use events)
-    - how to combine this with sidebar and details?
+    - how to combine this with sidebar and details? @hard
 
 
 Artifacts:
@@ -201,21 +218,116 @@ Item Effects:
     [] 30% summon bee when hit - { summon_bee: {%, max} }
 
 
-Levels:
-  [] Pick items after level creation
-  [] Ensure spawns have enough total challenge for level
-  [] More variety in levels
+Melee Weapons:
+  [] FANGS_OF_FROST
+  [] MOON_DAGGERS
+  [] SHEER_DAGGERS
+  [] VOID_BLADES
+  [] BEGINNING_AND_END
+  [] KNIFE
+  [] TEMPEST_KNIFE
+  [] CHILL_KNIFE
+  [] RESOLUTE_KNIFE
+  [] DIAMOND_SWORD
+  [] HAWKBRAND
+  [] SINISTER_SWORD
+  [] AXE
+  [] HIGHLAND_AXE
+  [] FIREBRAND_AXE
+  [] DOUBLE_AXE
+  [] CURSED_AXE
+  [] WHIRLWIND
+  [] BACKSTABBER
+  [] SWIFT_STRIKER
+  [] BATTLESTAFF
+  [] BATTLESTAFF_OF_TERROR
+  [] GROWING_STAFF
+  [] BONE_CLUB
+  [] BONE_CUDGEL
+  [] CLAYMORE
+  [] BROADSWORD
+  [] GREAT_AXEBLADE
+  [] HEARTSTEALER
+  [] OBSIDIAN_CLAYMORE
+  [] STARLESS_NIGHT
+  [] FROST_SLAYER
+  [] CORAL_BLADE
+  [] SPONGE_STRIKER
+  [] DANCERS_SWORD
+  [] NAMELESS_BLADE
+  [] GLAIVE
+  [] GRAVE_BANE
+  [] VENOM_GLAIVE
+  [] GREAT_HAMMER
+  [] HAMMER_OF_GRAVITY
+  [] STORMLANDER
+  [] MACE
+  [] FLAIL
+  [] SUNS_GRACE
+  [] PICKAXE
+  [] DIAMOND_PICKAXE
+  [] SICKLES
+  [] NIGHTMARES_BITE
+  [] LAST_LAUGH
+  [] SOUL_KNIFE
+  [] ETERNAL_KNIFE
+  [] TRUTHSEEKER
+  [] WHIP
+  [] VINE_WHIP
+  [] GAUNTLETS
+  [] FIGHTERS_BINDINGS
+  [] MAULERS
+  [] SOUL_FISTS
+  [] SCYTHE
+  [] SOUL_SCYTHE
+  [] FROST_SCYTHE
+  [] JAILORS_SCYTHE
+  [] KATANA
+  [] DARK_KATANA
+  [] MASTERS_KATANA
+  [] SPEAR
+  [] FORTUNE_SPEAR
+  [] WHISPERING_SPEAR
+  [] RAPIER
+  [] BEE_STINGER
+  [] FREEZING_FOIL
 
-
-
-Player:
-  Inventory:
-    [X] Melee
-    [X] Ranged
-    [X] Armor
-
-Actor:
-  [] Adjust strength for power
-  [] Set power by level on spawn
-
+Ranged Weapons:
+  [] BONE_BOW
+  [] TWIN_BOW
+  [] HUNTING_BOW
+  [] ANCIENT_BOW
+  [] HUNTERS_PROMISE
+  [] MASTERS_BOW
+  [] GUARDIAN_BOW
+  [] RED_SNAKE
+  [] POWER_BOW
+  [] ELITE_POWER_BOW
+  [] SABREWING
+  [] LOVE_SHORTBOW
+  [] MECHANICAL_SHORTBOW
+  [] PURPLE_STORM
+  [] SNOW_BOW
+  [] WINTERS_TOUCH
+  [] TRICKBOW
+  [] GREEN_MENACE
+  [] PINK_SCOUNDREL
+  [] CROSSBOW
+  [] AZURE_SEEKER
+  [] SLICER
+  [] DUAL_CROSSBOWS
+  [] BABY_CROSSBOWS
+  [] SPELLBOUND_CROSSBOWS
+  [] EXPLODING_CROSSBOW
+  [] FIREBOLT_THROWER
+  [] IMPLODING_CROSSBOW
+  [] HEAVY_CROSSBOW
+  [] DOOM_CROSSBOW
+  [] SLAYER_CROSSBOW
+  [] RAPID_CROSSBOW
+  [] AUTO_CROSSBOW
+  [] BUTTERFLY_CROSSBOW
+  [] SCATTER_CROSSBOW
+  [] HARP_CROSSBOW
+  [] LIGHTNING_HARP_CROSSBOW
 

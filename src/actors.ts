@@ -19,7 +19,7 @@ ACTOR.install({
 
   slots: {
     ranged: "SHORTBOW",
-    melee: "DAGGER",
+    melee: "DAGGERS",
     armor: "SCALE_MAIL^10",
   },
 });

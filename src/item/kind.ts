@@ -3,7 +3,7 @@ import { Actor } from "../actor";
 import { Game } from "../game";
 import { Item } from "./item";
 import { CallbackFn } from "../game/obj";
-import { FLAGS } from "./flags";
+import { ARMOR_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
 
 export interface ItemEvents {
@@ -118,7 +118,7 @@ export function install(cfg: KindConfig) {
   }
 
   if (typeof cfg.flags !== "number") {
-    kind.flags = GWU.flag.from_safe(FLAGS, cfg.flags);
+    kind.flags = GWU.flag.from_safe(ARMOR_FLAGS, cfg.flags);
   }
 
   //   if (typeof cfg.bump === "string") {
