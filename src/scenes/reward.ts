@@ -2,12 +2,12 @@ import * as GWU from "gw-utils";
 import { Game } from "../game/game";
 import * as Item from "../item";
 
-export const stuff = {
+export const reward = {
   create(this: GWU.app.Scene) {
     this.bg = GWU.color.from("dark_gray");
     const build = new GWU.widget.Builder(this);
     build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-    build.pos(10, 17).text("STUFF", { fg: "green", id: "STUFF" });
+    build.pos(10, 17).text("REWARD", { fg: "green", id: "STUFF" });
 
     build.pos(10, 22).text("For Level: {}", { fg: "pink", id: "LEVEL" });
 
@@ -25,10 +25,19 @@ export const stuff = {
     w.text("For Level: " + depth);
 
     const s = this.get("STUFF")!;
-
     const armor = Item.random(game.level!, "armor");
+    const melee = Item.random(game.level!, "melee");
+    const ranged = Item.random(game.level!, "ranged");
+    let text: string[] = [];
     if (armor) {
-      s.text("Stuff for level: " + armor.name);
+      text.push(armor.name);
     }
+    if (melee) {
+      text.push(melee.name);
+    }
+    if (ranged) {
+      text.push(ranged.name);
+    }
+    s.text("Stuff for level: " + text.join(", "));
   },
 };

@@ -33,6 +33,7 @@ export interface KindConfig {
   combo_speed?: number;
   combo_damage?: number;
   range?: number;
+  charge?: number; // charge multiplier for speed + damage
 
   defense?: number;
 
@@ -99,6 +100,7 @@ export function install(cfg: KindConfig) {
       combo_speed: 0,
       combo_damage: 0,
       range: 0,
+      charge: 0,
       defense: 0,
       slot: null,
       tags: [],

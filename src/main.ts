@@ -21,7 +21,7 @@ function start() {
       win: SCENES.win,
       lose: SCENES.lose,
       help: SCENES.help,
-      stuff: SCENES.stuff,
+      reward: SCENES.reward,
     },
     data: {
       LAST_LEVEL: 10,

@@ -15363,6 +15363,7 @@ void main() {
           combo_speed: 0,
           combo_damage: 0,
           range: 0,
+          charge: 0,
           defense: 0,
           slot: null,
           tags: [],
@@ -15782,9 +15783,9 @@ void main() {
           game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
       }
       // we have an actor and a target
+      // TODO - move to EFFECT.damage (different color for no damage or negated or ...)
       flash(game, target.x, target.y, "red", 150);
       game.messages.addCombat(`${actor.name} attacks ${target.name}#{red [${attackInfo.damage}]}`);
-      // TODO - Get 'next' attack details (and increment counter in actor)
       damage(game, target, { amount: attackInfo.damage });
       game.endTurn(actor, attackInfo.time);
       return true;
@@ -22347,7 +22348,7 @@ void main() {
                   this.app.scenes.start("win", this.data);
               }
               else {
-                  this.app.scenes.start("stuff", this.data);
+                  this.app.scenes.start("reward", this.data);
               }
           },
           lose() {
@@ -22408,12 +22409,12 @@ void main() {
       },
   };
 
-  const stuff = {
+  const reward = {
       create() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
           build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-          build.pos(10, 17).text("STUFF", { fg: "green", id: "STUFF" });
+          build.pos(10, 17).text("REWARD", { fg: "green", id: "STUFF" });
           build.pos(10, 22).text("For Level: {}", { fg: "pink", id: "LEVEL" });
           build.pos(10, 30).text("Press any key to goto next level.");
           this.on("keypress", () => {
@@ -22427,9 +22428,19 @@ void main() {
           w.text("For Level: " + depth);
           const s = this.get("STUFF");
           const armor = random$1(game.level, "armor");
+          const melee = random$1(game.level, "melee");
+          const ranged = random$1(game.level, "ranged");
+          let text = [];
           if (armor) {
-              s.text("Stuff for level: " + armor.name);
+              text.push(armor.name);
           }
+          if (melee) {
+              text.push(melee.name);
+          }
+          if (ranged) {
+              text.push(ranged.name);
+          }
+          s.text("Stuff for level: " + text.join(", "));
       },
   };
 
@@ -22964,8 +22975,11 @@ void main() {
       id: "DAGGERS",
       ch: "/",
       fg: "yellow",
-      speed: 60,
+      speed: 50,
       damage: 5,
+      combo: 6,
+      combo_speed: 80,
+      combo_damage: 8,
       tags: "melee",
   });
   // FANGS_OF_FROST
@@ -22973,7 +22987,17 @@ void main() {
   // SHEER_DAGGERS
   // VOID_BLADES
   // BEGINNING_AND_END
-  // KNIFE
+  install$4({
+      id: "KNIFE",
+      ch: "/",
+      fg: "yellow",
+      speed: 70,
+      damage: 7,
+      combo: 5,
+      combo_speed: 70,
+      combo_damage: 7,
+      tags: "melee",
+  });
   // TEMPEST_KNIFE
   // CHILL_KNIFE
   // RESOLUTE_KNIFE
@@ -22983,6 +23007,9 @@ void main() {
       fg: "yellow",
       speed: 100,
       damage: 10,
+      combo: 3,
+      combo_speed: 100,
+      combo_damage: 10,
       tags: "melee",
   });
   // DIAMOND_SWORD
@@ -22992,71 +23019,241 @@ void main() {
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
-      speed: 100,
+      speed: 110,
+      damage: 11,
+      combo: 3,
+      combo_speed: 130,
+      combo_damage: 13,
+      tags: "melee",
+  });
+  // CORAL_BLADE
+  // SPONGE_STRIKER
+  install$4({
+      id: "AXE",
+      ch: "/",
+      fg: "yellow",
+      speed: 90,
       damage: 9,
       combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // HIGHLAND_AXE
+  // FIREBRAND_AXE
+  install$4({
+      id: "DOUBLE_AXE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
       combo_speed: 150,
+      combo_damage: 15,
+      tags: "melee",
+  });
+  // CURSED_AXE
+  // WHIRLWIND
+  install$4({
+      id: "BACKSTABBER",
+      ch: "/",
+      fg: "yellow",
+      speed: 90,
+      damage: 10,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 10,
+      tags: "melee",
+  });
+  // SWIFT_STRIKER
+  install$4({
+      id: "BATTLESTAFF",
+      ch: "/",
+      fg: "yellow",
+      speed: 70,
+      damage: 7,
+      combo: 4,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // BATTLESTAFF_OF_TERROR
+  // GROWING_STAFF
+  install$4({
+      id: "BONE_CLUB",
+      ch: "/",
+      fg: "yellow",
+      speed: 150,
+      damage: 15,
+      combo: 2,
+      combo_speed: 200,
+      combo_damage: 20,
+      tags: "melee",
+  });
+  // BONE_CUDGEL
+  install$4({
+      id: "CLAYMORE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 180,
       combo_damage: 18,
       tags: "melee",
   });
-  // AXE
-  // HIGHLAND_AXE
-  // FIREBRAND_AXE
-  // DOUBLE_AXE
-  // CURSED_AXE
-  // WHIRLWIND
-  // BACKSTABBER
-  // SWIFT_STRIKER
-  // BATTLESTAFF
-  // BATTLESTAFF_OF_TERROR
-  // GROWING_STAFF
-  // BONE_CLUB
-  // BONE_CUDGEL
-  // CLAYMORE
   // BROADSWORD
   // GREAT_AXEBLADE
   // HEARTSTEALER
   // OBSIDIAN_CLAYMORE
   // STARLESS_NIGHT
   // FROST_SLAYER
-  // CORAL_BLADE
-  // SPONGE_STRIKER
   // DANCERS_SWORD
   // NAMELESS_BLADE
-  // GLAIVE
+  install$4({
+      id: "GLAIVE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 150,
+      combo_damage: 15,
+      tags: "melee",
+  });
   // GRAVE_BANE
   // VENOM_GLAIVE
-  // GREAT_HAMMER
+  install$4({
+      id: "GREAT_HAMMER",
+      ch: "/",
+      fg: "yellow",
+      speed: 180,
+      damage: 18,
+      combo: 2,
+      combo_speed: 200,
+      combo_damage: 20,
+      tags: "melee",
+  });
   // HAMMER_OF_GRAVITY
   // STORMLANDER
-  // MACE
+  install$4({
+      id: "MACE",
+      ch: "/",
+      fg: "yellow",
+      speed: 110,
+      damage: 11,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
   // FLAIL
   // SUNS_GRACE
-  // PICKAXE
+  install$4({
+      id: "PICKAXE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
   // DIAMOND_PICKAXE
-  // SICKLES
+  install$4({
+      id: "SICKLES",
+      ch: "/",
+      fg: "yellow",
+      speed: 80,
+      damage: 8,
+      combo: 4,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
   // NIGHTMARES_BITE
   // LAST_LAUGH
   // SOUL_KNIFE
   // ETERNAL_KNIFE
   // TRUTHSEEKER
-  // WHIP
+  install$4({
+      id: "WHIP",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
   // VINE_WHIP
-  // GAUNTLETS
+  install$4({
+      id: "GAUNTLETS",
+      ch: "/",
+      fg: "yellow",
+      speed: 50,
+      damage: 5,
+      combo: 7,
+      combo_speed: 60,
+      combo_damage: 6,
+      tags: "melee",
+  });
   // FIGHTERS_BINDINGS
   // MAULERS
   // SOUL_FISTS
-  // SCYTHE
+  install$4({
+      id: "SCYTHE",
+      ch: "/",
+      fg: "yellow",
+      speed: 180,
+      damage: 18,
+      combo: 2,
+      combo_speed: 180,
+      combo_damage: 18,
+      tags: "melee",
+  });
   // SOUL_SCYTHE
   // FROST_SCYTHE
   // JAILORS_SCYTHE
-  // KATANA
+  install$4({
+      id: "KATANA",
+      ch: "/",
+      fg: "yellow",
+      speed: 90,
+      damage: 9,
+      combo: 4,
+      combo_speed: 110,
+      combo_damage: 11,
+      tags: "melee",
+  });
   // DARK_KATANA
   // MASTERS_KATANA
-  // SPEAR
+  install$4({
+      id: "SPEAR",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 140,
+      combo_damage: 14,
+      tags: "melee",
+  });
   // FORTUNE_SPEAR
   // WHISPERING_SPEAR
-  // RAPIER
+  install$4({
+      id: "RAPIER",
+      ch: "/",
+      fg: "yellow",
+      speed: 30,
+      damage: 3,
+      combo: 10,
+      combo_speed: 60,
+      combo_damage: 6,
+      tags: "melee",
+  });
   // BEE_STINGER
   // FREEZING_FOIL
 
@@ -23218,32 +23415,144 @@ void main() {
   // RANGED
   //////////////////////////////////////////////////////
   install$4({
-      id: "SHORTBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 60,
-      damage: 5,
-      range: 10,
-      tags: "ranged",
-  });
-  install$4({
       id: "BOW",
       ch: "}",
       fg: "yellow",
       speed: 100,
       damage: 10,
       range: 10,
-      tags: "ranged",
+      charge: 3,
+      tags: "ranged, bow",
   });
+  // BONE_BOW
+  // TWIN_BOW
+  install$4({
+      id: "HUNTING_BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 90,
+      damage: 9,
+      range: 13,
+      charge: 3,
+      tags: "ranged, bow",
+  });
+  // ANCIENT_BOW
+  // HUNTERS_PROMISE
+  // MASTERS_BOW
   install$4({
       id: "LONGBOW",
       ch: "}",
       fg: "yellow",
-      speed: 150,
-      damage: 24,
+      speed: 130,
+      damage: 13,
       range: 15,
-      tags: "ranged",
+      charge: 4,
+      tags: "ranged, bow",
   });
+  // GUARDIAN_BOW
+  // RED_SNAKE
+  install$4({
+      id: "POWER_BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 150,
+      damage: 15,
+      range: 20,
+      charge: 5,
+      tags: "ranged, bow",
+  });
+  // ELITE_POWER_BOW
+  // SABREWING
+  install$4({
+      id: "SHORTBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 70,
+      damage: 7,
+      range: 8,
+      charge: 2,
+      tags: "ranged, bow",
+  });
+  // LOVE_SHORTBOW
+  // MECHANICAL_SHORTBOW
+  // PURPLE_STORM
+  // SNOW_BOW
+  // WINTERS_TOUCH
+  install$4({
+      id: "TRICKBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 80,
+      damage: 8,
+      range: 10,
+      charge: 2,
+      tags: "ranged, bow",
+  });
+  // GREEN_MENACE
+  // PINK_SCOUNDREL
+  install$4({
+      id: "CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      range: 10,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // AZURE_SEEKER
+  // SLICER
+  // EXPLODING_CROSSBOW
+  // FIREBOLT_THROWER
+  // IMPLODING_CROSSBOW
+  install$4({
+      id: "DUAL_CROSSBOWS",
+      ch: "}",
+      fg: "yellow",
+      speed: 60,
+      damage: 6,
+      range: 8,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // BABY_CROSSBOWS
+  // SPELLBOUND_CROSSBOWS
+  install$4({
+      id: "HEAVY_CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 200,
+      damage: 20,
+      range: 15,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // DOOM_CROSSBOW
+  // SLAYER_CROSSBOW
+  install$4({
+      id: "RAPID_CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 80,
+      damage: 8,
+      range: 10,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // AUTO_CROSSBOW
+  // BUTTERFLY_CROSSBOW
+  install$4({
+      id: "SCATTER_CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 100,
+      damage: 10,
+      range: 10,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // HARP_CROSSBOW
+  // LIGHTNING_HARP_CROSSBOW
 
   function start() {
       // create the user interface
@@ -23258,7 +23567,7 @@ void main() {
               win: win,
               lose: lose,
               help: help,
-              stuff: stuff,
+              reward: reward,
           },
           data: {
               LAST_LEVEL: 10,

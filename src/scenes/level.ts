@@ -139,7 +139,7 @@ export const level = {
       if (this.data.level.depth === LAST_LEVEL) {
         this.app.scenes.start("win", this.data);
       } else {
-        this.app.scenes.start("stuff", this.data);
+        this.app.scenes.start("reward", this.data);
       }
     },
     lose(this: GWU.app.Scene) {

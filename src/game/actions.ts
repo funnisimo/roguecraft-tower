@@ -245,11 +245,11 @@ export function attack(
   }
 
   // we have an actor and a target
+  // TODO - move to EFFECT.damage (different color for no damage or negated or ...)
   FX.flash(game, target.x, target.y, "red", 150);
   game.messages.addCombat(
     `${actor.name} attacks ${target.name}#{red [${attackInfo.damage}]}`
   );
-  // TODO - Get 'next' attack details (and increment counter in actor)
   EFFECT.damage(game, target, { amount: attackInfo.damage });
   game.endTurn(actor, attackInfo.time);
 
