@@ -67,6 +67,9 @@ export class Player extends ACTOR.Actor {
     const melee = this.slots.melee;
     if (melee) {
       // track combo...
+      if (this.combo_index == melee.kind.combo - 1) {
+        return melee.comboDamage;
+      }
       return melee.damage;
     }
     return super.damage;
@@ -76,6 +79,9 @@ export class Player extends ACTOR.Actor {
     const melee = this.slots.melee;
     if (melee) {
       // track combo...
+      if (this.combo_index == melee.kind.combo - 1) {
+        return melee.comboSpeed;
+      }
       return melee.speed;
     }
     return super.attackSpeed;
@@ -105,20 +111,18 @@ export class Player extends ACTOR.Actor {
     return super.rangedAttackSpeed;
   }
 
-  get can_use_potion(): boolean {
+  get canUsePotion(): boolean {
     return this.potion >= this.potion_max;
   }
-  //
 
-  finish_attack(): void {
+  get comboLen(): number {
     const melee = this.slots.melee;
-    let combo = this.kind.combo;
     if (melee) {
-      combo = melee.combo;
+      return melee.combo;
     }
-    this.combo_index += 1;
-    this.combo_index = this.combo_index % combo;
+    return this.kind.combo;
   }
+  //
 
   equip(item: ITEM.Item) {
     if (item.slot === null) {
@@ -139,7 +143,7 @@ export class Player extends ACTOR.Actor {
     this.combo_index = 0;
   }
 
-  unequip_slot(slot: string) {
+  unequipSlot(slot: string) {
     this.slots[slot] = null;
     this.item_flags = 0;
     const health_pct = this.health / this.health_max;

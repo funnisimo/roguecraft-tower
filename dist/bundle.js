@@ -15775,13 +15775,18 @@ void main() {
       if (!actorIsPlayer && !otherIsPlayer) {
           return idle(game, actor); // no attacking
       }
+      const attackInfo = actor.getMeleeAttack();
+      if (!attackInfo) {
+          game.addMessage("Cannot attack.");
+          flash(game, actor.x, actor.y, "orange", 150);
+          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      }
       // we have an actor and a target
-      // Does this move to an event handler?  'damage', { amount: #, type: string }
       flash(game, target.x, target.y, "red", 150);
-      game.messages.addCombat(`${actor.name} attacks ${target.name}#{red [${actor.damage}]}`);
+      game.messages.addCombat(`${actor.name} attacks ${target.name}#{red [${attackInfo.damage}]}`);
       // TODO - Get 'next' attack details (and increment counter in actor)
-      damage(game, target, { amount: actor.damage });
-      game.endTurn(actor, actor.attackSpeed);
+      damage(game, target, { amount: attackInfo.damage });
+      game.endTurn(actor, attackInfo.time);
       return true;
   }
   installBump("attack", attack);
@@ -15924,7 +15929,7 @@ void main() {
       return idle(game, actor);
   }
   function potion(game, player) {
-      if (!player.can_use_potion) {
+      if (!player.canUsePotion) {
           game.addMessage("Not ready.");
           // TODO - spend time? idle?
           return false;
@@ -15967,7 +15972,7 @@ void main() {
       }
       if (distToPlayer < 2) {
           // can attack diagonal
-          if (actor.can_melee_attack) {
+          if (actor.canMeleeAttack) {
               if (attack(game, actor, player))
                   return;
           }
@@ -16058,6 +16063,12 @@ void main() {
       return kinds[id.toLowerCase()] || null;
   }
 
+  class AttackInfo {
+      constructor(damage, time) {
+          this.damage = damage;
+          this.time = time;
+      }
+  }
   class Actor extends Obj {
       constructor(cfg) {
           super(cfg);
@@ -16126,19 +16137,24 @@ void main() {
       get moveSpeed() {
           return this.kind.moveSpeed;
       }
-      //
-      finish_attack() {
-          this.combo_index += 1;
-          this.combo_index = this.combo_index % this.kind.combo;
+      get comboLen() {
+          return this.kind.combo;
       }
-      has_item_flag(flag) {
+      //
+      getMeleeAttack() {
+          const attack = new AttackInfo(this.damage, this.attackSpeed);
+          this.combo_index += 1;
+          this.combo_index = this.combo_index % this.comboLen;
+          return attack;
+      }
+      hasItemFlag(flag) {
           return (this.item_flags & flag) > 0;
       }
       // TODO - Should this be a method instead of a property?
-      get can_melee_attack() {
+      get canMeleeAttack() {
           return this.damage > 0 && this.attackSpeed > 0;
       }
-      add_status(status) {
+      addStatus(status) {
           const current = this.statuses.findIndex((current) => current && current.merge(status));
           if (current >= 0) {
               return;
@@ -16313,6 +16329,9 @@ void main() {
           const melee = this.slots.melee;
           if (melee) {
               // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboDamage;
+              }
               return melee.damage;
           }
           return super.damage;
@@ -16321,6 +16340,9 @@ void main() {
           const melee = this.slots.melee;
           if (melee) {
               // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboSpeed;
+              }
               return melee.speed;
           }
           return super.attackSpeed;
@@ -16346,19 +16368,17 @@ void main() {
           }
           return super.rangedAttackSpeed;
       }
-      get can_use_potion() {
+      get canUsePotion() {
           return this.potion >= this.potion_max;
       }
-      //
-      finish_attack() {
+      get comboLen() {
           const melee = this.slots.melee;
-          let combo = this.kind.combo;
           if (melee) {
-              combo = melee.combo;
+              return melee.combo;
           }
-          this.combo_index += 1;
-          this.combo_index = this.combo_index % combo;
+          return this.kind.combo;
       }
+      //
       equip(item) {
           if (item.slot === null) {
               throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -16377,7 +16397,7 @@ void main() {
           this.health = Math.round(new_health_max * health_pct);
           this.combo_index = 0;
       }
-      unequip_slot(slot) {
+      unequipSlot(slot) {
           this.slots[slot] = null;
           this.item_flags = 0;
           const health_pct = this.health / this.health_max;
@@ -22605,7 +22625,7 @@ void main() {
       // rangedAttackSpeed: 100,
       slots: {
           ranged: "SHORTBOW",
-          melee: "DAGGERS",
+          melee: "CUTLASS",
           armor: "SCALE_MAIL^10",
       },
   });
@@ -22823,7 +22843,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Apples - 20%/3s
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
               game.addMessage("You eat an apple.");
               game.level.removeItem(this);
               return true;
@@ -22838,7 +22858,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Bread - 100%/30s
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
               game.addMessage("You eat some bread.");
               game.level.removeItem(this);
               return true;
@@ -22853,7 +22873,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Pork - 50%/10s
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
               game.addMessage("You eat some pork.");
               game.level.removeItem(this);
               return true;
@@ -22868,7 +22888,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Salmon - 35%/8s
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
               game.addMessage("You eat some salmon.");
               game.level.removeItem(this);
               return true;
@@ -22883,7 +22903,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Berries - 20%/5s + speedup
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
               game.addMessage("You eat some berries.");
               game.level.removeItem(this);
               return true;
@@ -22898,7 +22918,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Melon - 75%/15s
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
               game.addMessage("You eat some melon.");
               game.level.removeItem(this);
               return true;
@@ -22913,7 +22933,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Fruit - 30%/1s
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
               game.addMessage("You eat some fruit.");
               game.level.removeItem(this);
               return true;
@@ -22928,7 +22948,7 @@ void main() {
       on: {
           pickup(game, actor) {
               //   [] Fish - 20%/2s + 10% oxygen
-              actor.add_status(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
               game.addMessage("You eat some fish.");
               game.level.removeItem(this);
               return true;

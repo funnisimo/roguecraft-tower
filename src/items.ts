@@ -43,7 +43,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Apples - 20%/3s
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200)
       );
       game.addMessage("You eat an apple.");
@@ -61,7 +61,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Bread - 100%/30s
-      actor.add_status(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
+      actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
       game.addMessage("You eat some bread.");
       game.level!.removeItem(this);
       return true;
@@ -77,7 +77,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Pork - 50%/10s
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200)
       );
       game.addMessage("You eat some pork.");
@@ -95,7 +95,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Salmon - 35%/8s
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200)
       );
       game.addMessage("You eat some salmon.");
@@ -113,7 +113,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Berries - 20%/5s + speedup
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200)
       );
 
@@ -132,7 +132,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Melon - 75%/15s
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200)
       );
       game.addMessage("You eat some melon.");
@@ -150,7 +150,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Fruit - 30%/1s
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200)
       );
       game.addMessage("You eat some fruit.");
@@ -168,7 +168,7 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   [] Fish - 20%/2s + 10% oxygen
-      actor.add_status(
+      actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200)
       );
       game.addMessage("You eat some fish.");

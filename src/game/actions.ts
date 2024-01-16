@@ -237,15 +237,21 @@ export function attack(
     return idle(game, actor); // no attacking
   }
 
+  const attackInfo = actor.getMeleeAttack();
+  if (!attackInfo) {
+    game.addMessage("Cannot attack.");
+    FX.flash(game, actor.x, actor.y, "orange", 150);
+    game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+  }
+
   // we have an actor and a target
-  // Does this move to an event handler?  'damage', { amount: #, type: string }
   FX.flash(game, target.x, target.y, "red", 150);
   game.messages.addCombat(
-    `${actor.name} attacks ${target.name}#{red [${actor.damage}]}`
+    `${actor.name} attacks ${target.name}#{red [${attackInfo.damage}]}`
   );
   // TODO - Get 'next' attack details (and increment counter in actor)
-  EFFECT.damage(game, target, { amount: actor.damage });
-  game.endTurn(actor, actor.attackSpeed);
+  EFFECT.damage(game, target, { amount: attackInfo.damage });
+  game.endTurn(actor, attackInfo.time);
 
   return true;
 }
@@ -433,7 +439,7 @@ export function pickup(game: Game, actor: Actor): boolean {
 }
 
 export function potion(game: Game, player: Player): boolean {
-  if (!player.can_use_potion) {
+  if (!player.canUsePotion) {
     game.addMessage("Not ready.");
     // TODO - spend time? idle?
     return false;

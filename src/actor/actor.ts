@@ -17,6 +17,16 @@ export interface ActorConfig extends ObjConfig {
   power?: number;
 }
 
+export class AttackInfo {
+  damage: number;
+  time: number;
+
+  constructor(damage: number, time: number) {
+    this.damage = damage;
+    this.time = time;
+  }
+}
+
 export class Actor extends Obj {
   _turnTime = 0;
   _level: Level | null = null;
@@ -106,23 +116,29 @@ export class Actor extends Obj {
   get moveSpeed(): number {
     return this.kind.moveSpeed;
   }
+
+  get comboLen(): number {
+    return this.kind.combo;
+  }
   //
 
-  finish_attack() {
+  getMeleeAttack(): AttackInfo {
+    const attack = new AttackInfo(this.damage, this.attackSpeed);
     this.combo_index += 1;
-    this.combo_index = this.combo_index % this.kind.combo;
+    this.combo_index = this.combo_index % this.comboLen;
+    return attack;
   }
 
-  has_item_flag(flag: number): boolean {
+  hasItemFlag(flag: number): boolean {
     return (this.item_flags & flag) > 0;
   }
 
   // TODO - Should this be a method instead of a property?
-  get can_melee_attack(): boolean {
+  get canMeleeAttack(): boolean {
     return this.damage > 0 && this.attackSpeed > 0;
   }
 
-  add_status(status: Status) {
+  addStatus(status: Status) {
     const current = this.statuses.findIndex(
       (current) => current && current.merge(status)
     );
