@@ -49,6 +49,7 @@ export class Player extends ACTOR.Actor {
     this.on("turn_end", (game: Game, time: number) => {
       this.potion = Math.min(this.potion + time, this.potion_max);
     });
+    this.on("damage", () => this.clearGoal());
 
     // Need items in slots....
     Object.entries(cfg.kind.slots).forEach(([slot, id]) => {

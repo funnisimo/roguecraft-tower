@@ -35,6 +35,8 @@ export function damage(
 
   target.health -= damage.amount || 0;
 
+  target.trigger("damage", damage);
+
   if (target.health <= 0) {
     // do all of these move to event handlers?
     game.messages.addCombat(`${target.name} dies`);

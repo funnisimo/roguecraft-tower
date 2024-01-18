@@ -15552,6 +15552,7 @@ void main() {
           return false;
       }
       target.health -= damage.amount || 0;
+      target.trigger("damage", damage);
       if (target.health <= 0) {
           // do all of these move to event handlers?
           game.messages.addCombat(`${target.name} dies`);
@@ -16286,6 +16287,7 @@ void main() {
           this.on("turn_end", (game, time) => {
               this.potion = Math.min(this.potion + time, this.potion_max);
           });
+          this.on("damage", () => this.clearGoal());
           // Need items in slots....
           Object.entries(cfg.kind.slots).forEach(([slot, id]) => {
               const item = make$3(id);
