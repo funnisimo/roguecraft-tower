@@ -7,7 +7,7 @@ ACTOR.install({
   fg: "white",
   bg: -1,
   moveSpeed: 100,
-  health: 100,
+  health: 20,
   ammo: 20,
 
   // damage: 10,

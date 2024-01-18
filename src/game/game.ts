@@ -301,4 +301,12 @@ export class Game {
     this.messages.add(msg);
     this.scene!.get("MESSAGES")!.draw(this.scene!.buffer);
   }
+
+  makeActor(id: string, power: number = 1): ACTOR.Actor {
+    return ACTOR.make(id, { power });
+  }
+
+  makeItem(id: string, power: number = 1): ITEM.Item {
+    return ITEM.make(id, { power });
+  }
 }

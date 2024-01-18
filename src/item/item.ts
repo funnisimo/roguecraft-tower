@@ -62,11 +62,9 @@ export class Item extends Obj {
     this._power = val;
 
     // Value = POWER * BASE * Math.pow(1.025,POWER)
-    this._damage =
-      this.kind.damage + Math.round(val * 3 * Math.pow(1.025, val));
-    this._comboDamage = this.kind.combo * this._damage;
-    this._defense =
-      this.kind.defense + Math.round(val * 3 * Math.pow(1.025, val));
+    this._damage = Math.round(this.kind.damage * Math.pow(1.1, val));
+    this._comboDamage = Math.round(this.kind.combo_damage * Math.pow(1.1, val));
+    this._defense = Math.round(this.kind.defense * Math.pow(1.1, val));
   }
 
   get damage(): number {

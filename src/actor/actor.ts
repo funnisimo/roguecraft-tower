@@ -51,7 +51,7 @@ export class Actor extends Obj {
     this.item_flags = 0;
     this.data = {};
     this.power = cfg.power || 1;
-    this.health_max = this.kind.health || 1; // TODO - scale with power?
+    this.health_max = this.kind.health || 10; // TODO - scale with power?
     this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
     this.statuses = [];

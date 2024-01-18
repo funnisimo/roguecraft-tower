@@ -44,9 +44,12 @@ export const reward = {
         }
       }
       // update display
+      const game = this.data.game as Game;
       const a_text = this.get("ARMOR");
       const a_color = e.row == 1 ? "teal" : "white";
-      a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1]));
+      a_text.text(
+        `ARMOR:\n#{${a_color}}` + armor_text(used[1], game.player.kind.health)
+      );
 
       const m_text = this.get("MELEE");
       const m_color = e.row == 2 ? "teal" : "white";
@@ -97,9 +100,9 @@ export const reward = {
   },
 };
 
-function armor_text(armor: Item.Item): string {
+function armor_text(armor: Item.Item, health: number = 10): string {
   let text = armor.name + " [" + armor.power + "]\n";
-  const defense = armor.defense + 100;
+  const defense = armor.defense + health;
   text += "  Health: " + defense + "\n";
 
   if (armor.kind.armor_flags != 0) {

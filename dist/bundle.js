@@ -15409,11 +15409,9 @@ void main() {
           val = val || 1;
           this._power = val;
           // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage =
-              this.kind.damage + Math.round(val * 3 * Math.pow(1.025, val));
-          this._comboDamage = this.kind.combo * this._damage;
-          this._defense =
-              this.kind.defense + Math.round(val * 3 * Math.pow(1.025, val));
+          this._damage = Math.round(this.kind.damage * Math.pow(1.1, val));
+          this._comboDamage = Math.round(this.kind.combo_damage * Math.pow(1.1, val));
+          this._defense = Math.round(this.kind.defense * Math.pow(1.1, val));
       }
       get damage() {
           return this._damage;
@@ -16058,7 +16056,7 @@ void main() {
           this.item_flags = 0;
           this.data = {};
           this.power = cfg.power || 1;
-          this.health_max = this.kind.health || 1; // TODO - scale with power?
+          this.health_max = this.kind.health || 10; // TODO - scale with power?
           this.health = this.health_max;
           this.ammo = this.kind.ammo || 0; // TODO - scale with power?
           this.statuses = [];
@@ -21728,6 +21726,12 @@ void main() {
           this.messages.add(msg);
           this.scene.get("MESSAGES").draw(this.scene.buffer);
       }
+      makeActor(id, power = 1) {
+          return make$2(id, { power });
+      }
+      makeItem(id, power = 1) {
+          return make$3(id, { power });
+      }
   }
 
   const title = {
@@ -22422,9 +22426,10 @@ void main() {
                   }
               }
               // update display
+              const game = this.data.game;
               const a_text = this.get("ARMOR");
               const a_color = e.row == 1 ? "teal" : "white";
-              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1]));
+              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1], game.player.kind.health));
               const m_text = this.get("MELEE");
               const m_color = e.row == 2 ? "teal" : "white";
               m_text.text(`MELEE:\n#{${m_color}}` + melee_text(used[2]));
@@ -22465,9 +22470,9 @@ void main() {
           s.data(["None", armor.name, melee.name, ranged.name]); // triggers - change
       },
   };
-  function armor_text(armor) {
+  function armor_text(armor, health = 10) {
       let text = armor.name + " [" + armor.power + "]\n";
-      const defense = armor.defense + 100;
+      const defense = armor.defense + health;
       text += "  Health: " + defense + "\n";
       if (armor.kind.armor_flags != 0) {
           if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
@@ -22726,7 +22731,7 @@ void main() {
       fg: "white",
       bg: -1,
       moveSpeed: 100,
-      health: 100,
+      health: 20,
       ammo: 20,
       // damage: 10,
       // attackSpeed: 100,
@@ -23361,7 +23366,7 @@ void main() {
       name: "Scale Mail",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
       tags: "armor",
       effects: {
@@ -23374,7 +23379,7 @@ void main() {
       name: "Mercenary Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
       tags: "armor",
       effects: {
@@ -23387,7 +23392,7 @@ void main() {
       name: "Guards Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
       tags: "armor",
       effects: {
@@ -23400,7 +23405,7 @@ void main() {
       name: "Hunters Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
       tags: "armor",
       effects: {
@@ -23413,7 +23418,7 @@ void main() {
       name: "Archers Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
       tags: "armor",
       effects: {
@@ -23427,7 +23432,7 @@ void main() {
       name: "Reinforced Mail",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
       effects: {
@@ -23441,7 +23446,7 @@ void main() {
       name: "Stalwart Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
       tags: "armor",
       effects: {
@@ -23456,7 +23461,7 @@ void main() {
       name: "Plate Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
       effects: {
@@ -23470,7 +23475,7 @@ void main() {
       name: "Full Metal Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
       tags: "armor",
       effects: {
@@ -23485,7 +23490,7 @@ void main() {
       name: "Champions Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
       tags: "armor",
       effects: {
@@ -23499,7 +23504,7 @@ void main() {
       name: "Heros Armor",
       ch: "]",
       fg: "yellow",
-      defense: 3,
+      defense: 10,
       armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
       tags: "armor",
       effects: {
