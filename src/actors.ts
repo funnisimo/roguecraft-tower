@@ -20,7 +20,7 @@ ACTOR.install({
   slots: {
     ranged: "SHORTBOW",
     melee: "CUTLASS",
-    armor: "SCALE_MAIL^10",
+    armor: "SCALE_MAIL",
   },
 });
 

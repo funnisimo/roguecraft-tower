@@ -6,7 +6,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
+  armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
   tags: "armor",
   effects: {
     damage_reduction: 35,
@@ -20,7 +20,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
+  armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
   tags: "armor",
   effects: {
     damage_reduction: 35,
@@ -34,7 +34,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
+  armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
   tags: "armor",
   effects: {
     artifact_cooldown: 40,
@@ -48,7 +48,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "RANGED_DAMAGE_30 | ARROWS_10",
+  armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
   tags: "armor",
   effects: {
     ranged_damage: 30,
@@ -62,7 +62,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
+  armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
   tags: "armor",
   effects: {
     ranged_damage: 30,
@@ -77,7 +77,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+  armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
   tags: "armor",
   effects: {
     damage_reduction: 35,
@@ -92,7 +92,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags:
+  armor_flags:
     "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
   tags: "armor",
   effects: {
@@ -109,7 +109,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+  armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
   tags: "armor",
   effects: {
     damage_reduction: 35,
@@ -124,7 +124,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags:
+  armor_flags:
     "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
   tags: "armor",
   effects: {
@@ -141,7 +141,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
+  armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
   tags: "armor",
   effects: {
     damage_reduction: 35,
@@ -156,7 +156,7 @@ ITEM.install({
   ch: "]",
   fg: "yellow",
   defense: 3,
-  flags:
+  armor_flags:
     "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
   tags: "armor",
   effects: {

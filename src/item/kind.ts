@@ -3,7 +3,7 @@ import { Actor } from "../actor";
 import { Game } from "../game";
 import { Item } from "./item";
 import { CallbackFn } from "../game/obj";
-import { ARMOR_FLAGS } from "./flags";
+import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
 
 export interface ItemEvents {
@@ -41,7 +41,9 @@ export interface KindConfig {
 
   on?: ItemEvents;
   tags?: string | string[];
-  flags?: string | string[];
+  armor_flags?: string | string[];
+  melee_flags?: string | string[];
+  ranged_flags?: string | string[];
   effects?: EffectConfig;
 }
 
@@ -60,6 +62,7 @@ export interface ItemKind {
   combo_speed: number;
   combo_damage: number;
   range: number;
+  charge: number;
 
   defense: number;
 
@@ -68,7 +71,9 @@ export interface ItemKind {
 
   frequency: GWU.frequency.FrequencyFn;
   tags: string[];
-  flags: number;
+  armor_flags: number;
+  melee_flags: number;
+  ranged_flags: number;
   effects: EffectConfig;
 
   //   damage: number;
@@ -104,7 +109,9 @@ export function install(cfg: KindConfig) {
       defense: 0,
       slot: null,
       tags: [],
-      flags: 0,
+      armor_flags: 0,
+      melee_flags: 0,
+      ranged_flags: 0,
       effects: {},
     },
     cfg
@@ -118,8 +125,16 @@ export function install(cfg: KindConfig) {
     kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
   }
 
-  if (typeof cfg.flags !== "number") {
-    kind.flags = GWU.flag.from_safe(ARMOR_FLAGS, cfg.flags);
+  if (typeof cfg.armor_flags !== "number") {
+    kind.armor_flags = GWU.flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+  }
+
+  if (typeof cfg.melee_flags !== "number") {
+    kind.melee_flags = GWU.flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
+  }
+
+  if (typeof cfg.ranged_flags !== "number") {
+    kind.ranged_flags = GWU.flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
   }
 
   //   if (typeof cfg.bump === "string") {

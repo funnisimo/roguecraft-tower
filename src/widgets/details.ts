@@ -61,44 +61,44 @@ export class Details extends GWU.widget.Dialog {
       text += "#{teal}";
       text += "  " + armor.name + " [" + armor.power + "]\n";
 
-      if (armor.kind.flags != 0) {
-        if (armor.kind.flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+      if (armor.kind.armor_flags != 0) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
           text += "  {-35% Damage Received}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
           text += "  {30% Negate Hits}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
           text += "  {-40% Artifact Cooldown}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.ARROWS_10) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
           text += "  {+10 Arrows Per Bundle}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
           text += "  {100% Longer Roll Cooldown}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
           text += "  {+30% Melee Damage}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
           text += "  {Mobs Target You More}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
           text += "  {+15% Move Speed Aura}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
           text += "  {-40% Potion Cooldown}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
           text += "  {Potion Boosts Defense}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
           text += "  {Potion Heals Nearby Allies}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
           text += "  {+30% Ranged Damage}\n";
         }
-        if (armor.kind.flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+        if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
           text += "  {+20% Weapon Damage Aura}\n";
         }
       }

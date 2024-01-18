@@ -62,11 +62,11 @@ export class Item extends Obj {
     this._power = val;
 
     // Value = POWER * BASE * Math.pow(1.025,POWER)
-    this._damage = Math.round(val * this.kind.damage * Math.pow(1.025, val));
-    this._comboDamage = Math.round(
-      val * this.kind.combo_damage * Math.pow(1.025, val)
-    );
-    this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
+    this._damage =
+      this.kind.damage + Math.round(val * 3 * Math.pow(1.025, val));
+    this._comboDamage = this.kind.combo * this._damage;
+    this._defense =
+      this.kind.defense + Math.round(val * 3 * Math.pow(1.025, val));
   }
 
   get damage(): number {
@@ -99,6 +99,10 @@ export class Item extends Obj {
 
   get slot(): string | null {
     return this.kind.slot;
+  }
+
+  get charge(): number {
+    return this.kind.charge;
   }
 }
 

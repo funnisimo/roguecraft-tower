@@ -134,7 +134,7 @@ export class Player extends ACTOR.Actor {
     let new_health_max = this.kind.health;
     Object.entries(this.slots).forEach(([s, i]) => {
       if (i) {
-        this.item_flags |= i.kind.flags;
+        this.item_flags |= i.kind.armor_flags;
         new_health_max += i.defense;
       }
     });
@@ -150,7 +150,7 @@ export class Player extends ACTOR.Actor {
     let new_health_max = this.kind.health;
     Object.entries(this.slots).forEach(([s, i]) => {
       if (i) {
-        this.item_flags |= i.kind.flags;
+        this.item_flags |= i.kind.armor_flags;
         new_health_max += i.defense;
       }
     });

@@ -546,47 +546,6 @@
       }
       return ta;
   }
-  function combineValues(a, b) {
-      if (a == undefined) {
-          return b;
-      }
-      if (b == undefined) {
-          return a;
-      }
-      const ta = valueType(a);
-      const tb = valueType(b);
-      if (ta == 'array' && tb == 'array') {
-          if (a.length >= b.length) {
-              // @ts-ignore
-              return a.map((v, i) => combineValues(v, b[i]));
-          }
-          else {
-              // @ts-ignore
-              return b.map((v, i) => combineValues(a[i], v));
-          }
-      }
-      if (ta != 'array' && tb != 'array') {
-          if (ta != tb) {
-              return b; // second one
-          }
-          if (ta == 'number') {
-              return Math.max(a, b);
-          }
-          else {
-              return b;
-          }
-      }
-      if (ta == 'array') {
-          let out = a.slice();
-          out[0] = combineValues(a[0], b);
-          return out;
-      }
-      else {
-          let out = b.slice();
-          out[0] = combineValues(a, b[0]);
-          return out;
-      }
-  }
 
   // DIRS are organized clockwise
   // - first 4 are arrow directions
@@ -11870,11 +11829,15 @@ void main() {
       action(ev) {
           if (ev && ev.defaultPrevented)
               return;
-          this.trigger('action');
+          if (this.trigger('action')) {
+              ev === null || ev === void 0 ? void 0 : ev.stopPropagation();
+          }
           const action = this._attrStr('action');
           if (!action || !action.length)
               return;
-          this.scene && this.scene.trigger(action, this);
+          if (this.scene && this.scene.trigger(action, this)) {
+              ev === null || ev === void 0 ? void 0 : ev.stopPropagation();
+          }
       }
       // FRAME
       input(e) {
@@ -11944,7 +11907,7 @@ void main() {
               return;
           this._click(e);
           if (!e.defaultPrevented) {
-              this.action();
+              this.action(e);
           }
       }
       _click(e) {
@@ -12551,7 +12514,7 @@ void main() {
               this.prop('disabled', true);
           }
           this.prop('valid', this.isValid()); // redo b/c rules are now set
-          this.on('blur', this.action.bind(this));
+          this.on('blur', () => this.action());
           // this.on('click', this.action.bind(this));
           this.reset();
       }
@@ -13263,7 +13226,7 @@ void main() {
       _draw(buffer) {
           this._drawFill(buffer);
           this.children.forEach((w) => {
-              if (w.prop('row') >= this.size)
+              if (w._propInt('row') >= this.size)
                   return;
               if (this.attr('border') !== 'none') {
                   drawBorder(buffer, w.bounds.x - 1, w.bounds.y - 1, w.bounds.width + 2, w.bounds.height + 2, this._used, this.attr('border') == 'ascii');
@@ -13338,7 +13301,7 @@ void main() {
               return this.dir(e);
           }
           if (e.key === 'Enter') {
-              this.action();
+              this.action(e);
               // this.trigger('change', {
               //     row: this.selectedRow,
               //     col: this.selectedColumn,
@@ -15094,7 +15057,6 @@ void main() {
     clamp: clamp,
     color: index$9,
     colors: colors,
-    combineValues: combineValues,
     cosmetic: cosmetic,
     data: data,
     first: first,
@@ -15272,7 +15234,7 @@ void main() {
       "ARROWS_10",
       "LONGER_ROLL_100",
       "MELEE_DAMAGE_30",
-      "MOBS_TARGET_YOU_MORE",
+      "MOBS_TARGET_YOU_MORE", // add ?? MOBS_AVOID_YOU_MORE ??
       "MOVESPEED_AURA_15",
       "NEGATE_HITS_30",
       "POTION_COOLDOWN_40",
@@ -15288,59 +15250,59 @@ void main() {
       "SPIN_ATTACK",
       "THRUST",
       "SWIRLING",
-      "LONGER_REACH",
+      "LONGER_REACH", // spear, glaive, etc...
       "SHOCKWAVE",
       "BURNS",
       "STUNS",
       "AMBUSH",
       "ECHO",
       "EXPLODING",
-      "COMMITTED",
-      "PUSHBACK",
+      "COMMITTED", // Increased damage to wounded mobs
+      "PUSHBACK", // great pushback.  Are there levels of this?
       "SHARPNESS",
       "LEECHING",
-      "RAMPAGING",
+      "RAMPAGING", // Increased attack speed when kill mob
       "WEAKENING",
       "FREEZING",
       "POISON_CLOUD",
       "POISONS",
-      "SPLASH",
+      "SPLASH", // AOE
       "GRAVITY",
-      "LIGHTNING_BOLTS",
-      "CHAINS",
-      "RADIANCE",
-      "SHARED_PAIN",
-      "PROSPECTOR",
-      "CRITICAL_HIT",
-      "SPEED_RUSH",
-      "LOOTING",
+      "LIGHTNING_BOLTS", // Thundering
+      "CHAINS", // Binds and chains enemies
+      "RADIANCE", // Healing aura
+      "SHARED_PAIN", // excess damage hits nearby mobs
+      "PROSPECTOR", // Get more emeralds
+      "CRITICAL_HIT", // increased chance
+      "SPEED_RUSH", // Increased speed after mob killed
+      "LOOTING", // increased drop rate
       "SPAWN_BEE", // chance to spawn bee
   ]);
   // @ts-ignore
   globalThis.MELEE_FLAGS = MELEE_FLAGS;
   const RANGED_FLAGS = flag.make([
       // "GROWING", // Not going to use
-      "EXTRA_SHOT",
-      "INFINITE_SHOTS",
-      "POWER",
+      "EXTRA_SHOT", // Fires 2 shots
+      "INFINITE_SHOTS", // chance to regain shots after use
+      "POWER", // Sharpness
       "SUPERCHARGED",
-      "EXPLODING",
+      "EXPLODING", // exploding shot
       "RADIANCE_SHOT",
-      "ENRAGES",
-      "ACCELERATE",
-      "RAPID_FIRE",
+      "ENRAGES", // enrages hit mobs
+      "ACCELERATE", // subsequent shots are faster (until other action - including wait)
+      "RAPID_FIRE", // just faster attack speed
       "FREEZES",
-      "TRIPLE_SHOT",
-      "CHAINS_HITS",
+      "TRIPLE_SHOT", // fires 3 arrows when charged - all in same direction, but spaced - how to do this?
+      "CHAINS_HITS", // hits multiple targets - like chain lightning
       "POISON_CLOUD",
       "POISONS",
       "ENRAGES",
       "ROLL_CHARGES",
       "GRAVITY_SHOT",
-      "RICOCHET",
-      "TEMPO_THEFT",
+      "RICOCHET", // bounces off target in random direction
+      "TEMPO_THEFT", // steals speed
       "PIERCING",
-      "CHAIN_REACTION",
+      "CHAIN_REACTION", // chance to fire many small shots on hit
       "KNOCKBACK",
   ]);
   // @ts-ignore
@@ -15367,7 +15329,9 @@ void main() {
           defense: 0,
           slot: null,
           tags: [],
-          flags: 0,
+          armor_flags: 0,
+          melee_flags: 0,
+          ranged_flags: 0,
           effects: {},
       }, cfg);
       if (kind.name.length == 0) {
@@ -15376,8 +15340,14 @@ void main() {
       if (typeof cfg.tags == "string") {
           kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
       }
-      if (typeof cfg.flags !== "number") {
-          kind.flags = flag.from_safe(ARMOR_FLAGS, cfg.flags);
+      if (typeof cfg.armor_flags !== "number") {
+          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+      }
+      if (typeof cfg.melee_flags !== "number") {
+          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
+      }
+      if (typeof cfg.ranged_flags !== "number") {
+          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
       }
       //   if (typeof cfg.bump === "string") {
       //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -15439,9 +15409,11 @@ void main() {
           val = val || 1;
           this._power = val;
           // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = Math.round(val * this.kind.damage * Math.pow(1.025, val));
-          this._comboDamage = Math.round(val * this.kind.combo_damage * Math.pow(1.025, val));
-          this._defense = Math.round(val * this.kind.defense * Math.pow(1.025, val));
+          this._damage =
+              this.kind.damage + Math.round(val * 3 * Math.pow(1.025, val));
+          this._comboDamage = this.kind.combo * this._damage;
+          this._defense =
+              this.kind.defense + Math.round(val * 3 * Math.pow(1.025, val));
       }
       get damage() {
           return this._damage;
@@ -15467,6 +15439,9 @@ void main() {
       get slot() {
           return this.kind.slot;
       }
+      get charge() {
+          return this.kind.charge;
+      }
   }
   function make$3(id, opts) {
       let kind;
@@ -15485,7 +15460,7 @@ void main() {
       const config = Object.assign({
           x: 1,
           y: 1,
-          z: 1,
+          z: 1, // items, actors, player, fx
           kind,
           power,
       }, opts);
@@ -16250,7 +16225,7 @@ void main() {
       const config = Object.assign({
           x: 1,
           y: 1,
-          z: 1,
+          z: 1, // items, actors, player, fx
           kind,
           health: kind.health || 10,
           damage: kind.damage || 2,
@@ -16390,7 +16365,7 @@ void main() {
           let new_health_max = this.kind.health;
           Object.entries(this.slots).forEach(([s, i]) => {
               if (i) {
-                  this.item_flags |= i.kind.flags;
+                  this.item_flags |= i.kind.armor_flags;
                   new_health_max += i.defense;
               }
           });
@@ -16405,7 +16380,7 @@ void main() {
           let new_health_max = this.kind.health;
           Object.entries(this.slots).forEach(([s, i]) => {
               if (i) {
-                  this.item_flags |= i.kind.flags;
+                  this.item_flags |= i.kind.armor_flags;
                   new_health_max += i.defense;
               }
           });
@@ -16501,7 +16476,7 @@ void main() {
       return new Player({
           x: 1,
           y: 1,
-          z: 1,
+          z: 1, // items, actors, player, fx
           kind,
       });
   }
@@ -21474,8 +21449,8 @@ void main() {
           HUGE_ROOM: 5,
           LARGE_CIRCLE: 5,
           BROGUE_DONUT: 5,
-          BROGUE_CAVE: 30,
-          HUGE_CAVE: 30,
+          BROGUE_CAVE: 30, // These are harder to match
+          HUGE_CAVE: 30, // ...
           ENTRANCE: 5,
           CHUNKY: 5,
       },
@@ -21485,7 +21460,7 @@ void main() {
       const digger = new Digger({
           seed,
           rooms: { count: 20, first: firstRoom, digger: "PROFILE" },
-          doors: false,
+          doors: false, // { chance: 50 },
           halls: { chance: 50 },
           loops: { minDistance: 30, maxLength: 5 },
           lakes: false /* {
@@ -22115,44 +22090,44 @@ void main() {
               text += "Health: " + player.health + " / " + player.health_max + "\n";
               text += "#{teal}";
               text += "  " + armor.name + " [" + armor.power + "]\n";
-              if (armor.kind.flags != 0) {
-                  if (armor.kind.flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+              if (armor.kind.armor_flags != 0) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
                       text += "  {-35% Damage Received}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
                       text += "  {30% Negate Hits}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
                       text += "  {-40% Artifact Cooldown}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.ARROWS_10) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
                       text += "  {+10 Arrows Per Bundle}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
                       text += "  {100% Longer Roll Cooldown}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
                       text += "  {+30% Melee Damage}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
                       text += "  {Mobs Target You More}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
                       text += "  {+15% Move Speed Aura}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
                       text += "  {-40% Potion Cooldown}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
                       text += "  {Potion Boosts Defense}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
                       text += "  {Potion Heals Nearby Allies}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
                       text += "  {+30% Ranged Damage}\n";
                   }
-                  if (armor.kind.flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
                       text += "  {+20% Weapon Damage Aura}\n";
                   }
               }
@@ -22413,36 +22388,160 @@ void main() {
       create() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-          build.pos(10, 17).text("REWARD", { fg: "green", id: "STUFF" });
-          build.pos(10, 22).text("For Level: {}", { fg: "pink", id: "LEVEL" });
-          build.pos(10, 30).text("Press any key to goto next level.");
-          this.on("keypress", () => {
-              this.app.scenes.start("level", this.data);
+          build.pos(5, 3).text("{Roguecraft}", { fg: "yellow" });
+          build
+              .pos(5, 5)
+              .text("Choose your reward \nfor Level: {}", { fg: "pink", id: "LEVEL" });
+          const list = build
+              .pos(5, 8)
+              .datalist({ empty: "-", border: "ascii", id: "STUFF", width: 20 });
+          //.text("REWARD", { fg: "green", id: "STUFF" });
+          build
+              .pos(5, 40)
+              .text("Press <Enter> to choose your reward and go to the next level.");
+          build.pos(30, 5).text("Armor", { id: "ARMOR", fg: "white" });
+          build.pos(30, 16).text("Melee", { id: "MELEE", fg: "white" });
+          build.pos(30, 27).text("Ranged", { id: "RANGED", fg: "white" });
+          // this.on("Enter", () => {
+          //   this.app.scenes.start("level", this.data.game);
+          // });
+          list.on("change", (e) => {
+              const items = this.data.items;
+              if (!this.data.equipped)
+                  return;
+              const used = [
+                  null,
+                  this.data.equipped.armor,
+                  this.data.equipped.melee,
+                  this.data.equipped.ranged,
+              ];
+              if (items) {
+                  const item = items[e.row];
+                  if (item) {
+                      used[e.row] = item;
+                  }
+              }
+              // update display
+              const a_text = this.get("ARMOR");
+              const a_color = e.row == 1 ? "teal" : "white";
+              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1]));
+              const m_text = this.get("MELEE");
+              const m_color = e.row == 2 ? "teal" : "white";
+              m_text.text(`MELEE:\n#{${m_color}}` + melee_text(used[2]));
+              const r_text = this.get("RANGED");
+              const r_color = e.row == 3 ? "teal" : "white";
+              r_text.text(`RANGED:\n#{${r_color}}` + ranged_text(used[3]));
+          });
+          list.on("action", () => {
+              const items = this.data.items;
+              const item = items[list.selectedRow];
+              if (item) {
+                  console.log("list selection - " + item.name);
+                  const game = this.data.game;
+                  const player = game.player;
+                  player.equip(item);
+                  game.addMessage(`You equip a ${item.name}`);
+              }
+              this.app.scenes.start("level", this.data.game);
           });
       },
       start(game) {
-          this.data = game;
           const depth = game.level.depth;
           const w = this.get("LEVEL");
-          w.text("For Level: " + depth);
+          w.text("Choose your \nreward for Level: " + depth);
           const s = this.get("STUFF");
           const armor = random$1(game.level, "armor");
           const melee = random$1(game.level, "melee");
           const ranged = random$1(game.level, "ranged");
-          let text = [];
-          if (armor) {
-              text.push(armor.name);
-          }
-          if (melee) {
-              text.push(melee.name);
-          }
-          if (ranged) {
-              text.push(ranged.name);
-          }
-          s.text("Stuff for level: " + text.join(", "));
+          armor.power = depth + game.rng.dice(1, 5);
+          melee.power = depth + game.rng.dice(1, 5);
+          ranged.power = depth + game.rng.dice(1, 5);
+          const player = game.player;
+          const equipped = Object.entries(player.slots).reduce((o, current) => {
+              o[current[0]] = current[1];
+              return o;
+          }, {});
+          this.data = { game, items: [null, armor, melee, ranged], equipped };
+          s.data(["None", armor.name, melee.name, ranged.name]); // triggers - change
       },
   };
+  function armor_text(armor) {
+      let text = armor.name + " [" + armor.power + "]\n";
+      const defense = armor.defense + 100;
+      text += "  Health: " + defense + "\n";
+      if (armor.kind.armor_flags != 0) {
+          if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+              text += "  {-35% Damage Received}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+              text += "  {30% Negate Hits}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+              text += "  {-40% Artifact Cooldown}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
+              text += "  {+10 Arrows Per Bundle}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+              text += "  {100% Longer Roll Cooldown}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+              text += "  {+30% Melee Damage}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+              text += "  {Mobs Target You More}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+              text += "  {+15% Move Speed Aura}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+              text += "  {-40% Potion Cooldown}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+              text += "  {Potion Boosts Defense}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+              text += "  {Potion Heals Nearby Allies}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+              text += "  {+30% Ranged Damage}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+              text += "  {+20% Weapon Damage Aura}\n";
+          }
+      }
+      return text;
+  }
+  function melee_text(melee) {
+      let text = melee.name + " [" + melee.power + "]\n";
+      text += "  Attack: " + melee.damage + " / " + melee.speed + "\n";
+      text +=
+          "  Combo : " +
+              melee.comboDamage +
+              " / " +
+              melee.comboSpeed +
+              " % " +
+              melee.combo +
+              "\n";
+      if (melee.kind.melee_flags != 0) ;
+      return text;
+  }
+  function ranged_text(ranged) {
+      let text = ranged.name + " [" + ranged.power + "]\n";
+      text +=
+          "  Attack: " +
+              ranged.damage +
+              " / " +
+              ranged.speed +
+              " @ " +
+              ranged.range +
+              "\n";
+      if (ranged.charge > 0) {
+          text += "  Charge: " + ranged.charge + "\n";
+      }
+      if (ranged.kind.ranged_flags != 0) ;
+      return text;
+  }
 
   const help = {
       create() {
@@ -22637,7 +22736,7 @@ void main() {
       slots: {
           ranged: "SHORTBOW",
           melee: "CUTLASS",
-          armor: "SCALE_MAIL^10",
+          armor: "SCALE_MAIL",
       },
   });
   install$3({
@@ -22647,7 +22746,7 @@ void main() {
       fg: "green",
       moveSpeed: 200,
       health: 6,
-      damage: 8,
+      damage: 8, // dps=4
       dropChance: 100,
   });
   install$3({
@@ -22656,7 +22755,7 @@ void main() {
       fg: "green",
       moveSpeed: 200,
       health: 25,
-      damage: 10,
+      damage: 10, // dps=5
       dropChance: 10,
   });
   install$3({
@@ -22665,7 +22764,7 @@ void main() {
       fg: "green",
       moveSpeed: 200,
       health: 50,
-      damage: 12,
+      damage: 12, // dps=6
       dropChance: 10,
   });
   install$3({
@@ -23006,7 +23105,7 @@ void main() {
       ch: "/",
       fg: "yellow",
       speed: 100,
-      damage: 10,
+      damage: 10, // dps = 10 * 100 / 100 = 10
       combo: 3,
       combo_speed: 100,
       combo_damage: 10,
@@ -23263,7 +23362,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
+      armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23276,7 +23375,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
+      armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23289,7 +23388,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
+      armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
       tags: "armor",
       effects: {
           artifact_cooldown: 40,
@@ -23302,7 +23401,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "RANGED_DAMAGE_30 | ARROWS_10",
+      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
       tags: "armor",
       effects: {
           ranged_damage: 30,
@@ -23315,7 +23414,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
+      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
       tags: "armor",
       effects: {
           ranged_damage: 30,
@@ -23329,7 +23428,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23343,7 +23442,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23358,7 +23457,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23372,7 +23471,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23387,7 +23486,7 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
+      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
       tags: "armor",
       effects: {
           damage_reduction: 35,
@@ -23401,12 +23500,12 @@ void main() {
       ch: "]",
       fg: "yellow",
       defense: 3,
-      flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
+      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
       tags: "armor",
       effects: {
           damage_reduction: 35,
           potion_cooldown: 40,
-          mobs_target_you: 50,
+          mobs_target_you: 50, // 50%?
           potion_heals_allies: 3,
       },
   });
