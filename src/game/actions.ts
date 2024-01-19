@@ -109,7 +109,7 @@ export function moveTowardPlayer(
   quiet = false
 ): boolean {
   const map = game.level!;
-  const player = game.player;
+  const player = game.hero;
 
   const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
     return map.hasActor(x, y);
@@ -132,7 +132,7 @@ export function moveAwayFromPlayer(
   quiet = false
 ): boolean {
   const map = game.level!;
-  const player = game.player;
+  const player = game.hero;
 
   // compute safety map
   const safety = new GWU.path.DijkstraMap(map.width, map.height);
@@ -230,8 +230,8 @@ export function attack(
     }
   }
 
-  const actorIsPlayer = actor === game.player;
-  const otherIsPlayer = target === game.player;
+  const actorIsPlayer = actor === game.hero;
+  const otherIsPlayer = target === game.hero;
 
   if (!actorIsPlayer && !otherIsPlayer) {
     return idle(game, actor); // no attacking
@@ -264,7 +264,7 @@ export function fire(
   target: Actor | null = null
 ): boolean {
   const level = game.level!;
-  const player = game.player;
+  const player = game.hero;
 
   if (!actor.range) {
     game.addMessage("Nothing to fire.");
@@ -350,8 +350,8 @@ export function fire(
     }
   }
 
-  const actorIsPlayer = actor === game.player;
-  const otherIsPlayer = target === game.player;
+  const actorIsPlayer = actor === game.hero;
+  const otherIsPlayer = target === game.hero;
 
   if (!actorIsPlayer && !otherIsPlayer) {
     return idle(game, actor); // no attacking
@@ -385,7 +385,7 @@ export function fire(
 installBump("fire", fire);
 
 export function fireAtPlayer(game: Game, actor: Actor): boolean {
-  const player = game.player;
+  const player = game.hero;
 
   // if player can't see actor then actor can't see player!
   if (!player.isInFov(actor.x, actor.y)) return false;
@@ -393,23 +393,19 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
   actor.ammo -= 1;
 
   // TODO - get next attack details (and increment counter in actor)
-  FX.projectile(
-    game,
-    actor,
-    game.player,
-    { ch: "|-\\/", fg: "white" },
-    300
-  ).then((xy, ok) => {
-    if (!ok) {
-      FX.flash(game, xy.x, xy.y, "orange", 150);
-    } else {
-      FX.flash(game, xy.x, xy.y, "red", 150);
-      game.messages.addCombat(
-        `${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`
-      );
-      EFFECT.damage(game, player, { amount: actor.rangedDamage });
+  FX.projectile(game, actor, game.hero, { ch: "|-\\/", fg: "white" }, 300).then(
+    (xy, ok) => {
+      if (!ok) {
+        FX.flash(game, xy.x, xy.y, "orange", 150);
+      } else {
+        FX.flash(game, xy.x, xy.y, "red", 150);
+        game.messages.addCombat(
+          `${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`
+        );
+        EFFECT.damage(game, player, { amount: actor.rangedDamage });
+      }
     }
-  });
+  );
 
   game.endTurn(actor, actor.rangedAttackSpeed);
   return true;

@@ -15652,7 +15652,7 @@ void main() {
   }
   function moveTowardPlayer(game, actor, quiet = false) {
       const map = game.level;
-      const player = game.player;
+      const player = game.hero;
       const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
           return map.hasActor(x, y);
       });
@@ -15669,7 +15669,7 @@ void main() {
   }
   function moveAwayFromPlayer(game, actor, quiet = false) {
       const map = game.level;
-      const player = game.player;
+      const player = game.hero;
       // compute safety map
       const safety = new index$6.DijkstraMap(map.width, map.height);
       safety.copy(player.mapToMe);
@@ -15748,8 +15748,8 @@ void main() {
               target = targets[0];
           }
       }
-      const actorIsPlayer = actor === game.player;
-      const otherIsPlayer = target === game.player;
+      const actorIsPlayer = actor === game.hero;
+      const otherIsPlayer = target === game.hero;
       if (!actorIsPlayer && !otherIsPlayer) {
           return idle(game, actor); // no attacking
       }
@@ -15770,7 +15770,7 @@ void main() {
   installBump("attack", attack);
   function fire(game, actor, target = null) {
       const level = game.level;
-      const player = game.player;
+      const player = game.hero;
       if (!actor.range) {
           game.addMessage("Nothing to fire.");
           return false;
@@ -15849,8 +15849,8 @@ void main() {
               target = targets[0];
           }
       }
-      const actorIsPlayer = actor === game.player;
-      const otherIsPlayer = target === game.player;
+      const actorIsPlayer = actor === game.hero;
+      const otherIsPlayer = target === game.hero;
       if (!actorIsPlayer && !otherIsPlayer) {
           return idle(game, actor); // no attacking
       }
@@ -15873,7 +15873,7 @@ void main() {
   }
   installBump("fire", fire);
   function fireAtPlayer(game, actor) {
-      const player = game.player;
+      const player = game.hero;
       // if player can't see actor then actor can't see player!
       if (!player.isInFov(actor.x, actor.y))
           return false;
@@ -15881,7 +15881,7 @@ void main() {
           return false;
       actor.ammo -= 1;
       // TODO - get next attack details (and increment counter in actor)
-      projectile(game, actor, game.player, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+      projectile(game, actor, game.hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
           if (!ok) {
               flash(game, xy.x, xy.y, "orange", 150);
           }
@@ -15925,7 +15925,7 @@ void main() {
   }
 
   function ai(game, actor) {
-      const player = game.player;
+      const player = game.hero;
       const noticeDistance = actor.kind.notice || 10;
       const distToPlayer = xy.distanceBetween(player.x, player.y, actor.x, actor.y);
       console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToPlayer}`);
@@ -16420,7 +16420,7 @@ void main() {
           }
           this.clearGoal();
           game.needInput = true;
-          console.log("Player - await input", game.scheduler.time);
+          console.log("Hero - await input", game.scheduler.time);
       }
       setGoal(x, y) {
           if (!this._level || this.followPath)
@@ -21102,7 +21102,7 @@ void main() {
       }
       start(game) {
           this.game = game;
-          this.player = game.player;
+          this.player = game.hero;
           this.done = false;
           this.started = false;
           // this.rng = game.rng;
@@ -21112,8 +21112,8 @@ void main() {
               Math.floor(this.height / 2),
           ];
           startLoc = this.rng.matchingLocNear(startLoc[0], startLoc[1], (x, y) => this.hasTile(x, y, "FLOOR"));
-          game.player.clearGoal();
-          spawn(this, game.player, startLoc[0], startLoc[1]).then(() => {
+          game.hero.clearGoal();
+          spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
               this.started = true;
               this.data.wavesLeft = this.waves.length;
               this.waves.forEach((wave) => {
@@ -21165,7 +21165,7 @@ void main() {
           });
           if (this.done || !this.started)
               return;
-          if (!this.actors.includes(game.player)) {
+          if (!this.actors.includes(game.hero)) {
               // lose
               return game.lose();
           }
@@ -21565,33 +21565,33 @@ void main() {
           this.items = kinds$1;
           this.hordes = hordes;
           //
-          this.player = makeHero("HERO");
+          this.hero = makeHero("HERO");
           this.inputQueue = new index.Queue();
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
           // TODO - Get these as parameters...
           // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
           this.events.on("Enter", (e) => {
-              if (this.player.goalPath && this.player.goalPath.length) {
-                  this.player.followPath = true;
-                  this.player.act(this);
+              if (this.hero.goalPath && this.hero.goalPath.length) {
+                  this.hero.followPath = true;
+                  this.hero.act(this);
               }
               this.scene.needsDraw = true;
           });
           this.events.on("dir", (e) => {
-              moveDir(this, this.player, e.dir);
+              moveDir(this, this.hero, e.dir);
               this.scene.needsDraw = true;
           });
           this.events.on("a", (e) => {
-              attack(this, this.player);
+              attack(this, this.hero);
               this.scene.needsDraw = true;
           });
           this.events.on("f", (e) => {
-              fire(this, this.player);
+              fire(this, this.hero);
               this.scene.needsDraw = true;
           });
           this.events.on("g", (e) => {
-              pickup(this, this.player);
+              pickup(this, this.hero);
               this.scene.needsDraw = true;
           });
           this.events.on("i", (e) => {
@@ -21602,10 +21602,10 @@ void main() {
           });
           this.events.on("p", (e) => {
               console.log("POTION");
-              potion(this, this.player);
+              potion(this, this.hero);
           });
           this.events.on(" ", (e) => {
-              idle(this, this.player);
+              idle(this, this.hero);
               this.scene.needsDraw = true;
           });
           this.events.on(">", (e) => {
@@ -21623,7 +21623,7 @@ void main() {
               });
               // set player goal
               if (loc[0] >= 0) {
-                  this.player.setGoal(loc[0], loc[1]);
+                  this.hero.setGoal(loc[0], loc[1]);
                   this.scene.needsDraw = true;
               }
               this.scene.needsDraw = true;
@@ -21643,13 +21643,13 @@ void main() {
               });
               // set player goal
               if (loc[0] >= 0) {
-                  this.player.setGoal(loc[0], loc[1]);
+                  this.hero.setGoal(loc[0], loc[1]);
                   this.scene.needsDraw = true;
               }
               this.scene.needsDraw = true;
           });
           this.events.on("z", (e) => {
-              spawn(this.level, "zombie", this.player.x, this.player.y);
+              spawn(this.level, "zombie", this.hero.x, this.hero.y);
               this.scene.needsDraw = true;
           });
           // @ts-ignore
@@ -21686,7 +21686,7 @@ void main() {
           // @ts-ignore
           globalThis.LEVEL = level;
           // @ts-ignore
-          globalThis.PLAYER = this.player;
+          globalThis.PLAYER = this.hero;
           level.start(this);
           this.tick();
       }
@@ -21717,7 +21717,7 @@ void main() {
                   // skip
                   filter = true;
               }
-              else if (actor === this.player) {
+              else if (actor === this.hero) {
                   actor.act(this);
                   if (filter) {
                       this.level.actors = this.level.actors.filter((a) => a && a.health > 0);
@@ -21760,7 +21760,7 @@ void main() {
           if (!actor.hasActed()) {
               actor.endTurn(this, time);
               this.scheduler.push(actor, time);
-              if (actor === this.player) {
+              if (actor === this.hero) {
                   this.needInput = false;
               }
           }
@@ -21864,7 +21864,7 @@ void main() {
       }
       _draw(buf) {
           const game = this.scene.data;
-          const player = game.player;
+          const player = game.hero;
           buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
           const level = game.level;
           level.tiles.forEach((index, x, y) => {
@@ -21982,22 +21982,22 @@ void main() {
           y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
           y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
           y += 1;
-          let px = game.player.x;
-          let py = game.player.y;
+          let px = game.hero.x;
+          let py = game.hero.y;
           // if (this._focus[0] != -1) {
           //   px = this._focus[0];
           //   py = this._focus[1];
           // }
-          this.entries = level.actors.filter((a) => a && a !== game.player && a.health > 0);
+          this.entries = level.actors.filter((a) => a && a !== game.hero && a.health > 0);
           this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
               xy.distanceBetween(b.x, b.y, px, py));
           let focused = this.entries.find((a) => xy.equals(a, this._focus));
-          let used = this.drawPlayer(buf, x, y, game.player);
-          game.player.data.sideY = y;
-          game.player.data.sideH = used;
-          if (xy.equals(game.player, this._focus)) {
+          let used = this.drawPlayer(buf, x, y, game.hero);
+          game.hero.data.sideY = y;
+          game.hero.data.sideH = used;
+          if (xy.equals(game.hero, this._focus)) {
               buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              focused = game.player;
+              focused = game.hero;
           }
           else if (focused) {
               buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
@@ -22265,10 +22265,10 @@ void main() {
               loc = loc || [-1, -1];
               map$1._focus = loc;
               const game = this.data;
-              const player = game.player;
+              const player = game.hero;
               if (loc[0] < 0) {
                   // game.level.clearPath();
-                  game.player.clearGoal();
+                  game.hero.clearGoal();
               }
               else {
                   // highlight path
@@ -22297,9 +22297,9 @@ void main() {
           sidebar$1.on("choose", (loc) => {
               console.log("sidebar choose - player go to :", loc[0], loc[1]);
               const game = this.data;
-              game.player.setGoal(loc[0], loc[1]);
-              game.player.followPath = true;
-              game.player.act(game);
+              game.hero.setGoal(loc[0], loc[1]);
+              game.hero.followPath = true;
+              game.hero.act(game);
           });
           messages$1.on("click", (e) => {
               const game = this.data;
@@ -22320,7 +22320,7 @@ void main() {
               if (!level.started)
                   return;
               // highlight path
-              const player = game.player;
+              const player = game.hero;
               player.setGoal(e.x, e.y);
               // const path = player.pathTo(e);
               // game.level.setPath(path);
@@ -22329,7 +22329,7 @@ void main() {
               const game = this.data;
               sidebar$1.clearFocus();
               // game.level.clearPath();
-              game.player.clearGoal();
+              game.hero.clearGoal();
           });
           map$1.on("click", (e) => {
               console.log("map click - player go to:", e.x, e.y);
@@ -22337,9 +22337,9 @@ void main() {
               const level = game.level;
               if (!level.started)
                   return;
-              game.player.setGoal(e.x, e.y);
-              game.player.followPath = true;
-              game.player.act(game);
+              game.hero.setGoal(e.x, e.y);
+              game.hero.followPath = true;
+              game.hero.act(game);
           });
       },
       start(game) {
@@ -22364,7 +22364,7 @@ void main() {
           // },
           inventory() {
               const game = this.data;
-              const player = game.player;
+              const player = game.hero;
               const sidebar = this.get("SIDEBAR");
               sidebar.setFocus(player.x, player.y);
           },
@@ -22388,7 +22388,7 @@ void main() {
               // this.data.level.clearPath();
               const game = this.data;
               if (e.key !== "Enter") {
-                  game.player.clearGoal();
+                  game.hero.clearGoal();
               }
               // if (e.key == "Escape") {
               //   this.trigger("lose"); // todo -- remove
@@ -22478,7 +22478,7 @@ void main() {
               const game = this.data.game;
               const a_text = this.get("ARMOR");
               const a_color = e.row == 1 ? "teal" : "white";
-              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1], game.player.kind.health));
+              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1], game.hero.kind.health));
               const m_text = this.get("MELEE");
               const m_color = e.row == 2 ? "teal" : "white";
               m_text.text(`MELEE:\n#{${m_color}}` + melee_text(used[2]));
@@ -22492,7 +22492,7 @@ void main() {
               if (item) {
                   console.log("list selection - " + item.name);
                   const game = this.data.game;
-                  const player = game.player;
+                  const player = game.hero;
                   player.equip(item);
                   game.addMessage(`You equip a ${item.name}`);
               }
@@ -22510,7 +22510,7 @@ void main() {
           armor.power = depth + game.rng.dice(1, 5);
           melee.power = depth + game.rng.dice(1, 5);
           ranged.power = depth + game.rng.dice(1, 5);
-          const player = game.player;
+          const player = game.hero;
           const equipped = Object.entries(player.slots).reduce((o, current) => {
               o[current[0]] = current[1];
               return o;

@@ -16,7 +16,7 @@ export class Map extends GWU.app.Widget {
 
   _draw(buf: GWU.buffer.Buffer) {
     const game = this.scene!.data as Game;
-    const player = game.player;
+    const player = game.hero;
 
     buf.fillRect(
       this.bounds.x,

@@ -25,7 +25,7 @@ export function make(opts: GameOpts | number = 0) {
 }
 
 export class Game {
-  player: Hero;
+  hero: Hero;
   app: GWU.app.App | null;
   scene: GWU.app.Scene | null;
   level: LEVEL.Level | null;
@@ -69,7 +69,7 @@ export class Game {
     this.hordes = HORDE.hordes;
     //
 
-    this.player = ACTOR.makeHero("HERO");
+    this.hero = ACTOR.makeHero("HERO");
 
     this.inputQueue = new GWU.app.Queue();
 
@@ -79,28 +79,28 @@ export class Game {
     // TODO - Get these as parameters...
     // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
     this.events.on("Enter", (e) => {
-      if (this.player.goalPath && this.player.goalPath.length) {
-        this.player.followPath = true;
-        this.player.act(this);
+      if (this.hero.goalPath && this.hero.goalPath.length) {
+        this.hero.followPath = true;
+        this.hero.act(this);
       } else {
         // pickup?
       }
       this.scene!.needsDraw = true;
     });
     this.events.on("dir", (e) => {
-      ACTIONS.moveDir(this, this.player, e.dir);
+      ACTIONS.moveDir(this, this.hero, e.dir);
       this.scene!.needsDraw = true;
     });
     this.events.on("a", (e) => {
-      ACTIONS.attack(this, this.player);
+      ACTIONS.attack(this, this.hero);
       this.scene!.needsDraw = true;
     });
     this.events.on("f", (e) => {
-      ACTIONS.fire(this, this.player);
+      ACTIONS.fire(this, this.hero);
       this.scene!.needsDraw = true;
     });
     this.events.on("g", (e) => {
-      ACTIONS.pickup(this, this.player);
+      ACTIONS.pickup(this, this.hero);
       this.scene!.needsDraw = true;
     });
     this.events.on("i", (e) => {
@@ -111,10 +111,10 @@ export class Game {
     });
     this.events.on("p", (e) => {
       console.log("POTION");
-      ACTIONS.potion(this, this.player);
+      ACTIONS.potion(this, this.hero);
     });
     this.events.on(" ", (e) => {
-      ACTIONS.idle(this, this.player);
+      ACTIONS.idle(this, this.hero);
       this.scene!.needsDraw = true;
     });
     this.events.on(">", (e) => {
@@ -131,7 +131,7 @@ export class Game {
       });
       // set player goal
       if (loc[0] >= 0) {
-        this.player.setGoal(loc[0], loc[1]);
+        this.hero.setGoal(loc[0], loc[1]);
         this.scene!.needsDraw = true;
       }
       this.scene!.needsDraw = true;
@@ -150,14 +150,14 @@ export class Game {
       });
       // set player goal
       if (loc[0] >= 0) {
-        this.player.setGoal(loc[0], loc[1]);
+        this.hero.setGoal(loc[0], loc[1]);
         this.scene!.needsDraw = true;
       }
       this.scene!.needsDraw = true;
     });
 
     this.events.on("z", (e) => {
-      ACTOR.spawn(this.level!, "zombie", this.player.x, this.player.y);
+      ACTOR.spawn(this.level!, "zombie", this.hero.x, this.hero.y);
       this.scene!.needsDraw = true;
     });
 
@@ -200,7 +200,7 @@ export class Game {
     // @ts-ignore
     globalThis.LEVEL = level;
     // @ts-ignore
-    globalThis.PLAYER = this.player;
+    globalThis.PLAYER = this.hero;
 
     level.start(this);
     this.tick();
@@ -235,7 +235,7 @@ export class Game {
       } else if (actor.health <= 0) {
         // skip
         filter = true;
-      } else if (actor === this.player) {
+      } else if (actor === this.hero) {
         actor.act(this);
         if (filter) {
           this.level!.actors = this.level!.actors.filter(
@@ -285,7 +285,7 @@ export class Game {
     if (!actor.hasActed()) {
       actor.endTurn(this, time);
       this.scheduler.push(actor, time);
-      if (actor === this.player) {
+      if (actor === this.hero) {
         this.needInput = false;
       }
     } else {

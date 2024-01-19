@@ -69,7 +69,7 @@ export class Level implements GWD.site.AnalysisSite {
 
   start(game: Game) {
     this.game = game;
-    this.player = game.player;
+    this.player = game.hero;
     this.done = false;
     this.started = false;
     // this.rng = game.rng;
@@ -84,9 +84,9 @@ export class Level implements GWD.site.AnalysisSite {
       this.hasTile(x, y, "FLOOR")
     );
 
-    game.player.clearGoal();
+    game.hero.clearGoal();
 
-    ACTOR.spawn(this, game.player, startLoc[0], startLoc[1]).then(() => {
+    ACTOR.spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
 
       this.data.wavesLeft = this.waves.length;
@@ -144,7 +144,7 @@ export class Level implements GWD.site.AnalysisSite {
 
     if (this.done || !this.started) return;
 
-    if (!this.actors.includes(game.player)) {
+    if (!this.actors.includes(game.hero)) {
       // lose
       return game.lose();
     }

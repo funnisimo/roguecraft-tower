@@ -21,10 +21,10 @@ export const level = {
       map._focus = loc;
 
       const game = this.data as Game;
-      const player = game.player;
+      const player = game.hero;
       if (loc[0] < 0) {
         // game.level.clearPath();
-        game.player.clearGoal();
+        game.hero.clearGoal();
       } else {
         // highlight path
         player.setGoal(loc[0], loc[1]);
@@ -51,9 +51,9 @@ export const level = {
     sidebar.on("choose", (loc) => {
       console.log("sidebar choose - player go to :", loc[0], loc[1]);
       const game = this.data as Game;
-      game.player.setGoal(loc[0], loc[1]);
-      game.player.followPath = true;
-      game.player.act(game);
+      game.hero.setGoal(loc[0], loc[1]);
+      game.hero.followPath = true;
+      game.hero.act(game);
     });
 
     messages.on("click", (e: GWU.app.Event) => {
@@ -77,7 +77,7 @@ export const level = {
 
       if (!level.started) return;
       // highlight path
-      const player = game.player;
+      const player = game.hero;
       player.setGoal(e.x, e.y);
       // const path = player.pathTo(e);
       // game.level.setPath(path);
@@ -86,16 +86,16 @@ export const level = {
       const game = this.data as Game;
       sidebar.clearFocus();
       // game.level.clearPath();
-      game.player.clearGoal();
+      game.hero.clearGoal();
     });
     map.on("click", (e: GWU.app.Event) => {
       console.log("map click - player go to:", e.x, e.y);
       const game = this.data as Game;
       const level = game.level!;
       if (!level.started) return;
-      game.player.setGoal(e.x, e.y);
-      game.player.followPath = true;
-      game.player.act(game);
+      game.hero.setGoal(e.x, e.y);
+      game.hero.followPath = true;
+      game.hero.act(game);
     });
   },
 
@@ -126,7 +126,7 @@ export const level = {
 
     inventory(this: GWU.app.Scene) {
       const game = this.data as Game;
-      const player = game.player;
+      const player = game.hero;
       const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
       sidebar.setFocus(player.x, player.y);
     },
@@ -153,7 +153,7 @@ export const level = {
 
       const game = this.data as Game;
       if (e.key !== "Enter") {
-        game.player.clearGoal();
+        game.hero.clearGoal();
       }
       // if (e.key == "Escape") {
       //   this.trigger("lose"); // todo -- remove

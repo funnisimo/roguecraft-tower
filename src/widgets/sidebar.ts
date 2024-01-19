@@ -155,14 +155,14 @@ export class Sidebar extends GWU.app.Widget {
     y += buf.drawText(x, y, "Level: " + game.level!.depth, "pink");
     y += 1;
 
-    let px = game.player.x;
-    let py = game.player.y;
+    let px = game.hero.x;
+    let py = game.hero.y;
     // if (this._focus[0] != -1) {
     //   px = this._focus[0];
     //   py = this._focus[1];
     // }
     this.entries = level.actors.filter(
-      (a) => a && a !== game.player && a.health > 0
+      (a) => a && a !== game.hero && a.health > 0
     );
     this.entries.sort(
       (a, b) =>
@@ -172,12 +172,12 @@ export class Sidebar extends GWU.app.Widget {
 
     let focused = this.entries.find((a) => GWU.xy.equals(a, this._focus));
 
-    let used = this.drawPlayer(buf, x, y, game.player);
-    game.player.data.sideY = y;
-    game.player.data.sideH = used;
-    if (GWU.xy.equals(game.player, this._focus)) {
+    let used = this.drawPlayer(buf, x, y, game.hero);
+    game.hero.data.sideY = y;
+    game.hero.data.sideH = used;
+    if (GWU.xy.equals(game.hero, this._focus)) {
       buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-      focused = game.player;
+      focused = game.hero;
     } else if (focused) {
       buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
     }

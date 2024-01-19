@@ -48,7 +48,7 @@ export const reward = {
       const a_text = this.get("ARMOR");
       const a_color = e.row == 1 ? "teal" : "white";
       a_text.text(
-        `ARMOR:\n#{${a_color}}` + armor_text(used[1], game.player.kind.health)
+        `ARMOR:\n#{${a_color}}` + armor_text(used[1], game.hero.kind.health)
       );
 
       const m_text = this.get("MELEE");
@@ -65,7 +65,7 @@ export const reward = {
       if (item) {
         console.log("list selection - " + item.name);
         const game = this.data.game as Game;
-        const player = game.player;
+        const player = game.hero;
         player.equip(item);
         game.addMessage(`You equip a ${item.name}`);
       }
@@ -88,7 +88,7 @@ export const reward = {
     melee.power = depth + game.rng.dice(1, 5);
     ranged.power = depth + game.rng.dice(1, 5);
 
-    const player = game.player;
+    const player = game.hero;
     const equipped = Object.entries(player.slots).reduce((o, current) => {
       o[current[0]] = current[1];
       return o;

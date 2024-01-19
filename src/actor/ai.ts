@@ -5,7 +5,7 @@ import { Game } from "../game/game";
 import { Actor } from "./actor";
 
 export function ai(game: Game, actor: Actor) {
-  const player = game.player;
+  const player = game.hero;
   const noticeDistance = actor.kind.notice || 10;
 
   const distToPlayer = GWU.xy.distanceBetween(
