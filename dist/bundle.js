@@ -15441,9 +15441,12 @@ void main() {
           return this.kind.charge;
       }
   }
-  function make$3(id, opts) {
+  function make$3(id, opts = 1) {
       let kind;
       let power = 1;
+      if (typeof opts === "number") {
+          opts = { power: opts };
+      }
       if (typeof id === "string") {
           const parts = id.split(/[\^\[]/).map((v) => v.trim());
           parts[0];
@@ -15990,7 +15993,7 @@ void main() {
           slots: new Map(),
       }, cfg);
       if (kind.name == "") {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/, " "));
       }
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -16056,7 +16059,6 @@ void main() {
           this.combo_index = 0;
           this.item_flags = 0;
           this.data = {};
-          this.power = cfg.power || 1;
           this.health_max = this.kind.health || 10; // TODO - scale with power?
           this.health = this.health_max;
           this.ammo = this.kind.ammo || 0; // TODO - scale with power?
@@ -16088,6 +16090,8 @@ void main() {
                   return;
               this.on(key, value);
           });
+          // Do this last so the scaling will work
+          this.power = cfg.power || 1;
       }
       // attributes
       get name() {
@@ -16211,8 +16215,11 @@ void main() {
           });
       }
   }
-  function make$2(id, opts) {
+  function make$2(id, opts = 1) {
       let kind;
+      if (typeof opts === "number") {
+          opts = { power: opts };
+      }
       if (typeof id === "string") {
           kind = getKind(id);
           if (!kind)
@@ -16226,8 +16233,8 @@ void main() {
           y: 1,
           z: 1, // items, actors, player, fx
           kind,
-          health: kind.health || 10,
-          damage: kind.damage || 2,
+          // health: kind.health || 10,
+          // damage: kind.damage || 2,
       }, opts);
       return new Actor(config);
   }
@@ -16257,7 +16264,7 @@ void main() {
       };
   }
 
-  class Player extends Actor {
+  class Hero extends Actor {
       constructor(cfg) {
           super(cfg);
           this.mapToMe = new index$6.DijkstraMap();
@@ -16469,11 +16476,11 @@ void main() {
           }
       }
   }
-  function makePlayer(id) {
+  function makeHero(id = "HERO") {
       const kind = getKind(id);
       if (!kind)
-          throw new Error("Failed to find actor kind - " + id);
-      return new Player({
+          throw new Error("Failed to find hero's actor kind - " + id);
+      return new Hero({
           x: 1,
           y: 1,
           z: 1, // items, actors, player, fx
@@ -16505,21 +16512,32 @@ void main() {
       constructor(amount, time) {
           this.amount = amount;
           this.time = time;
+          this.elapsed = 0;
+      }
+      get isActive() {
+          return this.amount > 0.0 && this.elapsed < this.time;
+      }
+      tick(time) {
+          let used = Math.floor((this.amount * this.elapsed) / this.time);
+          this.elapsed = Math.min(this.time, this.elapsed + time);
+          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
+          return new_used - used;
       }
   }
   class RegenStatus extends Status {
       constructor(amount, time) {
           super();
-          this.data = [new RegenData(amount / time, time)];
+          this.data = [new RegenData(amount, time)];
       }
       tick(actor, game, time) {
           let still_active = false;
           this.data.forEach((d) => {
-              if (d.amount > 0.0 && d.time > 0) {
+              if (d.isActive) {
                   still_active = true;
-                  const amount = Math.round(d.amount * Math.min(d.time, time));
-                  d.time -= time;
-                  heal(game, actor, { amount });
+                  const amount = d.tick(time);
+                  if (amount > 0) {
+                      heal(game, actor, { amount });
+                  }
               }
           });
           return still_active;
@@ -20656,11 +20674,11 @@ void main() {
       Flags[Flags["HORDE_DIES_ON_LEADER_DEATH"] = Fl(0)] = "HORDE_DIES_ON_LEADER_DEATH";
       Flags[Flags["HORDE_IS_SUMMONED"] = Fl(1)] = "HORDE_IS_SUMMONED";
       Flags[Flags["HORDE_SUMMONED_AT_DISTANCE"] = Fl(2)] = "HORDE_SUMMONED_AT_DISTANCE";
-      Flags[Flags["HORDE_NO_PERIODIC_SPAWN"] = Fl(4)] = "HORDE_NO_PERIODIC_SPAWN";
-      Flags[Flags["HORDE_ALLIED_WITH_PLAYER"] = Fl(5)] = "HORDE_ALLIED_WITH_PLAYER";
-      Flags[Flags["HORDE_NEVER_OOD"] = Fl(15)] = "HORDE_NEVER_OOD";
+      Flags[Flags["HORDE_NO_PERIODIC_SPAWN"] = Fl(3)] = "HORDE_NO_PERIODIC_SPAWN";
+      Flags[Flags["HORDE_ALLIED_WITH_PLAYER"] = Fl(4)] = "HORDE_ALLIED_WITH_PLAYER";
+      Flags[Flags["HORDE_NEVER_OOD"] = Fl(5)] = "HORDE_NEVER_OOD";
+      // HORDE_LEADER_CAPTIVE = Fl(6), // the leader is in chains and the followers are guards
       // Move all these to tags?
-      // HORDE_LEADER_CAPTIVE = Fl(3), // the leader is in chains and the followers are guards
       // HORDE_MACHINE_BOSS = Fl(6), // used in machines for a boss challenge
       // HORDE_MACHINE_WATER_MONSTER = Fl(7), // used in machines where the room floods with shallow water
       // HORDE_MACHINE_CAPTIVE = Fl(8), // powerful captive monsters without any captors
@@ -20715,12 +20733,19 @@ void main() {
           this.memberWarnMs = (_b = config.memberWarnMs) !== null && _b !== void 0 ? _b : this.warnMs;
           this.warnColor = (_c = config.warnColor) !== null && _c !== void 0 ? _c : "green";
       }
-      spawn(map, x = -1, y = -1, opts = {}) {
+      spawn(map, opts = {}) {
           var _a;
           opts.canSpawn = opts.canSpawn || TRUE;
           opts.rng = opts.rng || map.rng;
           opts.machine = (_a = opts.machine) !== null && _a !== void 0 ? _a : 0;
-          const leader = this._spawnLeader(map, x, y, opts);
+          opts.power = opts.power || 1;
+          if (opts.x === undefined) {
+              opts.x = -1;
+          }
+          if (opts.y === undefined) {
+              opts.y = -1;
+          }
+          const leader = this._spawnLeader(map, opts.x, opts.y, opts);
           if (!leader)
               return null;
           this._spawnMembers(leader, map, opts);
@@ -20731,7 +20756,10 @@ void main() {
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
-          const leader = make$2(leaderKind, { machineHome: opts.machine });
+          const leader = make$2(leaderKind, {
+              machineHome: opts.machine,
+              power: opts.power,
+          });
           if (!leader)
               throw new Error("Failed to make horde leader - " + this.leader);
           if (x >= 0 && y >= 0) {
@@ -20787,7 +20815,10 @@ void main() {
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
-          const member = make$2(kind, { machineHome: opts.machine });
+          const member = make$2(kind, {
+              machineHome: opts.machine,
+              power: opts.power,
+          });
           if (!member)
               throw new Error("Failed to make horde member - " + kindId);
           const [x, y] = this._pickMemberLoc(member, map, leader, opts) || [-1, -1];
@@ -21086,16 +21117,25 @@ void main() {
               this.started = true;
               this.data.wavesLeft = this.waves.length;
               this.waves.forEach((wave) => {
+                  console.log("WAVE - " + wave.delay);
                   game.wait(wave.delay || 0, () => {
                       let horde = null;
-                      if (wave.horde)
-                          horde = from$1(wave.horde);
-                      if (!wave.horde)
+                      if (wave.horde) {
+                          if (typeof wave.horde === "string") {
+                              horde = from$1(wave.horde);
+                          }
+                          else {
+                              wave.horde.depth = wave.horde.depth || this.depth;
+                              horde = random(wave.horde);
+                          }
+                      }
+                      else {
                           horde = random({ depth: this.depth });
+                      }
                       if (!horde) {
                           throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
                       }
-                      const leader = horde.spawn(this);
+                      const leader = horde.spawn(this, wave);
                       if (!leader)
                           throw new Error("Failed to place horde!");
                       leader.once("add", () => {
@@ -21363,7 +21403,14 @@ void main() {
           level.waves = cfg.waves;
       }
       else {
-          level.waves = [{ delay: 500 }];
+          level.waves = [];
+          for (let i = 0; i < level.depth; ++i) {
+              level.waves.push({
+                  delay: 500 + i * 2000,
+                  power: level.depth * 2 - 1 + level.rng.dice(1, 3),
+                  horde: { depth: level.depth },
+              });
+          }
       }
       // if (cfg.start) {
       //   level.startLoc = cfg.start;
@@ -21518,7 +21565,7 @@ void main() {
           this.items = kinds$1;
           this.hordes = hordes;
           //
-          this.player = makePlayer("player");
+          this.player = makeHero("HERO");
           this.inputQueue = new index.Queue();
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
@@ -21728,11 +21775,11 @@ void main() {
           this.messages.add(msg);
           this.scene.get("MESSAGES").draw(this.scene.buffer);
       }
-      makeActor(id, power = 1) {
-          return make$2(id, { power });
+      makeActor(id, opts = 1) {
+          return make$2(id, opts);
       }
-      makeItem(id, power = 1) {
-          return make$3(id, { power });
+      makeItem(id, opts = 1) {
+          return make$3(id, opts);
       }
   }
 
@@ -22061,7 +22108,7 @@ void main() {
           this.hidden = true;
       }
       showActor(actor) {
-          let text = actor.name + "\n";
+          let text = actor.name + " [" + actor.power + "]\n";
           text += "Health: " + actor.health + " / " + actor.health_max + "\n";
           text += "Moves : " + actor.moveSpeed + "\n";
           if (actor.damage > 0) {
@@ -22728,7 +22775,8 @@ void main() {
   }
 
   install$3({
-      id: "Player",
+      id: "HERO",
+      name: "Hero",
       ch: "@",
       fg: "white",
       bg: -1,

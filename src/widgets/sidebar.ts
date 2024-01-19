@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 
 import { Actor } from "../actor/actor";
-import { Player } from "../actor/player";
+import { Hero } from "../actor/hero";
 import { Game } from "../game/game";
 
 export class Sidebar extends GWU.app.Widget {
@@ -32,7 +32,7 @@ export class Sidebar extends GWU.app.Widget {
     }
   }
 
-  drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Player) {
+  drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
     buf.drawText(x, y, "Hero");
 
     this.drawHealth(buf, x, y + 1, 28, player);
@@ -115,7 +115,7 @@ export class Sidebar extends GWU.app.Widget {
     x: number,
     y: number,
     w: number,
-    player: Player
+    player: Hero
   ) {
     this.drawProgress(
       buf,

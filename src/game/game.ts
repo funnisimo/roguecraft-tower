@@ -3,7 +3,7 @@ import * as GWU from "gw-utils";
 import * as ACTOR from "../actor/index";
 import * as ACTIONS from "./actions";
 import * as LEVEL from "./level";
-import { Player } from "../actor/player";
+import { Hero } from "../actor/hero";
 // import { default as CONFIG } from "../config";
 import { CallbackFn } from "./obj";
 import { FX } from "../fx/flash";
@@ -25,7 +25,7 @@ export function make(opts: GameOpts | number = 0) {
 }
 
 export class Game {
-  player: Player;
+  player: Hero;
   app: GWU.app.App | null;
   scene: GWU.app.Scene | null;
   level: LEVEL.Level | null;
@@ -69,7 +69,7 @@ export class Game {
     this.hordes = HORDE.hordes;
     //
 
-    this.player = ACTOR.makePlayer("player");
+    this.player = ACTOR.makeHero("HERO");
 
     this.inputQueue = new GWU.app.Queue();
 
@@ -302,11 +302,17 @@ export class Game {
     this.scene!.get("MESSAGES")!.draw(this.scene!.buffer);
   }
 
-  makeActor(id: string, power: number = 1): ACTOR.Actor {
-    return ACTOR.make(id, { power });
+  makeActor(
+    id: string | ACTOR.ActorKind,
+    opts: Partial<ACTOR.ActorConfig> | number = 1
+  ): ACTOR.Actor {
+    return ACTOR.make(id, opts);
   }
 
-  makeItem(id: string, power: number = 1): ITEM.Item {
-    return ITEM.make(id, { power });
+  makeItem(
+    id: string | ITEM.ItemKind,
+    opts: Partial<ITEM.ItemConfig> | number = 1
+  ): ITEM.Item {
+    return ITEM.make(id, opts);
   }
 }

@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 import { Game } from "../game/game";
 import * as Item from "../item";
-import { Player } from "../actor";
+import { Hero } from "../actor";
 
 export const reward = {
   create(this: GWU.app.Scene) {

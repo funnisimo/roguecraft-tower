@@ -2,7 +2,8 @@ import * as ACTOR from "./actor";
 import * as ACTIONS from "./game/actions";
 
 ACTOR.install({
-  id: "Player",
+  id: "HERO",
+  name: "Hero",
   ch: "@",
   fg: "white",
   bg: -1,

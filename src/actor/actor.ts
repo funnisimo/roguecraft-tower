@@ -15,6 +15,7 @@ import { Status } from "./status";
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
   power?: number;
+  machineHome?: number;
 }
 
 export class AttackInfo {
@@ -50,7 +51,6 @@ export class Actor extends Obj {
     this.combo_index = 0;
     this.item_flags = 0;
     this.data = {};
-    this.power = cfg.power || 1;
     this.health_max = this.kind.health || 10; // TODO - scale with power?
     this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
@@ -85,6 +85,9 @@ export class Actor extends Obj {
       if (!value) return;
       this.on(key, value);
     });
+
+    // Do this last so the scaling will work
+    this.power = cfg.power || 1;
   }
 
   // attributes
@@ -230,8 +233,14 @@ export class Actor extends Obj {
   }
 }
 
-export function make(id: string | ActorKind, opts?: Record<string, any>) {
+export function make(
+  id: string | ActorKind,
+  opts: Partial<ActorConfig> | number = 1
+) {
   let kind: ActorKind | null;
+  if (typeof opts === "number") {
+    opts = { power: opts };
+  }
   if (typeof id === "string") {
     kind = getKind(id);
     if (!kind) throw new Error("Failed to find actor kind - " + id);
@@ -245,8 +254,8 @@ export function make(id: string | ActorKind, opts?: Record<string, any>) {
       y: 1,
       z: 1, // items, actors, player, fx
       kind,
-      health: kind.health || 10,
-      damage: kind.damage || 2,
+      // health: kind.health || 10,
+      // damage: kind.damage || 2,
     },
     opts
   );

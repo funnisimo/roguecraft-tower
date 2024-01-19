@@ -116,7 +116,7 @@ export function install(cfg: KindConfig) {
   ) as ActorKind;
 
   if (kind.name == "") {
-    kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
+    kind.name = GWU.text.title_case(kind.id.toLowerCase().replace(/\_/, " "));
   }
 
   if (typeof cfg.bump === "string") {

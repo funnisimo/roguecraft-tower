@@ -104,10 +104,16 @@ export class Item extends Obj {
   }
 }
 
-export function make(id: string | ItemKind, opts?: Partial<ItemConfig>) {
+export function make(
+  id: string | ItemKind,
+  opts: Partial<ItemConfig> | number = 1
+) {
   let kind: ItemKind | null;
   let power = 1;
 
+  if (typeof opts === "number") {
+    opts = { power: opts };
+  }
   if (typeof id === "string") {
     const parts = id.split(/[\^\[]/).map((v) => v.trim());
     const kind_id = parts[0];

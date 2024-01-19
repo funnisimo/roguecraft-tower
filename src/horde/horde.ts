@@ -9,13 +9,13 @@ export enum Flags {
   HORDE_DIES_ON_LEADER_DEATH = Fl(0), // if the leader dies, the horde will die instead of electing new leader
   HORDE_IS_SUMMONED = Fl(1), // minions summoned when any creature is the same species as the leader and casts summon
   HORDE_SUMMONED_AT_DISTANCE = Fl(2), // summons will appear across the level, and will naturally path back to the leader
-  HORDE_NO_PERIODIC_SPAWN = Fl(4), // can spawn only when the level begins -- not afterwards
-  HORDE_ALLIED_WITH_PLAYER = Fl(5),
-  HORDE_NEVER_OOD = Fl(15), // Horde cannot be generated out of depth
+  HORDE_NO_PERIODIC_SPAWN = Fl(3), // can spawn only when the level begins -- not afterwards
+  HORDE_ALLIED_WITH_PLAYER = Fl(4),
+  HORDE_NEVER_OOD = Fl(5), // Horde cannot be generated out of depth
+
+  // HORDE_LEADER_CAPTIVE = Fl(6), // the leader is in chains and the followers are guards
 
   // Move all these to tags?
-
-  // HORDE_LEADER_CAPTIVE = Fl(3), // the leader is in chains and the followers are guards
 
   // HORDE_MACHINE_BOSS = Fl(6), // used in machines for a boss challenge
   // HORDE_MACHINE_WATER_MONSTER = Fl(7), // used in machines where the room floods with shallow water
@@ -66,6 +66,10 @@ export interface SpawnOptions {
   canSpawn: GWU.xy.XYMatchFunc;
   rng: GWU.rng.Random;
   machine: number;
+  power: number;
+  depth: number;
+  x: number;
+  y: number;
 }
 
 export class Horde {
@@ -103,17 +107,19 @@ export class Horde {
     this.warnColor = config.warnColor ?? "green";
   }
 
-  spawn(
-    map: Level,
-    x = -1,
-    y = -1,
-    opts: Partial<SpawnOptions> = {}
-  ): ACTOR.Actor | null {
+  spawn(map: Level, opts: Partial<SpawnOptions> = {}): ACTOR.Actor | null {
     opts.canSpawn = opts.canSpawn || GWU.TRUE;
     opts.rng = opts.rng || map.rng;
     opts.machine = opts.machine ?? 0;
+    opts.power = opts.power || 1;
+    if (opts.x === undefined) {
+      opts.x = -1;
+    }
+    if (opts.y === undefined) {
+      opts.y = -1;
+    }
 
-    const leader = this._spawnLeader(map, x, y, opts as SpawnOptions);
+    const leader = this._spawnLeader(map, opts.x, opts.y, opts as SpawnOptions);
     if (!leader) return null;
 
     this._spawnMembers(leader, map, opts as SpawnOptions);
@@ -131,7 +137,10 @@ export class Horde {
       throw new Error("Failed to find leader kind = " + this.leader);
     }
 
-    const leader = ACTOR.make(leaderKind, { machineHome: opts.machine });
+    const leader = ACTOR.make(leaderKind, {
+      machineHome: opts.machine,
+      power: opts.power,
+    });
     if (!leader)
       throw new Error("Failed to make horde leader - " + this.leader);
 
@@ -220,7 +229,10 @@ export class Horde {
       throw new Error("Failed to find member kind = " + kindId);
     }
 
-    const member = ACTOR.make(kind, { machineHome: opts.machine });
+    const member = ACTOR.make(kind, {
+      machineHome: opts.machine,
+      power: opts.power,
+    });
     if (!member) throw new Error("Failed to make horde member - " + kindId);
 
     const [x, y] = this._pickMemberLoc(member, map, leader, opts) || [-1, -1];

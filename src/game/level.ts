@@ -12,7 +12,8 @@ import { Game } from "./game";
 
 export interface WaveInfo {
   delay?: number;
-  horde?: string;
+  horde?: string | Partial<HORDE.MatchOptions>;
+  power?: number;
 }
 
 export class Level implements GWD.site.AnalysisSite {
@@ -34,7 +35,7 @@ export class Level implements GWD.site.AnalysisSite {
   choke: GWU.grid.NumGrid;
 
   game: Game | null = null;
-  player: ACTOR.Player | null = null;
+  player: ACTOR.Hero | null = null;
 
   seed: number;
   // rng: GWU.rng.Random;
@@ -90,17 +91,26 @@ export class Level implements GWD.site.AnalysisSite {
 
       this.data.wavesLeft = this.waves.length;
       this.waves.forEach((wave) => {
+        console.log("WAVE - " + wave.delay);
         game.wait(wave.delay || 0, () => {
           let horde: HORDE.Horde | null = null;
-          if (wave.horde) horde = HORDE.from(wave.horde);
-          if (!wave.horde) horde = HORDE.random({ depth: this.depth });
+          if (wave.horde) {
+            if (typeof wave.horde === "string") {
+              horde = HORDE.from(wave.horde);
+            } else {
+              wave.horde.depth = wave.horde.depth || this.depth;
+              horde = HORDE.random(wave.horde);
+            }
+          } else {
+            horde = HORDE.random({ depth: this.depth });
+          }
 
           if (!horde) {
             throw new Error(
               "Failed to get horde: " + JSON.stringify(wave.horde)
             );
           }
-          const leader = horde.spawn(this);
+          const leader = horde.spawn(this, wave);
           if (!leader) throw new Error("Failed to place horde!");
           leader.once("add", () => {
             --this.data.wavesLeft;
@@ -445,7 +455,14 @@ export function from(cfg: LevelConfig): Level {
   if (cfg.waves) {
     level.waves = cfg.waves;
   } else {
-    level.waves = [{ delay: 500 }];
+    level.waves = [];
+    for (let i = 0; i < level.depth; ++i) {
+      level.waves.push({
+        delay: 500 + i * 2000,
+        power: level.depth * 2 - 1 + level.rng.dice(1, 3),
+        horde: { depth: level.depth },
+      });
+    }
   }
 
   // if (cfg.start) {

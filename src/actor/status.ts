@@ -36,10 +36,23 @@ export class Status {
 class RegenData {
   amount: number;
   time: number;
+  elapsed: number;
 
   constructor(amount: number, time: number) {
     this.amount = amount;
     this.time = time;
+    this.elapsed = 0;
+  }
+
+  get isActive(): boolean {
+    return this.amount > 0.0 && this.elapsed < this.time;
+  }
+
+  tick(time: number): number {
+    let used = Math.floor((this.amount * this.elapsed) / this.time);
+    this.elapsed = Math.min(this.time, this.elapsed + time);
+    let new_used = Math.floor((this.amount * this.elapsed) / this.time);
+    return new_used - used;
   }
 }
 
@@ -48,17 +61,18 @@ export class RegenStatus extends Status {
 
   constructor(amount: number, time: number) {
     super();
-    this.data = [new RegenData(amount / time, time)];
+    this.data = [new RegenData(amount, time)];
   }
 
   tick(actor: Actor, game: Game, time: number): boolean {
     let still_active = false;
     this.data.forEach((d) => {
-      if (d.amount > 0.0 && d.time > 0) {
+      if (d.isActive) {
         still_active = true;
-        const amount = Math.round(d.amount * Math.min(d.time, time));
-        d.time -= time;
-        Effect.heal(game, actor, { amount });
+        const amount = d.tick(time);
+        if (amount > 0) {
+          Effect.heal(game, actor, { amount });
+        }
       }
     });
 

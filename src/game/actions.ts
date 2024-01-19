@@ -4,7 +4,7 @@ import * as FX from "../fx/index";
 import { Game } from "./game";
 import { Actor } from "../actor/actor";
 import * as EFFECT from "../effect";
-import { Player } from "../actor/player";
+import { Hero } from "../actor/hero";
 
 export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
 const actionsByName: Record<string, ActionFn> = {};
@@ -438,7 +438,7 @@ export function pickup(game: Game, actor: Actor): boolean {
   return idle(game, actor);
 }
 
-export function potion(game: Game, player: Player): boolean {
+export function potion(game: Game, player: Hero): boolean {
   if (!player.canUsePotion) {
     game.addMessage("Not ready.");
     // TODO - spend time? idle?

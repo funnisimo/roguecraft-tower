@@ -7,7 +7,7 @@ import { Level } from "../game/level";
 import { Game } from "../game/game";
 import * as ITEM from "../item";
 
-export class Player extends ACTOR.Actor {
+export class Hero extends ACTOR.Actor {
   mapToMe: GWU.path.DijkstraMap;
   fov: GWU.grid.NumGrid | null;
 
@@ -258,11 +258,11 @@ export class Player extends ACTOR.Actor {
   }
 }
 
-export function makePlayer(id: string) {
+export function makeHero(id: string = "HERO") {
   const kind = KIND.getKind(id);
-  if (!kind) throw new Error("Failed to find actor kind - " + id);
+  if (!kind) throw new Error("Failed to find hero's actor kind - " + id);
 
-  return new Player({
+  return new Hero({
     x: 1,
     y: 1,
     z: 1, // items, actors, player, fx

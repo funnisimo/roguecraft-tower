@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 
 import { Actor } from "../actor/actor";
-import { Player } from "../actor/player";
+import { Hero } from "../actor/hero";
 import { ARMOR_FLAGS } from "../item";
 
 export class Details extends GWU.widget.Dialog {
@@ -23,7 +23,7 @@ export class Details extends GWU.widget.Dialog {
   }
 
   showActor(actor: Actor) {
-    let text = actor.name + "\n";
+    let text = actor.name + " [" + actor.power + "]\n";
     text += "Health: " + actor.health + " / " + actor.health_max + "\n";
     text += "Moves : " + actor.moveSpeed + "\n";
 
@@ -53,7 +53,7 @@ export class Details extends GWU.widget.Dialog {
     this.bounds.width = this._text.bounds.width + 2;
   }
 
-  showPlayer(player: Player) {
+  showPlayer(player: Hero) {
     let text = player.name + "\n";
     const armor = player.slots.armor;
     if (armor) {
