@@ -15409,9 +15409,9 @@ void main() {
           val = val || 1;
           this._power = val;
           // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = Math.round(this.kind.damage * Math.pow(1.1, val));
-          this._comboDamage = Math.round(this.kind.combo_damage * Math.pow(1.1, val));
-          this._defense = Math.round(this.kind.defense * Math.pow(1.1, val));
+          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
+          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
       }
       get damage() {
           return this._damage;
@@ -15849,9 +15849,9 @@ void main() {
               target = targets[0];
           }
       }
-      const actorIsPlayer = actor === game.hero;
-      const otherIsPlayer = target === game.hero;
-      if (!actorIsPlayer && !otherIsPlayer) {
+      const actorIsHero = actor === game.hero;
+      const otherIsHero = target === game.hero;
+      if (!actorIsHero && !otherIsHero) {
           return idle(game, actor); // no attacking
       }
       // we have an actor and a target
@@ -15872,10 +15872,10 @@ void main() {
       return true;
   }
   installBump("fire", fire);
-  function fireAtPlayer(game, actor) {
-      const player = game.hero;
+  function fireAtHero(game, actor) {
+      const hero = game.hero;
       // if player can't see actor then actor can't see player!
-      if (!player.isInFov(actor.x, actor.y))
+      if (!hero.isInFov(actor.x, actor.y))
           return false;
       if (!actor.ammo)
           return false;
@@ -15887,8 +15887,8 @@ void main() {
           }
           else {
               flash(game, xy.x, xy.y, "red", 150);
-              game.messages.addCombat(`${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`);
-              damage(game, player, { amount: actor.rangedDamage });
+              game.messages.addCombat(`${actor.name} shoots ${hero.name}#{red [${actor.rangedDamage}]}`);
+              damage(game, hero, { amount: actor.rangedDamage });
           }
       });
       game.endTurn(actor, actor.rangedAttackSpeed);
@@ -15906,21 +15906,22 @@ void main() {
       }
       return idle(game, actor);
   }
-  function potion(game, player) {
-      if (!player.canUsePotion) {
+  function potion(game, hero) {
+      if (!hero.canUsePotion) {
           game.addMessage("Not ready.");
           // TODO - spend time? idle?
           return false;
       }
-      if (player.health >= player.health_max) {
+      if (hero.health >= hero.health_max) {
           game.addMessage("You do not need to drink a potion.");
           // TODO - spend time? idle?
           return false;
       }
-      const heal = Math.floor(player.health_max * 0.75);
-      player.health = Math.min(player.health + heal, player.health_max);
+      const heal = Math.floor(hero.health_max * 0.75);
+      hero.health = Math.min(hero.health + heal, hero.health_max);
+      hero.potion = 0; // Needs to recharge
       game.addMessage("You feel much better.");
-      game.endTurn(player, player.moveSpeed);
+      game.endTurn(hero, hero.moveSpeed);
       return true;
   }
 
@@ -15945,7 +15946,7 @@ void main() {
       }
       // shoot at player?
       if (actor.kind.rangedDamage && distToPlayer <= actor.kind.range) {
-          if (fireAtPlayer(game, actor))
+          if (fireAtHero(game, actor))
               return;
       }
       if (distToPlayer < 2) {
@@ -16059,7 +16060,7 @@ void main() {
           this.combo_index = 0;
           this.item_flags = 0;
           this.data = {};
-          this.health_max = this.kind.health || 10; // TODO - scale with power?
+          this.health_max = Math.round((this.kind.health || 10) * (1 + ((cfg.power || 1) - 1) / 2)); // TODO - scale with power?
           this.health = this.health_max;
           this.ammo = this.kind.ammo || 0; // TODO - scale with power?
           this.statuses = [];
@@ -16098,17 +16099,18 @@ void main() {
           return this.kind.name;
       }
       get damage() {
-          // TODO - scale with power
-          return this.kind.damage;
+          // TODO - combo damage
+          return Math.round(this.kind.damage * (1 + (this.power - 1) / 2));
       }
       get attackSpeed() {
+          // TODO - combo speed
           return this.kind.attackSpeed;
       }
       get range() {
           return this.kind.range;
       }
       get rangedDamage() {
-          return this.kind.rangedDamage;
+          return Math.round(this.kind.rangedDamage * (1 + (this.power - 1) / 2));
       }
       get rangedAttackSpeed() {
           return this.kind.rangedAttackSpeed;
@@ -21611,7 +21613,6 @@ void main() {
           this.events.on(">", (e) => {
               if (!this.level)
                   return;
-              console.log(">>>>>>>>");
               // find stairs
               let loc = [-1, -1];
               this.level.tiles.forEach((t, x, y) => {
@@ -21631,7 +21632,6 @@ void main() {
           this.events.on("<", (e) => {
               if (!this.level)
                   return;
-              console.log("<<<<<<<<<");
               // find stairs
               let loc = [-1, -1];
               this.level.tiles.forEach((t, x, y) => {
@@ -22026,10 +22026,9 @@ void main() {
           this._focus.slice();
           this.clearFocus();
           const game = this.scene.data;
-          const player = game.player;
-          if (player.data.sideY <= e.y &&
-              player.data.sideY + player.data.sideH >= e.y) {
-              this.setFocus(player.x, player.y);
+          const hero = game.hero;
+          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
+              this.setFocus(hero.x, hero.y);
           }
           else {
               this.entries.forEach((a) => {
@@ -23416,7 +23415,7 @@ void main() {
       name: "Scale Mail",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
       tags: "armor",
       effects: {
@@ -23429,7 +23428,7 @@ void main() {
       name: "Mercenary Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
       tags: "armor",
       effects: {
@@ -23442,7 +23441,7 @@ void main() {
       name: "Guards Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
       tags: "armor",
       effects: {
@@ -23455,7 +23454,7 @@ void main() {
       name: "Hunters Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
       tags: "armor",
       effects: {
@@ -23468,7 +23467,7 @@ void main() {
       name: "Archers Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
       tags: "armor",
       effects: {
@@ -23482,7 +23481,7 @@ void main() {
       name: "Reinforced Mail",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
       effects: {
@@ -23496,7 +23495,7 @@ void main() {
       name: "Stalwart Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
       tags: "armor",
       effects: {
@@ -23511,7 +23510,7 @@ void main() {
       name: "Plate Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
       tags: "armor",
       effects: {
@@ -23525,7 +23524,7 @@ void main() {
       name: "Full Metal Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
       tags: "armor",
       effects: {
@@ -23540,7 +23539,7 @@ void main() {
       name: "Champions Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
       tags: "armor",
       effects: {
@@ -23554,7 +23553,7 @@ void main() {
       name: "Heros Armor",
       ch: "]",
       fg: "yellow",
-      defense: 10,
+      defense: 50,
       armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
       tags: "armor",
       effects: {

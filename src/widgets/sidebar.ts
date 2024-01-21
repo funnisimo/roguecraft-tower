@@ -209,13 +209,10 @@ export class Sidebar extends GWU.app.Widget {
 
     const wasFocus = this._focus.slice() as GWU.xy.Loc;
     this.clearFocus();
-    const game = this.scene!.data;
-    const player = game.player;
-    if (
-      player.data.sideY <= e.y &&
-      player.data.sideY + player.data.sideH >= e.y
-    ) {
-      this.setFocus(player.x, player.y);
+    const game = this.scene!.data as Game;
+    const hero = game.hero;
+    if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
+      this.setFocus(hero.x, hero.y);
     } else {
       this.entries.forEach((a) => {
         if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {

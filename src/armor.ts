@@ -5,7 +5,7 @@ ITEM.install({
   name: "Scale Mail",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
   tags: "armor",
   effects: {
@@ -19,7 +19,7 @@ ITEM.install({
   name: "Mercenary Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
   tags: "armor",
   effects: {
@@ -33,7 +33,7 @@ ITEM.install({
   name: "Guards Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
   tags: "armor",
   effects: {
@@ -47,7 +47,7 @@ ITEM.install({
   name: "Hunters Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
   tags: "armor",
   effects: {
@@ -61,7 +61,7 @@ ITEM.install({
   name: "Archers Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
   tags: "armor",
   effects: {
@@ -76,7 +76,7 @@ ITEM.install({
   name: "Reinforced Mail",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
   tags: "armor",
   effects: {
@@ -91,7 +91,7 @@ ITEM.install({
   name: "Stalwart Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags:
     "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
   tags: "armor",
@@ -108,7 +108,7 @@ ITEM.install({
   name: "Plate Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
   tags: "armor",
   effects: {
@@ -123,7 +123,7 @@ ITEM.install({
   name: "Full Metal Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags:
     "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
   tags: "armor",
@@ -140,7 +140,7 @@ ITEM.install({
   name: "Champions Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
   tags: "armor",
   effects: {
@@ -155,7 +155,7 @@ ITEM.install({
   name: "Heros Armor",
   ch: "]",
   fg: "yellow",
-  defense: 10,
+  defense: 50,
   armor_flags:
     "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
   tags: "armor",

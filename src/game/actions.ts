@@ -350,10 +350,10 @@ export function fire(
     }
   }
 
-  const actorIsPlayer = actor === game.hero;
-  const otherIsPlayer = target === game.hero;
+  const actorIsHero = actor === game.hero;
+  const otherIsHero = target === game.hero;
 
-  if (!actorIsPlayer && !otherIsPlayer) {
+  if (!actorIsHero && !otherIsHero) {
     return idle(game, actor); // no attacking
   }
 
@@ -384,11 +384,11 @@ export function fire(
 
 installBump("fire", fire);
 
-export function fireAtPlayer(game: Game, actor: Actor): boolean {
-  const player = game.hero;
+export function fireAtHero(game: Game, actor: Actor): boolean {
+  const hero = game.hero;
 
   // if player can't see actor then actor can't see player!
-  if (!player.isInFov(actor.x, actor.y)) return false;
+  if (!hero.isInFov(actor.x, actor.y)) return false;
   if (!actor.ammo) return false;
   actor.ammo -= 1;
 
@@ -400,9 +400,9 @@ export function fireAtPlayer(game: Game, actor: Actor): boolean {
       } else {
         FX.flash(game, xy.x, xy.y, "red", 150);
         game.messages.addCombat(
-          `${actor.name} shoots ${player.name}#{red [${actor.rangedDamage}]}`
+          `${actor.name} shoots ${hero.name}#{red [${actor.rangedDamage}]}`
         );
-        EFFECT.damage(game, player, { amount: actor.rangedDamage });
+        EFFECT.damage(game, hero, { amount: actor.rangedDamage });
       }
     }
   );
@@ -434,21 +434,22 @@ export function pickup(game: Game, actor: Actor): boolean {
   return idle(game, actor);
 }
 
-export function potion(game: Game, player: Hero): boolean {
-  if (!player.canUsePotion) {
+export function potion(game: Game, hero: Hero): boolean {
+  if (!hero.canUsePotion) {
     game.addMessage("Not ready.");
     // TODO - spend time? idle?
     return false;
   }
-  if (player.health >= player.health_max) {
+  if (hero.health >= hero.health_max) {
     game.addMessage("You do not need to drink a potion.");
     // TODO - spend time? idle?
     return false;
   }
 
-  const heal = Math.floor(player.health_max * 0.75);
-  player.health = Math.min(player.health + heal, player.health_max);
+  const heal = Math.floor(hero.health_max * 0.75);
+  hero.health = Math.min(hero.health + heal, hero.health_max);
+  hero.potion = 0; // Needs to recharge
   game.addMessage("You feel much better.");
-  game.endTurn(player, player.moveSpeed);
+  game.endTurn(hero, hero.moveSpeed);
   return true;
 }

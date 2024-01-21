@@ -51,7 +51,9 @@ export class Actor extends Obj {
     this.combo_index = 0;
     this.item_flags = 0;
     this.data = {};
-    this.health_max = this.kind.health || 10; // TODO - scale with power?
+    this.health_max = Math.round(
+      (this.kind.health || 10) * (1 + ((cfg.power || 1) - 1) / 2)
+    ); // TODO - scale with power?
     this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
     this.statuses = [];
@@ -96,11 +98,12 @@ export class Actor extends Obj {
   }
 
   get damage(): number {
-    // TODO - scale with power
-    return this.kind.damage;
+    // TODO - combo damage
+    return Math.round(this.kind.damage * (1 + (this.power - 1) / 2));
   }
 
   get attackSpeed(): number {
+    // TODO - combo speed
     return this.kind.attackSpeed;
   }
 
@@ -109,7 +112,7 @@ export class Actor extends Obj {
   }
 
   get rangedDamage(): number {
-    return this.kind.rangedDamage;
+    return Math.round(this.kind.rangedDamage * (1 + (this.power - 1) / 2));
   }
 
   get rangedAttackSpeed(): number {
