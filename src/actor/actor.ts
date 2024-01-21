@@ -9,7 +9,7 @@ import * as AI from "./ai";
 import * as ACTIONS from "../game/actions";
 
 import { ActorKind, getKind } from "./kind";
-import { Item, placeRandom } from "../item";
+import { Item, placeRandom, ARMOR_FLAGS } from "../item";
 import { Status } from "./status";
 
 export interface ActorConfig extends ObjConfig {
@@ -37,7 +37,7 @@ export class Actor extends Obj {
   health_max: number;
   ammo: number;
   power: number;
-  item_flags: number;
+  armor_flags: number;
   statuses: (Status | null)[];
   combo_index: number;
 
@@ -49,7 +49,7 @@ export class Actor extends Obj {
     if (!this.kind) throw new Error("Must have kind.");
 
     this.combo_index = 0;
-    this.item_flags = 0;
+    this.armor_flags = 0;
     this.data = {};
     this.health_max = Math.round(
       (this.kind.health || 10) * (1 + ((cfg.power || 1) - 1) / 2)
@@ -135,8 +135,8 @@ export class Actor extends Obj {
     return attack;
   }
 
-  hasItemFlag(flag: number): boolean {
-    return (this.item_flags & flag) > 0;
+  hasArmorFlag(flag: number): boolean {
+    return (this.armor_flags & flag) > 0;
   }
 
   // TODO - Should this be a method instead of a property?

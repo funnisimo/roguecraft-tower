@@ -5,49 +5,53 @@ import { Game } from "../game/game";
 import { Actor } from "./actor";
 
 export function ai(game: Game, actor: Actor) {
-  const player = game.hero;
+  const hero = game.hero;
   const noticeDistance = actor.kind.notice || 10;
 
-  const distToPlayer = GWU.xy.distanceBetween(
-    player.x,
-    player.y,
-    actor.x,
-    actor.y
-  );
+  const distToHero = GWU.xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
+  const canSeeHero = hero.isInFov(actor);
 
   console.log(
-    `Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToPlayer}`
+    `Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`
   );
 
-  if (distToPlayer > noticeDistance) {
-    // wander somewhere?  [wanderChance]
+  // TODO - Noticed prior to hero going out of range/view should skip this
+  // Do this with a flag/mode/state/time value?
+  if (distToHero > noticeDistance || !canSeeHero) {
+    // wander to goal?  [wanderChance]
     // step randomly [idleMoveChance]
+    // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
+    // random chance? [randomMoveChance]
     if (game.rng.chance(20)) {
       if (ACTIONS.moveRandom(game, actor, true)) return;
     }
     return ACTIONS.idle(game, actor);
-  } else if (distToPlayer <= actor.kind.tooClose) {
+  }
+
+  if (distToHero <= actor.kind.tooClose) {
     // should there be a random chance on this?
-    if (ACTIONS.moveAwayFromPlayer(game, actor)) return;
+    if (ACTIONS.moveAwayFromHero(game, actor)) return;
   }
 
   // shoot at player?
-  if (actor.kind.rangedDamage && distToPlayer <= actor.kind.range) {
+  if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
     if (ACTIONS.fireAtHero(game, actor)) return;
   }
 
-  if (distToPlayer < 2) {
+  if (distToHero < 2) {
     // can attack diagonal
     if (actor.canMeleeAttack) {
-      if (ACTIONS.attack(game, actor, player)) return;
+      if (ACTIONS.attack(game, actor, hero)) return;
     }
-    if (distToPlayer == 1) {
+    if (distToHero == 1) {
+      // Hmmm...
       return ACTIONS.idle(game, actor);
     }
   }
 
+  // If we don't have a min distance from hero then move closer (to get to melee range)
   if (!actor.kind.tooClose) {
-    if (ACTIONS.moveTowardPlayer(game, actor)) return;
+    if (ACTIONS.moveTowardHero(game, actor)) return;
   }
   return ACTIONS.idle(game, actor);
 }

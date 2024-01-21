@@ -103,7 +103,7 @@ export function moveDir(
   return true;
 }
 
-export function moveTowardPlayer(
+export function moveTowardHero(
   game: Game,
   actor: Actor,
   quiet = false
@@ -126,7 +126,7 @@ export function moveTowardPlayer(
   return false;
 }
 
-export function moveAwayFromPlayer(
+export function moveAwayFromHero(
   game: Game,
   actor: Actor,
   quiet = false

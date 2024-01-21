@@ -130,12 +130,12 @@ export class Hero extends ACTOR.Actor {
       throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
     }
     this.slots[item.slot] = item;
-    this.item_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+    this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
     const health_pct = this.health / this.health_max;
     let new_health_max = this.kind.health;
     Object.entries(this.slots).forEach(([s, i]) => {
       if (i) {
-        this.item_flags |= i.kind.armor_flags;
+        this.armor_flags |= i.kind.armor_flags;
         new_health_max += i.defense;
       }
     });
@@ -146,12 +146,12 @@ export class Hero extends ACTOR.Actor {
 
   unequipSlot(slot: string) {
     this.slots[slot] = null;
-    this.item_flags = 0;
+    this.armor_flags = 0;
     const health_pct = this.health / this.health_max;
     let new_health_max = this.kind.health;
     Object.entries(this.slots).forEach(([s, i]) => {
       if (i) {
-        this.item_flags |= i.kind.armor_flags;
+        this.armor_flags |= i.kind.armor_flags;
         new_health_max += i.defense;
       }
     });

@@ -14,7 +14,7 @@ export function damage(
   damage: DamageConfig
 ): boolean {
   // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
-  const effects = target.item_flags;
+  const effects = target.armor_flags;
 
   damage.amount = damage.amount || 0;
 

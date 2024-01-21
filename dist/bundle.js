@@ -15539,7 +15539,7 @@ void main() {
   // @returns boolean - indicates whether or not the target dies
   function damage(game, target, damage) {
       // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
-      const effects = target.item_flags;
+      const effects = target.armor_flags;
       damage.amount = damage.amount || 0;
       if (effects & MELEE_FLAGS.NEGATE_HITS_30) {
           if (game.rng.chance(30)) {
@@ -15650,7 +15650,7 @@ void main() {
       game.endTurn(actor, speed);
       return true;
   }
-  function moveTowardPlayer(game, actor, quiet = false) {
+  function moveTowardHero(game, actor, quiet = false) {
       const map = game.level;
       const player = game.hero;
       const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
@@ -15667,7 +15667,7 @@ void main() {
       }
       return false;
   }
-  function moveAwayFromPlayer(game, actor, quiet = false) {
+  function moveAwayFromHero(game, actor, quiet = false) {
       const map = game.level;
       const player = game.hero;
       // compute safety map
@@ -15926,41 +15926,48 @@ void main() {
   }
 
   function ai(game, actor) {
-      const player = game.hero;
+      const hero = game.hero;
       const noticeDistance = actor.kind.notice || 10;
-      const distToPlayer = xy.distanceBetween(player.x, player.y, actor.x, actor.y);
-      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToPlayer}`);
-      if (distToPlayer > noticeDistance) {
-          // wander somewhere?  [wanderChance]
+      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
+      const canSeeHero = hero.isInFov(actor);
+      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
+      // TODO - Noticed prior to hero going out of range/view should skip this
+      // Do this with a flag/mode/state/time value?
+      if (distToHero > noticeDistance || !canSeeHero) {
+          // wander to goal?  [wanderChance]
           // step randomly [idleMoveChance]
+          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
+          // random chance? [randomMoveChance]
           if (game.rng.chance(20)) {
               if (moveRandom(game, actor, true))
                   return;
           }
           return idle(game, actor);
       }
-      else if (distToPlayer <= actor.kind.tooClose) {
+      if (distToHero <= actor.kind.tooClose) {
           // should there be a random chance on this?
-          if (moveAwayFromPlayer(game, actor))
+          if (moveAwayFromHero(game, actor))
               return;
       }
       // shoot at player?
-      if (actor.kind.rangedDamage && distToPlayer <= actor.kind.range) {
+      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
           if (fireAtHero(game, actor))
               return;
       }
-      if (distToPlayer < 2) {
+      if (distToHero < 2) {
           // can attack diagonal
           if (actor.canMeleeAttack) {
-              if (attack(game, actor, player))
+              if (attack(game, actor, hero))
                   return;
           }
-          if (distToPlayer == 1) {
+          if (distToHero == 1) {
+              // Hmmm...
               return idle(game, actor);
           }
       }
+      // If we don't have a min distance from hero then move closer (to get to melee range)
       if (!actor.kind.tooClose) {
-          if (moveTowardPlayer(game, actor))
+          if (moveTowardHero(game, actor))
               return;
       }
       return idle(game, actor);
@@ -16058,7 +16065,7 @@ void main() {
           if (!this.kind)
               throw new Error("Must have kind.");
           this.combo_index = 0;
-          this.item_flags = 0;
+          this.armor_flags = 0;
           this.data = {};
           this.health_max = Math.round((this.kind.health || 10) * (1 + ((cfg.power || 1) - 1) / 2)); // TODO - scale with power?
           this.health = this.health_max;
@@ -16128,8 +16135,8 @@ void main() {
           this.combo_index = this.combo_index % this.comboLen;
           return attack;
       }
-      hasItemFlag(flag) {
-          return (this.item_flags & flag) > 0;
+      hasArmorFlag(flag) {
+          return (this.armor_flags & flag) > 0;
       }
       // TODO - Should this be a method instead of a property?
       get canMeleeAttack() {
@@ -16369,12 +16376,12 @@ void main() {
               throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
           }
           this.slots[item.slot] = item;
-          this.item_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
           const health_pct = this.health / this.health_max;
           let new_health_max = this.kind.health;
           Object.entries(this.slots).forEach(([s, i]) => {
               if (i) {
-                  this.item_flags |= i.kind.armor_flags;
+                  this.armor_flags |= i.kind.armor_flags;
                   new_health_max += i.defense;
               }
           });
@@ -16384,12 +16391,12 @@ void main() {
       }
       unequipSlot(slot) {
           this.slots[slot] = null;
-          this.item_flags = 0;
+          this.armor_flags = 0;
           const health_pct = this.health / this.health_max;
           let new_health_max = this.kind.health;
           Object.entries(this.slots).forEach(([s, i]) => {
               if (i) {
-                  this.item_flags |= i.kind.armor_flags;
+                  this.armor_flags |= i.kind.armor_flags;
                   new_health_max += i.defense;
               }
           });
@@ -22995,6 +23002,9 @@ void main() {
               game.level.removeItem(this);
               // TODO - adjust for arrows.power?
               actor.ammo += 10;
+              if (actor.hasArmorFlag(ARMOR_FLAGS.ARROWS_10)) {
+                  actor.ammo += 10;
+              }
               return true;
           },
       },
