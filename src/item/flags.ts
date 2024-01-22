@@ -7,7 +7,8 @@ export enum ARMOR_FLAGS {
   ARROWS_10 = fl(1),
   LONGER_ROLL_100 = fl(2),
   MELEE_DAMAGE_30 = fl(3),
-  MOBS_TARGET_YOU_MORE = fl(4), // add ?? MOBS_AVOID_YOU_MORE ??
+  MOBS_TARGET_YOU_MORE = fl(4), // increases notice distance for all mobs?
+  // add ?? MOBS_AVOID_YOU_MORE ??
   MOVESPEED_AURA_15 = fl(5),
   NEGATE_HITS_30 = fl(6),
   POTION_COOLDOWN_40 = fl(7),
@@ -15,7 +16,7 @@ export enum ARMOR_FLAGS {
   POTION_HEALS_NEARBY_ALLIES = fl(9),
   RANGED_DAMAGE_30 = fl(10),
   REDUCE_DAMAGE_35 = fl(11),
-  WEAPON_DAMAGE_AURA_20 = fl(12),
+  WEAPON_DAMAGE_AURA_20 = fl(12), // both melee and ranged
 }
 
 // @ts-ignore

@@ -51,7 +51,11 @@ export function damage(
   if (target.health <= 0) {
     // do all of these move to event handlers?
     game.messages.addCombat(`${target.name} dies`);
-    game.level!.setTile(target.x, target.y, "CORPSE"); // TODO - This should be above the floor (FIXTURE)
+    // TODO - This should be above the floor (FIXTURE)
+    // that way when it decays the floor returns as normal
+    // and corpses can be custom to the creature that died
+    // no matter what the floor is
+    game.level!.setTile(target.x, target.y, "CORPSE");
     target.trigger("death");
     game.level!.removeActor(target);
     return true;
