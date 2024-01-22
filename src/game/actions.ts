@@ -245,12 +245,10 @@ export function attack(
   }
 
   // we have an actor and a target
-  // TODO - move to EFFECT.damage (different color for no damage or negated or ...)
-  FX.flash(game, target.x, target.y, "red", 150);
-  game.messages.addCombat(
-    `${actor.name} attacks ${target.name}#{red [${attackInfo.damage}]}`
-  );
-  EFFECT.damage(game, target, { amount: attackInfo.damage });
+  EFFECT.damage(game, target, {
+    amount: attackInfo.damage,
+    msg: `${actor.name} attacks ${target.name}`,
+  });
   game.endTurn(actor, attackInfo.time);
 
   return true;
@@ -368,12 +366,10 @@ export function fire(
       if (!ok) {
         FX.flash(game, xy.x, xy.y, "orange", 150);
       } else {
-        FX.flash(game, xy.x, xy.y, "red", 150);
-        game.messages.addCombat(
-          `${actor.name} shoots ${target!.name}#{red [${actor.rangedDamage}]}`
-        );
-
-        EFFECT.damage(game, target!, { amount: actor.rangedDamage });
+        EFFECT.damage(game, target!, {
+          amount: actor.rangedDamage,
+          msg: `${actor.name} shoots ${target!.name}`,
+        });
       }
     }
   );
@@ -398,11 +394,10 @@ export function fireAtHero(game: Game, actor: Actor): boolean {
       if (!ok) {
         FX.flash(game, xy.x, xy.y, "orange", 150);
       } else {
-        FX.flash(game, xy.x, xy.y, "red", 150);
-        game.messages.addCombat(
-          `${actor.name} shoots ${hero.name}#{red [${actor.rangedDamage}]}`
-        );
-        EFFECT.damage(game, hero, { amount: actor.rangedDamage });
+        EFFECT.damage(game, hero, {
+          amount: actor.rangedDamage,
+          msg: `${actor.name} shoots ${hero.name}`,
+        });
       }
     }
   );

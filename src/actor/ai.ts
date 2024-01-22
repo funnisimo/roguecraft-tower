@@ -15,6 +15,8 @@ export function ai(game: Game, actor: Actor) {
     `Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`
   );
 
+  // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
+
   // TODO - Noticed prior to hero going out of range/view should skip this
   // Do this with a flag/mode/state/time value?
   if (distToHero > noticeDistance || !canSeeHero) {

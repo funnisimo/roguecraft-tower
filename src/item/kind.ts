@@ -71,9 +71,9 @@ export interface ItemKind {
 
   frequency: GWU.frequency.FrequencyFn;
   tags: string[];
-  armor_flags: number;
-  melee_flags: number;
-  ranged_flags: number;
+  armor_flags: ARMOR_FLAGS;
+  melee_flags: MELEE_FLAGS;
+  ranged_flags: RANGED_FLAGS;
   effects: EffectConfig;
 
   //   damage: number;

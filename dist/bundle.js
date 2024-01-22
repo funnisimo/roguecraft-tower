@@ -3645,7 +3645,7 @@
 
   ///////////////////////////////////
   // FLAG
-  function fl(N) {
+  function fl$1(N) {
       return 2 ** N;
   }
   function toString(flagObj, value) {
@@ -3800,7 +3800,7 @@
                   if (nextIndex > 31) {
                       throw new Error('Flag uses too many bits! [Max=32]');
                   }
-                  flags[v] = fl(nextIndex);
+                  flags[v] = fl$1(nextIndex);
                   used[nextIndex] = 1;
               }
           });
@@ -3814,7 +3814,7 @@
 
   var flag = /*#__PURE__*/Object.freeze({
   	__proto__: null,
-  	fl: fl,
+  	fl: fl$1,
   	toString: toString,
   	from: from$3,
   	from_safe: from_safe,
@@ -15229,82 +15229,85 @@ void main() {
       };
   }
 
-  const ARMOR_FLAGS = flag.make([
-      "ARTIFACT_COOLDOWN_40",
-      "ARROWS_10",
-      "LONGER_ROLL_100",
-      "MELEE_DAMAGE_30",
-      "MOBS_TARGET_YOU_MORE", // add ?? MOBS_AVOID_YOU_MORE ??
-      "MOVESPEED_AURA_15",
-      "NEGATE_HITS_30",
-      "POTION_COOLDOWN_40",
-      "POTION_BOOSTS_DEFENSE",
-      "POTION_HEALS_NEARBY_ALLIES",
-      "RANGED_DAMAGE_30",
-      "REDUCE_DAMAGE_35",
-      "WEAPON_DAMAGE_AURA_20",
-  ]);
+  const fl = flag.fl;
+  var ARMOR_FLAGS;
+  (function (ARMOR_FLAGS) {
+      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
+      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
+      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
+      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
+      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
+      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
+      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
+  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
   // @ts-ignore
   globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
-  const MELEE_FLAGS = flag.make([
-      "SPIN_ATTACK",
-      "THRUST",
-      "SWIRLING",
-      "LONGER_REACH", // spear, glaive, etc...
-      "SHOCKWAVE",
-      "BURNS",
-      "STUNS",
-      "AMBUSH",
-      "ECHO",
-      "EXPLODING",
-      "COMMITTED", // Increased damage to wounded mobs
-      "PUSHBACK", // great pushback.  Are there levels of this?
-      "SHARPNESS",
-      "LEECHING",
-      "RAMPAGING", // Increased attack speed when kill mob
-      "WEAKENING",
-      "FREEZING",
-      "POISON_CLOUD",
-      "POISONS",
-      "SPLASH", // AOE
-      "GRAVITY",
-      "LIGHTNING_BOLTS", // Thundering
-      "CHAINS", // Binds and chains enemies
-      "RADIANCE", // Healing aura
-      "SHARED_PAIN", // excess damage hits nearby mobs
-      "PROSPECTOR", // Get more emeralds
-      "CRITICAL_HIT", // increased chance
-      "SPEED_RUSH", // Increased speed after mob killed
-      "LOOTING", // increased drop rate
-      "SPAWN_BEE", // chance to spawn bee
-  ]);
+  var MELEE_FLAGS;
+  (function (MELEE_FLAGS) {
+      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
+      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
+      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
+      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
+      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
+      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
+      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
+      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
+      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
+      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
+      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
+      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
+      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
+      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
+      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
+      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
+      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
+      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
+      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
+      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
+      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
+      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
+      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
+      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
+      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
+      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
+      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
+      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
+      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
+      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
+  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
   // @ts-ignore
   globalThis.MELEE_FLAGS = MELEE_FLAGS;
-  const RANGED_FLAGS = flag.make([
+  var RANGED_FLAGS;
+  (function (RANGED_FLAGS) {
       // "GROWING", // Not going to use
-      "EXTRA_SHOT", // Fires 2 shots
-      "INFINITE_SHOTS", // chance to regain shots after use
-      "POWER", // Sharpness
-      "SUPERCHARGED",
-      "EXPLODING", // exploding shot
-      "RADIANCE_SHOT",
-      "ENRAGES", // enrages hit mobs
-      "ACCELERATE", // subsequent shots are faster (until other action - including wait)
-      "RAPID_FIRE", // just faster attack speed
-      "FREEZES",
-      "TRIPLE_SHOT", // fires 3 arrows when charged - all in same direction, but spaced - how to do this?
-      "CHAINS_HITS", // hits multiple targets - like chain lightning
-      "POISON_CLOUD",
-      "POISONS",
-      "ENRAGES",
-      "ROLL_CHARGES",
-      "GRAVITY_SHOT",
-      "RICOCHET", // bounces off target in random direction
-      "TEMPO_THEFT", // steals speed
-      "PIERCING",
-      "CHAIN_REACTION", // chance to fire many small shots on hit
-      "KNOCKBACK",
-  ]);
+      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
+      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
+      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
+      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
+      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
+      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
+      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
+      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
+      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
+      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
+      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
+      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
+      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
+      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
+      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
+      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
+      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
+  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
   // @ts-ignore
   globalThis.RANGED_FLAGS = RANGED_FLAGS;
 
@@ -15539,23 +15542,31 @@ void main() {
   // @returns boolean - indicates whether or not the target dies
   function damage(game, target, damage) {
       // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
-      const effects = target.armor_flags;
-      damage.amount = damage.amount || 0;
-      if (effects & MELEE_FLAGS.NEGATE_HITS_30) {
+      const armor_flags = target.armor_flags;
+      let amount = (damage.amount = damage.amount || 0);
+      damage.msg = damage.msg || `${target.name} is damaged`;
+      damage.color = damage.color || "red";
+      if (armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
           if (game.rng.chance(30)) {
-              game.messages.addCombat("Blocked.");
+              game.messages.addCombat(damage.msg + "#{orange [X]}");
+              flash(game, target.x, target.y, "orange", 150);
               damage.amount = 0;
               return false;
           }
       }
-      if (effects & MELEE_FLAGS.REDUCE_DAMAGE_35) {
+      if (armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
           damage.amount = Math.round(damage.amount * 0.65);
       }
+      target.trigger("damage", damage);
       if (damage.amount <= 0) {
           return false;
       }
       target.health -= damage.amount || 0;
-      target.trigger("damage", damage);
+      if (damage.amount <= amount) {
+          damage.color = "orange";
+      }
+      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
+      flash(game, target.x, target.y, damage.color, 150);
       if (target.health <= 0) {
           // do all of these move to event handlers?
           game.messages.addCombat(`${target.name} dies`);
@@ -15760,10 +15771,10 @@ void main() {
           game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
       }
       // we have an actor and a target
-      // TODO - move to EFFECT.damage (different color for no damage or negated or ...)
-      flash(game, target.x, target.y, "red", 150);
-      game.messages.addCombat(`${actor.name} attacks ${target.name}#{red [${attackInfo.damage}]}`);
-      damage(game, target, { amount: attackInfo.damage });
+      damage(game, target, {
+          amount: attackInfo.damage,
+          msg: `${actor.name} attacks ${target.name}`,
+      });
       game.endTurn(actor, attackInfo.time);
       return true;
   }
@@ -15863,9 +15874,10 @@ void main() {
               flash(game, xy.x, xy.y, "orange", 150);
           }
           else {
-              flash(game, xy.x, xy.y, "red", 150);
-              game.messages.addCombat(`${actor.name} shoots ${target.name}#{red [${actor.rangedDamage}]}`);
-              damage(game, target, { amount: actor.rangedDamage });
+              damage(game, target, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${target.name}`,
+              });
           }
       });
       game.endTurn(actor, actor.rangedAttackSpeed);
@@ -15886,9 +15898,10 @@ void main() {
               flash(game, xy.x, xy.y, "orange", 150);
           }
           else {
-              flash(game, xy.x, xy.y, "red", 150);
-              game.messages.addCombat(`${actor.name} shoots ${hero.name}#{red [${actor.rangedDamage}]}`);
-              damage(game, hero, { amount: actor.rangedDamage });
+              damage(game, hero, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${hero.name}`,
+              });
           }
       });
       game.endTurn(actor, actor.rangedAttackSpeed);
@@ -15931,6 +15944,7 @@ void main() {
       const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
       const canSeeHero = hero.isInFov(actor);
       console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
+      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
       // TODO - Noticed prior to hero going out of range/view should skip this
       // Do this with a flag/mode/state/time value?
       if (distToHero > noticeDistance || !canSeeHero) {
@@ -16001,7 +16015,7 @@ void main() {
           slots: new Map(),
       }, cfg);
       if (kind.name == "") {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/, " "));
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
       }
       if (typeof cfg.bump === "string") {
           kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
@@ -22797,7 +22811,7 @@ void main() {
       slots: {
           ranged: "SHORTBOW",
           melee: "CUTLASS",
-          armor: "SCALE_MAIL",
+          armor: "PLATE_ARMOR",
       },
   });
   install$3({
