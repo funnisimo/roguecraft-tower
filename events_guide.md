@@ -10,10 +10,13 @@
 - damage
 - attack
 - try_attack
+- fire
+- try_fire
 - move
 - try_move
 - sidebar?
 - details?
+- reset - called when equipment is being recalculated to reset values
 
 ## item:
 

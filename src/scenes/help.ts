@@ -4,7 +4,7 @@ export const help = {
   create(this: GWU.app.Scene) {
     this.bg = GWU.color.from("dark_gray");
     const build = new GWU.widget.Builder(this);
-    build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+    build.pos(10, 15).text(this.app.name, { fg: "green" });
     build.pos(10, 17).text("HELP!", { fg: "green" });
 
     build.pos(10, 30).text("Press any key to return to title.");

@@ -53,7 +53,7 @@ export class Details extends GWU.widget.Dialog {
     this.bounds.width = this._text.bounds.width + 2;
   }
 
-  showPlayer(player: Hero) {
+  showHero(player: Hero) {
     let text = player.name + "\n";
     const armor = player.slots.armor;
     if (armor) {

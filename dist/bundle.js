@@ -14778,6 +14778,7 @@ void main() {
           else {
               this.loop = new Loop();
           }
+          this.name = opts.name || 'Goblinwerks';
           this.styles = defaultStyle;
           this.canvas = opts.canvas || make$6(opts);
           this.io = new Queue();
@@ -14897,14 +14898,12 @@ void main() {
           const realDt = realTime - this.realTime;
           this.realTime = realTime;
           if (!this.skipTime) {
-              if (!this.skipTime) {
-                  this.fpsBuf.push(1000 / realDt);
-                  this.fpsTimer += realDt;
-                  if (this.fpsTimer >= 1) {
-                      this.fpsTimer = 0;
-                      this.fps = Math.round(this.fpsBuf.reduce((a, b) => a + b) / this.fpsBuf.length);
-                      this.fpsBuf = [];
-                  }
+              this.fpsBuf.push(1000 / realDt);
+              this.fpsTimer += realDt;
+              if (this.fpsTimer >= 1) {
+                  this.fpsTimer = 0;
+                  this.fps = Math.round(this.fpsBuf.reduce((a, b) => a + b) / this.fpsBuf.length);
+                  this.fpsBuf = [];
               }
           }
           this.skipTime = false;
@@ -14975,6 +14974,7 @@ void main() {
           return this.scenes.run('confirm', opts);
       }
       prompt(text, opts = {}) {
+          // TODO - Do we really have to do this?  Can't we reset the scene instead?
           // NEED TO CREATE A NEW SCENE EVERY TIME SO WE DON"T HAVE HOLDOVER EVENTS, etc...
           opts.prompt = text;
           const prompt = this.scenes._create('prompt', PromptScene);
@@ -15237,6 +15237,7 @@ void main() {
       ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
       ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
       ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
+      // add ?? MOBS_AVOID_YOU_MORE ??
       ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
       ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
       ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
@@ -15546,7 +15547,7 @@ void main() {
       let amount = (damage.amount = damage.amount || 0);
       damage.msg = damage.msg || `${target.name} is damaged`;
       damage.color = damage.color || "red";
-      if (armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
           if (game.rng.chance(30)) {
               game.messages.addCombat(damage.msg + "#{orange [X]}");
               flash(game, target.x, target.y, "orange", 150);
@@ -15554,7 +15555,7 @@ void main() {
               return false;
           }
       }
-      if (armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
           damage.amount = Math.round(damage.amount * 0.65);
       }
       target.trigger("damage", damage);
@@ -15562,7 +15563,7 @@ void main() {
           return false;
       }
       target.health -= damage.amount || 0;
-      if (damage.amount <= amount) {
+      if (damage.amount < amount) {
           damage.color = "orange";
       }
       game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
@@ -15570,7 +15571,11 @@ void main() {
       if (target.health <= 0) {
           // do all of these move to event handlers?
           game.messages.addCombat(`${target.name} dies`);
-          game.level.setTile(target.x, target.y, "CORPSE"); // TODO - This should be above the floor (FIXTURE)
+          // TODO - This should be above the floor (FIXTURE)
+          // that way when it decays the floor returns as normal
+          // and corpses can be custom to the creature that died
+          // no matter what the floor is
+          game.level.setTile(target.x, target.y, "CORPSE");
           target.trigger("death");
           game.level.removeActor(target);
           return true;
@@ -21808,8 +21813,7 @@ void main() {
       create() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
-          build.pos(10, 17).text("TOWER", { fg: "green" });
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
           build.pos(10, 30).text("Press any key to start.");
           build.pos(10, 32).text("Press s to enter seed.");
           build.pos(10, 34).text("Press h for help.");
@@ -21992,14 +21996,15 @@ void main() {
           this.drawProgress(buf, x, y, w, "white", index$9.colors.blue, player.potion, player.potion_max, "Potion");
       }
       _draw(buf) {
-          const game = this.scene.data;
+          const scene = this.scene;
+          const game = scene.data;
           const level = game.level;
           buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
           const x = this.bounds.x + 1;
           let y = this.bounds.y;
           buf.setClip(this.bounds);
           // buf.drawText(x);
-          y += buf.drawText(x, y, "{Roguecraft}", "yellow");
+          y += buf.drawText(x, y, scene.app.name, "green");
           y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
           y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
           y += 1;
@@ -22156,7 +22161,7 @@ void main() {
           this.bounds.height = this._text.bounds.height + 2;
           this.bounds.width = this._text.bounds.width + 2;
       }
-      showPlayer(player) {
+      showHero(player) {
           let text = player.name + "\n";
           const armor = player.slots.armor;
           if (armor) {
@@ -22276,6 +22281,7 @@ void main() {
       create() {
           this.bg = index$9.from("dark_gray");
           // const level = this;
+          // TODO - Get these sizes and locations dynamically
           const sidebar$1 = sidebar(this, 60, 35);
           const flavor$1 = flavor(this, 0, 35);
           const messages$1 = messages(this, 36);
@@ -22285,14 +22291,14 @@ void main() {
               loc = loc || [-1, -1];
               map$1._focus = loc;
               const game = this.data;
-              const player = game.hero;
+              const hero = game.hero;
               if (loc[0] < 0) {
                   // game.level.clearPath();
                   game.hero.clearGoal();
               }
               else {
                   // highlight path
-                  player.setGoal(loc[0], loc[1]);
+                  hero.setGoal(loc[0], loc[1]);
                   // const player = game.player;
                   // const path = player.pathTo(loc);
                   // game.level.setPath(path);
@@ -22300,8 +22306,8 @@ void main() {
               const actor = game.level.actorAt(loc[0], loc[1]);
               if (actor) {
                   details$1.hidden = false;
-                  if (actor === player) {
-                      details$1.showPlayer(player);
+                  if (actor === hero) {
+                      details$1.showHero(hero);
                   }
                   else {
                       details$1.showActor(actor);
@@ -22315,7 +22321,7 @@ void main() {
               details$1.hidden = true;
           });
           sidebar$1.on("choose", (loc) => {
-              console.log("sidebar choose - player go to :", loc[0], loc[1]);
+              console.log("sidebar choose - hero go to :", loc[0], loc[1]);
               const game = this.data;
               game.hero.setGoal(loc[0], loc[1]);
               game.hero.followPath = true;
@@ -22340,8 +22346,8 @@ void main() {
               if (!level.started)
                   return;
               // highlight path
-              const player = game.hero;
-              player.setGoal(e.x, e.y);
+              const hero = game.hero;
+              hero.setGoal(e.x, e.y);
               // const path = player.pathTo(e);
               // game.level.setPath(path);
           });
@@ -22384,9 +22390,9 @@ void main() {
           // },
           inventory() {
               const game = this.data;
-              const player = game.hero;
+              const hero = game.hero;
               const sidebar = this.get("SIDEBAR");
-              sidebar.setFocus(player.x, player.y);
+              sidebar.setFocus(hero.x, hero.y);
           },
           win() {
               const game = this.data;
@@ -22422,7 +22428,7 @@ void main() {
       create() {
           this.bg = index$9.from("dark_blue");
           const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
           build.pos(10, 17).text("WIN!", { fg: "green" });
           build.pos(10, 22).text("Final Level: {}", { fg: "pink", id: "LEVEL" });
           build.pos(10, 30).text("Press any key to restart.");
@@ -22442,7 +22448,7 @@ void main() {
       create() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
           build.pos(10, 17).text("LOSE!", { fg: "green" });
           build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
           build.pos(10, 30).text("Press any key to restart.");
@@ -22461,7 +22467,7 @@ void main() {
       create() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
-          build.pos(5, 3).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(5, 3).text(this.app.name, { fg: "green" });
           build
               .pos(5, 5)
               .text("Choose your reward \nfor Level: {}", { fg: "pink", id: "LEVEL" });
@@ -22621,7 +22627,7 @@ void main() {
       create() {
           this.bg = index$9.from("dark_gray");
           const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
           build.pos(10, 17).text("HELP!", { fg: "green" });
           build.pos(10, 30).text("Press any key to return to title.");
           this.on("keypress", () => {
@@ -23735,6 +23741,7 @@ void main() {
       // create the user interface
       // @ts-ignore
       globalThis.APP = index.make({
+          name: "Roguecraft: Tower",
           width: 90,
           height: 45,
           div: "game",

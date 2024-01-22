@@ -131,7 +131,8 @@ export class Sidebar extends GWU.app.Widget {
   }
 
   _draw(buf: GWU.buffer.Buffer) {
-    const game = this.scene!.data as Game;
+    const scene = this.scene! as GWU.app.Scene;
+    const game = scene.data as Game;
     const level = game.level!;
 
     buf.fillRect(
@@ -150,7 +151,7 @@ export class Sidebar extends GWU.app.Widget {
     buf.setClip(this.bounds);
 
     // buf.drawText(x);
-    y += buf.drawText(x, y, "{Roguecraft}", "yellow");
+    y += buf.drawText(x, y, scene.app.name, "green");
     y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
     y += buf.drawText(x, y, "Level: " + game.level!.depth, "pink");
     y += 1;

@@ -7,7 +7,7 @@ export const reward = {
   create(this: GWU.app.Scene) {
     this.bg = GWU.color.from("dark_gray");
     const build = new GWU.widget.Builder(this);
-    build.pos(5, 3).text("{Roguecraft}", { fg: "yellow" });
+    build.pos(5, 3).text(this.app.name, { fg: "green" });
     build
       .pos(5, 5)
       .text("Choose your reward \nfor Level: {}", { fg: "pink", id: "LEVEL" });

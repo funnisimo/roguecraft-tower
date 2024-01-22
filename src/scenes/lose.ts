@@ -5,7 +5,7 @@ export const lose = {
   create(this: GWU.app.Scene) {
     this.bg = GWU.color.from("dark_gray");
     const build = new GWU.widget.Builder(this);
-    build.pos(10, 15).text("{Roguecraft}", { fg: "yellow" });
+    build.pos(10, 15).text(this.app.name, { fg: "green" });
     build.pos(10, 17).text("LOSE!", { fg: "green" });
 
     build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });

@@ -12,6 +12,7 @@ function start() {
 
   // @ts-ignore
   globalThis.APP = GWU.app.make({
+    name: "Roguecraft: Tower",
     width: 90,
     height: 45,
     div: "game",

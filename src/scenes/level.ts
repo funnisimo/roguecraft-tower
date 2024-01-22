@@ -10,6 +10,7 @@ export const level = {
     this.bg = GWU.color.from("dark_gray");
     // const level = this;
 
+    // TODO - Get these sizes and locations dynamically
     const sidebar = WIDGETS.sidebar(this, 60, 35);
     const flavor = WIDGETS.flavor(this, 0, 35);
     const messages = WIDGETS.messages(this, 36);
@@ -21,13 +22,13 @@ export const level = {
       map._focus = loc;
 
       const game = this.data as Game;
-      const player = game.hero;
+      const hero = game.hero;
       if (loc[0] < 0) {
         // game.level.clearPath();
         game.hero.clearGoal();
       } else {
         // highlight path
-        player.setGoal(loc[0], loc[1]);
+        hero.setGoal(loc[0], loc[1]);
         // const player = game.player;
         // const path = player.pathTo(loc);
         // game.level.setPath(path);
@@ -36,8 +37,8 @@ export const level = {
       const actor = game.level!.actorAt(loc[0], loc[1]);
       if (actor) {
         details.hidden = false;
-        if (actor === player) {
-          details.showPlayer(player);
+        if (actor === hero) {
+          details.showHero(hero);
         } else {
           details.showActor(actor);
         }
@@ -49,7 +50,7 @@ export const level = {
       details.hidden = true;
     });
     sidebar.on("choose", (loc) => {
-      console.log("sidebar choose - player go to :", loc[0], loc[1]);
+      console.log("sidebar choose - hero go to :", loc[0], loc[1]);
       const game = this.data as Game;
       game.hero.setGoal(loc[0], loc[1]);
       game.hero.followPath = true;
@@ -77,8 +78,8 @@ export const level = {
 
       if (!level.started) return;
       // highlight path
-      const player = game.hero;
-      player.setGoal(e.x, e.y);
+      const hero = game.hero;
+      hero.setGoal(e.x, e.y);
       // const path = player.pathTo(e);
       // game.level.setPath(path);
     });
@@ -126,9 +127,9 @@ export const level = {
 
     inventory(this: GWU.app.Scene) {
       const game = this.data as Game;
-      const player = game.hero;
+      const hero = game.hero;
       const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
-      sidebar.setFocus(player.x, player.y);
+      sidebar.setFocus(hero.x, hero.y);
     },
 
     win(this: GWU.app.Scene) {
