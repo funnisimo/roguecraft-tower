@@ -2,7 +2,7 @@ import * as GWU from "gw-utils";
 
 import * as ACTOR from "./actor";
 import * as KIND from "./kind";
-import * as ACTION from "../game/actions";
+import * as ACTION from "../action";
 import { Level } from "../game/level";
 import { Game } from "../game/game";
 import * as ITEM from "../item";
@@ -122,6 +122,10 @@ export class Hero extends ACTOR.Actor {
       return melee.combo;
     }
     return this.kind.combo;
+  }
+
+  get isHero(): boolean {
+    return true;
   }
   //
 

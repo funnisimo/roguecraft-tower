@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 
-import * as ACTIONS from "../game/actions";
+import * as ACTIONS from "../action";
 import { Game } from "../game/game";
 import { Actor } from "./actor";
 

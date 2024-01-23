@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 import * as GWD from "gw-dig";
 import * as FX from "../fx/index";
-import { Game } from "./game";
+import { Game } from "../game/game";
 import { Actor } from "../actor/actor";
 import * as EFFECT from "../effect";
 import { Hero } from "../actor/hero";
@@ -9,11 +9,11 @@ import { Hero } from "../actor/hero";
 export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
 const actionsByName: Record<string, ActionFn> = {};
 
-export function installBump(name: string, fn: ActionFn) {
+export function install(name: string, fn: ActionFn) {
   actionsByName[name] = fn;
 }
 
-export function getBump(name: string): ActionFn | null {
+export function get(name: string): ActionFn | null {
   return actionsByName[name] || null;
 }
 
@@ -23,12 +23,14 @@ export function idle(game: Game, actor: Actor): boolean {
   return true;
 }
 
-installBump("idle", idle);
+install("idle", idle);
 
 export function moveRandom(game: Game, actor: Actor, quiet = false): boolean {
   const dir = game.rng.item(GWU.xy.DIRS);
   return moveDir(game, actor, dir, quiet);
 }
+
+install("move_random", moveRandom);
 
 export function moveDir(
   game: Game,
@@ -126,6 +128,8 @@ export function moveTowardHero(
   return false;
 }
 
+install("move_toward_hero", moveTowardHero);
+
 export function moveAwayFromHero(
   game: Game,
   actor: Actor,
@@ -185,6 +189,8 @@ export function moveAwayFromHero(
   }
   return false;
 }
+
+install("move_away_from_hero", moveAwayFromHero);
 
 export function attack(
   game: Game,
@@ -254,7 +260,7 @@ export function attack(
   return true;
 }
 
-installBump("attack", attack);
+install("attack", attack);
 
 export function fire(
   game: Game,
@@ -378,7 +384,7 @@ export function fire(
   return true;
 }
 
-installBump("fire", fire);
+install("fire", fire);
 
 export function fireAtHero(game: Game, actor: Actor): boolean {
   const hero = game.hero;
@@ -406,6 +412,8 @@ export function fireAtHero(game: Game, actor: Actor): boolean {
   return true;
 }
 
+install("fire_at_hero", fireAtHero);
+
 export function climb(game: Game, actor: Actor): boolean {
   const tile = game.level!.getTile(actor.x, actor.y);
   if (tile.on && tile.on.climb) {
@@ -415,6 +423,8 @@ export function climb(game: Game, actor: Actor): boolean {
     return idle(game, actor);
   }
 }
+
+install("climb", climb);
 
 export function pickup(game: Game, actor: Actor): boolean {
   const level = game.level;
@@ -429,22 +439,24 @@ export function pickup(game: Game, actor: Actor): boolean {
   return idle(game, actor);
 }
 
-export function potion(game: Game, hero: Hero): boolean {
-  if (!hero.canUsePotion) {
-    game.addMessage("Not ready.");
-    // TODO - spend time? idle?
-    return false;
-  }
-  if (hero.health >= hero.health_max) {
-    game.addMessage("You do not need to drink a potion.");
-    // TODO - spend time? idle?
-    return false;
-  }
+install("pickup", pickup);
 
-  const heal = Math.floor(hero.health_max * 0.75);
-  hero.health = Math.min(hero.health + heal, hero.health_max);
-  hero.potion = 0; // Needs to recharge
-  game.addMessage("You feel much better.");
-  game.endTurn(hero, hero.moveSpeed);
-  return true;
-}
+// export function potion(game: Game, hero: Hero): boolean {
+//   if (!hero.canUsePotion) {
+//     game.addMessage("Not ready.");
+//     // TODO - spend time? idle?
+//     return false;
+//   }
+//   if (hero.health >= hero.health_max) {
+//     game.addMessage("You do not need to drink a potion.");
+//     // TODO - spend time? idle?
+//     return false;
+//   }
+
+//   const heal = Math.floor(hero.health_max * 0.75);
+//   hero.health = Math.min(hero.health + heal, hero.health_max);
+//   hero.potion = 0; // Needs to recharge
+//   game.addMessage("You feel much better.");
+//   game.endTurn(hero, hero.moveSpeed);
+//   return true;
+// }

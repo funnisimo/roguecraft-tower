@@ -2348,12 +2348,12 @@
    * _.get(object, 'a.b.c', 'default');
    * // => 'default'
    */
-  function get(object, path, defaultValue) {
+  function get$1(object, path, defaultValue) {
     var result = object == null ? undefined : baseGet(object, path);
     return result === undefined ? defaultValue : result;
   }
 
-  var get_1 = get;
+  var get_1 = get$1;
 
   const getValue = get_1;
   // export function extend(obj, name, fn) {
@@ -4380,7 +4380,7 @@
   function smoothScalar(rgb, maxRgb = 255) {
       return Math.floor(100 * Math.sin((Math.PI * rgb) / maxRgb));
   }
-  function install$2$1(name, ...args) {
+  function install$2$2(name, ...args) {
       let info = args;
       if (args.length == 1) {
           info = args[0];
@@ -4395,22 +4395,22 @@
   function installSpread(name, ...args) {
       let c;
       if (args.length == 1) {
-          c = install$2$1(name, args[0]);
+          c = install$2$2(name, args[0]);
       }
       else {
-          c = install$2$1(name, ...args);
+          c = install$2$2(name, ...args);
       }
-      install$2$1('light_' + name, c.lighten(25));
-      install$2$1('lighter_' + name, c.lighten(50));
-      install$2$1('lightest_' + name, c.lighten(75));
-      install$2$1('dark_' + name, c.darken(25));
-      install$2$1('darker_' + name, c.darken(50));
-      install$2$1('darkest_' + name, c.darken(75));
+      install$2$2('light_' + name, c.lighten(25));
+      install$2$2('lighter_' + name, c.lighten(50));
+      install$2$2('lightest_' + name, c.lighten(75));
+      install$2$2('dark_' + name, c.darken(25));
+      install$2$2('darker_' + name, c.darken(50));
+      install$2$2('darkest_' + name, c.darken(75));
       return c;
   }
-  const NONE = install$2$1('NONE', -1);
-  const BLACK = install$2$1('black', 0x000);
-  const WHITE = install$2$1('white', 0xfff);
+  const NONE = install$2$2('NONE', -1);
+  const BLACK = install$2$2('black', 0x000);
+  const WHITE = install$2$2('white', 0xfff);
   installSpread('teal', [30, 100, 100]);
   installSpread('brown', [60, 40, 0]);
   installSpread('tan', [80, 70, 55]); // 80, 67,		15);
@@ -4454,7 +4454,7 @@
   	relativeLuminance: relativeLuminance,
   	distance: distance,
   	smoothScalar: smoothScalar,
-  	install: install$2$1,
+  	install: install$2$2,
   	installSpread: installSpread,
   	NONE: NONE,
   	BLACK: BLACK,
@@ -9167,7 +9167,7 @@ void main() {
           return arg;
       return make$3$1(arg);
   }
-  function install$5(id, ...args) {
+  function install$6(id, ...args) {
       let source;
       if (args.length == 1) {
           source = make$3$1(args[0]);
@@ -9182,7 +9182,7 @@ void main() {
   function installAll(config) {
       const entries = Object.entries(config);
       entries.forEach(([name, info]) => {
-          install$5(name, info);
+          install$6(name, info);
       });
   }
   // // TODO - Move?
@@ -9476,7 +9476,7 @@ void main() {
   	make: make$3$1,
   	lights: lights,
   	from: from$5,
-  	install: install$5,
+  	install: install$6,
   	installAll: installAll,
   	LightSystem: LightSystem
   });
@@ -15096,6 +15096,7 @@ void main() {
           this.y = cfg.y || 0;
           this.z = cfg.z || 0;
           this.events = new index.Events(this);
+          this.spawn = false;
           // Object.assign(this, cfg);
       }
       draw(buf) { }
@@ -15315,7 +15316,7 @@ void main() {
   const kinds$1 = {};
   // @ts-ignore
   globalThis.ItemKinds = kinds$1;
-  function install$4(cfg) {
+  function install$5(cfg) {
       const kind = Object.assign({
           name: "",
           ch: "!",
@@ -15496,6 +15497,7 @@ void main() {
       const loc = game.rng.item(locs);
       newbie.x = loc[0];
       newbie.y = loc[1];
+      level.events.trigger("spawn_item", level, newbie);
       level.addItem(newbie);
       return newbie;
   }
@@ -15591,10 +15593,10 @@ void main() {
   }
 
   const actionsByName = {};
-  function installBump(name, fn) {
+  function install$4(name, fn) {
       actionsByName[name] = fn;
   }
-  function getBump(name) {
+  function get(name) {
       return actionsByName[name] || null;
   }
   function idle(game, actor) {
@@ -15602,11 +15604,12 @@ void main() {
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }
-  installBump("idle", idle);
+  install$4("idle", idle);
   function moveRandom(game, actor, quiet = false) {
       const dir = game.rng.item(xy.DIRS);
       return moveDir(game, actor, dir, quiet);
   }
+  install$4("move_random", moveRandom);
   function moveDir(game, actor, dir, quiet = false) {
       const level = game.level;
       const newX = actor.x + dir[0];
@@ -15683,6 +15686,7 @@ void main() {
       }
       return false;
   }
+  install$4("move_toward_hero", moveTowardHero);
   function moveAwayFromHero(game, actor, quiet = false) {
       const map = game.level;
       const player = game.hero;
@@ -15727,6 +15731,7 @@ void main() {
       }
       return false;
   }
+  install$4("move_away_from_hero", moveAwayFromHero);
   function attack(game, actor, target = null) {
       const level = game.level;
       if (target) {
@@ -15783,7 +15788,7 @@ void main() {
       game.endTurn(actor, attackInfo.time);
       return true;
   }
-  installBump("attack", attack);
+  install$4("attack", attack);
   function fire(game, actor, target = null) {
       const level = game.level;
       const player = game.hero;
@@ -15888,7 +15893,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  installBump("fire", fire);
+  install$4("fire", fire);
   function fireAtHero(game, actor) {
       const hero = game.hero;
       // if player can't see actor then actor can't see player!
@@ -15912,6 +15917,18 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
+  install$4("fire_at_hero", fireAtHero);
+  function climb(game, actor) {
+      const tile = game.level.getTile(actor.x, actor.y);
+      if (tile.on && tile.on.climb) {
+          tile.on.climb.call(tile, game, actor);
+          return actor.hasActed();
+      }
+      else {
+          return idle(game, actor);
+      }
+  }
+  install$4("climb", climb);
   function pickup(game, actor) {
       const level = game.level;
       if (level) {
@@ -15924,24 +15941,25 @@ void main() {
       }
       return idle(game, actor);
   }
-  function potion(game, hero) {
-      if (!hero.canUsePotion) {
-          game.addMessage("Not ready.");
-          // TODO - spend time? idle?
-          return false;
-      }
-      if (hero.health >= hero.health_max) {
-          game.addMessage("You do not need to drink a potion.");
-          // TODO - spend time? idle?
-          return false;
-      }
-      const heal = Math.floor(hero.health_max * 0.75);
-      hero.health = Math.min(hero.health + heal, hero.health_max);
-      hero.potion = 0; // Needs to recharge
-      game.addMessage("You feel much better.");
-      game.endTurn(hero, hero.moveSpeed);
-      return true;
-  }
+  install$4("pickup", pickup);
+  // export function potion(game: Game, hero: Hero): boolean {
+  //   if (!hero.canUsePotion) {
+  //     game.addMessage("Not ready.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   if (hero.health >= hero.health_max) {
+  //     game.addMessage("You do not need to drink a potion.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   const heal = Math.floor(hero.health_max * 0.75);
+  //   hero.health = Math.min(hero.health + heal, hero.health_max);
+  //   hero.potion = 0; // Needs to recharge
+  //   game.addMessage("You feel much better.");
+  //   game.endTurn(hero, hero.moveSpeed);
+  //   return true;
+  // }
 
   function ai(game, actor) {
       const hero = game.hero;
@@ -16068,6 +16086,514 @@ void main() {
       return kinds[id.toLowerCase()] || null;
   }
 
+  function messages(scene, y) {
+      const widget = index$1$1.make({
+          id: "MESSAGES",
+          tag: "msg",
+          x: 0,
+          y: y,
+          width: scene.width,
+          height: scene.height - y,
+          scene,
+          bg: "darkest_gray",
+          fg: "white",
+          draw(buf) {
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              const fg = index$9.from(this._used.fg);
+              const fgc = fg.alpha(50);
+              const game = this.scene.data;
+              if (game && game.messages) {
+                  game.messages.forEach((msg, confirmed, i) => {
+                      if (i < this.bounds.height) {
+                          const color = confirmed ? fgc : fg;
+                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
+                      }
+                  });
+              }
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  class Map$1 extends index.Widget {
+      constructor(opts) {
+          super(opts);
+          this._focus = [-1, -1];
+          this.on("draw", this._draw);
+          this.on("mousemove", this._setFocus);
+          this.on("mouseleave", this._clearFocus);
+          this.on("keypress", this._clearFocus);
+      }
+      _draw(buf) {
+          const game = this.scene.data;
+          const player = game.hero;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
+          const level = game.level;
+          level.tiles.forEach((index, x, y) => {
+              buf.blackOut(x, y);
+              level.drawAt(buf, x, y);
+              if (!player.fov || !player.fov.get(x, y)) {
+                  buf.get(x, y).mix("black", 25, 25);
+              }
+          });
+          if (player.goalPath) {
+              player.goalPath.forEach(([x, y]) => {
+                  buf.get(x, y).mix("green", 0, 25).separate();
+              });
+          }
+      }
+      _setFocus(e) {
+          this._focus[0] = e.x;
+          this._focus[1] = e.y;
+          this.needsDraw = true;
+          // e.stopPropagation();
+      }
+      _clearFocus() {
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+      }
+  }
+  function map(scene, width, height) {
+      const widget = new Map$1({
+          id: "MAP",
+          tag: "map",
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          scene,
+          bg: index$9.BLACK,
+      });
+      return widget;
+  }
+
+  class SidebarEntry {
+      constructor(name, color) {
+          // TODO: this.icon = null;
+          this.name = name;
+          this.nameColor = color === undefined ? "white" : color;
+          this.progressbars = [];
+          this.statuses = [];
+      }
+      add_progress(text, color, val, max) {
+          this.progressbars.push({
+              text,
+              color,
+              val,
+              max,
+          });
+          return this;
+      }
+      add_status(text, color) {
+          this.statuses.push({ text, color });
+          return this;
+      }
+  }
+  class Sidebar extends index.Widget {
+      constructor(opts) {
+          super(opts);
+          this._focus = [-1, -1];
+          this.entries = [];
+      }
+      setFocus(x, y) {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = x;
+          this._focus[1] = y;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.trigger("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      clearFocus() {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.trigger("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
+      //   buf.drawText(x, y, "Hero");
+      //   this.drawHealth(buf, x, y + 1, 28, player);
+      //   this.drawPotion(buf, x, y + 2, 28, player);
+      //   let lines = 3; // Hero + health + potion
+      //   player.statuses.forEach((status) => {
+      //     if (status) {
+      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+      //     }
+      //   });
+      //   return lines;
+      // }
+      drawActor(buf, x, y, actor) {
+          //   buf.drawText(x, y, actor.name, actor.kind.fg);
+          //   this.drawHealth(buf, x, y + 1, 28, actor);
+          //   let lines = 2; // name + health
+          //   actor.statuses.forEach((status) => {
+          //     if (status) {
+          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+          //     }
+          //   });
+          //   return lines;
+          let entry = actor.getSidebarEntry();
+          return this.drawEntry(buf, x, y, entry);
+      }
+      drawEntry(buf, x, y, entry) {
+          buf.drawText(x, y, entry.name, entry.nameColor);
+          let lines = 1;
+          entry.progressbars.forEach((p) => {
+              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
+              lines += 1;
+          });
+          entry.statuses.forEach((s) => {
+              if (!s)
+                  return;
+              buf.drawText(x, y + lines, s.text, s.color);
+              lines += 1;
+          });
+          return lines;
+      }
+      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
+          const pct = val / max;
+          const full = Math.floor(w * pct);
+          const partialPct = Math.floor(100 * (w * pct - full));
+          buf.fillRect(x, y, full, 1, null, null, bg);
+          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
+          if (text && text.length) {
+              buf.drawText(x, y, text, fg, null, w, "center");
+          }
+      }
+      // drawHealth(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   actor: Actor
+      // ) {
+      //   const pct = actor.health / actor.health_max;
+      //   const bg = GWU.color.colors.green.mix(
+      //     GWU.color.colors.red,
+      //     100 * (1 - pct)
+      //   );
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     bg,
+      //     actor.health,
+      //     actor.health_max,
+      //     "HEALTH"
+      //   );
+      // }
+      // drawPotion(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   player: Hero
+      // ) {
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     GWU.color.colors.blue,
+      //     player.potion,
+      //     player.potion_max,
+      //     "Potion"
+      //   );
+      // }
+      _draw(buf) {
+          const scene = this.scene;
+          const game = scene.data;
+          const level = game.level;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+          const x = this.bounds.x + 1;
+          let y = this.bounds.y;
+          buf.setClip(this.bounds);
+          // buf.drawText(x);
+          y += buf.drawText(x, y, scene.app.name, "green");
+          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
+          y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
+          y += 1;
+          let px = game.hero.x;
+          let py = game.hero.y;
+          // if (this._focus[0] != -1) {
+          //   px = this._focus[0];
+          //   py = this._focus[1];
+          // }
+          this.entries = level.actors.filter((a) => a && a !== game.hero && a.health > 0);
+          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
+              xy.distanceBetween(b.x, b.y, px, py));
+          let focused = this.entries.find((a) => xy.equals(a, this._focus));
+          let used = this.drawActor(buf, x, y, game.hero);
+          game.hero.data.sideY = y;
+          game.hero.data.sideH = used;
+          if (xy.equals(game.hero, this._focus)) {
+              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              focused = game.hero;
+          }
+          else if (focused) {
+              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+          }
+          y += used + 1;
+          this.entries.forEach((a) => {
+              const used = this.drawActor(buf, x, y, a);
+              if (a === focused) {
+                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              }
+              else if (focused) {
+                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+              }
+              a.data.sideY = y;
+              a.data.sideH = used;
+              y += used + 1;
+          });
+          y += 1;
+          // y += buf.drawText(x, y, "Press Escape to lose.");
+          buf.clearClip();
+      }
+      _mousemove(e) {
+          super._mousemove(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          this._focus.slice();
+          this.clearFocus();
+          const game = this.scene.data;
+          const hero = game.hero;
+          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
+              this.setFocus(hero.x, hero.y);
+          }
+          else {
+              this.entries.forEach((a) => {
+                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
+                      this.setFocus(a.x, a.y);
+                  }
+              });
+          }
+          // if (!GWU.xy.equals(wasFocus, this._focus)) {
+          //   this.trigger("focus", this._focus);
+          //   this.needsDraw = true;
+          // }
+          e.stopPropagation();
+      }
+      _click(e) {
+          super._click(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          if (this._focus[0] > -1) {
+              this.trigger("choose", this._focus);
+          }
+      }
+  }
+  function sidebar(scene, x, height) {
+      const widget = new Sidebar({
+          id: "SIDEBAR",
+          tag: "sidebar",
+          x: x,
+          y: 0,
+          width: scene.width - x,
+          height: height,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  function flavor(scene, x, y) {
+      const widget = index$1$1.make({
+          id: "FLAVOR",
+          tag: "flavor",
+          x: x,
+          y: y,
+          width: scene.width - x,
+          height: 1,
+          scene,
+          bg: index$9.from("darker_gray"),
+          fg: index$9.from("purple"),
+          draw(buf) {
+              this.scene.data;
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  class Details extends index$1$1.Dialog {
+      constructor(opts) {
+          var _a;
+          opts.border = (_a = opts.border) !== null && _a !== void 0 ? _a : "ascii";
+          super(opts);
+          this._text = new index$1$1.Text({
+              id: "INFO",
+              text: "details...",
+              x: this.bounds.x + 1,
+              y: this.bounds.y + 1,
+          });
+          this.addChild(this._text);
+          this.hidden = true;
+      }
+      showActor(actor) {
+          let text = actor.name + " [" + actor.power + "]\n";
+          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
+          text += "Moves : " + actor.moveSpeed + "\n";
+          if (actor.damage > 0) {
+              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          if (actor.range > 0) {
+              text +=
+                  "Ranged: " +
+                      actor.rangedDamage +
+                      " / " +
+                      actor.rangedAttackSpeed +
+                      " @ " +
+                      actor.range +
+                      " (" +
+                      actor.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+      showHero(player) {
+          let text = player.name + "\n";
+          const armor = player.slots.armor;
+          if (armor) {
+              text += "Health: " + player.health + " / " + player.health_max + "\n";
+              text += "#{teal}";
+              text += "  " + armor.name + " [" + armor.power + "]\n";
+              if (armor.kind.armor_flags != 0) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+                      text += "  {-35% Damage Received}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+                      text += "  {30% Negate Hits}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+                      text += "  {-40% Artifact Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
+                      text += "  {+10 Arrows Per Bundle}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+                      text += "  {100% Longer Roll Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+                      text += "  {+30% Melee Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+                      text += "  {Mobs Target You More}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+                      text += "  {+15% Move Speed Aura}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+                      text += "  {-40% Potion Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+                      text += "  {Potion Boosts Defense}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                      text += "  {Potion Heals Nearby Allies}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+                      text += "  {+30% Ranged Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+                      text += "  {+20% Weapon Damage Aura}\n";
+                  }
+              }
+              text += "#{}";
+          }
+          else {
+              text += "Health: " + player.health + "/" + player.health_max + "\n";
+          }
+          text += "Moves : " + player.moveSpeed + "\n";
+          const melee = player.slots.melee;
+          if (melee) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+              text += "#{teal}";
+              text += `  ${melee.name} [${melee.power}]\n`;
+              text += "#{}";
+          }
+          else if (player.damage > 0) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          const ranged = player.slots.ranged;
+          if (ranged) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      " / " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+              text += "#{teal}";
+              text += "  " + ranged.name + " [" + ranged.power + "]\n";
+          }
+          else if (player.range > 0) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      "  " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+  }
+  function details(scene, width, height) {
+      const widget = new Details({
+          id: "DETAILS",
+          tag: "details",
+          x: 2,
+          y: 2,
+          width: width - 4,
+          height: height - 4,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
   class AttackInfo {
       constructor(damage, time) {
           this.damage = damage;
@@ -16146,6 +16672,9 @@ void main() {
       }
       get comboLen() {
           return this.kind.combo;
+      }
+      get isHero() {
+          return false;
       }
       //
       getMeleeAttack() {
@@ -16226,7 +16755,7 @@ void main() {
       bump(game, actor) {
           const actions = this.kind.bump;
           for (let action of actions) {
-              const fn = getBump(action);
+              const fn = get(action);
               if (fn && fn(game, actor, this)) {
                   return true;
               }
@@ -16241,6 +16770,15 @@ void main() {
                   }
               }
           });
+      }
+      getSidebarEntry() {
+          const entry = new SidebarEntry(this.name, this.kind.fg);
+          entry.add_progress("Health", "green", this.health, this.health_max);
+          this.statuses.forEach((s) => {
+              s && s.update_sidebar(this, entry);
+          });
+          this.trigger("sidebar", entry); // Allow plugins to update sidebar
+          return entry;
       }
   }
   function make$2(id, opts = 1) {
@@ -16272,16 +16810,16 @@ void main() {
       const game = level.game;
       game.scene;
       // const level = level.level;
-      if (x === undefined) {
+      if (x === undefined || y === undefined) {
           do {
               x = level.rng.number(level.width);
               y = level.rng.number(level.height);
           } while (!level.hasTile(x, y, "FLOOR") || level.actorAt(x, y));
       }
+      newbie.x = x;
+      newbie.y = y;
       let _success = NOOP;
-      flashGameTime(game, x, y, bg).then(() => {
-          newbie.x = x;
-          newbie.y = y;
+      flashGameTime(game, newbie.x, newbie.y, bg).then(() => {
           level.addActor(newbie);
           _success(newbie);
       });
@@ -16388,6 +16926,9 @@ void main() {
               return melee.combo;
           }
           return this.kind.combo;
+      }
+      get isHero() {
+          return true;
       }
       //
       equip(item) {
@@ -16528,9 +17069,7 @@ void main() {
       // TODO - Wrap this with higher level interface
       //      - Allow modifying the health bar
       //      - Allow set text { set_status("Regen") }
-      draw_sidebar(buf, x, y, width, actor) {
-          return 0;
-      }
+      update_sidebar(actor, entry) { }
       // TODO - Wrap this with higher level interface
       //      - Allow modifying other parts
       //      - Allow set text { set_status("Regen") }
@@ -16579,9 +17118,8 @@ void main() {
           }
           return false;
       }
-      draw_sidebar(buf, x, y, width, actor) {
-          buf.drawText(x, y, "{Regen}", "red");
-          return 1;
+      update_sidebar(actor, entry) {
+          entry.add_status("{Regen}", "green");
       }
   }
 
@@ -19369,11 +19907,11 @@ void main() {
       const digger = new ChunkyRoom(config);
       return digger.create(site);
   }
-  function install$2(id, room) {
+  function install$2$1(id, room) {
       rooms[id] = room;
       return room;
   }
-  install$2('DEFAULT', new Rectangular());
+  install$2$1('DEFAULT', new Rectangular());
 
   var room = /*#__PURE__*/Object.freeze({
       __proto__: null,
@@ -19398,7 +19936,7 @@ void main() {
       brogueDonut: brogueDonut,
       ChunkyRoom: ChunkyRoom,
       chunkyRoom: chunkyRoom,
-      install: install$2
+      install: install$2$1
   });
 
   const DIRS = xy.DIRS;
@@ -20897,7 +21435,7 @@ void main() {
   }
 
   const hordes = {};
-  function install$1(id, horde) {
+  function install$2(id, horde) {
       if (typeof horde === "string") {
           horde = { leader: horde };
       }
@@ -21009,13 +21547,13 @@ void main() {
   // }
   const tilesByIndex = [];
   const tilesByName = {};
-  function install(cfg) {
+  function install$1(cfg) {
       const info = index$1.installTile(cfg);
       tilesByIndex[info.index] = info;
       tilesByName[info.id] = info;
   }
-  install({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-  install({
+  install$1({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
+  install$1({
       id: "WALL",
       ch: "#",
       fg: 0x333,
@@ -21024,7 +21562,7 @@ void main() {
       blocksVision: true,
       blocksDiagonal: true,
   });
-  install({
+  install$1({
       id: "CORPSE",
       ch: "&",
       fg: 0x666,
@@ -21045,7 +21583,7 @@ void main() {
           },
       },
   });
-  install({
+  install$1({
       id: "DOWN_STAIRS",
       ch: "<",
       fg: "gray",
@@ -21055,7 +21593,7 @@ void main() {
           },
       },
   });
-  install({
+  install$1({
       id: "UP_STAIRS",
       ch: ">",
       fg: "orange",
@@ -21066,7 +21604,7 @@ void main() {
           },
       },
   });
-  install({
+  install$1({
       id: "UP_STAIRS_INACTIVE",
       ch: ">",
       fg: "gray",
@@ -21077,7 +21615,7 @@ void main() {
           },
       },
   });
-  install({
+  install$1({
       id: "IMPREGNABLE",
       ch: "#",
       fg: 0x222,
@@ -21090,7 +21628,7 @@ void main() {
   index$1.allTiles.forEach((t) => {
       if (tilesByName[t.id])
           return;
-      install(t);
+      install$1(t);
   });
 
   class Level {
@@ -21109,6 +21647,7 @@ void main() {
           this.player = null;
           // rng: GWU.rng.Random;
           this.locations = {};
+          this.events = new index.Events(this);
           this.tiles = grid.make(width, height);
           this.flags = grid.make(width, height);
           this.choke = grid.make(width, height);
@@ -21143,6 +21682,7 @@ void main() {
           game.hero.clearGoal();
           spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
               this.started = true;
+              this.trigger("start");
               this.data.wavesLeft = this.waves.length;
               this.waves.forEach((wave) => {
                   console.log("WAVE - " + wave.delay);
@@ -21177,9 +21717,11 @@ void main() {
           }
       }
       stop(game) {
+          this.trigger("stop");
           this.game = null;
       }
       tick(game, dt) {
+          this.trigger("tick", dt);
           // tick actors
           this.actors.forEach((a) => {
               a.tick(game, dt);
@@ -21224,11 +21766,16 @@ void main() {
       }
       setTile(x, y, id, opts = {}) {
           const tile = typeof id === "string" ? tilesByName[id] : tilesByIndex[id];
-          this.tiles[x][y] = tile.index;
           // priority, etc...
-          // this.game && this.game.drawAt(x, y);
-          if (tile.on && tile.on.place) {
-              tile.on.place.call(tile, this.game, x, y);
+          // allows plugins to change the tile
+          let data = { x, y, tile };
+          this.trigger("set_tile", data);
+          if (data.tile) {
+              this.tiles[x][y] = data.tile.index;
+              // this.game && this.game.drawAt(x, y);
+              if (tile.on && tile.on.place) {
+                  tile.on.place.call(tile, this.game, x, y);
+              }
           }
       }
       hasTile(x, y, tile) {
@@ -21314,6 +21861,10 @@ void main() {
           return this.actors.find((a) => a.x === x && a.y === y);
       }
       addActor(obj) {
+          if (!obj.spawn) {
+              obj.spawn = true;
+              this.trigger("spawn_actor", obj);
+          }
           this.actors.push(obj);
           obj.trigger("add", this);
           // this.scene.needsDraw = true; // need to update sidebar too
@@ -21330,6 +21881,10 @@ void main() {
           return this.items.find((i) => i.x === x && i.y === y);
       }
       addItem(obj) {
+          if (!obj.spawn) {
+              obj.spawn = true;
+              this.trigger("spawn_item", obj);
+          }
           this.items.push(obj);
           obj.trigger("add", this);
           // this.scene.needsDraw = true; // need to update sidebar too
@@ -21346,6 +21901,10 @@ void main() {
           return this.fxs.find((i) => i.x === x && i.y === y);
       }
       addFx(obj) {
+          if (!obj.spawn) {
+              obj.spawn = true;
+              this.trigger("spawn_fx", obj);
+          }
           this.fxs.push(obj);
           obj.trigger("add", this);
           // this.scene.needsDraw = true; // need to update sidebar too
@@ -21390,6 +21949,18 @@ void main() {
           if (vert.blocksDiagonal)
               return true;
           return false;
+      }
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
+      }
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      trigger(event, ...args) {
+          return this.events.trigger(event, ...args);
       }
   }
   // export function install(cfg: LevelConfig) {
@@ -21564,12 +22135,29 @@ void main() {
       level.locations = digger.locations;
   }
 
-  function make(opts = 0) {
-      if (typeof opts === "number") {
-          opts = { seed: opts };
+  const plugins = {};
+  // @ts-ignore
+  globalThis.PLUGINS = plugins;
+  function install(name, cfg) {
+      const plugin = Object.assign({
+          name,
+          start: () => { },
+          stop: () => { },
+          new_game: () => { },
+          new_level: () => { },
+      }, cfg);
+      if (plugin.name != name) {
+          plugin.name = name;
       }
-      return new Game(opts);
+      plugins[name.toLowerCase()] = plugin;
   }
+
+  // export function make(opts: GameOpts | number = 0) {
+  //   if (typeof opts === "number") {
+  //     opts = { seed: opts };
+  //   }
+  //   return new Game(opts);
+  // }
   class Game {
       constructor(opts) {
           this.needInput = false;
@@ -21582,7 +22170,7 @@ void main() {
           console.log("GAME, seed=", this.seed);
           this.rng = rng.make(this.seed);
           this.seeds = [];
-          const LAST_LEVEL = this.app ? this.app.data.get("LAST_LEVEL") : 10;
+          const LAST_LEVEL = 10;
           for (let i = 0; i < LAST_LEVEL; ++i) {
               const levelSeed = this.rng.number(100000);
               this.seeds.push(levelSeed);
@@ -21597,6 +22185,13 @@ void main() {
           this.inputQueue = new index.Queue();
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
+          this.keymap = {
+              a: "attack",
+              f: "fire",
+              g: "pickup",
+              " ": "idle",
+              ".": "idle",
+          };
           // TODO - Get these as parameters...
           // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
           this.events.on("Enter", (e) => {
@@ -21605,38 +22200,47 @@ void main() {
                   this.hero.act(this);
               }
               this.scene.needsDraw = true;
+              e.stopPropagation();
           });
           this.events.on("dir", (e) => {
               moveDir(this, this.hero, e.dir);
               this.scene.needsDraw = true;
+              e.stopPropagation();
           });
-          this.events.on("a", (e) => {
-              attack(this, this.hero);
-              this.scene.needsDraw = true;
-          });
-          this.events.on("f", (e) => {
-              fire(this, this.hero);
-              this.scene.needsDraw = true;
-          });
-          this.events.on("g", (e) => {
-              pickup(this, this.hero);
-              this.scene.needsDraw = true;
-          });
+          // this.events.on("a", (e) => {
+          //   ACTIONS.attack(this, this.hero);
+          //   this.scene!.needsDraw = true;
+          // });
+          // this.events.on("f", (e) => {
+          //   ACTIONS.fire(this, this.hero);
+          //   this.scene!.needsDraw = true;
+          // });
+          // this.events.on("g", (e) => {
+          //   ACTIONS.pickup(this, this.hero);
+          //   this.scene!.needsDraw = true;
+          // });
           this.events.on("i", (e) => {
+              if (this.keymap["i"]) {
+                  return; // continue to keypress handler
+              }
               console.log(">> INVENTORY <<");
               // TODO - Set focus to the player so that it shows their info
               //      - Send event to level scene?
               this.scene.trigger("inventory", this);
+              e.stopPropagation();
           });
-          this.events.on("p", (e) => {
-              console.log("POTION");
-              potion(this, this.hero);
-          });
-          this.events.on(" ", (e) => {
-              idle(this, this.hero);
-              this.scene.needsDraw = true;
-          });
+          // this.events.on("p", (e) => {
+          //   console.log("POTION");
+          //   ACTIONS.potion(this, this.hero);
+          // });
+          // this.events.on(" ", (e) => {
+          //   ACTIONS.idle(this, this.hero);
+          //   this.scene!.needsDraw = true;
+          // });
           this.events.on(">", (e) => {
+              if (this.keymap[">"]) {
+                  return; // continue to keypress handler
+              }
               if (!this.level)
                   return;
               // find stairs
@@ -21654,8 +22258,12 @@ void main() {
                   this.scene.needsDraw = true;
               }
               this.scene.needsDraw = true;
+              e.stopPropagation();
           });
           this.events.on("<", (e) => {
+              if (this.keymap["<"]) {
+                  return; // continue to keypress handler
+              }
               if (!this.level)
                   return;
               // find stairs
@@ -21673,11 +22281,26 @@ void main() {
                   this.scene.needsDraw = true;
               }
               this.scene.needsDraw = true;
+              e.stopPropagation();
           });
-          this.events.on("z", (e) => {
-              spawn(this.level, "zombie", this.hero.x, this.hero.y);
-              this.scene.needsDraw = true;
+          // this.events.on("z", (e) => {
+          //   ACTOR.spawn(this.level!, "zombie", this.hero.x, this.hero.y);
+          //   this.scene!.needsDraw = true;
+          // });
+          this.events.on("keypress", (e) => {
+              let action = this.keymap[e.key];
+              if (!action)
+                  return;
+              let fn = get(action);
+              if (!fn) {
+                  console.warn(`Failed to find action: ${action} for key: ${e.key}`);
+              }
+              else {
+                  fn(this, this.hero);
+                  this.scene.needsDraw = true;
+              }
           });
+          Object.values(plugins).forEach((p) => p.new_game(this));
           // @ts-ignore
           globalThis.GAME = this;
       }
@@ -21712,7 +22335,8 @@ void main() {
           // @ts-ignore
           globalThis.LEVEL = level;
           // @ts-ignore
-          globalThis.PLAYER = this.hero;
+          globalThis.HERO = this.hero;
+          Object.values(plugins).forEach((p) => p.new_level(this, level));
           level.start(this);
           this.tick();
       }
@@ -21825,7 +22449,7 @@ void main() {
               prompt.on("stop", (seed) => {
                   e.stopPropagation();
                   if (seed) {
-                      const game = make({ seed, app: this.app });
+                      const game = new Game({ seed, app: this.app });
                       this.app.scenes.start("level", game);
                   }
               });
@@ -21836,446 +22460,12 @@ void main() {
               e.stopPropagation();
           });
           this.on("keypress", (e) => {
-              const game = make({ app: this.app });
+              const game = new Game({ app: this.app });
               this.app.scenes.start("level", game);
               e.stopPropagation();
           });
       },
   };
-
-  function messages(scene, y) {
-      const widget = index$1$1.make({
-          id: "MESSAGES",
-          tag: "msg",
-          x: 0,
-          y: y,
-          width: scene.width,
-          height: scene.height - y,
-          scene,
-          bg: "darkest_gray",
-          fg: "white",
-          draw(buf) {
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              const fg = index$9.from(this._used.fg);
-              const fgc = fg.alpha(50);
-              const game = this.scene.data;
-              if (game && game.messages) {
-                  game.messages.forEach((msg, confirmed, i) => {
-                      if (i < this.bounds.height) {
-                          const color = confirmed ? fgc : fg;
-                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
-                      }
-                  });
-              }
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  class Map$1 extends index.Widget {
-      constructor(opts) {
-          super(opts);
-          this._focus = [-1, -1];
-          this.on("draw", this._draw);
-          this.on("mousemove", this._setFocus);
-          this.on("mouseleave", this._clearFocus);
-          this.on("keypress", this._clearFocus);
-      }
-      _draw(buf) {
-          const game = this.scene.data;
-          const player = game.hero;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
-          const level = game.level;
-          level.tiles.forEach((index, x, y) => {
-              buf.blackOut(x, y);
-              level.drawAt(buf, x, y);
-              if (!player.fov || !player.fov.get(x, y)) {
-                  buf.get(x, y).mix("black", 25, 25);
-              }
-          });
-          if (player.goalPath) {
-              player.goalPath.forEach(([x, y]) => {
-                  buf.get(x, y).mix("green", 0, 25).separate();
-              });
-          }
-      }
-      _setFocus(e) {
-          this._focus[0] = e.x;
-          this._focus[1] = e.y;
-          this.needsDraw = true;
-          // e.stopPropagation();
-      }
-      _clearFocus() {
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-      }
-  }
-  function map(scene, width, height) {
-      const widget = new Map$1({
-          id: "MAP",
-          tag: "map",
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-          scene,
-          bg: index$9.BLACK,
-      });
-      return widget;
-  }
-
-  class Sidebar extends index.Widget {
-      constructor(opts) {
-          super(opts);
-          this._focus = [-1, -1];
-          this.entries = [];
-      }
-      setFocus(x, y) {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = x;
-          this._focus[1] = y;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.trigger("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      clearFocus() {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.trigger("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      drawPlayer(buf, x, y, player) {
-          buf.drawText(x, y, "Hero");
-          this.drawHealth(buf, x, y + 1, 28, player);
-          this.drawPotion(buf, x, y + 2, 28, player);
-          let lines = 3; // Hero + health + potion
-          player.statuses.forEach((status) => {
-              if (status) {
-                  lines += status.draw_sidebar(buf, x, y + lines, 28, player);
-              }
-          });
-          return lines;
-      }
-      drawActor(buf, x, y, actor) {
-          buf.drawText(x, y, actor.name, actor.kind.fg);
-          this.drawHealth(buf, x, y + 1, 28, actor);
-          let lines = 2; // name + health
-          actor.statuses.forEach((status) => {
-              if (status) {
-                  lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
-              }
-          });
-          return lines;
-      }
-      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
-          const pct = val / max;
-          const full = Math.floor(w * pct);
-          const partialPct = Math.floor(100 * (w * pct - full));
-          buf.fillRect(x, y, full, 1, null, null, bg);
-          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
-          if (text && text.length) {
-              buf.drawText(x, y, text, fg, null, w, "center");
-          }
-      }
-      drawHealth(buf, x, y, w, actor) {
-          const pct = actor.health / actor.health_max;
-          const bg = index$9.colors.green.mix(index$9.colors.red, 100 * (1 - pct));
-          this.drawProgress(buf, x, y, w, "white", bg, actor.health, actor.health_max, "HEALTH");
-      }
-      drawPotion(buf, x, y, w, player) {
-          this.drawProgress(buf, x, y, w, "white", index$9.colors.blue, player.potion, player.potion_max, "Potion");
-      }
-      _draw(buf) {
-          const scene = this.scene;
-          const game = scene.data;
-          const level = game.level;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-          const x = this.bounds.x + 1;
-          let y = this.bounds.y;
-          buf.setClip(this.bounds);
-          // buf.drawText(x);
-          y += buf.drawText(x, y, scene.app.name, "green");
-          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-          y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
-          y += 1;
-          let px = game.hero.x;
-          let py = game.hero.y;
-          // if (this._focus[0] != -1) {
-          //   px = this._focus[0];
-          //   py = this._focus[1];
-          // }
-          this.entries = level.actors.filter((a) => a && a !== game.hero && a.health > 0);
-          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
-              xy.distanceBetween(b.x, b.y, px, py));
-          let focused = this.entries.find((a) => xy.equals(a, this._focus));
-          let used = this.drawPlayer(buf, x, y, game.hero);
-          game.hero.data.sideY = y;
-          game.hero.data.sideH = used;
-          if (xy.equals(game.hero, this._focus)) {
-              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              focused = game.hero;
-          }
-          else if (focused) {
-              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-          }
-          y += used + 1;
-          this.entries.forEach((a) => {
-              const used = this.drawActor(buf, x, y, a);
-              if (a === focused) {
-                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              }
-              else if (focused) {
-                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-              }
-              a.data.sideY = y;
-              a.data.sideH = used;
-              y += used + 1;
-          });
-          y += 1;
-          // y += buf.drawText(x, y, "Press Escape to lose.");
-          buf.clearClip();
-      }
-      _mousemove(e) {
-          super._mousemove(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          this._focus.slice();
-          this.clearFocus();
-          const game = this.scene.data;
-          const hero = game.hero;
-          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
-              this.setFocus(hero.x, hero.y);
-          }
-          else {
-              this.entries.forEach((a) => {
-                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
-                      this.setFocus(a.x, a.y);
-                  }
-              });
-          }
-          // if (!GWU.xy.equals(wasFocus, this._focus)) {
-          //   this.trigger("focus", this._focus);
-          //   this.needsDraw = true;
-          // }
-          e.stopPropagation();
-      }
-      _click(e) {
-          super._click(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          if (this._focus[0] > -1) {
-              this.trigger("choose", this._focus);
-          }
-      }
-  }
-  function sidebar(scene, x, height) {
-      const widget = new Sidebar({
-          id: "SIDEBAR",
-          tag: "sidebar",
-          x: x,
-          y: 0,
-          width: scene.width - x,
-          height: height,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  function flavor(scene, x, y) {
-      const widget = index$1$1.make({
-          id: "FLAVOR",
-          tag: "flavor",
-          x: x,
-          y: y,
-          width: scene.width - x,
-          height: 1,
-          scene,
-          bg: index$9.from("darker_gray"),
-          fg: index$9.from("purple"),
-          draw(buf) {
-              this.scene.data;
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  class Details extends index$1$1.Dialog {
-      constructor(opts) {
-          var _a;
-          opts.border = (_a = opts.border) !== null && _a !== void 0 ? _a : "ascii";
-          super(opts);
-          this._text = new index$1$1.Text({
-              id: "INFO",
-              text: "details...",
-              x: this.bounds.x + 1,
-              y: this.bounds.y + 1,
-          });
-          this.addChild(this._text);
-          this.hidden = true;
-      }
-      showActor(actor) {
-          let text = actor.name + " [" + actor.power + "]\n";
-          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
-          text += "Moves : " + actor.moveSpeed + "\n";
-          if (actor.damage > 0) {
-              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          if (actor.range > 0) {
-              text +=
-                  "Ranged: " +
-                      actor.rangedDamage +
-                      " / " +
-                      actor.rangedAttackSpeed +
-                      " @ " +
-                      actor.range +
-                      " (" +
-                      actor.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-      showHero(player) {
-          let text = player.name + "\n";
-          const armor = player.slots.armor;
-          if (armor) {
-              text += "Health: " + player.health + " / " + player.health_max + "\n";
-              text += "#{teal}";
-              text += "  " + armor.name + " [" + armor.power + "]\n";
-              if (armor.kind.armor_flags != 0) {
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
-                      text += "  {-35% Damage Received}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
-                      text += "  {30% Negate Hits}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
-                      text += "  {-40% Artifact Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
-                      text += "  {+10 Arrows Per Bundle}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
-                      text += "  {100% Longer Roll Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
-                      text += "  {+30% Melee Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
-                      text += "  {Mobs Target You More}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
-                      text += "  {+15% Move Speed Aura}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
-                      text += "  {-40% Potion Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
-                      text += "  {Potion Boosts Defense}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
-                      text += "  {Potion Heals Nearby Allies}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
-                      text += "  {+30% Ranged Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
-                      text += "  {+20% Weapon Damage Aura}\n";
-                  }
-              }
-              text += "#{}";
-          }
-          else {
-              text += "Health: " + player.health + "/" + player.health_max + "\n";
-          }
-          text += "Moves : " + player.moveSpeed + "\n";
-          const melee = player.slots.melee;
-          if (melee) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-              text += "#{teal}";
-              text += `  ${melee.name} [${melee.power}]\n`;
-              text += "#{}";
-          }
-          else if (player.damage > 0) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          const ranged = player.slots.ranged;
-          if (ranged) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      " / " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-              text += "#{teal}";
-              text += "  " + ranged.name + " [" + ranged.power + "]\n";
-          }
-          else if (player.range > 0) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      "  " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-  }
-  function details(scene, width, height) {
-      const widget = new Details({
-          id: "DETAILS",
-          tag: "details",
-          x: 2,
-          y: 2,
-          width: width - 4,
-          height: height - 4,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
 
   const level = {
       create() {
@@ -22964,38 +23154,38 @@ void main() {
 
   */
 
-  install$1("ZOMBIE", {
+  install$2("ZOMBIE", {
       leader: "ZOMBIE",
       members: { ZOMBIE: "2-3" },
       frequency: 10,
   });
-  install$1("ZOMBIE2", {
+  install$2("ZOMBIE2", {
       leader: "ARMOR_ZOMBIE",
       members: { ZOMBIE: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$1("ZOMBIE3", {
+  install$2("ZOMBIE3", {
       leader: "ARMOR_ZOMBIE_2",
       members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
   });
-  install$1("SKELETON", {
+  install$2("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
       frequency: 10,
   });
-  install$1("SKELETON2", {
+  install$2("SKELETON2", {
       leader: "ARMOR_SKELETON",
       members: { SKELETON: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$1("SKELETON3", {
+  install$2("SKELETON3", {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
       frequency: (l) => 2 * l,
   });
 
-  install$4({
+  install$5({
       id: "HEALTH_POTION",
       ch: "!",
       fg: "pink",
@@ -23011,7 +23201,7 @@ void main() {
       },
       tags: "", // Not a drop because it is innate
   });
-  install$4({
+  install$5({
       id: "ARROWS",
       ch: "|",
       fg: "yellow",
@@ -23030,7 +23220,7 @@ void main() {
       },
       tags: "drop",
   });
-  install$4({
+  install$5({
       id: "APPLE",
       ch: "&",
       fg: "yellow",
@@ -23045,7 +23235,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "BREAD",
       ch: "&",
       fg: "yellow",
@@ -23060,7 +23250,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "PORK",
       ch: "&",
       fg: "yellow",
@@ -23075,7 +23265,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "SALMON",
       ch: "&",
       fg: "yellow",
@@ -23090,7 +23280,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "BERRIES",
       ch: "&",
       fg: "yellow",
@@ -23105,7 +23295,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "MELON",
       ch: "&",
       fg: "yellow",
@@ -23120,7 +23310,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "FRUIT",
       ch: "&",
       fg: "yellow",
@@ -23135,7 +23325,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$4({
+  install$5({
       id: "FISH",
       ch: "&",
       fg: "yellow",
@@ -23154,7 +23344,7 @@ void main() {
   //////////////////////////////////////////////////////
   // MELEE
   //////////////////////////////////////////////////////
-  install$4({
+  install$5({
       id: "DAGGERS",
       ch: "/",
       fg: "yellow",
@@ -23170,7 +23360,7 @@ void main() {
   // SHEER_DAGGERS
   // VOID_BLADES
   // BEGINNING_AND_END
-  install$4({
+  install$5({
       id: "KNIFE",
       ch: "/",
       fg: "yellow",
@@ -23184,7 +23374,7 @@ void main() {
   // TEMPEST_KNIFE
   // CHILL_KNIFE
   // RESOLUTE_KNIFE
-  install$4({
+  install$5({
       id: "SWORD",
       ch: "/",
       fg: "yellow",
@@ -23198,7 +23388,7 @@ void main() {
   // DIAMOND_SWORD
   // HAWKBRAND
   // SINISTER_SWORD
-  install$4({
+  install$5({
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
@@ -23211,7 +23401,7 @@ void main() {
   });
   // CORAL_BLADE
   // SPONGE_STRIKER
-  install$4({
+  install$5({
       id: "AXE",
       ch: "/",
       fg: "yellow",
@@ -23224,7 +23414,7 @@ void main() {
   });
   // HIGHLAND_AXE
   // FIREBRAND_AXE
-  install$4({
+  install$5({
       id: "DOUBLE_AXE",
       ch: "/",
       fg: "yellow",
@@ -23237,7 +23427,7 @@ void main() {
   });
   // CURSED_AXE
   // WHIRLWIND
-  install$4({
+  install$5({
       id: "BACKSTABBER",
       ch: "/",
       fg: "yellow",
@@ -23249,7 +23439,7 @@ void main() {
       tags: "melee",
   });
   // SWIFT_STRIKER
-  install$4({
+  install$5({
       id: "BATTLESTAFF",
       ch: "/",
       fg: "yellow",
@@ -23262,7 +23452,7 @@ void main() {
   });
   // BATTLESTAFF_OF_TERROR
   // GROWING_STAFF
-  install$4({
+  install$5({
       id: "BONE_CLUB",
       ch: "/",
       fg: "yellow",
@@ -23274,7 +23464,7 @@ void main() {
       tags: "melee",
   });
   // BONE_CUDGEL
-  install$4({
+  install$5({
       id: "CLAYMORE",
       ch: "/",
       fg: "yellow",
@@ -23293,7 +23483,7 @@ void main() {
   // FROST_SLAYER
   // DANCERS_SWORD
   // NAMELESS_BLADE
-  install$4({
+  install$5({
       id: "GLAIVE",
       ch: "/",
       fg: "yellow",
@@ -23306,7 +23496,7 @@ void main() {
   });
   // GRAVE_BANE
   // VENOM_GLAIVE
-  install$4({
+  install$5({
       id: "GREAT_HAMMER",
       ch: "/",
       fg: "yellow",
@@ -23319,7 +23509,7 @@ void main() {
   });
   // HAMMER_OF_GRAVITY
   // STORMLANDER
-  install$4({
+  install$5({
       id: "MACE",
       ch: "/",
       fg: "yellow",
@@ -23332,7 +23522,7 @@ void main() {
   });
   // FLAIL
   // SUNS_GRACE
-  install$4({
+  install$5({
       id: "PICKAXE",
       ch: "/",
       fg: "yellow",
@@ -23344,7 +23534,7 @@ void main() {
       tags: "melee",
   });
   // DIAMOND_PICKAXE
-  install$4({
+  install$5({
       id: "SICKLES",
       ch: "/",
       fg: "yellow",
@@ -23360,7 +23550,7 @@ void main() {
   // SOUL_KNIFE
   // ETERNAL_KNIFE
   // TRUTHSEEKER
-  install$4({
+  install$5({
       id: "WHIP",
       ch: "/",
       fg: "yellow",
@@ -23372,7 +23562,7 @@ void main() {
       tags: "melee",
   });
   // VINE_WHIP
-  install$4({
+  install$5({
       id: "GAUNTLETS",
       ch: "/",
       fg: "yellow",
@@ -23386,7 +23576,7 @@ void main() {
   // FIGHTERS_BINDINGS
   // MAULERS
   // SOUL_FISTS
-  install$4({
+  install$5({
       id: "SCYTHE",
       ch: "/",
       fg: "yellow",
@@ -23400,7 +23590,7 @@ void main() {
   // SOUL_SCYTHE
   // FROST_SCYTHE
   // JAILORS_SCYTHE
-  install$4({
+  install$5({
       id: "KATANA",
       ch: "/",
       fg: "yellow",
@@ -23413,7 +23603,7 @@ void main() {
   });
   // DARK_KATANA
   // MASTERS_KATANA
-  install$4({
+  install$5({
       id: "SPEAR",
       ch: "/",
       fg: "yellow",
@@ -23426,7 +23616,7 @@ void main() {
   });
   // FORTUNE_SPEAR
   // WHISPERING_SPEAR
-  install$4({
+  install$5({
       id: "RAPIER",
       ch: "/",
       fg: "yellow",
@@ -23440,7 +23630,7 @@ void main() {
   // BEE_STINGER
   // FREEZING_FOIL
 
-  install$4({
+  install$5({
       id: "SCALE_MAIL",
       name: "Scale Mail",
       ch: "]",
@@ -23453,7 +23643,7 @@ void main() {
           melee_damage: 30,
       },
   });
-  install$4({
+  install$5({
       id: "MERCENARY_ARMOR",
       name: "Mercenary Armor",
       ch: "]",
@@ -23466,7 +23656,7 @@ void main() {
           weapon_damage_aura: 20,
       },
   });
-  install$4({
+  install$5({
       id: "GUARDS_ARMOR",
       name: "Guards Armor",
       ch: "]",
@@ -23479,7 +23669,7 @@ void main() {
           arrows: 10,
       },
   });
-  install$4({
+  install$5({
       id: "HUNTERS_ARMOR",
       name: "Hunters Armor",
       ch: "]",
@@ -23492,7 +23682,7 @@ void main() {
           arrows: 10,
       },
   });
-  install$4({
+  install$5({
       id: "ARCHERS_ARMOR",
       name: "Archers Armor",
       ch: "]",
@@ -23506,7 +23696,7 @@ void main() {
           move_speed_aura: 15,
       },
   });
-  install$4({
+  install$5({
       id: "REINFORCED_MAIL",
       name: "Reinforced Mail",
       ch: "]",
@@ -23520,7 +23710,7 @@ void main() {
           roll_cooldown: 100,
       },
   });
-  install$4({
+  install$5({
       id: "STALWART_ARMOR",
       name: "Stalwart Armor",
       ch: "]",
@@ -23535,7 +23725,7 @@ void main() {
           potion_boosts_defense: [90, 5 * 200],
       },
   });
-  install$4({
+  install$5({
       id: "PLATE_ARMOR",
       name: "Plate Armor",
       ch: "]",
@@ -23549,7 +23739,7 @@ void main() {
           roll_cooldown: 100,
       },
   });
-  install$4({
+  install$5({
       id: "FULL_METAL_ARMOR",
       name: "Full Metal Armor",
       ch: "]",
@@ -23564,7 +23754,7 @@ void main() {
           melee_damage: 30,
       },
   });
-  install$4({
+  install$5({
       id: "CHAMPIONS_ARMOR",
       name: "Champions Armor",
       ch: "]",
@@ -23578,7 +23768,7 @@ void main() {
           mobs_target_you: 50, // 50%?
       },
   });
-  install$4({
+  install$5({
       id: "HEROS_ARMOR",
       name: "Heros Armor",
       ch: "]",
@@ -23597,7 +23787,7 @@ void main() {
   //////////////////////////////////////////////////////
   // RANGED
   //////////////////////////////////////////////////////
-  install$4({
+  install$5({
       id: "BOW",
       ch: "}",
       fg: "yellow",
@@ -23609,7 +23799,7 @@ void main() {
   });
   // BONE_BOW
   // TWIN_BOW
-  install$4({
+  install$5({
       id: "HUNTING_BOW",
       ch: "}",
       fg: "yellow",
@@ -23622,7 +23812,7 @@ void main() {
   // ANCIENT_BOW
   // HUNTERS_PROMISE
   // MASTERS_BOW
-  install$4({
+  install$5({
       id: "LONGBOW",
       ch: "}",
       fg: "yellow",
@@ -23634,7 +23824,7 @@ void main() {
   });
   // GUARDIAN_BOW
   // RED_SNAKE
-  install$4({
+  install$5({
       id: "POWER_BOW",
       ch: "}",
       fg: "yellow",
@@ -23646,7 +23836,7 @@ void main() {
   });
   // ELITE_POWER_BOW
   // SABREWING
-  install$4({
+  install$5({
       id: "SHORTBOW",
       ch: "}",
       fg: "yellow",
@@ -23661,7 +23851,7 @@ void main() {
   // PURPLE_STORM
   // SNOW_BOW
   // WINTERS_TOUCH
-  install$4({
+  install$5({
       id: "TRICKBOW",
       ch: "}",
       fg: "yellow",
@@ -23673,7 +23863,7 @@ void main() {
   });
   // GREEN_MENACE
   // PINK_SCOUNDREL
-  install$4({
+  install$5({
       id: "CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23688,7 +23878,7 @@ void main() {
   // EXPLODING_CROSSBOW
   // FIREBOLT_THROWER
   // IMPLODING_CROSSBOW
-  install$4({
+  install$5({
       id: "DUAL_CROSSBOWS",
       ch: "}",
       fg: "yellow",
@@ -23700,7 +23890,7 @@ void main() {
   });
   // BABY_CROSSBOWS
   // SPELLBOUND_CROSSBOWS
-  install$4({
+  install$5({
       id: "HEAVY_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23712,7 +23902,7 @@ void main() {
   });
   // DOOM_CROSSBOW
   // SLAYER_CROSSBOW
-  install$4({
+  install$5({
       id: "RAPID_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23724,7 +23914,7 @@ void main() {
   });
   // AUTO_CROSSBOW
   // BUTTERFLY_CROSSBOW
-  install$4({
+  install$5({
       id: "SCATTER_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23737,11 +23927,51 @@ void main() {
   // HARP_CROSSBOW
   // LIGHTNING_HARP_CROSSBOW
 
-  function start() {
-      // create the user interface
-      // @ts-ignore
-      globalThis.APP = index.make({
-          name: "Roguecraft: Tower",
+  install$4("potion", (game, actor) => {
+      if (!actor.isHero)
+          return false;
+      if (actor.data.potion < actor.data.potion_max) {
+          game.addMessage("Not ready.");
+          // TODO - spend time? idle?
+          return false;
+      }
+      if (actor.health >= actor.health_max) {
+          game.addMessage("You do not need to drink a potion.");
+          // TODO - spend time? idle?
+          return false;
+      }
+      const heal = Math.floor(actor.health_max * 0.75);
+      actor.health = Math.min(actor.health + heal, actor.health_max);
+      actor.data.potion = 0; // Needs to recharge
+      game.addMessage("You feel much better.");
+      game.endTurn(actor, actor.moveSpeed);
+      return true;
+  });
+  install("potion", {
+      new_game(game) {
+          game.keymap["p"] = "potion";
+      },
+      new_level(game, level) {
+          console.log("POTION PLUGIN: NEW LEVEL");
+          level.on("spawn_actor", (actor) => {
+              console.log("POTION PLUGIN SPAWN ACTOR: " + actor.kind.id);
+              if (actor.isHero) {
+                  actor.data.potion_max = 40 * 100; // 40 moves
+                  actor.data.potion = actor.data.potion_max;
+                  actor.on("turn_end", (game, time) => {
+                      actor.data.potion = Math.min(actor.data.potion + time, actor.data.potion_max);
+                  });
+                  actor.on("sidebar", (entry) => {
+                      entry.add_progress("Potion", "blue", actor.data.potion, actor.data.potion_max);
+                  });
+              }
+          });
+      },
+  });
+
+  function make(config) {
+      const appOpts = {
+          name: "Goblinwerks",
           width: 90,
           height: 45,
           div: "game",
@@ -23753,10 +23983,46 @@ void main() {
               help: help,
               reward: reward,
           },
-          data: {
-              LAST_LEVEL: 10,
-          },
           start: "title",
+      };
+      if (config.name !== undefined) {
+          appOpts.name = config.name;
+      }
+      if (config.div !== undefined) {
+          appOpts.div = config.div;
+      }
+      if (Array.isArray(config.console) && config.console.length == 2) {
+          appOpts.width = config.console[0];
+          appOpts.height = config.console[1];
+      }
+      if (config.scenes) {
+          Object.assign(appOpts.scenes, config.scenes);
+      }
+      if (config.start_scene) {
+          appOpts.start = config.start_scene;
+      }
+      const app = index.make(appOpts);
+      // Start Plugins...
+      Object.values(plugins).forEach((p) => p.start(app));
+      return app;
+  }
+
+  function start() {
+      // create the user interface
+      // @ts-ignore
+      globalThis.APP = make({
+          name: "Roguecraft: Tower",
+          console: [90, 45],
+          div: "game",
+          scenes: {
+              title: title,
+              level: level,
+              win: win,
+              lose: lose,
+              help: help,
+              reward: reward,
+          },
+          start_scene: "title",
       });
   }
   globalThis.onload = start;

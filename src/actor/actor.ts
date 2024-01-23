@@ -4,13 +4,15 @@ import * as FX from "../fx/index";
 import { Obj, ObjConfig } from "../game/obj";
 import { Game } from "../game/game";
 import { Level } from "../game/level";
-import { TileInfo } from "../game/tiles";
+import { TileInfo } from "../tile";
 import * as AI from "./ai";
-import * as ACTIONS from "../game/actions";
+import * as ACTIONS from "../action";
 
 import { ActorKind, getKind } from "./kind";
 import { Item, placeRandom, ARMOR_FLAGS } from "../item";
 import { Status } from "./status";
+import { plugins } from "../game/plugins";
+import { SidebarEntry } from "../widgets";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -126,6 +128,10 @@ export class Actor extends Obj {
   get comboLen(): number {
     return this.kind.combo;
   }
+
+  get isHero(): boolean {
+    return false;
+  }
   //
 
   getMeleeAttack(): AttackInfo {
@@ -216,7 +222,7 @@ export class Actor extends Obj {
     const actions = this.kind.bump;
 
     for (let action of actions) {
-      const fn = ACTIONS.getBump(action);
+      const fn = ACTIONS.get(action);
       if (fn && fn(game, actor, this)) {
         return true;
       }
@@ -233,6 +239,16 @@ export class Actor extends Obj {
         }
       }
     });
+  }
+
+  getSidebarEntry(): SidebarEntry {
+    const entry = new SidebarEntry(this.name, this.kind.fg);
+    entry.add_progress("Health", "green", this.health, this.health_max);
+    this.statuses.forEach((s) => {
+      s && s.update_sidebar(this, entry);
+    });
+    this.trigger("sidebar", entry); // Allow plugins to update sidebar
+    return entry;
   }
 }
 
@@ -286,18 +302,19 @@ export function spawn(
   const scene = game.scene!;
   // const level = level.level;
 
-  if (x === undefined) {
+  if (x === undefined || y === undefined) {
     do {
       x = level.rng.number(level.width);
       y = level.rng.number(level.height);
     } while (!level.hasTile(x, y, "FLOOR") || level.actorAt(x, y));
   }
 
+  newbie.x = x;
+  newbie.y = y;
+
   let _success: ActorCallback = GWU.NOOP;
 
-  FX.flashGameTime(game, x, y!, bg).then(() => {
-    newbie.x = x!;
-    newbie.y = y!;
+  FX.flashGameTime(game, newbie.x, newbie.y, bg).then(() => {
     level.addActor(newbie);
     _success(newbie);
   });

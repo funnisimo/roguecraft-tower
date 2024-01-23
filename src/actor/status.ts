@@ -2,6 +2,7 @@ import * as GWU from "gw-utils";
 import { Game } from "../game";
 import { Actor } from "./actor";
 import * as Effect from "../effect";
+import { SidebarEntry } from "../widgets";
 
 export class Status {
   start(actor: Actor, game: Game): void {}
@@ -17,15 +18,7 @@ export class Status {
   // TODO - Wrap this with higher level interface
   //      - Allow modifying the health bar
   //      - Allow set text { set_status("Regen") }
-  draw_sidebar(
-    buf: GWU.buffer.Buffer,
-    x: number,
-    y: number,
-    width: number,
-    actor: Actor
-  ): number {
-    return 0;
-  }
+  update_sidebar(actor: Actor, entry: SidebarEntry) {}
 
   // TODO - Wrap this with higher level interface
   //      - Allow modifying other parts
@@ -89,14 +82,7 @@ export class RegenStatus extends Status {
     return false;
   }
 
-  draw_sidebar(
-    buf: GWU.buffer.Buffer,
-    x: number,
-    y: number,
-    width: number,
-    actor: Actor
-  ): number {
-    buf.drawText(x, y, "{Regen}", "red");
-    return 1;
+  update_sidebar(actor: Actor, entry: SidebarEntry) {
+    entry.add_status("{Regen}", "green");
   }
 }

@@ -14,12 +14,14 @@ export class Obj {
   y: number;
   z: number;
   events: GWU.app.Events;
+  spawn: boolean;
 
   constructor(cfg: ObjConfig = {}) {
     this.x = cfg.x || 0;
     this.y = cfg.y || 0;
     this.z = cfg.z || 0;
     this.events = new GWU.app.Events(this);
+    this.spawn = false;
 
     // Object.assign(this, cfg);
   }

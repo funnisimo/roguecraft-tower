@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import * as GAME from "../game/index";
+import { Game } from "../game/game";
 
 export const title = {
   create(this: GWU.app.Scene) {
@@ -19,7 +19,7 @@ export const title = {
       prompt.on("stop", (seed) => {
         e.stopPropagation();
         if (seed) {
-          const game = GAME.make({ seed, app: this.app });
+          const game = new Game({ seed, app: this.app });
           this.app.scenes.start("level", game);
         }
       });
@@ -30,7 +30,7 @@ export const title = {
       e.stopPropagation();
     });
     this.on("keypress", (e) => {
-      const game = GAME.make({ app: this.app });
+      const game = new Game({ app: this.app });
       this.app.scenes.start("level", game);
       e.stopPropagation();
     });

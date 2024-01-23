@@ -5,10 +5,11 @@ import * as ACTOR from "../actor";
 import * as HORDE from "../horde";
 import * as FX from "../fx";
 
-import * as TILE from "./tiles";
+import * as TILE from "../tile";
 import * as ITEM from "../item";
 import * as OBJ from "./obj";
 import { Game } from "./game";
+import { CallbackFn } from "./obj";
 
 export interface WaveInfo {
   delay?: number;
@@ -40,8 +41,10 @@ export class Level implements GWD.site.AnalysisSite {
   seed: number;
   // rng: GWU.rng.Random;
   locations: Record<string, GWU.xy.Loc> = {};
+  events: GWU.app.Events;
 
   constructor(width: number, height: number, seed = 0) {
+    this.events = new GWU.app.Events(this);
     this.tiles = GWU.grid.make(width, height);
     this.flags = GWU.grid.make(width, height);
     this.choke = GWU.grid.make(width, height);
@@ -88,6 +91,7 @@ export class Level implements GWD.site.AnalysisSite {
 
     ACTOR.spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
+      this.trigger("start");
 
       this.data.wavesLeft = this.waves.length;
       this.waves.forEach((wave) => {
@@ -125,10 +129,13 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   stop(game: Game) {
+    this.trigger("stop");
     this.game = null;
   }
 
   tick(game: Game, dt: number) {
+    this.trigger("tick", dt);
+
     // tick actors
     this.actors.forEach((a) => {
       a.tick(game, dt);
@@ -179,13 +186,19 @@ export class Level implements GWD.site.AnalysisSite {
     const tile =
       typeof id === "string" ? TILE.tilesByName[id] : TILE.tilesByIndex[id];
 
-    this.tiles[x][y] = tile.index;
-
     // priority, etc...
 
-    // this.game && this.game.drawAt(x, y);
-    if (tile.on && tile.on.place) {
-      tile.on.place.call(tile, this.game!, x, y);
+    // allows plugins to change the tile
+    let data = { x, y, tile };
+    this.trigger("set_tile", data);
+
+    if (data.tile) {
+      this.tiles[x][y] = data.tile.index;
+
+      // this.game && this.game.drawAt(x, y);
+      if (tile.on && tile.on.place) {
+        tile.on.place.call(tile, this.game!, x, y);
+      }
     }
   }
 
@@ -293,6 +306,10 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   addActor(obj: ACTOR.Actor) {
+    if (!obj.spawn) {
+      obj.spawn = true;
+      this.trigger("spawn_actor", obj);
+    }
     this.actors.push(obj);
     obj.trigger("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
@@ -313,6 +330,10 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   addItem(obj: ITEM.Item) {
+    if (!obj.spawn) {
+      obj.spawn = true;
+      this.trigger("spawn_item", obj);
+    }
     this.items.push(obj);
     obj.trigger("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
@@ -333,6 +354,10 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   addFx(obj: FX.FX) {
+    if (!obj.spawn) {
+      obj.spawn = true;
+      this.trigger("spawn_fx", obj);
+    }
     this.fxs.push(obj);
     obj.trigger("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
@@ -389,6 +414,47 @@ export class Level implements GWD.site.AnalysisSite {
 
     return false;
   }
+
+  on(cfg: Record<string, CallbackFn>): GWU.app.CancelFn;
+  on(event: string, fn: CallbackFn): GWU.app.CancelFn;
+  on(...args: any[]): GWU.app.CancelFn {
+    if (args.length == 1) {
+      return this.events.on(args[0]);
+    }
+    return this.events.on(args[0], args[1]);
+  }
+  once(event: string, fn: CallbackFn) {
+    return this.events.once(event, fn);
+  }
+  trigger(event: string, ...args: any[]) {
+    return this.events.trigger(event, ...args);
+  }
+
+  // wait(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
+  // wait(delay: number, fn: string, ctx?: Record<string, any>): EVENTS.CancelFn;
+  // wait(...args: any[]): EVENTS.CancelFn {
+  //   // @ts-ignore
+  //   // return this.scene.wait.apply(this.scene, args);
+  //   if (typeof args[1] === "string") {
+  //     const ev = args[1];
+  //     args[2] = args[2] || {};
+  //     args[1] = () => this.trigger(ev, args[2]!);
+  //   }
+  //   return this.timers.setTimeout(args[1], args[0]);
+  // }
+
+  // repeat(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
+  // repeat(delay: number, fn: string, ctx?: Record<string, any>): EVENTS.CancelFn;
+  // repeat(...args: any[]): EVENTS.CancelFn {
+  //   // @ts-ignore
+  //   // return this.scene.repeat.apply(this.scene, args);
+  //   if (typeof fn === "string") {
+  //     const ev = args[1];
+  //     args[2] = args[2] || {};
+  //     args[1] = () => this.trigger(ev, args[2]!);
+  //   }
+  //   return this.timers.setInterval(args[1], args[0]);
+  // }
 }
 
 // export const levels: Level[] = [];

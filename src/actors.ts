@@ -1,5 +1,5 @@
 import * as ACTOR from "./actor";
-import * as ACTIONS from "./game/actions";
+import * as ACTIONS from "./action";
 
 ACTOR.install({
   id: "HERO",

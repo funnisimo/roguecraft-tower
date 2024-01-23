@@ -4,6 +4,54 @@ import { Actor } from "../actor/actor";
 import { Hero } from "../actor/hero";
 import { Game } from "../game/game";
 
+export interface StatusInfo {
+  text: string;
+  color: GWU.color.ColorBase;
+}
+
+export interface ProgressInfo {
+  text: string;
+  color: GWU.color.ColorBase;
+  val: number;
+  max: number;
+}
+
+export class SidebarEntry {
+  // TODO - icon: GWU.sprite.SpriteData | null;
+  name: string;
+  nameColor: GWU.color.ColorBase;
+  progressbars: ProgressInfo[];
+  statuses: StatusInfo[];
+
+  constructor(name: string, color?: GWU.color.ColorBase) {
+    // TODO: this.icon = null;
+    this.name = name;
+    this.nameColor = color === undefined ? "white" : color;
+    this.progressbars = [];
+    this.statuses = [];
+  }
+
+  add_progress(
+    text: string,
+    color: GWU.color.ColorBase,
+    val: number,
+    max: number
+  ): this {
+    this.progressbars.push({
+      text,
+      color,
+      val,
+      max,
+    });
+    return this;
+  }
+
+  add_status(text: string, color: GWU.color.ColorBase): this {
+    this.statuses.push({ text, color });
+    return this;
+  }
+}
+
 export class Sidebar extends GWU.app.Widget {
   _focus: GWU.xy.Loc = [-1, -1];
   entries: Actor[] = [];
@@ -32,31 +80,70 @@ export class Sidebar extends GWU.app.Widget {
     }
   }
 
-  drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
-    buf.drawText(x, y, "Hero");
+  // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
+  //   buf.drawText(x, y, "Hero");
 
-    this.drawHealth(buf, x, y + 1, 28, player);
-    this.drawPotion(buf, x, y + 2, 28, player);
+  //   this.drawHealth(buf, x, y + 1, 28, player);
+  //   this.drawPotion(buf, x, y + 2, 28, player);
 
-    let lines = 3; // Hero + health + potion
-    player.statuses.forEach((status) => {
-      if (status) {
-        lines += status.draw_sidebar(buf, x, y + lines, 28, player);
-      }
-    });
+  //   let lines = 3; // Hero + health + potion
+  //   player.statuses.forEach((status) => {
+  //     if (status) {
+  //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+  //     }
+  //   });
 
-    return lines;
+  //   return lines;
+  // }
+
+  drawActor(
+    buf: GWU.buffer.Buffer,
+    x: number,
+    y: number,
+    actor: Actor
+  ): number {
+    //   buf.drawText(x, y, actor.name, actor.kind.fg);
+    //   this.drawHealth(buf, x, y + 1, 28, actor);
+
+    //   let lines = 2; // name + health
+    //   actor.statuses.forEach((status) => {
+    //     if (status) {
+    //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+    //     }
+    //   });
+
+    //   return lines;
+    let entry = actor.getSidebarEntry();
+    return this.drawEntry(buf, x, y, entry);
   }
 
-  drawActor(buf: GWU.buffer.Buffer, x: number, y: number, actor: Actor) {
-    buf.drawText(x, y, actor.name, actor.kind.fg);
-    this.drawHealth(buf, x, y + 1, 28, actor);
+  drawEntry(
+    buf: GWU.buffer.Buffer,
+    x: number,
+    y: number,
+    entry: SidebarEntry
+  ): number {
+    buf.drawText(x, y, entry.name, entry.nameColor);
+    let lines = 1;
+    entry.progressbars.forEach((p) => {
+      this.drawProgress(
+        buf,
+        x,
+        y + lines,
+        28,
+        "white",
+        p.color,
+        p.val,
+        p.max,
+        p.text
+      );
+      lines += 1;
+    });
 
-    let lines = 2; // name + health
-    actor.statuses.forEach((status) => {
-      if (status) {
-        lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
-      }
+    entry.statuses.forEach((s) => {
+      if (!s) return;
+      buf.drawText(x, y + lines, s.text, s.color);
+      lines += 1;
     });
 
     return lines;
@@ -85,50 +172,50 @@ export class Sidebar extends GWU.app.Widget {
     }
   }
 
-  drawHealth(
-    buf: GWU.buffer.Buffer,
-    x: number,
-    y: number,
-    w: number,
-    actor: Actor
-  ) {
-    const pct = actor.health / actor.health_max;
-    const bg = GWU.color.colors.green.mix(
-      GWU.color.colors.red,
-      100 * (1 - pct)
-    );
-    this.drawProgress(
-      buf,
-      x,
-      y,
-      w,
-      "white",
-      bg,
-      actor.health,
-      actor.health_max,
-      "HEALTH"
-    );
-  }
+  // drawHealth(
+  //   buf: GWU.buffer.Buffer,
+  //   x: number,
+  //   y: number,
+  //   w: number,
+  //   actor: Actor
+  // ) {
+  //   const pct = actor.health / actor.health_max;
+  //   const bg = GWU.color.colors.green.mix(
+  //     GWU.color.colors.red,
+  //     100 * (1 - pct)
+  //   );
+  //   this.drawProgress(
+  //     buf,
+  //     x,
+  //     y,
+  //     w,
+  //     "white",
+  //     bg,
+  //     actor.health,
+  //     actor.health_max,
+  //     "HEALTH"
+  //   );
+  // }
 
-  drawPotion(
-    buf: GWU.buffer.Buffer,
-    x: number,
-    y: number,
-    w: number,
-    player: Hero
-  ) {
-    this.drawProgress(
-      buf,
-      x,
-      y,
-      w,
-      "white",
-      GWU.color.colors.blue,
-      player.potion,
-      player.potion_max,
-      "Potion"
-    );
-  }
+  // drawPotion(
+  //   buf: GWU.buffer.Buffer,
+  //   x: number,
+  //   y: number,
+  //   w: number,
+  //   player: Hero
+  // ) {
+  //   this.drawProgress(
+  //     buf,
+  //     x,
+  //     y,
+  //     w,
+  //     "white",
+  //     GWU.color.colors.blue,
+  //     player.potion,
+  //     player.potion_max,
+  //     "Potion"
+  //   );
+  // }
 
   _draw(buf: GWU.buffer.Buffer) {
     const scene = this.scene! as GWU.app.Scene;
@@ -173,7 +260,7 @@ export class Sidebar extends GWU.app.Widget {
 
     let focused = this.entries.find((a) => GWU.xy.equals(a, this._focus));
 
-    let used = this.drawPlayer(buf, x, y, game.hero);
+    let used = this.drawActor(buf, x, y, game.hero);
     game.hero.data.sideY = y;
     game.hero.data.sideH = used;
     if (GWU.xy.equals(game.hero, this._focus)) {

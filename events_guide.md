@@ -39,6 +39,9 @@
 
 - start
 - stop
+- spawn_actor
+- spawn_item
+- spawn_fx
 - enter // tile
 - exit // tile
 - add // tile

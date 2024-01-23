@@ -1,28 +1,29 @@
 import * as GWU from "gw-utils";
 
 import * as ACTOR from "../actor/index";
-import * as ACTIONS from "./actions";
+import * as ACTIONS from "../action";
 import * as LEVEL from "./level";
 import { Hero } from "../actor/hero";
 // import { default as CONFIG } from "../config";
 import { CallbackFn } from "./obj";
 import { FX } from "../fx/flash";
-import * as TILE from "./tiles";
+import * as TILE from "../tile";
 import * as ITEM from "../item";
 import * as HORDE from "../horde";
+import { plugins } from "./plugins";
 
 export interface GameOpts {
   seed?: number;
   app?: GWU.app.App;
 }
 
-export function make(opts: GameOpts | number = 0) {
-  if (typeof opts === "number") {
-    opts = { seed: opts };
-  }
+// export function make(opts: GameOpts | number = 0) {
+//   if (typeof opts === "number") {
+//     opts = { seed: opts };
+//   }
 
-  return new Game(opts);
-}
+//   return new Game(opts);
+// }
 
 export class Game {
   hero: Hero;
@@ -43,6 +44,8 @@ export class Game {
   items: Record<string, ITEM.ItemKind>;
   hordes: Record<string, HORDE.Horde>;
 
+  keymap: Record<string, string>;
+
   constructor(opts: GameOpts) {
     this.app = opts.app || null;
     this.scene = null;
@@ -56,7 +59,7 @@ export class Game {
     this.rng = GWU.rng.make(this.seed);
     this.seeds = [];
 
-    const LAST_LEVEL = this.app ? this.app.data.get("LAST_LEVEL") : 10;
+    const LAST_LEVEL = 10;
     for (let i = 0; i < LAST_LEVEL; ++i) {
       const levelSeed = this.rng.number(100000);
       this.seeds.push(levelSeed);
@@ -76,6 +79,14 @@ export class Game {
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);
 
+    this.keymap = {
+      a: "attack",
+      f: "fire",
+      g: "pickup",
+      " ": "idle",
+      ".": "idle",
+    };
+
     // TODO - Get these as parameters...
     // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
     this.events.on("Enter", (e) => {
@@ -86,38 +97,47 @@ export class Game {
         // pickup?
       }
       this.scene!.needsDraw = true;
+      e.stopPropagation();
     });
     this.events.on("dir", (e) => {
       ACTIONS.moveDir(this, this.hero, e.dir);
       this.scene!.needsDraw = true;
+      e.stopPropagation();
     });
-    this.events.on("a", (e) => {
-      ACTIONS.attack(this, this.hero);
-      this.scene!.needsDraw = true;
-    });
-    this.events.on("f", (e) => {
-      ACTIONS.fire(this, this.hero);
-      this.scene!.needsDraw = true;
-    });
-    this.events.on("g", (e) => {
-      ACTIONS.pickup(this, this.hero);
-      this.scene!.needsDraw = true;
-    });
+    // this.events.on("a", (e) => {
+    //   ACTIONS.attack(this, this.hero);
+    //   this.scene!.needsDraw = true;
+    // });
+    // this.events.on("f", (e) => {
+    //   ACTIONS.fire(this, this.hero);
+    //   this.scene!.needsDraw = true;
+    // });
+    // this.events.on("g", (e) => {
+    //   ACTIONS.pickup(this, this.hero);
+    //   this.scene!.needsDraw = true;
+    // });
     this.events.on("i", (e) => {
+      if (this.keymap["i"]) {
+        return; // continue to keypress handler
+      }
       console.log(">> INVENTORY <<");
       // TODO - Set focus to the player so that it shows their info
       //      - Send event to level scene?
       this.scene!.trigger("inventory", this);
+      e.stopPropagation();
     });
-    this.events.on("p", (e) => {
-      console.log("POTION");
-      ACTIONS.potion(this, this.hero);
-    });
-    this.events.on(" ", (e) => {
-      ACTIONS.idle(this, this.hero);
-      this.scene!.needsDraw = true;
-    });
+    // this.events.on("p", (e) => {
+    //   console.log("POTION");
+    //   ACTIONS.potion(this, this.hero);
+    // });
+    // this.events.on(" ", (e) => {
+    //   ACTIONS.idle(this, this.hero);
+    //   this.scene!.needsDraw = true;
+    // });
     this.events.on(">", (e) => {
+      if (this.keymap[">"]) {
+        return; // continue to keypress handler
+      }
       if (!this.level) return;
       // find stairs
       let loc: GWU.xy.Loc = [-1, -1];
@@ -134,8 +154,13 @@ export class Game {
         this.scene!.needsDraw = true;
       }
       this.scene!.needsDraw = true;
+      e.stopPropagation();
     });
     this.events.on("<", (e) => {
+      if (this.keymap["<"]) {
+        return; // continue to keypress handler
+      }
+
       if (!this.level) return;
       // find stairs
       let loc: GWU.xy.Loc = [-1, -1];
@@ -152,12 +177,28 @@ export class Game {
         this.scene!.needsDraw = true;
       }
       this.scene!.needsDraw = true;
+      e.stopPropagation();
     });
 
-    this.events.on("z", (e) => {
-      ACTOR.spawn(this.level!, "zombie", this.hero.x, this.hero.y);
-      this.scene!.needsDraw = true;
+    // this.events.on("z", (e) => {
+    //   ACTOR.spawn(this.level!, "zombie", this.hero.x, this.hero.y);
+    //   this.scene!.needsDraw = true;
+    // });
+
+    this.events.on("keypress", (e) => {
+      let action = this.keymap[e.key];
+      if (!action) return;
+
+      let fn = ACTIONS.get(action);
+      if (!fn) {
+        console.warn(`Failed to find action: ${action} for key: ${e.key}`);
+      } else {
+        fn(this, this.hero);
+        this.scene!.needsDraw = true;
+      }
     });
+
+    Object.values(plugins).forEach((p) => p.new_game(this));
 
     // @ts-ignore
     globalThis.GAME = this;
@@ -198,7 +239,9 @@ export class Game {
     // @ts-ignore
     globalThis.LEVEL = level;
     // @ts-ignore
-    globalThis.PLAYER = this.hero;
+    globalThis.HERO = this.hero;
+
+    Object.values(plugins).forEach((p) => p.new_level(this, level));
 
     level.start(this);
     this.tick();
