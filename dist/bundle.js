@@ -7597,20 +7597,20 @@ void main() {
           if (this.type === KEYPRESS) {
               // this.propagationStopped = true;
               if (this.dir) {
-                  handler.trigger('dir', this);
+                  handler.emit('dir', this);
               }
               if (!this.propagationStopped) {
-                  handler.trigger(this.key, this);
+                  handler.emit(this.key, this);
               }
               if (this.code !== this.key) {
                   if (!this.propagationStopped) {
-                      handler.trigger(this.code, this);
+                      handler.emit(this.code, this);
                   }
               }
               if (this.defaultPrevented || this.propagationStopped)
                   return;
           }
-          handler.trigger(this.type, this);
+          handler.emit(this.type, this);
       }
   }
   // let IOMAP: IOMap = {};
@@ -9167,7 +9167,7 @@ void main() {
           return arg;
       return make$3$1(arg);
   }
-  function install$6(id, ...args) {
+  function install$7(id, ...args) {
       let source;
       if (args.length == 1) {
           source = make$3$1(args[0]);
@@ -9182,7 +9182,7 @@ void main() {
   function installAll(config) {
       const entries = Object.entries(config);
       entries.forEach(([name, info]) => {
-          install$6(name, info);
+          install$7(name, info);
       });
   }
   // // TODO - Move?
@@ -9476,7 +9476,7 @@ void main() {
   	make: make$3$1,
   	lights: lights,
   	from: from$5,
-  	install: install$6,
+  	install: install$7,
   	installAll: installAll,
   	LightSystem: LightSystem
   });
@@ -9554,11 +9554,11 @@ void main() {
               events[current] = null;
           }
       }
-      trigger(ev, ...args) {
+      emit(ev, ...args) {
           if (Array.isArray(ev)) {
               let success = false;
               for (let name of ev) {
-                  success = this.trigger(name, ...args) || success;
+                  success = this.emit(name, ...args) || success;
               }
               return success;
           }
@@ -9615,8 +9615,8 @@ void main() {
           this.events.off(ev, fn);
           return this;
       }
-      trigger(ev, ...args) {
-          return this.events.trigger(ev, ...args);
+      emit(ev, ...args) {
+          return this.events.emit(ev, ...args);
       }
       addChild(t) {
           this.children.push(t);
@@ -9628,7 +9628,7 @@ void main() {
       }
       update(dt) {
           this.children.forEach((c) => c.update(dt));
-          this.trigger('update', dt);
+          this.emit('update', dt);
       }
   }
   class Tween extends BaseObj {
@@ -9795,7 +9795,7 @@ void main() {
           const pct = this._easing(this._time / this._duration);
           let madeChange = this._updateProperties(this._obj, this._start, this._goal, pct);
           if (madeChange) {
-              this.trigger('update', this._obj, pct);
+              this.emit('update', this._obj, pct);
           }
           if (this._time >= this._duration) {
               if (this._repeat > this._count || this._repeat < 0) {
@@ -9810,7 +9810,7 @@ void main() {
                   }
               }
               else if (!this.isRunning()) {
-                  this.trigger('stop', this._obj, this._success);
+                  this.emit('stop', this._obj, this._success);
               }
           }
       }
@@ -9823,11 +9823,11 @@ void main() {
           // });
           this._updateProperties(this._obj, this._start, this._goal, 0);
           if (this._count == 1) {
-              this.trigger('start', this._obj, 0);
+              this.emit('start', this._obj, 0);
           }
           else {
-              this.trigger('repeat', this._obj, this._count) ||
-                  this.trigger('update', this._obj, 0);
+              this.emit('repeat', this._obj, this._count) ||
+                  this.emit('update', this._obj, 0);
           }
       }
       // gameTick(_dt: number): boolean {
@@ -10497,10 +10497,10 @@ void main() {
                   return;
               this.on(ev, fn);
           });
-          this.trigger('create', opts);
+          this.emit('create', opts);
       }
       destroy(data) {
-          this.trigger('destroy', data);
+          this.emit('destroy', data);
           this.all.forEach((c) => c.destroy());
           this.children = [];
           this.all = [];
@@ -10518,7 +10518,7 @@ void main() {
           // this.tweens.clear();
           this.buffer.nullify();
           this.needsDraw = true;
-          this.events.trigger('start', opts); // this will start this one in the app.scenes obj
+          this.events.emit('start', opts); // this will start this one in the app.scenes obj
       }
       run(data = {}) {
           this.app.scenes.pause();
@@ -10527,7 +10527,7 @@ void main() {
       }
       stop(data) {
           this.stopped = true;
-          this.events.trigger('stop', data);
+          this.events.emit('stop', data);
       }
       pause(opts) {
           opts = opts || {
@@ -10538,7 +10538,7 @@ void main() {
               draw: true,
           };
           Object.assign(this.paused, opts);
-          this.events.trigger('pause');
+          this.events.emit('pause');
       }
       resume(opts) {
           opts = opts || {
@@ -10554,16 +10554,16 @@ void main() {
               }
           });
           this.needsDraw = true;
-          this.events.trigger('resume');
+          this.events.emit('resume');
       }
       // FRAME STEPS
       frameStart() {
-          this.events.trigger('frameStart');
+          this.events.emit('frameStart');
       }
       input(e) {
           if (this.paused.input || this.stopped)
               return;
-          this.trigger('input', e);
+          this.emit('input', e);
           if (e.defaultPrevented || e.propagationStopped)
               return;
           if (e.type === KEYPRESS) {
@@ -10607,7 +10607,7 @@ void main() {
           if (!this.paused.tweens)
               this.tweens.update(dt);
           if (!this.paused.update) {
-              this.events.trigger('update', dt);
+              this.events.emit('update', dt);
               this.all.forEach((c) => c.update(dt));
           }
       }
@@ -10615,7 +10615,7 @@ void main() {
           if (this.stopped)
               return;
           if (!this.paused.update) {
-              this.events.trigger('fixed_update', dt);
+              this.events.emit('fixed_update', dt);
               this.all.forEach((c) => c.fixed_update(dt));
           }
       }
@@ -10624,7 +10624,7 @@ void main() {
               return;
           if (!this.paused.draw && this.needsDraw) {
               this._draw(this.buffer);
-              this.trigger('draw', this.buffer);
+              this.emit('draw', this.buffer);
               this.children.forEach((c) => c.draw(this.buffer));
               this.needsDraw = false;
           }
@@ -10637,10 +10637,10 @@ void main() {
           buffer.fill(this.bg);
       }
       frameDebug(buffer) {
-          this.events.trigger('frameDebug', buffer);
+          this.events.emit('frameDebug', buffer);
       }
       frameEnd(buffer) {
-          this.events.trigger('frameEnd', buffer);
+          this.events.emit('frameEnd', buffer);
       }
       // ANIMATION
       fadeIn(widget, ms) {
@@ -10848,14 +10848,14 @@ void main() {
       once(ev, cb) {
           return this.events.once(ev, cb);
       }
-      trigger(ev, ...args) {
-          return this.events.trigger(ev, ...args);
+      emit(ev, ...args) {
+          return this.events.emit(ev, ...args);
       }
       wait(delay, fn, ctx) {
           if (typeof fn === 'string') {
               const ev = fn;
               ctx = ctx || {};
-              fn = () => this.trigger(ev, ctx);
+              fn = () => this.emit(ev, ctx);
           }
           return this.timers.setTimeout(fn, delay);
       }
@@ -10863,7 +10863,7 @@ void main() {
           if (typeof fn === 'string') {
               const ev = fn;
               ctx = ctx || {};
-              fn = () => this.trigger(ev, ctx);
+              fn = () => this.emit(ev, ctx);
           }
           return this.timers.setInterval(fn, delay);
       }
@@ -10918,8 +10918,8 @@ void main() {
   //     on(ev: string, fn: EVENTS.CallbackFn): EVENTS.CancelFn {
   //         return this.events.on(ev, fn);
   //     }
-  //     trigger(ev: string, ...args: any[]) {
-  //         return this.events.trigger(ev, ...args);
+  //     emit(ev: string, ...args: any[]) {
+  //         return this.events.emit(ev, ...args);
   //     }
   //     wait(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
   //     wait(delay: number, fn: string, ctx?: Record<string, any>): EVENTS.CancelFn;
@@ -10931,7 +10931,7 @@ void main() {
   //         if (typeof fn === 'string') {
   //             const ev = fn;
   //             ctx = ctx || {};
-  //             fn = () => this.trigger(ev, ctx!);
+  //             fn = () => this.emit(ev, ctx!);
   //         }
   //         return this.timers.setTimeout(fn, delay);
   //     }
@@ -10949,12 +10949,12 @@ void main() {
   //         if (typeof fn === 'string') {
   //             const ev = fn;
   //             ctx = ctx || {};
-  //             fn = () => this.trigger(ev, ctx!);
+  //             fn = () => this.emit(ev, ctx!);
   //         }
   //         return this.timers.setInterval(fn, delay);
   //     }
   //     // run() {
-  //     //     this.trigger('run', this);
+  //     //     this.emit('run', this);
   //     //     let running = false;
   //     //     this.loopID = (setInterval(() => {
   //     //         if (!running) {
@@ -10968,16 +10968,16 @@ void main() {
   //     create(app: App) {
   //         this.app = app;
   //         this.buffer = app.buffer.clone();
-  //         this.trigger('create');
+  //         this.emit('create');
   //     }
   //     destroy() {
-  //         this.trigger('destroy');
+  //         this.emit('destroy');
   //     }
   //     start(data?: Record<string, any>) {
   //         this.stopped = false;
   //         this.timers.clear();
   //         this.tweens.clear();
-  //         this.events.trigger('start', data || {});
+  //         this.events.emit('start', data || {});
   //     }
   //     run(data?: Record<string, any>): Promise<any> {
   //         return new Promise((resolve) => {
@@ -10992,7 +10992,7 @@ void main() {
   //     }
   //     stop(data?: Record<string, any>) {
   //         this.stopped = true;
-  //         this.events.trigger('stop', data || {});
+  //         this.events.emit('stop', data || {});
   //     }
   //     pause(opts?: PauseOpts): void {
   //         opts = opts || {
@@ -11003,7 +11003,7 @@ void main() {
   //             draw: true,
   //         };
   //         Object.assign(this.paused, opts);
-  //         this.events.trigger('pause');
+  //         this.events.emit('pause');
   //     }
   //     resume(opts?: ResumeOpts) {
   //         opts = opts || {
@@ -11018,20 +11018,20 @@ void main() {
   //                 this.paused[key as keyof ResumeOpts] = false;
   //             }
   //         });
-  //         this.events.trigger('resume');
+  //         this.events.emit('resume');
   //     }
   //     // CHILDREN
   //     add(obj: SceneObj) {
   //         this.children.push(obj);
-  //         obj.trigger('add', this);
+  //         obj.emit('add', this);
   //     }
   //     remove(obj: SceneObj) {
   //         UTILS.arrayDelete(this.children, obj);
-  //         obj.trigger('remove', this);
+  //         obj.emit('remove', this);
   //     }
   //     // FRAME STEPS
   //     frameStart() {
-  //         this.events.trigger('frameStart');
+  //         this.events.emit('frameStart');
   //     }
   //     input(ev: IO.Event) {
   //         if (this.stopped || this.paused.input) return;
@@ -11043,13 +11043,13 @@ void main() {
   //         if (!this.paused.tweens) this.tweens.update(dt);
   //         if (!this.paused.update) {
   //             this.children.forEach((c) => c.update(dt));
-  //             this.events.trigger('update', dt);
+  //             this.events.emit('update', dt);
   //         }
   //     }
   //     draw(buffer: CANVAS.Buffer) {
   //         if (this.stopped) return;
   //         if (!this.paused.draw) {
-  //             this.events.trigger('draw', this.buffer);
+  //             this.events.emit('draw', this.buffer);
   //             this.children.forEach((c) => c.draw(this.buffer));
   //         }
   //         if (this.buffer.changed) {
@@ -11058,10 +11058,10 @@ void main() {
   //         }
   //     }
   //     frameDebug(buffer: CANVAS.Buffer) {
-  //         this.events.trigger('frameDebug', buffer);
+  //         this.events.emit('frameDebug', buffer);
   //     }
   //     frameEnd(buffer: CANVAS.Buffer) {
-  //         this.events.trigger('frameEnd', buffer);
+  //         this.events.emit('frameEnd', buffer);
   //         // if (this.buffer.changed) {
   //         //     buffer.apply(this.buffer);
   //         //     this.buffer.changed = false;
@@ -11128,8 +11128,8 @@ void main() {
           }
           return this._active.find((s) => s.id === id) || null;
       }
-      trigger(ev, ...args) {
-          this._active.forEach((a) => a.trigger(ev, ...args));
+      emit(ev, ...args) {
+          this._active.forEach((a) => a.emit(ev, ...args));
       }
       _create(id, opts = {}) {
           let cfg = this._config[id] || {};
@@ -11686,7 +11686,7 @@ void main() {
           else if (!v && this.scene && this.scene.focused === null) {
               this.scene.setFocusWidget(this);
           }
-          this.trigger(v ? 'hide' : 'show');
+          this.emit(v ? 'hide' : 'show');
       }
       get needsStyle() {
           return this._propBool('needsStyle');
@@ -11704,13 +11704,13 @@ void main() {
           if (this.prop('focus'))
               return;
           this.prop('focus', true);
-          this.trigger('focus', { reverse });
+          this.emit('focus', { reverse });
       }
       blur(reverse = false) {
           if (!this.prop('focus'))
               return;
           this.prop('focus', false);
-          this.trigger('blur', { reverse });
+          this.emit('blur', { reverse });
       }
       // CHILDREN
       setParent(parent, opts) {
@@ -11823,25 +11823,25 @@ void main() {
           // cannot turn off keypress automatically because
           // we could be waiting for dispatched events - e.g. 'Enter', or 'dir', ...
       }
-      trigger(ev, ...args) {
-          return this.events.trigger(ev, ...args);
+      emit(ev, ...args) {
+          return this.events.emit(ev, ...args);
       }
       action(ev) {
           if (ev && ev.defaultPrevented)
               return;
-          if (this.trigger('action')) {
+          if (this.emit('action')) {
               ev === null || ev === void 0 ? void 0 : ev.stopPropagation();
           }
           const action = this._attrStr('action');
           if (!action || !action.length)
               return;
-          if (this.scene && this.scene.trigger(action, this)) {
+          if (this.scene && this.scene.emit(action, this)) {
               ev === null || ev === void 0 ? void 0 : ev.stopPropagation();
           }
       }
       // FRAME
       input(e) {
-          this.trigger('input', e);
+          this.emit('input', e);
           if (e.defaultPrevented || e.propagationStopped)
               return;
           if (e.type === KEYPRESS) {
@@ -11860,7 +11860,7 @@ void main() {
           if (this.hovered)
               return;
           this.hovered = true;
-          this.trigger('mouseenter', e);
+          this.emit('mouseenter', e);
           // if (this._parent) {
           //     this._parent._mouseenter(e);
           // }
@@ -11880,7 +11880,7 @@ void main() {
           }
       }
       _mousemove(e) {
-          this.trigger('mousemove', e);
+          this.emit('mousemove', e);
       }
       _mouseleave(e) {
           if (!this.hovered)
@@ -11888,7 +11888,7 @@ void main() {
           if (this.bounds.contains(e))
               return;
           this.hovered = false;
-          this.trigger('mouseleave', e);
+          this.emit('mouseleave', e);
           // if (this._parent) {
           //     this._parent.mouseleave(e);
           // }
@@ -11911,7 +11911,7 @@ void main() {
           }
       }
       _click(e) {
-          this.events.trigger('click', e);
+          this.events.emit('click', e);
       }
       // keypress bubbles
       keypress(e) {
@@ -11931,7 +11931,7 @@ void main() {
           if (this.hidden)
               return;
           this._draw(buffer);
-          this.trigger('draw', buffer);
+          this.emit('draw', buffer);
           this.children.forEach((c) => c.draw(buffer));
       }
       _draw(buffer) {
@@ -11942,10 +11942,10 @@ void main() {
           buffer.fillRect(b.x, b.y, b.width, b.height, ' ', this._used.bg, this._used.bg);
       }
       update(dt) {
-          this.trigger('update', dt);
+          this.emit('update', dt);
       }
       fixed_update(dt) {
-          this.trigger('fixed_update', dt);
+          this.emit('fixed_update', dt);
       }
       destroy() {
           if (this.parent) {
@@ -12371,10 +12371,10 @@ void main() {
       create() {
           this.on('keypress', (e) => {
               if (e.key === 'Escape') {
-                  this.trigger('CANCEL');
+                  this.emit('CANCEL');
               }
               else if (e.key === 'Enter') {
-                  this.trigger('OK');
+                  this.emit('OK');
               }
           });
           this.on('OK', () => {
@@ -12552,7 +12552,7 @@ void main() {
           if (ev.key == 'Delete' || ev.key == 'Backspace') {
               if (this._text.length) {
                   this.text(spliceRaw(this._text, this._text.length - 1, 1));
-                  this.trigger('change');
+                  this.emit('change');
                   this._used && this._draw(this.scene.buffer); // save some work?
               }
               ev.stopPropagation();
@@ -12567,7 +12567,7 @@ void main() {
               // allow only permitted input
               if (!this.maxLength || this._text.length < this.maxLength) {
                   this.text(this._text + ev.key);
-                  this.trigger('change');
+                  this.emit('change');
                   this._used && this._draw(this.scene.buffer); // save some work?
               }
           }
@@ -12742,7 +12742,7 @@ void main() {
               throw new Error('Must supply a menu to show!');
           this.addChild(data.menu);
           this.events.onUnhandled = (ev, ...args) => {
-              data.origin.trigger(ev, ...args);
+              data.origin.emit(ev, ...args);
           };
       },
       stop() {
@@ -13151,7 +13151,7 @@ void main() {
                   c.prop('selected', active);
               });
           }
-          this.trigger('change', {
+          this.emit('change', {
               row,
               col,
               data: this.selectedData,
@@ -13171,7 +13171,7 @@ void main() {
           return this.select(this.selectedColumn - 1, this.selectedRow);
       }
       blur(reverse) {
-          this.trigger('change', {
+          this.emit('change', {
               col: this.selectedColumn,
               row: this.selectedRow,
               data: this.selectedData,
@@ -13275,7 +13275,7 @@ void main() {
       //                     if (select) c.prop('selected', active);
       //                 });
       //             }
-      //             this.trigger('change', {
+      //             this.emit('change', {
       //                 row,
       //                 col,
       //                 data: this.selectedData,
@@ -13286,7 +13286,7 @@ void main() {
       // click(e: IO.Event): boolean {
       //     if (!this.contains(e) || this.disabled || this.hidden) return false;
       //     this.action();
-      //     // this.trigger('change', {
+      //     // this.emit('change', {
       //     //     row: this.selectedRow,
       //     //     col: this.selectedColumn,
       //     //     data: this.selectedData,
@@ -13302,7 +13302,7 @@ void main() {
           }
           if (e.key === 'Enter') {
               this.action(e);
-              // this.trigger('change', {
+              // this.emit('change', {
               //     row: this.selectedRow,
               //     col: this.selectedColumn,
               //     data: this.selectedData,
@@ -13487,7 +13487,7 @@ void main() {
               }
               const menuItem = new MenuButton(opts);
               menuItem.on('mouseenter', () => {
-                  this.trigger('change');
+                  this.emit('change');
               });
               menuItem.on('click', () => {
                   this.hide();
@@ -13503,11 +13503,11 @@ void main() {
           this.hidden = false;
           this._selectedIndex = 0;
           this.scene.setFocusWidget(this);
-          this.trigger('show');
+          this.emit('show');
       }
       hide() {
           this.hidden = true;
-          this.trigger('hide');
+          this.emit('hide');
       }
       nextItem() {
           ++this._selectedIndex;
@@ -13558,7 +13558,7 @@ void main() {
               this.menu = this._initMenu(opts);
               this.on('mouseenter', () => {
                   this.menu.hidden = false;
-                  this.menu.trigger('change');
+                  this.menu.emit('change');
               });
               this.on('mouseleave', (_n, _w, e) => {
                   var _a;
@@ -13768,8 +13768,8 @@ void main() {
               button.on(['click', 'Enter', ' '], () => {
                   if (typeof value === 'string') {
                       // simulate action
-                      this.trigger(value);
-                      this.scene.trigger(value);
+                      this.emit(value);
+                      this.scene.emit(value);
                   }
                   else {
                       this.scene.app.scenes.run('menu', {
@@ -13818,7 +13818,7 @@ void main() {
 
               this.on('mouseenter', () => {
                   menu.hidden = false;
-                  menu.trigger('change');
+                  menu.emit('change');
                   return true;
               });
               this.on('mouseleave', (e) => {
@@ -14187,7 +14187,7 @@ void main() {
           this._text.text(prompt.prompt(arg));
           this._list.data(prompt.choices());
           this._info.text(prompt.info(arg));
-          this.trigger('prompt', this._prompt);
+          this.emit('prompt', this._prompt);
           return new Promise((resolve) => (this._done = resolve));
       }
       _addList() {
@@ -14210,7 +14210,7 @@ void main() {
               const row = this._list.selectedRow;
               p.choose(row);
               this._info.text(p.info());
-              this.trigger('change', p);
+              this.emit('change', p);
               // e.stopPropagation(); // I want to eat this event
           });
           this._list.on('action', () => {
@@ -14418,7 +14418,7 @@ void main() {
               handled = handler(name, source || this.widget, args) || handled;
           }
           if (!handled) {
-              handled = this.widget.trigger(name, args);
+              handled = this.widget.emit(name, args);
           }
           return handled;
       }
@@ -14474,11 +14474,11 @@ void main() {
               return;
           if (ev.key === 'Enter' || ev.key === ' ') {
               this.toggleProp('checked');
-              this.trigger('change');
+              this.emit('change');
           }
           else if (ev.key === 'Backspace' || ev.key === 'Delete') {
               this.prop('checked', false);
-              this.trigger('change');
+              this.emit('change');
           }
       }
       _draw(buffer) {
@@ -14838,9 +14838,9 @@ void main() {
           // return this.scene.on(ev, fn);
           return this.events.on(ev, fn);
       }
-      trigger(ev, ...args) {
-          this.scenes.trigger(ev, ...args);
-          this.events.trigger(ev, ...args);
+      emit(ev, ...args) {
+          this.scenes.emit(ev, ...args);
+          this.events.emit(ev, ...args);
       }
       wait(...args) {
           // @ts-ignore
@@ -14848,7 +14848,7 @@ void main() {
           if (typeof args[1] === 'string') {
               const ev = args[1];
               args[2] = args[2] || {};
-              args[1] = () => this.trigger(ev, args[2]);
+              args[1] = () => this.emit(ev, args[2]);
           }
           return this.timers.setTimeout(args[1], args[0]);
       }
@@ -14858,12 +14858,12 @@ void main() {
           if (typeof fn === 'string') {
               const ev = args[1];
               args[2] = args[2] || {};
-              args[1] = () => this.trigger(ev, args[2]);
+              args[1] = () => this.emit(ev, args[2]);
           }
           return this.timers.setInterval(args[1], args[0]);
       }
       // run() {
-      //     this.trigger('run', this);
+      //     this.emit('run', this);
       //     let running = false;
       //     this.loopID = (setInterval(() => {
       //         if (!running) {
@@ -14880,7 +14880,7 @@ void main() {
           this.loop.start(this._frame.bind(this));
       }
       stop() {
-          this.trigger('stop', this);
+          this.emit('stop', this);
           this.loop.stop();
           this.stopped = true;
       }
@@ -14940,29 +14940,29 @@ void main() {
           dt = dt || this.dt;
           this.scenes.update(dt);
           this.timers.update(dt);
-          this.events.trigger('update', dt);
+          this.events.emit('update', dt);
       }
       _fixed_update(dt = 0) {
           dt = dt || this.dt;
           this.scenes.fixed_update(dt);
-          this.events.trigger('fixed_update', dt);
+          this.events.emit('fixed_update', dt);
       }
       _frameStart() {
           // this.buffer.nullify();
           this.scenes.frameStart();
-          this.events.trigger('frameStart');
+          this.events.emit('frameStart');
       }
       _draw() {
           this.scenes.draw(this.buffer);
-          this.events.trigger('draw', this.buffer);
+          this.events.emit('draw', this.buffer);
       }
       _frameDebug() {
           this.scenes.frameDebug(this.buffer);
-          this.events.trigger('frameDebug', this.buffer);
+          this.events.emit('frameDebug', this.buffer);
       }
       _frameEnd() {
           this.scenes.frameEnd(this.buffer);
-          this.events.trigger('frameEnd', this.buffer);
+          this.events.emit('frameEnd', this.buffer);
           this.canvas.render(this.buffer);
       }
       alert(text, opts = {}) {
@@ -15109,8 +15109,8 @@ void main() {
       once(event, fn) {
           return this.events.once(event, fn);
       }
-      trigger(event, ...args) {
-          return this.events.trigger(event, ...args);
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
       }
   }
 
@@ -15316,7 +15316,7 @@ void main() {
   const kinds$1 = {};
   // @ts-ignore
   globalThis.ItemKinds = kinds$1;
-  function install$5(cfg) {
+  function install$6(cfg) {
       const kind = Object.assign({
           name: "",
           ch: "!",
@@ -15497,7 +15497,7 @@ void main() {
       const loc = game.rng.item(locs);
       newbie.x = loc[0];
       newbie.y = loc[1];
-      level.events.trigger("spawn_item", level, newbie);
+      level.events.emit("spawn_item", level, newbie);
       level.addItem(newbie);
       return newbie;
   }
@@ -15549,6 +15549,9 @@ void main() {
       let amount = (damage.amount = damage.amount || 0);
       damage.msg = damage.msg || `${target.name} is damaged`;
       damage.color = damage.color || "red";
+      if (!damage.isRanged) {
+          damage.isRanged = false;
+      }
       if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
           if (game.rng.chance(30)) {
               game.messages.addCombat(damage.msg + "#{orange [X]}");
@@ -15560,7 +15563,7 @@ void main() {
       if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
           damage.amount = Math.round(damage.amount * 0.65);
       }
-      target.trigger("damage", damage);
+      target.emit("damage", damage);
       if (damage.amount <= 0) {
           return false;
       }
@@ -15578,7 +15581,7 @@ void main() {
           // and corpses can be custom to the creature that died
           // no matter what the floor is
           game.level.setTile(target.x, target.y, "CORPSE");
-          target.trigger("death");
+          target.emit("death");
           game.level.removeActor(target);
           return true;
       }
@@ -15593,7 +15596,7 @@ void main() {
   }
 
   const actionsByName = {};
-  function install$4(name, fn) {
+  function install$5(name, fn) {
       actionsByName[name] = fn;
   }
   function get(name) {
@@ -15604,12 +15607,12 @@ void main() {
       game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }
-  install$4("idle", idle);
+  install$5("idle", idle);
   function moveRandom(game, actor, quiet = false) {
       const dir = game.rng.item(xy.DIRS);
       return moveDir(game, actor, dir, quiet);
   }
-  install$4("move_random", moveRandom);
+  install$5("move_random", moveRandom);
   function moveDir(game, actor, dir, quiet = false) {
       const level = game.level;
       const newX = actor.x + dir[0];
@@ -15664,7 +15667,7 @@ void main() {
       // game.drawAt(oldX, oldY);
       // game.drawAt(newX, newY);
       const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
-      actor.trigger("move", game, newX, newY);
+      actor.emit("move", game, newX, newY);
       level.triggerAction("enter", actor);
       game.endTurn(actor, speed);
       return true;
@@ -15686,7 +15689,7 @@ void main() {
       }
       return false;
   }
-  install$4("move_toward_hero", moveTowardHero);
+  install$5("move_toward_hero", moveTowardHero);
   function moveAwayFromHero(game, actor, quiet = false) {
       const map = game.level;
       const player = game.hero;
@@ -15731,7 +15734,7 @@ void main() {
       }
       return false;
   }
-  install$4("move_away_from_hero", moveAwayFromHero);
+  install$5("move_away_from_hero", moveAwayFromHero);
   function attack(game, actor, target = null) {
       const level = game.level;
       if (target) {
@@ -15788,10 +15791,10 @@ void main() {
       game.endTurn(actor, attackInfo.time);
       return true;
   }
-  install$4("attack", attack);
+  install$5("attack", attack);
   function fire(game, actor, target = null) {
       const level = game.level;
-      const player = game.hero;
+      const hero = game.hero;
       if (!actor.range) {
           game.addMessage("Nothing to fire.");
           return false;
@@ -15819,11 +15822,11 @@ void main() {
               }
               console.log("checking fov...");
               // HACK - for actor.canSee(a)
-              if (!player.isInFov(actor)) {
+              if (!hero.isInFov(actor)) {
                   console.log("actor not visible");
                   return false;
               }
-              if (!player.isInFov(a)) {
+              if (!hero.isInFov(a)) {
                   console.log("target not visible");
                   return false;
               }
@@ -15831,7 +15834,7 @@ void main() {
               console.log("ok - ", a.name);
               return true;
           })
-              .sort((a, b) => xy.distanceFromTo(player, a) - xy.distanceFromTo(player, b));
+              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
           if (targets.length == 0) {
               game.addMessage("no targets.");
               // flash tiles you can fire into
@@ -15893,7 +15896,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  install$4("fire", fire);
+  install$5("fire", fire);
   function fireAtHero(game, actor) {
       const hero = game.hero;
       // if player can't see actor then actor can't see player!
@@ -15917,7 +15920,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  install$4("fire_at_hero", fireAtHero);
+  install$5("fire_at_hero", fireAtHero);
   function climb(game, actor) {
       const tile = game.level.getTile(actor.x, actor.y);
       if (tile.on && tile.on.climb) {
@@ -15928,20 +15931,20 @@ void main() {
           return idle(game, actor);
       }
   }
-  install$4("climb", climb);
+  install$5("climb", climb);
   function pickup(game, actor) {
       const level = game.level;
       if (level) {
           const item = level.itemAt(actor.x, actor.y);
           if (item) {
-              item.trigger("pickup", game, actor);
+              item.emit("pickup", game, actor);
               return true;
           }
           game.addMessage("Nothing to pickup.");
       }
       return idle(game, actor);
   }
-  install$4("pickup", pickup);
+  install$5("pickup", pickup);
   // export function potion(game: Game, hero: Hero): boolean {
   //   if (!hero.canUsePotion) {
   //     game.addMessage("Not ready.");
@@ -16013,7 +16016,7 @@ void main() {
   const kinds = {};
   // @ts-ignore
   globalThis.ActorKinds = kinds;
-  function install$3(cfg) {
+  function install$4(cfg) {
       const kind = Object.assign({
           name: "",
           health: 10,
@@ -16206,7 +16209,7 @@ void main() {
           this._focus[0] = x;
           this._focus[1] = y;
           if (!xy.equals(wasFocus, this._focus)) {
-              this.trigger("focus", this._focus);
+              this.emit("focus", this._focus);
               this.needsDraw = true;
           }
       }
@@ -16215,7 +16218,7 @@ void main() {
           this._focus[0] = -1;
           this._focus[1] = -1;
           if (!xy.equals(wasFocus, this._focus)) {
-              this.trigger("focus", this._focus);
+              this.emit("focus", this._focus);
               this.needsDraw = true;
           }
       }
@@ -16252,8 +16255,6 @@ void main() {
               lines += 1;
           });
           entry.statuses.forEach((s) => {
-              if (!s)
-                  return;
               buf.drawText(x, y + lines, s.text, s.color);
               lines += 1;
           });
@@ -16381,7 +16382,7 @@ void main() {
               });
           }
           // if (!GWU.xy.equals(wasFocus, this._focus)) {
-          //   this.trigger("focus", this._focus);
+          //   this.emit("focus", this._focus);
           //   this.needsDraw = true;
           // }
           e.stopPropagation();
@@ -16391,7 +16392,7 @@ void main() {
           if (e.defaultPrevented || e.propagationStopped)
               return;
           if (this._focus[0] > -1) {
-              this.trigger("choose", this._focus);
+              this.emit("choose", this._focus);
           }
       }
   }
@@ -16673,7 +16674,7 @@ void main() {
       get comboLen() {
           return this.kind.combo;
       }
-      get isHero() {
+      isHero() {
           return false;
       }
       //
@@ -16711,11 +16712,11 @@ void main() {
       }
       startTurn(game) {
           this._turnTime = 0;
-          this.trigger("turn_start", game);
+          this.emit("turn_start", game);
       }
       endTurn(game, time) {
           this._turnTime = time;
-          this.trigger("turn_end", game, time);
+          this.emit("turn_end", game, time);
       }
       hasActed() {
           return this._turnTime > 0;
@@ -16777,7 +16778,7 @@ void main() {
           this.statuses.forEach((s) => {
               s && s.update_sidebar(this, entry);
           });
-          this.trigger("sidebar", entry); // Allow plugins to update sidebar
+          this.emit("sidebar", entry); // Allow plugins to update sidebar
           return entry;
       }
   }
@@ -16927,7 +16928,7 @@ void main() {
           }
           return this.kind.combo;
       }
-      get isHero() {
+      isHero() {
           return true;
       }
       //
@@ -17055,6 +17056,9 @@ void main() {
           z: 1, // items, actors, player, fx
           kind,
       });
+  }
+  function isHero(obj) {
+      return obj instanceof Hero;
   }
 
   class Status {
@@ -21435,7 +21439,7 @@ void main() {
   }
 
   const hordes = {};
-  function install$2(id, horde) {
+  function install$3(id, horde) {
       if (typeof horde === "string") {
           horde = { leader: horde };
       }
@@ -21547,13 +21551,13 @@ void main() {
   // }
   const tilesByIndex = [];
   const tilesByName = {};
-  function install$1(cfg) {
+  function install$2(cfg) {
       const info = index$1.installTile(cfg);
       tilesByIndex[info.index] = info;
       tilesByName[info.id] = info;
   }
-  install$1({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-  install$1({
+  install$2({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
+  install$2({
       id: "WALL",
       ch: "#",
       fg: 0x333,
@@ -21562,7 +21566,7 @@ void main() {
       blocksVision: true,
       blocksDiagonal: true,
   });
-  install$1({
+  install$2({
       id: "CORPSE",
       ch: "&",
       fg: 0x666,
@@ -21583,7 +21587,7 @@ void main() {
           },
       },
   });
-  install$1({
+  install$2({
       id: "DOWN_STAIRS",
       ch: "<",
       fg: "gray",
@@ -21593,18 +21597,18 @@ void main() {
           },
       },
   });
-  install$1({
+  install$2({
       id: "UP_STAIRS",
       ch: ">",
       fg: "orange",
       on: {
           enter(game, actor) {
               game.addMessage("Going up!");
-              game.scene.trigger("win");
+              game.scene.emit("win");
           },
       },
   });
-  install$1({
+  install$2({
       id: "UP_STAIRS_INACTIVE",
       ch: ">",
       fg: "gray",
@@ -21615,7 +21619,7 @@ void main() {
           },
       },
   });
-  install$1({
+  install$2({
       id: "IMPREGNABLE",
       ch: "#",
       fg: 0x222,
@@ -21628,7 +21632,7 @@ void main() {
   index$1.allTiles.forEach((t) => {
       if (tilesByName[t.id])
           return;
-      install$1(t);
+      install$2(t);
   });
 
   class Level {
@@ -21682,7 +21686,7 @@ void main() {
           game.hero.clearGoal();
           spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
               this.started = true;
-              this.trigger("start");
+              this.emit("start");
               this.data.wavesLeft = this.waves.length;
               this.waves.forEach((wave) => {
                   console.log("WAVE - " + wave.delay);
@@ -21717,11 +21721,11 @@ void main() {
           }
       }
       stop(game) {
-          this.trigger("stop");
+          this.emit("stop");
           this.game = null;
       }
       tick(game, dt) {
-          this.trigger("tick", dt);
+          this.emit("tick", dt);
           // tick actors
           this.actors.forEach((a) => {
               a.tick(game, dt);
@@ -21769,7 +21773,7 @@ void main() {
           // priority, etc...
           // allows plugins to change the tile
           let data = { x, y, tile };
-          this.trigger("set_tile", data);
+          this.emit("set_tile", data);
           if (data.tile) {
               this.tiles[x][y] = data.tile.index;
               // this.game && this.game.drawAt(x, y);
@@ -21863,15 +21867,15 @@ void main() {
       addActor(obj) {
           if (!obj.spawn) {
               obj.spawn = true;
-              this.trigger("spawn_actor", obj);
+              this.emit("spawn_actor", obj);
           }
           this.actors.push(obj);
-          obj.trigger("add", this);
+          obj.emit("add", this);
           // this.scene.needsDraw = true; // need to update sidebar too
       }
       removeActor(obj) {
           arrayDelete(this.actors, obj);
-          obj.trigger("remove", this);
+          obj.emit("remove", this);
           // this.scene.needsDraw = true;
       }
       hasActor(x, y) {
@@ -21883,15 +21887,15 @@ void main() {
       addItem(obj) {
           if (!obj.spawn) {
               obj.spawn = true;
-              this.trigger("spawn_item", obj);
+              this.emit("spawn_item", obj);
           }
           this.items.push(obj);
-          obj.trigger("add", this);
+          obj.emit("add", this);
           // this.scene.needsDraw = true; // need to update sidebar too
       }
       removeItem(obj) {
           arrayDelete(this.items, obj);
-          obj.trigger("remove", this);
+          obj.emit("remove", this);
           // this.scene.needsDraw = true;
       }
       hasItem(x, y) {
@@ -21903,15 +21907,15 @@ void main() {
       addFx(obj) {
           if (!obj.spawn) {
               obj.spawn = true;
-              this.trigger("spawn_fx", obj);
+              this.emit("spawn_fx", obj);
           }
           this.fxs.push(obj);
-          obj.trigger("add", this);
+          obj.emit("add", this);
           // this.scene.needsDraw = true; // need to update sidebar too
       }
       removeFx(obj) {
           arrayDelete(this.fxs, obj);
-          obj.trigger("remove", this);
+          obj.emit("remove", this);
           // this.scene.needsDraw = true;
       }
       hasFx(x, y) {
@@ -21959,8 +21963,8 @@ void main() {
       once(event, fn) {
           return this.events.once(event, fn);
       }
-      trigger(event, ...args) {
-          return this.events.trigger(event, ...args);
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
       }
   }
   // export function install(cfg: LevelConfig) {
@@ -22136,20 +22140,66 @@ void main() {
   }
 
   const plugins = {};
+  const active = [];
   // @ts-ignore
   globalThis.PLUGINS = plugins;
-  function install(name, cfg) {
+  function NOFUNC(req, next) {
+      return next();
+  }
+  function install$1(name, cfg) {
       const plugin = Object.assign({
           name,
-          start: () => { },
-          stop: () => { },
-          new_game: () => { },
-          new_level: () => { },
+          plugins: [],
+          start: NOOP,
+          stop: NOOP,
+          new_game: NOFUNC,
+          dig_level: NOFUNC,
+          new_level: NOFUNC,
+          start_level: NOFUNC,
+          // Level
+          level_tick: NOFUNC,
+          set_tile: NOFUNC,
+          // Object
+          spawn: NOFUNC,
+          tick: NOFUNC,
+          sidebar: NOFUNC,
+          add: NOFUNC,
+          remove: NOFUNC,
+          move: NOFUNC,
+          destroy: NOFUNC,
+          // Actor
+          calc_melee: NOFUNC,
+          calc_ranged: NOFUNC,
+          calc_damage: NOFUNC,
+          apply_damage: NOFUNC,
+          charge_ranged: NOFUNC,
+          equip: NOFUNC,
+          unequip: NOFUNC,
+          // Item
+          pickup: NOFUNC,
       }, cfg);
       if (plugin.name != name) {
           plugin.name = name;
       }
       plugins[name.toLowerCase()] = plugin;
+  }
+  /**
+   * Helper function for invoking a chain of middlewares on a context.
+   */
+  function invoke(req, fns, base) {
+      if (!fns.length)
+          return base(req);
+      const fn = fns[0];
+      return fn(req, () => {
+          return invoke(req, fns.slice(1), base);
+      });
+  }
+  function trigger(evt, req, base) {
+      const fns = active.map((p) => {
+          // @ts-ignore
+          return p[evt].bind(p);
+      });
+      return invoke(req, fns, base);
   }
 
   // export function make(opts: GameOpts | number = 0) {
@@ -22168,8 +22218,10 @@ void main() {
           this.scheduler = new scheduler.Scheduler();
           this.seed = opts.seed || random$2.number(100000);
           console.log("GAME, seed=", this.seed);
-          this.rng = rng.make(this.seed);
+          rng.random.seed(this.seed);
+          this.rng = rng.random; // Can access here or via GWU.rng.random
           this.seeds = [];
+          // TODO - Change this so that the default class does not have the LAST_LEVEL concept
           const LAST_LEVEL = 10;
           for (let i = 0; i < LAST_LEVEL; ++i) {
               const levelSeed = this.rng.number(100000);
@@ -22226,7 +22278,7 @@ void main() {
               console.log(">> INVENTORY <<");
               // TODO - Set focus to the player so that it shows their info
               //      - Send event to level scene?
-              this.scene.trigger("inventory", this);
+              this.scene.emit("inventory", this);
               e.stopPropagation();
           });
           // this.events.on("p", (e) => {
@@ -22300,7 +22352,8 @@ void main() {
                   this.scene.needsDraw = true;
               }
           });
-          Object.values(plugins).forEach((p) => p.new_game(this));
+          trigger("new_game", { game: this }, null);
+          // Object.values(plugins).forEach((p) => p.new_game({ this }, null, ));
           // @ts-ignore
           globalThis.GAME = this;
       }
@@ -22336,15 +22389,16 @@ void main() {
           globalThis.LEVEL = level;
           // @ts-ignore
           globalThis.HERO = this.hero;
-          Object.values(plugins).forEach((p) => p.new_level(this, level));
+          trigger("new_level", { game: this, level }, null);
+          // Object.values(plugins).forEach((p) => p.new_level(this, level));
           level.start(this);
           this.tick();
       }
       lose() {
-          this.scene.trigger("lose", this);
+          this.scene.emit("lose", this);
       }
       win() {
-          this.scene.trigger("win", this);
+          this.scene.emit("win", this);
       }
       update() {
           while (this.inputQueue.length && this.needInput) {
@@ -22607,7 +22661,7 @@ void main() {
                   game.hero.clearGoal();
               }
               // if (e.key == "Escape") {
-              //   this.trigger("lose"); // todo -- remove
+              //   this.emit("lose"); // todo -- remove
               // }
               e.stopPropagation();
           },
@@ -22990,7 +23044,7 @@ void main() {
       }
   }
 
-  install$3({
+  install$4({
       id: "HERO",
       name: "Hero",
       ch: "@",
@@ -23010,7 +23064,7 @@ void main() {
           armor: "PLATE_ARMOR",
       },
   });
-  install$3({
+  install$4({
       id: "ZOMBIE",
       name: "Zombie",
       ch: "z",
@@ -23020,7 +23074,7 @@ void main() {
       damage: 8, // dps=4
       dropChance: 100,
   });
-  install$3({
+  install$4({
       id: "ARMOR_ZOMBIE",
       ch: "Z",
       fg: "green",
@@ -23029,7 +23083,7 @@ void main() {
       damage: 10, // dps=5
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "ARMOR_ZOMBIE_2",
       ch: "Z",
       fg: "green",
@@ -23038,7 +23092,7 @@ void main() {
       damage: 12, // dps=6
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "Vindicator",
       ch: "v",
       fg: "blue",
@@ -23050,7 +23104,7 @@ void main() {
       // attackSpeed: 150
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "SKELETON",
       ch: "s",
       fg: "white",
@@ -23064,7 +23118,7 @@ void main() {
       // notice: 10
       dropChance: 100,
   });
-  install$3({
+  install$4({
       id: "ARMOR_SKELETON",
       ch: "S",
       fg: "white",
@@ -23078,7 +23132,7 @@ void main() {
       // notice: 10
       dropChance: 10,
   });
-  install$3({
+  install$4({
       id: "ARMOR_SKELETON_2",
       ch: "S",
       fg: "white",
@@ -23154,38 +23208,38 @@ void main() {
 
   */
 
-  install$2("ZOMBIE", {
+  install$3("ZOMBIE", {
       leader: "ZOMBIE",
       members: { ZOMBIE: "2-3" },
       frequency: 10,
   });
-  install$2("ZOMBIE2", {
+  install$3("ZOMBIE2", {
       leader: "ARMOR_ZOMBIE",
       members: { ZOMBIE: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$2("ZOMBIE3", {
+  install$3("ZOMBIE3", {
       leader: "ARMOR_ZOMBIE_2",
       members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
   });
-  install$2("SKELETON", {
+  install$3("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
       frequency: 10,
   });
-  install$2("SKELETON2", {
+  install$3("SKELETON2", {
       leader: "ARMOR_SKELETON",
       members: { SKELETON: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$2("SKELETON3", {
+  install$3("SKELETON3", {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
       frequency: (l) => 2 * l,
   });
 
-  install$5({
+  install$6({
       id: "HEALTH_POTION",
       ch: "!",
       fg: "pink",
@@ -23201,26 +23255,26 @@ void main() {
       },
       tags: "", // Not a drop because it is innate
   });
-  install$5({
+  install$6({
       id: "ARROWS",
       ch: "|",
       fg: "yellow",
       on: {
           pickup(game, actor) {
               //   actor.health = actor.kind.health;
-              game.addMessage("You pickup some arrows.");
+              game.addMessage("You pickup some ammo.");
               game.level.removeItem(this);
               // TODO - adjust for arrows.power?
               actor.ammo += 10;
-              if (actor.hasArmorFlag(ARMOR_FLAGS.ARROWS_10)) {
-                  actor.ammo += 10;
+              if (actor.data.bonus_arrows > 0) {
+                  actor.ammo += 10 * actor.data.bonus_arrows;
               }
               return true;
           },
       },
       tags: "drop",
   });
-  install$5({
+  install$6({
       id: "APPLE",
       ch: "&",
       fg: "yellow",
@@ -23235,7 +23289,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "BREAD",
       ch: "&",
       fg: "yellow",
@@ -23250,7 +23304,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "PORK",
       ch: "&",
       fg: "yellow",
@@ -23265,7 +23319,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "SALMON",
       ch: "&",
       fg: "yellow",
@@ -23280,7 +23334,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "BERRIES",
       ch: "&",
       fg: "yellow",
@@ -23295,7 +23349,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "MELON",
       ch: "&",
       fg: "yellow",
@@ -23310,7 +23364,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "FRUIT",
       ch: "&",
       fg: "yellow",
@@ -23325,7 +23379,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$5({
+  install$6({
       id: "FISH",
       ch: "&",
       fg: "yellow",
@@ -23344,7 +23398,7 @@ void main() {
   //////////////////////////////////////////////////////
   // MELEE
   //////////////////////////////////////////////////////
-  install$5({
+  install$6({
       id: "DAGGERS",
       ch: "/",
       fg: "yellow",
@@ -23360,7 +23414,7 @@ void main() {
   // SHEER_DAGGERS
   // VOID_BLADES
   // BEGINNING_AND_END
-  install$5({
+  install$6({
       id: "KNIFE",
       ch: "/",
       fg: "yellow",
@@ -23374,7 +23428,7 @@ void main() {
   // TEMPEST_KNIFE
   // CHILL_KNIFE
   // RESOLUTE_KNIFE
-  install$5({
+  install$6({
       id: "SWORD",
       ch: "/",
       fg: "yellow",
@@ -23388,7 +23442,7 @@ void main() {
   // DIAMOND_SWORD
   // HAWKBRAND
   // SINISTER_SWORD
-  install$5({
+  install$6({
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
@@ -23401,7 +23455,7 @@ void main() {
   });
   // CORAL_BLADE
   // SPONGE_STRIKER
-  install$5({
+  install$6({
       id: "AXE",
       ch: "/",
       fg: "yellow",
@@ -23414,7 +23468,7 @@ void main() {
   });
   // HIGHLAND_AXE
   // FIREBRAND_AXE
-  install$5({
+  install$6({
       id: "DOUBLE_AXE",
       ch: "/",
       fg: "yellow",
@@ -23427,7 +23481,7 @@ void main() {
   });
   // CURSED_AXE
   // WHIRLWIND
-  install$5({
+  install$6({
       id: "BACKSTABBER",
       ch: "/",
       fg: "yellow",
@@ -23439,7 +23493,7 @@ void main() {
       tags: "melee",
   });
   // SWIFT_STRIKER
-  install$5({
+  install$6({
       id: "BATTLESTAFF",
       ch: "/",
       fg: "yellow",
@@ -23452,7 +23506,7 @@ void main() {
   });
   // BATTLESTAFF_OF_TERROR
   // GROWING_STAFF
-  install$5({
+  install$6({
       id: "BONE_CLUB",
       ch: "/",
       fg: "yellow",
@@ -23464,7 +23518,7 @@ void main() {
       tags: "melee",
   });
   // BONE_CUDGEL
-  install$5({
+  install$6({
       id: "CLAYMORE",
       ch: "/",
       fg: "yellow",
@@ -23483,7 +23537,7 @@ void main() {
   // FROST_SLAYER
   // DANCERS_SWORD
   // NAMELESS_BLADE
-  install$5({
+  install$6({
       id: "GLAIVE",
       ch: "/",
       fg: "yellow",
@@ -23496,7 +23550,7 @@ void main() {
   });
   // GRAVE_BANE
   // VENOM_GLAIVE
-  install$5({
+  install$6({
       id: "GREAT_HAMMER",
       ch: "/",
       fg: "yellow",
@@ -23509,7 +23563,7 @@ void main() {
   });
   // HAMMER_OF_GRAVITY
   // STORMLANDER
-  install$5({
+  install$6({
       id: "MACE",
       ch: "/",
       fg: "yellow",
@@ -23522,7 +23576,7 @@ void main() {
   });
   // FLAIL
   // SUNS_GRACE
-  install$5({
+  install$6({
       id: "PICKAXE",
       ch: "/",
       fg: "yellow",
@@ -23534,7 +23588,7 @@ void main() {
       tags: "melee",
   });
   // DIAMOND_PICKAXE
-  install$5({
+  install$6({
       id: "SICKLES",
       ch: "/",
       fg: "yellow",
@@ -23550,7 +23604,7 @@ void main() {
   // SOUL_KNIFE
   // ETERNAL_KNIFE
   // TRUTHSEEKER
-  install$5({
+  install$6({
       id: "WHIP",
       ch: "/",
       fg: "yellow",
@@ -23562,7 +23616,7 @@ void main() {
       tags: "melee",
   });
   // VINE_WHIP
-  install$5({
+  install$6({
       id: "GAUNTLETS",
       ch: "/",
       fg: "yellow",
@@ -23576,7 +23630,7 @@ void main() {
   // FIGHTERS_BINDINGS
   // MAULERS
   // SOUL_FISTS
-  install$5({
+  install$6({
       id: "SCYTHE",
       ch: "/",
       fg: "yellow",
@@ -23590,7 +23644,7 @@ void main() {
   // SOUL_SCYTHE
   // FROST_SCYTHE
   // JAILORS_SCYTHE
-  install$5({
+  install$6({
       id: "KATANA",
       ch: "/",
       fg: "yellow",
@@ -23603,7 +23657,7 @@ void main() {
   });
   // DARK_KATANA
   // MASTERS_KATANA
-  install$5({
+  install$6({
       id: "SPEAR",
       ch: "/",
       fg: "yellow",
@@ -23616,7 +23670,7 @@ void main() {
   });
   // FORTUNE_SPEAR
   // WHISPERING_SPEAR
-  install$5({
+  install$6({
       id: "RAPIER",
       ch: "/",
       fg: "yellow",
@@ -23630,7 +23684,7 @@ void main() {
   // BEE_STINGER
   // FREEZING_FOIL
 
-  install$5({
+  install$6({
       id: "SCALE_MAIL",
       name: "Scale Mail",
       ch: "]",
@@ -23643,7 +23697,7 @@ void main() {
           melee_damage: 30,
       },
   });
-  install$5({
+  install$6({
       id: "MERCENARY_ARMOR",
       name: "Mercenary Armor",
       ch: "]",
@@ -23656,7 +23710,7 @@ void main() {
           weapon_damage_aura: 20,
       },
   });
-  install$5({
+  install$6({
       id: "GUARDS_ARMOR",
       name: "Guards Armor",
       ch: "]",
@@ -23669,7 +23723,7 @@ void main() {
           arrows: 10,
       },
   });
-  install$5({
+  install$6({
       id: "HUNTERS_ARMOR",
       name: "Hunters Armor",
       ch: "]",
@@ -23682,7 +23736,7 @@ void main() {
           arrows: 10,
       },
   });
-  install$5({
+  install$6({
       id: "ARCHERS_ARMOR",
       name: "Archers Armor",
       ch: "]",
@@ -23696,7 +23750,7 @@ void main() {
           move_speed_aura: 15,
       },
   });
-  install$5({
+  install$6({
       id: "REINFORCED_MAIL",
       name: "Reinforced Mail",
       ch: "]",
@@ -23710,7 +23764,7 @@ void main() {
           roll_cooldown: 100,
       },
   });
-  install$5({
+  install$6({
       id: "STALWART_ARMOR",
       name: "Stalwart Armor",
       ch: "]",
@@ -23725,7 +23779,7 @@ void main() {
           potion_boosts_defense: [90, 5 * 200],
       },
   });
-  install$5({
+  install$6({
       id: "PLATE_ARMOR",
       name: "Plate Armor",
       ch: "]",
@@ -23739,7 +23793,7 @@ void main() {
           roll_cooldown: 100,
       },
   });
-  install$5({
+  install$6({
       id: "FULL_METAL_ARMOR",
       name: "Full Metal Armor",
       ch: "]",
@@ -23754,7 +23808,7 @@ void main() {
           melee_damage: 30,
       },
   });
-  install$5({
+  install$6({
       id: "CHAMPIONS_ARMOR",
       name: "Champions Armor",
       ch: "]",
@@ -23768,7 +23822,7 @@ void main() {
           mobs_target_you: 50, // 50%?
       },
   });
-  install$5({
+  install$6({
       id: "HEROS_ARMOR",
       name: "Heros Armor",
       ch: "]",
@@ -23787,7 +23841,7 @@ void main() {
   //////////////////////////////////////////////////////
   // RANGED
   //////////////////////////////////////////////////////
-  install$5({
+  install$6({
       id: "BOW",
       ch: "}",
       fg: "yellow",
@@ -23799,7 +23853,7 @@ void main() {
   });
   // BONE_BOW
   // TWIN_BOW
-  install$5({
+  install$6({
       id: "HUNTING_BOW",
       ch: "}",
       fg: "yellow",
@@ -23812,7 +23866,7 @@ void main() {
   // ANCIENT_BOW
   // HUNTERS_PROMISE
   // MASTERS_BOW
-  install$5({
+  install$6({
       id: "LONGBOW",
       ch: "}",
       fg: "yellow",
@@ -23824,7 +23878,7 @@ void main() {
   });
   // GUARDIAN_BOW
   // RED_SNAKE
-  install$5({
+  install$6({
       id: "POWER_BOW",
       ch: "}",
       fg: "yellow",
@@ -23836,7 +23890,7 @@ void main() {
   });
   // ELITE_POWER_BOW
   // SABREWING
-  install$5({
+  install$6({
       id: "SHORTBOW",
       ch: "}",
       fg: "yellow",
@@ -23851,7 +23905,7 @@ void main() {
   // PURPLE_STORM
   // SNOW_BOW
   // WINTERS_TOUCH
-  install$5({
+  install$6({
       id: "TRICKBOW",
       ch: "}",
       fg: "yellow",
@@ -23863,7 +23917,7 @@ void main() {
   });
   // GREEN_MENACE
   // PINK_SCOUNDREL
-  install$5({
+  install$6({
       id: "CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23878,7 +23932,7 @@ void main() {
   // EXPLODING_CROSSBOW
   // FIREBOLT_THROWER
   // IMPLODING_CROSSBOW
-  install$5({
+  install$6({
       id: "DUAL_CROSSBOWS",
       ch: "}",
       fg: "yellow",
@@ -23890,7 +23944,7 @@ void main() {
   });
   // BABY_CROSSBOWS
   // SPELLBOUND_CROSSBOWS
-  install$5({
+  install$6({
       id: "HEAVY_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23902,7 +23956,7 @@ void main() {
   });
   // DOOM_CROSSBOW
   // SLAYER_CROSSBOW
-  install$5({
+  install$6({
       id: "RAPID_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23914,7 +23968,7 @@ void main() {
   });
   // AUTO_CROSSBOW
   // BUTTERFLY_CROSSBOW
-  install$5({
+  install$6({
       id: "SCATTER_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -23927,7 +23981,7 @@ void main() {
   // HARP_CROSSBOW
   // LIGHTNING_HARP_CROSSBOW
 
-  install$4("potion", (game, actor) => {
+  install$5("potion", (game, actor) => {
       if (!actor.isHero)
           return false;
       if (actor.data.potion < actor.data.potion_max) {
@@ -23935,39 +23989,185 @@ void main() {
           // TODO - spend time? idle?
           return false;
       }
+      // TODO - potion_heals_nearby
       if (actor.health >= actor.health_max) {
+          // TODO - check for nearby
           game.addMessage("You do not need to drink a potion.");
           // TODO - spend time? idle?
           return false;
       }
+      // TODO - potion_boosts_defense
+      // adds {iron} status?
       const heal = Math.floor(actor.health_max * 0.75);
       actor.health = Math.min(actor.health + heal, actor.health_max);
       actor.data.potion = 0; // Needs to recharge
-      game.addMessage("You feel much better.");
+      game.addMessage("You drink a #{blue potion}.");
       game.endTurn(actor, actor.moveSpeed);
       return true;
   });
-  install("potion", {
-      new_game(game) {
-          game.keymap["p"] = "potion";
+  install$1("potion", {
+      new_game(req, next) {
+          req.game.keymap["p"] = "potion";
+          return next();
       },
-      new_level(game, level) {
-          console.log("POTION PLUGIN: NEW LEVEL");
-          level.on("spawn_actor", (actor) => {
-              console.log("POTION PLUGIN SPAWN ACTOR: " + actor.kind.id);
-              if (actor.isHero) {
-                  actor.data.potion_max = 40 * 100; // 40 moves
-                  actor.data.potion = actor.data.potion_max;
-                  actor.on("turn_end", (game, time) => {
-                      actor.data.potion = Math.min(actor.data.potion + time, actor.data.potion_max);
-                  });
-                  actor.on("sidebar", (entry) => {
-                      entry.add_progress("Potion", "blue", actor.data.potion, actor.data.potion_max);
-                  });
-              }
-          });
+      spawn(req, next) {
+          if (isHero(req.obj)) {
+              const hero = req.obj;
+              hero.data.potion_max = 40 * 100; // 40 moves
+              hero.data.potion = hero.data.potion_max;
+          }
+          return next();
+      },
+      tick(req, next) {
+          if (isHero(req.obj)) {
+              const hero = req.obj;
+              let rate = Math.round(100 * Math.pow(0.85, hero.data.potion_cooldown || 0));
+              hero.data.potion = Math.min(hero.data.potion + Math.round((req.time * 100) / rate), hero.data.potion_max);
+          }
+          return next();
+      },
+      sidebar(req, next) {
+          if (isHero(req.obj)) {
+              const hero = req.obj;
+              req.entry.add_progress("Potion", "blue", hero.data.potion, hero.data.potion_max);
+          }
+          return next();
       },
   });
+
+  const enchants = {};
+  function install(name, enchant = {}) {
+      const obj = Object.assign({
+          apply(actor, level) {
+              actor.data[name] = level;
+          },
+          unapply(actor) {
+              actor.data[name] = 0;
+          },
+          actor: {},
+          item: {},
+      }, enchant);
+      enchants[name] = obj;
+  }
+
+  install("artifact_cooldown", {
+      apply(actor, level) {
+          // TODO - this is read in the end_turn handler of the hero to adjust artifact cooldown recovery
+          actor.data.artifact_cooldown = level;
+      },
+      unapply(actor) {
+          actor.data.artifact_cooldown = 0;
+      },
+  });
+  install("bonus_arrows" // {
+  //   apply(actor: Actor, level: number) {
+  //     // This is read by the pickup of the ARROWS item to determine how many arrows are gained.
+  //     actor.data.bonus_arrows = level;
+  //   },
+  //   unapply(actor: Actor) {
+  //     actor.data.bonus_arrows = 0;
+  //   },
+  // }
+  );
+  install("roll_cooldown");
+  /*
+
+      // PLUGIN - Roll
+          - keypress - 'r'
+              - initiate roll
+          
+          - start
+              - add action - "roll"
+              - add keypress - 'r'
+              - add enchant - ROLL_COOLDOWN
+
+          - spawn_actor
+              - add roll cooldown data
+
+      // ACTION - roll
+          - figure this out...
+  */
+  install("melee_damage", {
+      actor: {
+          attack(target, damage) {
+              if (damage.isRanged) {
+                  return;
+              }
+              const baseAmount = damage.amount || 0;
+              const level = this.data.melee_damage || 0;
+              damage.amount = Math.round((baseAmount * (100 + 10 * level)) / 100);
+          },
+      },
+  });
+  /*
+
+    MOBS_TARGET_YOU_MORE = fl(4), // increases notice distance for all mobs?
+      - apply
+          - add "equip"
+              - adjust notice bonus/penalty (global?)
+          - add "unequip"
+              - notice bonus/penalti auto-calculates
+      - unapply
+          - remove triggers
+
+    // add ?? MOBS_AVOID_YOU_MORE ??
+      - apply
+          - add "equip"
+              - adjust notice bonus/penalty (global?)
+          - add "unequip"
+              - notice bonus/penalti auto-calculates
+      - unapply
+          - remove triggers
+
+  */
+  install("negate_hits", {
+      actor: {
+          damage(source, damage) {
+              let chance = 100 - Math.round(100 * Math.pow(0.9, this.data.negate_hits || 0));
+              if (rng.random.chance(chance)) {
+                  damage.amount = 0;
+                  // TODO - Update msg or set flag for logging...
+              }
+          },
+      },
+  });
+  // Handled by potion plugin
+  install("potion_cooldown");
+  // Handled by potion plugin
+  install("potion_boosts_defense");
+  // Handled by potion plugin
+  install("potion_heals_nearby");
+  /*
+    MOVESPEED_AURA_15 = fl(5),
+      - apply
+          - add "equip"
+              - adjust movespeed
+          - add "unequip"
+              - movespeed auto-calculates
+      - unapply
+          - remove triggers
+
+    RANGED_DAMAGE_30 = fl(10),
+      - apply
+          - add "attack"  << params tell us it is ranged
+              - add 30% to ranged
+      - unapply
+          - remove "attack"
+
+    REDUCE_DAMAGE_35 = fl(11),
+      - apply
+          - add "damage"
+              - reduce 35%
+      - unapply
+          - remove "damage"
+
+    WEAPON_DAMAGE_AURA_20 = fl(12), // both melee and ranged
+      - apply
+          - add "attack"
+              - increase 20%
+      - unapply
+          - remove "attack"
+  */
 
   function make(config) {
       const appOpts = {

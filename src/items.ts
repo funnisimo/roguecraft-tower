@@ -26,12 +26,12 @@ ITEM.install({
   on: {
     pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
       //   actor.health = actor.kind.health;
-      game.addMessage("You pickup some arrows.");
+      game.addMessage("You pickup some ammo.");
       game.level!.removeItem(this);
       // TODO - adjust for arrows.power?
       actor.ammo += 10;
-      if (actor.hasArmorFlag(ITEM.ARMOR_FLAGS.ARROWS_10)) {
-        actor.ammo += 10;
+      if (actor.data.bonus_arrows > 0) {
+        actor.ammo += 10 * actor.data.bonus_arrows;
       }
       return true;
     },

@@ -40,7 +40,7 @@ export class Obj {
   once(event: string, fn: CallbackFn) {
     return this.events.once(event, fn);
   }
-  trigger(event: string, ...args: any[]) {
-    return this.events.trigger(event, ...args);
+  emit(event: string, ...args: any[]) {
+    return this.events.emit(event, ...args);
   }
 }

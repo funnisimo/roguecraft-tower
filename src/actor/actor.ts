@@ -13,6 +13,7 @@ import { Item, placeRandom, ARMOR_FLAGS } from "../item";
 import { Status } from "./status";
 import { plugins } from "../game/plugins";
 import { SidebarEntry } from "../widgets";
+import { Hero } from "./hero";
 
 export interface ActorConfig extends ObjConfig {
   kind: ActorKind;
@@ -129,7 +130,7 @@ export class Actor extends Obj {
     return this.kind.combo;
   }
 
-  get isHero(): boolean {
+  isHero(): this is Hero {
     return false;
   }
   //
@@ -174,12 +175,12 @@ export class Actor extends Obj {
 
   startTurn(game: Game) {
     this._turnTime = 0;
-    this.trigger("turn_start", game);
+    this.emit("turn_start", game);
   }
 
   endTurn(game: Game, time: number) {
     this._turnTime = time;
-    this.trigger("turn_end", game, time);
+    this.emit("turn_end", game, time);
   }
 
   hasActed() {
@@ -247,7 +248,7 @@ export class Actor extends Obj {
     this.statuses.forEach((s) => {
       s && s.update_sidebar(this, entry);
     });
-    this.trigger("sidebar", entry); // Allow plugins to update sidebar
+    this.emit("sidebar", entry); // Allow plugins to update sidebar
     return entry;
   }
 }
@@ -324,4 +325,8 @@ export function spawn(
       _success = cb || GWU.NOOP;
     },
   };
+}
+
+export function isActor(obj: any): obj is Actor {
+  return obj instanceof Actor;
 }

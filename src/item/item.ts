@@ -178,7 +178,7 @@ export function place(
   newbie.x = loc[0];
   newbie.y = loc[1];
 
-  level.events.trigger("spawn_item", level, newbie);
+  level.events.emit("spawn_item", level, newbie);
 
   level.addItem(newbie);
   return newbie;

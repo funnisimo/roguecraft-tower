@@ -100,7 +100,7 @@ install({
   on: {
     enter(game, actor) {
       game.addMessage("Going up!");
-      game.scene!.trigger("win");
+      game.scene!.emit("win");
     },
   },
 });

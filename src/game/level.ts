@@ -91,7 +91,7 @@ export class Level implements GWD.site.AnalysisSite {
 
     ACTOR.spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
       this.started = true;
-      this.trigger("start");
+      this.emit("start");
 
       this.data.wavesLeft = this.waves.length;
       this.waves.forEach((wave) => {
@@ -129,12 +129,12 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   stop(game: Game) {
-    this.trigger("stop");
+    this.emit("stop");
     this.game = null;
   }
 
   tick(game: Game, dt: number) {
-    this.trigger("tick", dt);
+    this.emit("tick", dt);
 
     // tick actors
     this.actors.forEach((a) => {
@@ -190,7 +190,7 @@ export class Level implements GWD.site.AnalysisSite {
 
     // allows plugins to change the tile
     let data = { x, y, tile };
-    this.trigger("set_tile", data);
+    this.emit("set_tile", data);
 
     if (data.tile) {
       this.tiles[x][y] = data.tile.index;
@@ -308,16 +308,16 @@ export class Level implements GWD.site.AnalysisSite {
   addActor(obj: ACTOR.Actor) {
     if (!obj.spawn) {
       obj.spawn = true;
-      this.trigger("spawn_actor", obj);
+      this.emit("spawn_actor", obj);
     }
     this.actors.push(obj);
-    obj.trigger("add", this);
+    obj.emit("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
   }
 
   removeActor(obj: ACTOR.Actor) {
     GWU.arrayDelete(this.actors, obj);
-    obj.trigger("remove", this);
+    obj.emit("remove", this);
     // this.scene.needsDraw = true;
   }
 
@@ -332,16 +332,16 @@ export class Level implements GWD.site.AnalysisSite {
   addItem(obj: ITEM.Item) {
     if (!obj.spawn) {
       obj.spawn = true;
-      this.trigger("spawn_item", obj);
+      this.emit("spawn_item", obj);
     }
     this.items.push(obj);
-    obj.trigger("add", this);
+    obj.emit("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
   }
 
   removeItem(obj: ITEM.Item) {
     GWU.arrayDelete(this.items, obj);
-    obj.trigger("remove", this);
+    obj.emit("remove", this);
     // this.scene.needsDraw = true;
   }
 
@@ -356,16 +356,16 @@ export class Level implements GWD.site.AnalysisSite {
   addFx(obj: FX.FX) {
     if (!obj.spawn) {
       obj.spawn = true;
-      this.trigger("spawn_fx", obj);
+      this.emit("spawn_fx", obj);
     }
     this.fxs.push(obj);
-    obj.trigger("add", this);
+    obj.emit("add", this);
     // this.scene.needsDraw = true; // need to update sidebar too
   }
 
   removeFx(obj: FX.FX) {
     GWU.arrayDelete(this.fxs, obj);
-    obj.trigger("remove", this);
+    obj.emit("remove", this);
     // this.scene.needsDraw = true;
   }
 
@@ -426,8 +426,8 @@ export class Level implements GWD.site.AnalysisSite {
   once(event: string, fn: CallbackFn) {
     return this.events.once(event, fn);
   }
-  trigger(event: string, ...args: any[]) {
-    return this.events.trigger(event, ...args);
+  emit(event: string, ...args: any[]) {
+    return this.events.emit(event, ...args);
   }
 
   // wait(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
@@ -438,7 +438,7 @@ export class Level implements GWD.site.AnalysisSite {
   //   if (typeof args[1] === "string") {
   //     const ev = args[1];
   //     args[2] = args[2] || {};
-  //     args[1] = () => this.trigger(ev, args[2]!);
+  //     args[1] = () => this.emit(ev, args[2]!);
   //   }
   //   return this.timers.setTimeout(args[1], args[0]);
   // }
@@ -451,7 +451,7 @@ export class Level implements GWD.site.AnalysisSite {
   //   if (typeof fn === "string") {
   //     const ev = args[1];
   //     args[2] = args[2] || {};
-  //     args[1] = () => this.trigger(ev, args[2]!);
+  //     args[1] = () => this.emit(ev, args[2]!);
   //   }
   //   return this.timers.setInterval(args[1], args[0]);
   // }

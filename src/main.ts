@@ -8,6 +8,7 @@ import "./melee";
 import "./armor";
 import "./ranged";
 import "./plugins";
+import "./enchants";
 import * as GAME from "./game";
 
 function start() {

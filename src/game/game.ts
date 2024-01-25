@@ -10,7 +10,7 @@ import { FX } from "../fx/flash";
 import * as TILE from "../tile";
 import * as ITEM from "../item";
 import * as HORDE from "../horde";
-import { plugins } from "./plugins";
+import * as PLUGINS from "./plugins";
 
 export interface GameOpts {
   seed?: number;
@@ -56,9 +56,11 @@ export class Game {
     this.seed = opts.seed || GWU.random.number(100000);
     console.log("GAME, seed=", this.seed);
 
-    this.rng = GWU.rng.make(this.seed);
+    GWU.rng.random.seed(this.seed);
+    this.rng = GWU.rng.random; // Can access here or via GWU.rng.random
     this.seeds = [];
 
+    // TODO - Change this so that the default class does not have the LAST_LEVEL concept
     const LAST_LEVEL = 10;
     for (let i = 0; i < LAST_LEVEL; ++i) {
       const levelSeed = this.rng.number(100000);
@@ -123,7 +125,7 @@ export class Game {
       console.log(">> INVENTORY <<");
       // TODO - Set focus to the player so that it shows their info
       //      - Send event to level scene?
-      this.scene!.trigger("inventory", this);
+      this.scene!.emit("inventory", this);
       e.stopPropagation();
     });
     // this.events.on("p", (e) => {
@@ -198,7 +200,8 @@ export class Game {
       }
     });
 
-    Object.values(plugins).forEach((p) => p.new_game(this));
+    PLUGINS.trigger("new_game", { game: this }, null);
+    // Object.values(plugins).forEach((p) => p.new_game({ this }, null, ));
 
     // @ts-ignore
     globalThis.GAME = this;
@@ -241,18 +244,19 @@ export class Game {
     // @ts-ignore
     globalThis.HERO = this.hero;
 
-    Object.values(plugins).forEach((p) => p.new_level(this, level));
+    PLUGINS.trigger("new_level", { game: this, level }, null);
+    // Object.values(plugins).forEach((p) => p.new_level(this, level));
 
     level.start(this);
     this.tick();
   }
 
   lose() {
-    this.scene!.trigger("lose", this);
+    this.scene!.emit("lose", this);
   }
 
   win() {
-    this.scene!.trigger("win", this);
+    this.scene!.emit("win", this);
   }
 
   update() {

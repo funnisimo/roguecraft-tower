@@ -98,7 +98,7 @@ export function moveDir(
     actor.kind.moveSpeed * (GWU.xy.isDiagonal(dir) ? 1.4 : 1.0)
   );
 
-  actor.trigger("move", game, newX, newY);
+  actor.emit("move", game, newX, newY);
   level.triggerAction("enter", actor);
 
   game.endTurn(actor, speed);
@@ -268,7 +268,7 @@ export function fire(
   target: Actor | null = null
 ): boolean {
   const level = game.level!;
-  const player = game.hero;
+  const hero = game.hero;
 
   if (!actor.range) {
     game.addMessage("Nothing to fire.");
@@ -296,11 +296,11 @@ export function fire(
         console.log("checking fov...");
 
         // HACK - for actor.canSee(a)
-        if (!player.isInFov(actor)) {
+        if (!hero.isInFov(actor)) {
           console.log("actor not visible");
           return false;
         }
-        if (!player.isInFov(a)) {
+        if (!hero.isInFov(a)) {
           console.log("target not visible");
           return false;
         }
@@ -311,7 +311,7 @@ export function fire(
       })
       .sort(
         (a, b) =>
-          GWU.xy.distanceFromTo(player, a) - GWU.xy.distanceFromTo(player, b)
+          GWU.xy.distanceFromTo(hero, a) - GWU.xy.distanceFromTo(hero, b)
       );
 
     if (targets.length == 0) {
@@ -431,7 +431,7 @@ export function pickup(game: Game, actor: Actor): boolean {
   if (level) {
     const item = level.itemAt(actor.x, actor.y);
     if (item) {
-      item.trigger("pickup", game, actor);
+      item.emit("pickup", game, actor);
       return true;
     }
     game.addMessage("Nothing to pickup.");

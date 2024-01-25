@@ -124,7 +124,7 @@ export class Hero extends ACTOR.Actor {
     return this.kind.combo;
   }
 
-  get isHero(): boolean {
+  isHero(): this is Hero {
     return true;
   }
   //
@@ -272,4 +272,8 @@ export function makeHero(id: string = "HERO") {
     z: 1, // items, actors, player, fx
     kind,
   });
+}
+
+export function isHero(obj: any): obj is Hero {
+  return obj instanceof Hero;
 }

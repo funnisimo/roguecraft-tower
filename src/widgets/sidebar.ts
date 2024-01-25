@@ -65,7 +65,7 @@ export class Sidebar extends GWU.app.Widget {
     this._focus[0] = x;
     this._focus[1] = y;
     if (!GWU.xy.equals(wasFocus, this._focus)) {
-      this.trigger("focus", this._focus);
+      this.emit("focus", this._focus);
       this.needsDraw = true;
     }
   }
@@ -75,7 +75,7 @@ export class Sidebar extends GWU.app.Widget {
     this._focus[0] = -1;
     this._focus[1] = -1;
     if (!GWU.xy.equals(wasFocus, this._focus)) {
-      this.trigger("focus", this._focus);
+      this.emit("focus", this._focus);
       this.needsDraw = true;
     }
   }
@@ -141,7 +141,6 @@ export class Sidebar extends GWU.app.Widget {
     });
 
     entry.statuses.forEach((s) => {
-      if (!s) return;
       buf.drawText(x, y + lines, s.text, s.color);
       lines += 1;
     });
@@ -309,7 +308,7 @@ export class Sidebar extends GWU.app.Widget {
       });
     }
     // if (!GWU.xy.equals(wasFocus, this._focus)) {
-    //   this.trigger("focus", this._focus);
+    //   this.emit("focus", this._focus);
     //   this.needsDraw = true;
     // }
     e.stopPropagation();
@@ -321,7 +320,7 @@ export class Sidebar extends GWU.app.Widget {
     if (e.defaultPrevented || e.propagationStopped) return;
 
     if (this._focus[0] > -1) {
-      this.trigger("choose", this._focus);
+      this.emit("choose", this._focus);
     }
   }
 }

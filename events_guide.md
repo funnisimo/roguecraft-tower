@@ -16,7 +16,7 @@
 - try_move
 - sidebar?
 - details?
-- reset - called when equipment is being recalculated to reset values
+- recalc - called when equipment bonuses are being recalculated (equip, unequip)
 
 ## item:
 

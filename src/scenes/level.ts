@@ -157,7 +157,7 @@ export const level = {
         game.hero.clearGoal();
       }
       // if (e.key == "Escape") {
-      //   this.trigger("lose"); // todo -- remove
+      //   this.emit("lose"); // todo -- remove
       // }
       e.stopPropagation();
     },

@@ -7,6 +7,7 @@ export interface DamageConfig {
   amount: number;
   msg: string;
   color: string;
+  isRanged: boolean;
   // TODO - type?  source?  is_environmental?
 }
 
@@ -22,6 +23,9 @@ export function damage(
   let amount = (damage.amount = damage.amount || 0);
   damage.msg = damage.msg || `${target.name} is damaged`;
   damage.color = damage.color || "red";
+  if (!damage.isRanged) {
+    damage.isRanged = false;
+  }
 
   if ((armor_flags & ITEM.ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
     if (game.rng.chance(30)) {
@@ -35,7 +39,7 @@ export function damage(
     damage.amount = Math.round(damage.amount * 0.65);
   }
 
-  target.trigger("damage", damage);
+  target.emit("damage", damage);
 
   if (damage.amount <= 0) {
     return false;
@@ -56,7 +60,7 @@ export function damage(
     // and corpses can be custom to the creature that died
     // no matter what the floor is
     game.level!.setTile(target.x, target.y, "CORPSE");
-    target.trigger("death");
+    target.emit("death");
     game.level!.removeActor(target);
     return true;
   }
