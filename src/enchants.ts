@@ -7,6 +7,13 @@ import { Level } from "./game/level";
 import { DamageConfig } from "./effect/damage";
 import * as GWU from "gw-utils";
 
+// Plugin - Enchant related
+// apply_actor_enchant, unapply_actor_enchant
+// apply_item_enchant, unapply_item_enchant
+// equip, unequip, drop, pickup
+// make_item, destroy_item
+// make_actor, destroy_actor (death?)
+
 ENCHANT.install("artifact_cooldown", {
   apply(actor: Actor, level: number) {
     // TODO - this is read in the end_turn handler of the hero to adjust artifact cooldown recovery

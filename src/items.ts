@@ -13,6 +13,7 @@ ITEM.install({
       actor.health = actor.kind.health; // TODO - move this to an effect
       game.addMessage("You drink the potion.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -28,7 +29,8 @@ ITEM.install({
       //   actor.health = actor.kind.health;
       game.addMessage("You pickup some ammo.");
       game.level!.removeItem(this);
-      // TODO - adjust for arrows.power?
+      // destroy
+
       actor.ammo += 10;
       if (actor.data.bonus_arrows > 0) {
         actor.ammo += 10 * actor.data.bonus_arrows;
@@ -51,6 +53,7 @@ ITEM.install({
       );
       game.addMessage("You eat an apple.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -67,6 +70,7 @@ ITEM.install({
       actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
       game.addMessage("You eat some bread.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -85,6 +89,7 @@ ITEM.install({
       );
       game.addMessage("You eat some pork.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -103,6 +108,7 @@ ITEM.install({
       );
       game.addMessage("You eat some salmon.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -122,6 +128,7 @@ ITEM.install({
 
       game.addMessage("You eat some berries.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -140,6 +147,7 @@ ITEM.install({
       );
       game.addMessage("You eat some melon.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -158,6 +166,7 @@ ITEM.install({
       );
       game.addMessage("You eat some fruit.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },
@@ -176,6 +185,7 @@ ITEM.install({
       );
       game.addMessage("You eat some fish.");
       game.level!.removeItem(this);
+      // destroy
       return true;
     },
   },

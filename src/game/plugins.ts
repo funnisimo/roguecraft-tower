@@ -8,30 +8,6 @@ import { FX } from "../fx";
 import { SidebarEntry } from "../widgets";
 import { DamageConfig } from "../effect";
 
-// TODO - Allow fail type to be set (for enums)
-export class Result<T> {
-  value: T | undefined;
-
-  constructor(value?: T) {
-    this.value = value;
-  }
-
-  fail() {
-    this.value = undefined;
-  }
-  ok(val: T) {
-    this.value = val;
-  }
-
-  isOk(): boolean {
-    return this.value !== undefined;
-  }
-
-  isFail(): boolean {
-    return !this.isOk();
-  }
-}
-
 export type PluginFn<In, Out = null> = (
   req: In,
   next: () => Result<Out>
@@ -95,7 +71,10 @@ const active: Plugin[] = [];
 // @ts-ignore
 globalThis.PLUGINS = plugins;
 
-function NOFUNC(req: any, next: () => Result<any>): Result<any> {
+function NOFUNC(
+  req: any,
+  next: () => GWU.Result<any, string>
+): GWU.Result<any, string> {
   return next();
 }
 
@@ -169,7 +148,8 @@ export function start(app: GWU.app.App, ...names: string[]) {
   });
 }
 
-export type NextFn<Out> = () => Result<Out>;
+export type Result<Out = undefined> = GWU.Result<Out, string>;
+export type NextFn<Out = undefined> = () => Result<Out>;
 
 /**
  * Helper function for invoking a chain of middlewares on a context.

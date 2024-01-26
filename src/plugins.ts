@@ -5,7 +5,7 @@ import * as Plugin from "./game/plugins";
 import * as ACTIONS from "./action";
 import { Actor } from "./actor/actor";
 import { SidebarEntry } from "./widgets/sidebar";
-import { NextFn, Result } from "./game/plugins";
+import { NextFn } from "./game/plugins";
 import { Obj } from "./game";
 import { isHero } from "./actor";
 
@@ -39,15 +39,15 @@ ACTIONS.install("potion", (game: Game, actor: Actor): boolean => {
 });
 
 Plugin.install("potion", {
-  new_game(req: { game: Game }, next: NextFn<null>): Result<null> {
+  new_game(req: { game: Game }, next: Plugin.NextFn): Plugin.Result {
     req.game.keymap["p"] = "potion";
     return next();
   },
 
   spawn(
     req: { level: Level; obj: Obj; x: number; y: number },
-    next: NextFn<null>
-  ): Result<null> {
+    next: Plugin.NextFn
+  ): Plugin.Result {
     if (isHero(req.obj)) {
       const hero = req.obj;
       hero.data.potion_max = 40 * 100; // 40 moves
@@ -56,7 +56,7 @@ Plugin.install("potion", {
     return next();
   },
 
-  tick(req: { obj: Obj; time: number }, next: NextFn<null>): Result<null> {
+  tick(req: { obj: Obj; time: number }, next: Plugin.NextFn): Plugin.Result {
     if (isHero(req.obj)) {
       const hero = req.obj;
       let rate = Math.round(
@@ -73,8 +73,8 @@ Plugin.install("potion", {
 
   sidebar(
     req: { obj: Obj; entry: SidebarEntry },
-    next: NextFn<null>
-  ): Result<null> {
+    next: Plugin.NextFn
+  ): Plugin.Result {
     if (isHero(req.obj)) {
       const hero = req.obj;
       req.entry.add_progress(

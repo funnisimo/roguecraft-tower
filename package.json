@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "7DRL - 2022 :: Can you climb the tower all the way to the top?",
   "main": "main.js",
+  "type": "module",
   "directories": {
     "dist": "dist"
   },
@@ -27,15 +28,15 @@
   },
   "homepage": "https://github.com/funnisimo/roguecraft-tower#readme",
   "devDependencies": {
-    "@rollup/plugin-node-resolve": "^13.1.3",
-    "@rollup/plugin-typescript": "^8.3.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^11.1.6",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.11.5",
     "gw-dig": ">=0.3",
     "gw-utils": ">0.5",
     "http-server": "^14.1.0",
     "lodash": "^4.17.21",
-    "rollup": "^2.70.1",
+    "rollup": "^4.9.6",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"
   }

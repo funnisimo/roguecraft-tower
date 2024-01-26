@@ -1,58 +1,48 @@
 import * as GWU from "gw-utils";
 import * as SCENES from "../scenes";
-import { Game } from "./game";
-import { plugins } from "./plugins";
+// import { Game } from "./game";
+import * as PLUGINS from "./plugins";
 
-export type GameFn = (Game) => void;
+// export type GameFn = (Game) => void;
 
-export interface GameAppConfig {
-  name: string;
-  div: string;
-  console: [number, number];
-  scenes: { [id: string]: GWU.app.SceneOpts };
-  start_scene: string;
-
-  plugins: string[];
+declare module "gw-utils" {
+  export namespace app {
+    export interface AppOpts {
+      plugins?: string[];
+      seed?: number;
+    }
+  }
 }
 
-export function make(config: Partial<GameAppConfig>): GWU.app.App {
-  const appOpts = {
-    name: "Goblinwerks",
-    width: 90,
-    height: 45,
-    div: "game",
-    scenes: {
-      title: SCENES.title,
-      level: SCENES.level,
-      win: SCENES.win,
-      lose: SCENES.lose,
-      help: SCENES.help,
-      reward: SCENES.reward,
+export function make(config: GWU.app.AppOpts): GWU.app.App {
+  const appOpts = Object.assign(
+    {
+      name: "Goblinwerks",
+      width: 90,
+      height: 45,
+      div: "game",
+      scenes: {
+        title: SCENES.title,
+        level: SCENES.level,
+        win: SCENES.win,
+        lose: SCENES.lose,
+        help: SCENES.help,
+        reward: SCENES.reward,
+      },
+      start: "title",
+      plugins: [],
     },
-    start: "title",
-  };
+    config
+  );
 
-  if (config.name !== undefined) {
-    appOpts.name = config.name;
-  }
-  if (config.div !== undefined) {
-    appOpts.div = config.div;
-  }
-  if (Array.isArray(config.console) && config.console.length == 2) {
-    appOpts.width = config.console[0];
-    appOpts.height = config.console[1];
-  }
-  if (config.scenes) {
-    Object.assign(appOpts.scenes, config.scenes);
-  }
-  if (config.start_scene) {
-    appOpts.start = config.start_scene;
+  if (config.seed > 0) {
+    GWU.rng.random.seed(config.seed);
   }
 
   const app = GWU.app.make(appOpts);
 
   // Start Plugins...
-  Object.values(plugins).forEach((p) => p.start(app));
+  PLUGINS.start(app, ...config.plugins);
 
   return app;
 }
