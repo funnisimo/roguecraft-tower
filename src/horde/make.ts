@@ -116,9 +116,9 @@ export function random(
   }
 
   const matches = Object.values(hordes).filter((k) => {
-    if (match.tags.length && !GWU.arraysIntersect(match.tags, k.tags))
+    if (match.tags.length && !GWU.utils.arraysIntersect(match.tags, k.tags))
       return false;
-    if (match.forbidTags && GWU.arraysIntersect(match.forbidTags, k.tags))
+    if (match.forbidTags && GWU.utils.arraysIntersect(match.forbidTags, k.tags))
       return false;
     if (match.flags && !(k.flags.horde & match.flags)) {
       return false;

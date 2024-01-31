@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 
 import { Actor } from "../actor/actor";
-import { Hero } from "../actor/hero";
+import { Hero } from "../hero/hero";
 import { ARMOR_FLAGS } from "../item";
 
 export class Details extends GWU.widget.Dialog {

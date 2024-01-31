@@ -1,21 +1,15 @@
 import * as GWU from "gw-utils";
 import * as SCENES from "../scenes";
-// import { Game } from "./game";
-import * as PLUGINS from "./plugins";
+import { GameOpts } from "./game";
+import { factory } from "./factory";
+import { Plugin, startPlugins } from "./plugins";
 
 // export type GameFn = (Game) => void;
 
-declare module "gw-utils" {
-  export namespace app {
-    export interface AppOpts {
-      plugins?: string[];
-      seed?: number;
-    }
-  }
-}
+export interface StartAppOpts extends Omit<GWU.app.AppOpts, "name">, Plugin {}
 
-export function make(config: GWU.app.AppOpts): GWU.app.App {
-  const appOpts = Object.assign(
+export function startApp(config: StartAppOpts): GWU.app.App {
+  const appOpts = GWU.utils.mergeDeep(
     {
       name: "Goblinwerks",
       width: 90,
@@ -29,20 +23,23 @@ export function make(config: GWU.app.AppOpts): GWU.app.App {
         help: SCENES.help,
         reward: SCENES.reward,
       },
-      start: "title",
+      scene: "title",
       plugins: [],
     },
     config
-  );
+  ) as StartAppOpts;
 
-  if (config.seed > 0) {
-    GWU.rng.random.seed(config.seed);
-  }
-
+  // make the App
+  // - default is to start the app which will start the "title" scene
+  // - the title screen will make and start a new game
+  // - starting a game will make the default level
+  // - ... and then start the level kind's screen with that level
   const app = GWU.app.make(appOpts);
+  // This will be used when we start the game
+  app.data.start_opts = config;
 
   // Start Plugins...
-  PLUGINS.start(app, ...config.plugins);
+  startPlugins(app, ...config.plugins);
 
   return app;
 }

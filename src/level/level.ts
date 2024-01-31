@@ -4,29 +4,70 @@ import * as GWD from "gw-dig";
 import * as ACTOR from "../actor";
 import * as HORDE from "../horde";
 import * as FX from "../fx";
+import * as ACTIONS from "../action";
 
 import * as TILE from "../tile";
 import * as ITEM from "../item";
-import * as OBJ from "./obj";
-import { Game } from "./game";
-import { CallbackFn } from "./obj";
+import * as OBJ from "../game/obj";
+import { Game } from "../game/game";
+import { CallbackFn } from "../game/obj";
+import { Hero } from "../hero";
+import { LevelConfig, LevelKind, WaveInfo, getKind } from "./kind";
+import { factory } from "./factory";
 
-export interface WaveInfo {
-  delay?: number;
-  horde?: string | Partial<HORDE.MatchOptions>;
-  power?: number;
+export interface LevelCreateOpts {
+  seed?: number;
+  depth?: number; // TODO - Huh?
+
+  scene?: string;
+  scene_opts?: GWU.app.SceneCreateOpts;
+
+  on?: LevelEvents & OBJ.ObjEvents;
+  data?: { [id: string]: any };
+}
+
+export interface LevelEvents {
+  make?: (
+    game: Game,
+    id: string | number,
+    kind: LevelKind,
+    opts: LevelCreateOpts
+  ) => Level;
+  create?: (level: Level, opts: LevelCreateOpts) => void;
+
+  show?: (level: Level, scene: GWU.app.Scene) => void;
+  hide?: (level: Level) => void;
+
+  update?: (level: Level, dt: number) => void;
+  tick?: (level: Level, dt: number) => void;
+
+  scene_event?: (
+    level: Level,
+    scene: GWU.app.Scene,
+    event: GWU.app.Event
+  ) => void;
 }
 
 export class Level implements GWD.site.AnalysisSite {
+  id: string | number = 0;
   depth = 0;
+  kind: LevelKind;
+
+  // TODO - Convert to >> messages: { [id: string]: string }
   welcome = "";
   proceed = "";
 
+  tick_time = 50;
+  scheduler: GWU.scheduler.Scheduler;
+
   done = false;
   started = false;
+  // needsDraw = false;
   data: Record<string, any> = {};
 
-  waves: WaveInfo[] = [];
+  // TODO - move to Tower specific plugin
+  // waves: WaveInfo[] = [];
+
   actors: ACTOR.Actor[] = [];
   items: ITEM.Item[] = [];
   fxs: FX.FX[] = [];
@@ -35,15 +76,24 @@ export class Level implements GWD.site.AnalysisSite {
   flags: GWU.grid.NumGrid;
   choke: GWU.grid.NumGrid;
 
-  game: Game | null = null;
-  player: ACTOR.Hero | null = null;
+  game: Game;
+  scene_id: string = "level";
+  scene_opts: GWU.app.SceneCreateOpts = {};
+  scene: GWU.app.Scene = null;
+
+  // // TODO - Can we do this without a hero?
+  // hero: Hero;
 
   seed: number;
   // rng: GWU.rng.Random;
   locations: Record<string, GWU.xy.Loc> = {};
   events: GWU.app.Events;
 
-  constructor(width: number, height: number, seed = 0) {
+  constructor(game: Game, id: string | number, kind: LevelKind) {
+    this.id = id;
+    this.game = game;
+    this.kind = kind;
+    const { width, height, seed } = kind;
     this.events = new GWU.app.Events(this);
     this.tiles = GWU.grid.make(width, height);
     this.flags = GWU.grid.make(width, height);
@@ -52,6 +102,14 @@ export class Level implements GWD.site.AnalysisSite {
     this.seed = seed || GWU.random.number(100000);
     // this.rng = GWU.rng.make(this.seed);
 
+    this.scheduler = new GWU.scheduler.Scheduler();
+
+    if (kind.scene) {
+      this.scene_id = kind.scene;
+      this.scene_opts = kind.scene_opts;
+    }
+
+    // TODO - Move to Tower specific plugin
     this.data.wavesLeft = 0;
   }
 
@@ -70,110 +128,212 @@ export class Level implements GWD.site.AnalysisSite {
     return this.tiles.hasXY(x, y);
   }
 
-  start(game: Game) {
-    this.game = game;
-    this.player = game.hero;
-    this.done = false;
-    this.started = false;
-    // this.rng = game.rng;
+  create(kind: LevelKind, opts: LevelCreateOpts) {
+    if (opts.seed) {
+      this.seed = opts.seed;
+    }
+    this.depth = opts.depth || kind.depth || 1;
 
-    // put player in starting location
-    let startLoc = this.locations.start || [
-      Math.floor(this.width / 2),
-      Math.floor(this.height / 2),
-    ];
+    if (kind.layout) {
+      const { data, tiles } = kind.layout;
+      loadLevel(this, data, tiles);
+    } else if (kind.dig) {
+      digLevel(this, kind.dig, this.seed);
+    } else {
+      throw new Error("Level must have either 'dig' or 'layout'.");
+    }
 
-    startLoc = this.rng.matchingLocNear(startLoc[0], startLoc[1], (x, y) =>
-      this.hasTile(x, y, "FLOOR")
-    );
+    if (kind.welcome) {
+      this.welcome = kind.welcome;
+    } else {
+      this.welcome = "Welcome.";
+    }
 
-    game.hero.clearGoal();
+    if (kind.proceed) {
+      this.proceed = kind.proceed;
+    } else {
+      this.proceed = "Proceed.";
+    }
 
-    ACTOR.spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
-      this.started = true;
-      this.emit("start");
+    // if (kind.waves) {
+    //   this.waves = kind.waves;
+    // } else {
+    //   this.waves = [];
+    //   for (let i = 0; i < this.depth; ++i) {
+    //     this.waves.push({
+    //       delay: 500 + i * 2000,
+    //       power: this.depth * 2 - 1 + this.rng.dice(1, 3),
+    //       horde: { depth: this.depth },
+    //     });
+    //   }
+    // }
 
-      this.data.wavesLeft = this.waves.length;
-      this.waves.forEach((wave) => {
-        console.log("WAVE - " + wave.delay);
-        game.wait(wave.delay || 0, () => {
-          let horde: HORDE.Horde | null = null;
-          if (wave.horde) {
-            if (typeof wave.horde === "string") {
-              horde = HORDE.from(wave.horde);
-            } else {
-              wave.horde.depth = wave.horde.depth || this.depth;
-              horde = HORDE.random(wave.horde);
-            }
-          } else {
-            horde = HORDE.random({ depth: this.depth });
-          }
+    // if (kind.start) {
+    //   level.startLoc = kind.start;
+    // }
+    // if (kind.finish) {
+    //   level.finishLoc = kind.finish;
+    // }
 
-          if (!horde) {
-            throw new Error(
-              "Failed to get horde: " + JSON.stringify(wave.horde)
-            );
-          }
-          const leader = horde.spawn(this, wave);
-          if (!leader) throw new Error("Failed to place horde!");
-          leader.once("add", () => {
-            --this.data.wavesLeft;
-          });
-        });
-      });
+    this.tick_time = kind.tick_time || this.tick_time;
+    if (this.tick_time > 0) {
+      this.repeat(this.tick_time, this._tick);
+    }
+
+    if (opts.scene) {
+      this.scene_id = opts.scene;
+      this.scene_opts = opts.scene_opts || {};
+    } else if (opts.scene_opts) {
+      this.scene_opts = GWU.utils.mergeDeep(this.scene_opts, opts.scene_opts);
+    }
+
+    let onFns = kind.on || {};
+    Object.entries(onFns).forEach(([key, val]: [string, CallbackFn]) => {
+      if (typeof val === "function") {
+        this.on(key, val);
+      }
     });
 
-    if (this.welcome) {
-      game.addMessage(this.welcome);
+    onFns = opts.on || {};
+    Object.entries(onFns).forEach(([key, val]: [string, CallbackFn]) => {
+      if (typeof val === "function") {
+        this.on(key, val);
+      }
+    });
+
+    this.emit("create", this, opts);
+  }
+
+  show() {
+    this.done = false;
+    this.started = true;
+    this.scene = this.game.app.scenes
+      .create(this.scene_id, this.scene_opts)
+      .start({ level: this });
+    this.scene.once("start", () => {
+      this.emit("show", this, this.scene);
+    });
+    this.scene.once("stop", () => {
+      this.hide();
+    });
+  }
+
+  hide() {
+    // TODO - Should we remove the emit('stop') and let plugins handle this?
+    this.emit("hide", this);
+    this.scene = null;
+  }
+
+  update(time: number) {
+    // TODO - Need to support replacing this with a different update loop
+    //      - For "turn_based", "real_time", "combo"
+
+    const game = this.game;
+    // TODO - Move inputQueue to Level
+    while (game.inputQueue.length && game.needInput) {
+      const e = game.inputQueue.dequeue();
+      e &&
+        e.dispatch({
+          emit: (evt, e) => {
+            let action = game.keymap[evt];
+            if (!action) return;
+            if (typeof action === "function") {
+              return action(this, e);
+            }
+            let fn = ACTIONS.get(action);
+            if (!fn) {
+              console.warn(`Failed to find action: ${action} for key: ${evt}`);
+            } else {
+              // @ts-ignore
+              fn(this, game.hero);
+              this.scene.needsDraw = true;
+              e.stopPropagation(); // We handled it
+            }
+          },
+        });
     }
+
+    if (game.needInput) return;
+
+    let filter = false;
+    let actor = this.scheduler.pop();
+
+    const startTime = this.scheduler.time;
+    let elapsed = 0;
+
+    while (actor) {
+      if (typeof actor === "function") {
+        actor(this);
+        if (elapsed > 16) return;
+      } else if (actor.health <= 0) {
+        // skip
+        filter = true;
+      } else if (actor === game.hero) {
+        actor.act(this);
+        if (filter) {
+          this.actors = this.actors.filter((a) => a && a.health > 0);
+        }
+        this.scene.needsDraw = true;
+        return;
+      } else {
+        actor.act(this);
+      }
+      if (this.scene.timers.length || this.scene.tweens.length) {
+        return;
+      }
+      if (this.scene.paused.update) {
+        return;
+      }
+      actor = this.scheduler.pop();
+      elapsed = this.scheduler.time - startTime;
+    }
+
+    // no other actors
+    game.needInput = true;
+
+    return;
   }
 
-  stop(game: Game) {
-    this.emit("stop");
-    this.game = null;
-  }
-
-  tick(game: Game, dt: number) {
-    this.emit("tick", dt);
+  _tick(dt: number) {
+    // this.wait(this.tick_time, this.tick.bind(this));
 
     // tick actors
     this.actors.forEach((a) => {
-      a.tick(game, dt);
+      // TODO - check if alive?
+      a.tick(this, dt);
     });
 
     // tick tiles
     this.tiles.forEach((index, x, y) => {
       const tile = TILE.tilesByIndex[index];
       if (tile.on && tile.on.tick) {
-        tile.on.tick.call(tile, game, x, y, dt);
+        tile.on.tick.call(tile, this, x, y, dt);
       }
     });
 
     if (this.done || !this.started) return;
 
-    if (!this.actors.includes(game.hero)) {
+    // TODO - Should we remove this and let plugins handle it?
+    this.emit("tick", this, dt);
+
+    // @ts-ignore
+    if (!this.actors.includes(this.game.hero)) {
+      this.done = true;
       // lose
-      return game.lose();
+      // TODO - Do a real time flash before transitioning the scene
+      this.emit("lose", this, "You died.");
     }
-
-    // Do we have work left to do on the level?
-    if (this.data.wavesLeft > 0) return;
-    if (this.actors.length > 1) return;
-
-    // win level
-    this.done = true;
-    if (this.proceed) {
-      game.addMessage(this.proceed);
-    }
-    const inactiveStairs = TILE.tilesByName["UP_STAIRS_INACTIVE"].index;
-    this.tiles.forEach((index, x, y) => {
-      if (index === inactiveStairs) {
-        FX.flash(game, x, y, "yellow").then(() => {
-          game.level!.setTile(x, y, "UP_STAIRS");
-        });
-      }
-    });
   }
+
+  // keypress(e: GWU.app.Event) {
+  //   this.game.inputQueue.enqueue(e.clone());
+  //   e.stopPropagation();
+  // }
+
+  // click(e: GWU.app.Event) {
+  //   this.game.inputQueue.enqueue(e.clone());
+  //   e.stopPropagation();
+  // }
 
   fill(tile: number | string) {
     if (typeof tile === "string") {
@@ -186,18 +346,22 @@ export class Level implements GWD.site.AnalysisSite {
     const tile =
       typeof id === "string" ? TILE.tilesByName[id] : TILE.tilesByIndex[id];
 
+    if (!tile) {
+      console.warn("Failed to find tile: " + id);
+      return;
+    }
+
     // priority, etc...
 
-    // allows plugins to change the tile
-    let data = { x, y, tile };
-    this.emit("set_tile", data);
+    let data = { x, y, tile }; // allows plugins to change the tile
+    this.emit("set_tile", data); // TODO - Is this good?
 
     if (data.tile) {
       this.tiles[x][y] = data.tile.index;
 
       // this.game && this.game.drawAt(x, y);
       if (tile.on && tile.on.place) {
-        tile.on.place.call(tile, this.game!, x, y);
+        tile.on.place.call(tile, this, x, y);
       }
     }
   }
@@ -285,8 +449,6 @@ export class Level implements GWD.site.AnalysisSite {
     return !!(this.flags[x][y] & GWD.site.Flags.IN_AREA_MACHINE);
   }
 
-  //
-
   drawAt(buf: GWU.buffer.Buffer, x: number, y: number) {
     buf.blackOut(x, y);
     buf.drawSprite(x, y, this.getTile(x, y));
@@ -306,19 +468,15 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   addActor(obj: ACTOR.Actor) {
-    if (!obj.spawn) {
-      obj.spawn = true;
-      this.emit("spawn_actor", obj);
-    }
     this.actors.push(obj);
-    obj.emit("add", this);
-    // this.scene.needsDraw = true; // need to update sidebar too
+    obj.emit("add", this, obj);
+    this.scene.needsDraw = true; // need to update sidebar too
   }
 
   removeActor(obj: ACTOR.Actor) {
-    GWU.arrayDelete(this.actors, obj);
-    obj.emit("remove", this);
-    // this.scene.needsDraw = true;
+    GWU.utils.arrayDelete(this.actors, obj);
+    obj.emit("remove", this, obj);
+    this.scene.needsDraw = true;
   }
 
   hasActor(x: number, y: number): boolean {
@@ -330,19 +488,15 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   addItem(obj: ITEM.Item) {
-    if (!obj.spawn) {
-      obj.spawn = true;
-      this.emit("spawn_item", obj);
-    }
     this.items.push(obj);
-    obj.emit("add", this);
-    // this.scene.needsDraw = true; // need to update sidebar too
+    obj.emit("add", this, obj);
+    this.scene.needsDraw = true; // need to update sidebar too
   }
 
   removeItem(obj: ITEM.Item) {
-    GWU.arrayDelete(this.items, obj);
-    obj.emit("remove", this);
-    // this.scene.needsDraw = true;
+    GWU.utils.arrayDelete(this.items, obj);
+    obj.emit("remove", this, obj);
+    this.scene.needsDraw = true;
   }
 
   hasItem(x: number, y: number): boolean {
@@ -354,19 +508,15 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   addFx(obj: FX.FX) {
-    if (!obj.spawn) {
-      obj.spawn = true;
-      this.emit("spawn_fx", obj);
-    }
     this.fxs.push(obj);
-    obj.emit("add", this);
-    // this.scene.needsDraw = true; // need to update sidebar too
+    obj.emit("add", this, obj);
+    this.scene.needsDraw = true; // need to update sidebar too
   }
 
   removeFx(obj: FX.FX) {
-    GWU.arrayDelete(this.fxs, obj);
-    obj.emit("remove", this);
-    // this.scene.needsDraw = true;
+    GWU.utils.arrayDelete(this.fxs, obj);
+    obj.emit("remove", this, obj);
+    this.scene.needsDraw = true;
   }
 
   hasFx(x: number, y: number): boolean {
@@ -394,7 +544,7 @@ export class Level implements GWD.site.AnalysisSite {
   triggerAction(event: string, actor: ACTOR.Actor) {
     const tile = this.getTile(actor.x, actor.y);
     if (tile && tile.on && tile.on[event]) {
-      tile.on[event]!.call(tile, this.game, actor);
+      tile.on[event]!.call(tile, this, actor);
     }
   }
 
@@ -430,115 +580,20 @@ export class Level implements GWD.site.AnalysisSite {
     return this.events.emit(event, ...args);
   }
 
-  // wait(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
-  // wait(delay: number, fn: string, ctx?: Record<string, any>): EVENTS.CancelFn;
-  // wait(...args: any[]): EVENTS.CancelFn {
-  //   // @ts-ignore
-  //   // return this.scene.wait.apply(this.scene, args);
-  //   if (typeof args[1] === "string") {
-  //     const ev = args[1];
-  //     args[2] = args[2] || {};
-  //     args[1] = () => this.emit(ev, args[2]!);
-  //   }
-  //   return this.timers.setTimeout(args[1], args[0]);
-  // }
-
-  // repeat(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
-  // repeat(delay: number, fn: string, ctx?: Record<string, any>): EVENTS.CancelFn;
-  // repeat(...args: any[]): EVENTS.CancelFn {
-  //   // @ts-ignore
-  //   // return this.scene.repeat.apply(this.scene, args);
-  //   if (typeof fn === "string") {
-  //     const ev = args[1];
-  //     args[2] = args[2] || {};
-  //     args[1] = () => this.emit(ev, args[2]!);
-  //   }
-  //   return this.timers.setInterval(args[1], args[0]);
-  // }
-}
-
-// export const levels: Level[] = [];
-
-export interface LevelBase {
-  depth?: number;
-  seed?: number;
-  welcome?: string;
-  proceed?: string;
-  waves?: WaveInfo[];
-}
-
-export interface LevelData extends LevelBase {
-  data: string[];
-  tiles: Record<string, string>;
-}
-
-export interface LevelGen extends LevelBase {
-  height: number;
-  width: number;
-}
-
-export type LevelConfig = LevelData | LevelGen;
-
-// export function install(cfg: LevelConfig) {
-//   const level = from(cfg);
-//   levels.push(level);
-//   level.depth = level.depth || levels.length;
-//   return level;
-// }
-
-export function from(cfg: LevelConfig): Level {
-  let w = 0;
-  let h = 0;
-
-  if ("data" in cfg) {
-    const data = cfg.data;
-    const tiles = cfg.tiles;
-
-    h = data.length;
-    w = data[0].length;
-  } else {
-    h = cfg.height;
-    w = cfg.width;
+  // TODO - test me!!!
+  wait(time: number, fn: GWU.app.CallbackFn) {
+    this.scheduler.push(fn, time);
   }
 
-  const level = new Level(w, h);
-  level.depth = cfg.depth || 1;
-  // loadLevel(level, data, tiles);
-  digLevel(level, cfg.seed);
-
-  if (cfg.welcome) {
-    level.welcome = cfg.welcome;
-  } else {
-    level.welcome = "Welcome.";
-  }
-
-  if (cfg.proceed) {
-    level.proceed = cfg.proceed;
-  } else {
-    level.proceed = "Proceed.";
-  }
-
-  if (cfg.waves) {
-    level.waves = cfg.waves;
-  } else {
-    level.waves = [];
-    for (let i = 0; i < level.depth; ++i) {
-      level.waves.push({
-        delay: 500 + i * 2000,
-        power: level.depth * 2 - 1 + level.rng.dice(1, 3),
-        horde: { depth: level.depth },
-      });
+  // TODO - test me!!!
+  repeat(time: number, fn: GWU.app.CallbackFn, ...args: any[]) {
+    function repeat_fn() {
+      fn.call(this, time, ...args);
+      this.scheduler.push(repeat_fn.bind(this), time);
     }
+
+    this.scheduler.push(repeat_fn.bind(this), time);
   }
-
-  // if (cfg.start) {
-  //   level.startLoc = cfg.start;
-  // }
-  // if (cfg.finish) {
-  //   level.finishLoc = cfg.finish;
-  // }
-
-  return level;
 }
 
 function loadLevel(
@@ -688,34 +743,11 @@ GWD.room.install(
   })
 );
 
-function digLevel(level: Level, seed = 12345) {
+function digLevel(level: Level, dig: GWD.DiggerOptions, seed = 12345) {
   const firstRoom = level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
-  const digger = new GWD.Digger({
-    seed,
-    rooms: { count: 20, first: firstRoom, digger: "PROFILE" },
-    doors: false, // { chance: 50 },
-    halls: { chance: 50 },
-    loops: { minDistance: 30, maxLength: 5 },
-    lakes: false /* {
-      count: 5,
-      wreathSize: 1,
-      wreathChance: 100,
-      width: 10,
-      height: 10,
-    },
-    bridges: {
-      minDistance: 10,
-      maxLength: 10,
-    }, */,
-    stairs: {
-      start: "down",
-      up: true,
-      upTile: "UP_STAIRS_INACTIVE",
-      down: true,
-    },
-    goesUp: true,
-  });
-  digger.create(60, 35, (x, y, v) => {
+  const digger = new GWD.Digger(dig);
+  digger.seed = seed;
+  digger.create(level.width, level.height, (x, y, v) => {
     level.setTile(x, y, v);
   });
 

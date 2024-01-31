@@ -1,67 +1,29 @@
 import * as GWU from "gw-utils";
-import * as GWD from "gw-dig";
-import { Game, Level, Obj } from ".";
-import { TileInfo } from "../tile";
-import { Actor } from "../actor";
-import { Item } from "../item";
-import { FX } from "../fx";
-import { SidebarEntry } from "../widgets";
-import { DamageConfig } from "../effect";
+import * as ACTOR from "../actor";
+import * as HERO from "../hero";
+import * as ITEM from "../item";
+import * as LEVEL from "../level";
+import { Game, GameEvents, GameOpts } from "./game";
+import * as GAME from "./factory";
 
-export type PluginFn<In, Out = null> = (
-  req: In,
-  next: () => Result<Out>
-) => Result<Out>;
+namespace global {
+  var GAME: Game;
+}
 
-export interface Plugin {
+export interface AppEvents {
+  start?(app: GWU.app.App);
+  stop?(app: GWU.app.App);
+}
+
+export interface Plugin extends GameOpts {
   name: string;
-  plugins: string[];
-  // App
-  start(app: GWU.app.App);
-  stop(app: GWU.app.App);
-
-  // Game
-  new_game: PluginFn<{ game: Game }>;
-  dig_level: PluginFn<{ cfg: GWD.DungeonOptions; id: string }, Level>;
-  new_level: PluginFn<{ game: Game; level: Level }>;
-  start_level: PluginFn<{ game: Game; level: Level }>;
-
-  // Level
-  level_tick: PluginFn<{ level: Level; time: number }>;
-  set_tile: PluginFn<{ level: Level; tile: TileInfo; x: number; y: number }>;
-
-  // Object
-  spawn: PluginFn<{ level: Level; obj: Obj }>;
-  tick: PluginFn<{ obj: Obj; time: number }>;
-  sidebar: PluginFn<{ obj: Obj; entry: SidebarEntry }>;
-  add: PluginFn<{ obj: Obj; level: Level; x: number; y: number }>;
-  remove: PluginFn<{ obj: Obj; level: Level }>;
-  move: PluginFn<{ level: Level; obj: Obj; x: number; y: number }>;
-  destroy: PluginFn<{ level: Level; obj: Obj }>;
-
-  // Actor
-  calc_melee: PluginFn<{
-    actor: Actor;
-    target: Actor;
-    range: number;
-    item: Item | null;
-    damage: DamageConfig;
-  }>;
-  calc_ranged: PluginFn<{
-    actor: Actor;
-    target: Actor;
-    range: number;
-    item: Item | null;
-    damage: DamageConfig;
-  }>;
-  calc_damage: PluginFn<{ actor: Actor; target: Actor; damage: DamageConfig }>;
-  // apply_damage: PluginFn<{ actor: Actor; damage: DamageConfig }>;
-  charge_ranged: PluginFn<{ actor: Actor; item: Item }>;
-  equip: PluginFn<{ actor: Actor; item: Item; slot: string }>;
-  unequip: PluginFn<{ actor: Actor; item: Item; slot: string }>;
-
-  // Item
-  pickup: PluginFn<{ actor: Actor; item: Item }>;
+  plugins?: string[];
+  app?: AppEvents;
+  game?: GameEvents;
+  level?: LEVEL.LevelPlugin;
+  actor?: ACTOR.ActorPlugin;
+  hero?: HERO.HeroPlugin;
+  item?: ITEM.ItemPlugin;
 }
 
 export const plugins: Record<string, Plugin> = {};
@@ -71,50 +33,18 @@ const active: Plugin[] = [];
 // @ts-ignore
 globalThis.PLUGINS = plugins;
 
-function NOFUNC(
-  req: any,
-  next: () => GWU.Result<any, string>
-): GWU.Result<any, string> {
-  return next();
-}
+// function NOFUNC(
+//   req: any,
+//   next: () => GWU.Result<any, string>
+// ): GWU.Result<any, string> {
+//   return next();
+// }
 
-export function install(name: string, cfg: Partial<Plugin>) {
+export function install(name: string, cfg: Omit<Plugin, "name">) {
   const plugin = Object.assign(
     {
       name,
       plugins: [],
-      start: GWU.NOOP,
-      stop: GWU.NOOP,
-
-      new_game: NOFUNC,
-      dig_level: NOFUNC,
-      new_level: NOFUNC,
-      start_level: NOFUNC,
-
-      // Level
-      level_tick: NOFUNC,
-      set_tile: NOFUNC,
-
-      // Object
-      spawn: NOFUNC,
-      tick: NOFUNC,
-      sidebar: NOFUNC,
-      add: NOFUNC,
-      remove: NOFUNC,
-      move: NOFUNC,
-      destroy: NOFUNC,
-
-      // Actor
-      calc_melee: NOFUNC,
-      calc_ranged: NOFUNC,
-      calc_damage: NOFUNC,
-      apply_damage: NOFUNC,
-      charge_ranged: NOFUNC,
-      equip: NOFUNC,
-      unequip: NOFUNC,
-
-      // Item
-      pickup: NOFUNC,
     },
     cfg
   ) as Plugin;
@@ -130,52 +60,44 @@ export function getPlugin(id: string): Plugin | null {
   return plugins[id.toLowerCase()] || null;
 }
 
-export function start(app: GWU.app.App, ...names: string[]) {
+export function startPlugins(app: GWU.app.App, ...names: string[]) {
   names.forEach((name) => {
     // if already started, ignore
     if (!active.find((p) => p.name == name)) {
       const plugin = getPlugin(name);
       if (plugin) {
+        console.log("Starting plugin: " + name);
+        // start dependencies
         if (plugin.plugins.length) {
-          start(app, ...plugin.plugins);
+          startPlugins(app, ...plugin.plugins);
         }
-        plugin.start(app);
+
+        // install factory plugins
+        if (plugin.game) {
+          GAME.use(plugin.game);
+        }
+        if (plugin.actor) {
+          ACTOR.use(plugin.actor);
+        }
+        if (plugin.hero) {
+          HERO.use(plugin.hero);
+        }
+        if (plugin.item) {
+          ITEM.use(plugin.item);
+        }
+        if (plugin.level) {
+          LEVEL.use(plugin.level);
+        }
+
+        // Start the plugin
+        if (plugin.app && plugin.app.start) {
+          plugin.app.start(app);
+        }
+
         active.push(plugin);
       } else {
         console.error(`MISSING PLUGIN: ${name}`);
       }
     }
   });
-}
-
-export type Result<Out = undefined> = GWU.Result<Out, string>;
-export type NextFn<Out = undefined> = () => Result<Out>;
-
-/**
- * Helper function for invoking a chain of middlewares on a context.
- */
-function invoke<In, Out>(
-  req: In,
-  fns: PluginFn<In, Out>[],
-  base: (In) => Result<Out>
-): Result<Out> {
-  if (!fns.length) return base(req);
-
-  const fn = fns[0];
-
-  return fn(req, () => {
-    return invoke(req, fns.slice(1), base);
-  });
-}
-
-export function trigger<In, Out = null>(
-  evt: keyof Plugin,
-  req: In,
-  base: (req: In) => Result<Out>
-): Result<Out> {
-  const fns = active.map((p) => {
-    // @ts-ignore
-    return p[evt].bind(p);
-  });
-  return invoke(req, fns, base);
 }

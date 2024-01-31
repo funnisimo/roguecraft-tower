@@ -4,9 +4,10 @@ import * as FX from "../fx/index";
 import { Game } from "../game/game";
 import { Actor } from "../actor/actor";
 import * as EFFECT from "../effect";
-import { Hero } from "../actor/hero";
+import { Hero } from "../hero/hero";
+import { Level } from "../level";
 
-export type ActionFn = (game: Game, actor: Actor, ...args: any[]) => boolean;
+export type ActionFn = (level: Level, actor: Actor, ...args: any[]) => boolean;
 const actionsByName: Record<string, ActionFn> = {};
 
 export function install(name: string, fn: ActionFn) {
@@ -17,28 +18,28 @@ export function get(name: string): ActionFn | null {
   return actionsByName[name] || null;
 }
 
-export function idle(game: Game, actor: Actor): boolean {
+export function idle(level: Level, actor: Actor): boolean {
   console.log("- idle", actor.name, actor.x, actor.y);
-  game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+  level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
   return true;
 }
 
 install("idle", idle);
 
-export function moveRandom(game: Game, actor: Actor, quiet = false): boolean {
-  const dir = game.rng.item(GWU.xy.DIRS);
-  return moveDir(game, actor, dir, quiet);
+export function moveRandom(level: Level, actor: Actor, quiet = false): boolean {
+  const dir = level.rng.item(GWU.xy.DIRS);
+  return moveDir(level, actor, dir, quiet);
 }
 
 install("move_random", moveRandom);
 
 export function moveDir(
-  game: Game,
+  level: Level,
   actor: Actor,
   dir: GWU.xy.Loc,
   quiet = false
 ): boolean {
-  const level = game.level!;
+  const game = level.game;
   const newX = actor.x + dir[0];
   const newY = actor.y + dir[1];
 
@@ -48,8 +49,8 @@ export function moveDir(
     if (!quiet) {
       const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
       game.addMessage(`Blocked by a ${tile.id}.`);
-      FX.flash(game, newX, newY, "orange", 150);
-      idle(game, actor);
+      FX.flash(level, newX, newY, "orange", 150);
+      idle(level, actor);
       return true;
     } else {
       console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
@@ -59,15 +60,15 @@ export function moveDir(
 
   const other = level.actorAt(newX, newY);
   if (other) {
-    if (other.kind && other.bump(game, actor)) {
+    if (other.kind && other.bump(level, actor)) {
       return true;
     }
     if (actor.hasActed()) return true;
 
     if (!quiet) {
       game.addMessage(`You bump into a ${other.name}.`);
-      FX.flash(game, newX, newY, "orange", 150);
-      idle(game, actor);
+      FX.flash(level, newX, newY, "orange", 150);
+      idle(level, actor);
       return true;
     } else {
       console.log("- nothing!!!", actor.name, actor.x, actor.y);
@@ -78,8 +79,8 @@ export function moveDir(
   if (level.blocksMove(newX, newY)) {
     if (!quiet) {
       game.addMessage("You bump into a wall.");
-      FX.flash(game, newX, newY, "orange", 150);
-      idle(game, actor);
+      FX.flash(level, newX, newY, "orange", 150);
+      idle(level, actor);
       return false;
     } else {
       console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
@@ -98,7 +99,7 @@ export function moveDir(
     actor.kind.moveSpeed * (GWU.xy.isDiagonal(dir) ? 1.4 : 1.0)
   );
 
-  actor.emit("move", game, newX, newY);
+  actor.emit("move", level, actor, newX, newY);
   level.triggerAction("enter", actor);
 
   game.endTurn(actor, speed);
@@ -106,24 +107,24 @@ export function moveDir(
 }
 
 export function moveTowardHero(
-  game: Game,
+  level: Level,
   actor: Actor,
   quiet = false
 ): boolean {
-  const map = game.level!;
+  const game = level.game;
   const player = game.hero;
 
   const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
-    return map.hasActor(x, y);
+    return level.hasActor(x, y);
   });
   if (dir) {
-    if (moveDir(game, actor, dir, true)) {
+    if (moveDir(level, actor, dir, true)) {
       return true; // success
     }
     if (!quiet) {
-      FX.flash(game, actor.x, actor.y, "orange", 150);
+      FX.flash(level, actor.x, actor.y, "orange", 150);
     }
-    return idle(game, actor);
+    return idle(level, actor);
   }
   return false;
 }
@@ -131,21 +132,21 @@ export function moveTowardHero(
 install("move_toward_hero", moveTowardHero);
 
 export function moveAwayFromHero(
-  game: Game,
+  level: Level,
   actor: Actor,
   quiet = false
 ): boolean {
-  const map = game.level!;
+  const game = level.game;
   const player = game.hero;
 
   // compute safety map
-  const safety = new GWU.path.DijkstraMap(map.width, map.height);
+  const safety = new GWU.path.DijkstraMap(level.width, level.height);
   safety.copy(player.mapToMe);
   safety.update((v, x, y) => {
     if (v >= GWU.path.BLOCKED) return v;
     v = -1.2 * v;
-    if (map.isInLoop(x, y)) v -= 2;
-    if (map.isGateSite(x, y)) v -= 2;
+    if (level.isInLoop(x, y)) v -= 2;
+    if (level.isGateSite(x, y)) v -= 2;
     return Math.round(v);
   });
 
@@ -154,7 +155,7 @@ export function moveAwayFromHero(
   safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
 
   let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-    return map.hasActor(x, y);
+    return level.hasActor(x, y);
   });
 
   console.log(
@@ -176,16 +177,16 @@ export function moveAwayFromHero(
         safety.getDistance(actor.x, actor.y),
         safety.getDistance(actor.x + d[0], actor.y + d[1])
       );
-      if (moveDir(game, actor, d, true)) {
+      if (moveDir(level, actor, d, true)) {
         console.log("- success");
         return true; // success
       }
     }
 
     if (!quiet) {
-      FX.flash(game, actor.x, actor.y, "orange", 150);
+      FX.flash(level, actor.x, actor.y, "orange", 150);
     }
-    return idle(game, actor);
+    return idle(level, actor);
   }
   return false;
 }
@@ -193,11 +194,11 @@ export function moveAwayFromHero(
 install("move_away_from_hero", moveAwayFromHero);
 
 export function attack(
-  game: Game,
+  level: Level,
   actor: Actor,
   target: Actor | null = null
 ): boolean {
-  const level = game.level!;
+  const game = level.game;
 
   if (target) {
     if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
@@ -216,18 +217,18 @@ export function attack(
 
     if (targets.length == 0) {
       game.addMessage("no targets.");
-      FX.flash(game, actor.x, actor.y, "orange", 150);
+      FX.flash(level, actor.x, actor.y, "orange", 150);
       game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
       return true; // did something
     } else if (targets.length > 1) {
-      game
-        .scene!.app.scenes.run("target", { game, actor, targets })
+      level.scene.app.scenes
+        .run("target", { game, actor, targets })
         .once("stop", (result: Actor | null) => {
           if (!result) {
-            FX.flash(game, actor.x, actor.y, "orange", 150);
+            FX.flash(level, actor.x, actor.y, "orange", 150);
             game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
           } else {
-            attack(game, actor, result);
+            attack(level, actor, result);
           }
         });
       return true; // didSomething
@@ -236,22 +237,24 @@ export function attack(
     }
   }
 
+  // @ts-ignore
   const actorIsPlayer = actor === game.hero;
+  // @ts-ignore
   const otherIsPlayer = target === game.hero;
 
   if (!actorIsPlayer && !otherIsPlayer) {
-    return idle(game, actor); // no attacking
+    return idle(level, actor); // no attacking
   }
 
   const attackInfo = actor.getMeleeAttack();
   if (!attackInfo) {
     game.addMessage("Cannot attack.");
-    FX.flash(game, actor.x, actor.y, "orange", 150);
+    FX.flash(level, actor.x, actor.y, "orange", 150);
     game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
   }
 
   // we have an actor and a target
-  EFFECT.damage(game, target, {
+  EFFECT.damage(level, target, {
     amount: attackInfo.damage,
     msg: `${actor.name} attacks ${target.name}`,
   });
@@ -263,11 +266,11 @@ export function attack(
 install("attack", attack);
 
 export function fire(
-  game: Game,
+  level: Level,
   actor: Actor,
   target: Actor | null = null
 ): boolean {
-  const level = game.level!;
+  const game = level.game;
   const hero = game.hero;
 
   if (!actor.range) {
@@ -330,7 +333,7 @@ export function fire(
 
       // TODO - FOV highlights cells we can't fire into...
       fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
-        FX.flash(game, x, y, "dark_teal", 125);
+        FX.flash(level, x, y, "dark_teal", 125);
       });
 
       // FX.flash(game, actor.x, actor.y, "orange", 150);
@@ -338,14 +341,14 @@ export function fire(
       game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
       return true; // did something
     } else if (targets.length > 1) {
-      game
-        .scene!.app.scenes.run("target", { game, actor, targets })
+      level.scene.app.scenes
+        .run("target", { game, actor, targets })
         .once("stop", (result: Actor | null) => {
           if (!result) {
-            FX.flash(game, actor.x, actor.y, "orange", 150);
+            FX.flash(level, actor.x, actor.y, "orange", 150);
             game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
           } else {
-            fire(game, actor, result);
+            fire(level, actor, result);
           }
         });
       return true; // didSomething
@@ -354,11 +357,13 @@ export function fire(
     }
   }
 
+  // @ts-ignore
   const actorIsHero = actor === game.hero;
+  // @ts-ignore
   const otherIsHero = target === game.hero;
 
   if (!actorIsHero && !otherIsHero) {
-    return idle(game, actor); // no attacking
+    return idle(level, actor); // no attacking
   }
 
   // we have an actor and a target
@@ -367,12 +372,12 @@ export function fire(
   actor.ammo -= 1;
 
   // TODO - get next attack details (and increment counter in actor)
-  FX.projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then(
+  FX.projectile(level, actor, target, { ch: "|-\\/", fg: "white" }, 300).then(
     (xy, ok) => {
       if (!ok) {
-        FX.flash(game, xy.x, xy.y, "orange", 150);
+        FX.flash(level, xy.x, xy.y, "orange", 150);
       } else {
-        EFFECT.damage(game, target!, {
+        EFFECT.damage(level, target!, {
           amount: actor.rangedDamage,
           msg: `${actor.name} shoots ${target!.name}`,
         });
@@ -386,7 +391,8 @@ export function fire(
 
 install("fire", fire);
 
-export function fireAtHero(game: Game, actor: Actor): boolean {
+export function fireAtHero(level: Level, actor: Actor): boolean {
+  const game = level.game;
   const hero = game.hero;
 
   // if player can't see actor then actor can't see player!
@@ -395,12 +401,13 @@ export function fireAtHero(game: Game, actor: Actor): boolean {
   actor.ammo -= 1;
 
   // TODO - get next attack details (and increment counter in actor)
-  FX.projectile(game, actor, game.hero, { ch: "|-\\/", fg: "white" }, 300).then(
+  FX.projectile(level, actor, hero, { ch: "|-\\/", fg: "white" }, 300).then(
     (xy, ok) => {
       if (!ok) {
-        FX.flash(game, xy.x, xy.y, "orange", 150);
+        FX.flash(level, xy.x, xy.y, "orange", 150);
       } else {
-        EFFECT.damage(game, hero, {
+        // @ts-ignore
+        EFFECT.damage(level, hero, {
           amount: actor.rangedDamage,
           msg: `${actor.name} shoots ${hero.name}`,
         });
@@ -414,29 +421,28 @@ export function fireAtHero(game: Game, actor: Actor): boolean {
 
 install("fire_at_hero", fireAtHero);
 
-export function climb(game: Game, actor: Actor): boolean {
+export function climb(level: Level, actor: Actor): boolean {
+  const game = level.game;
   const tile = game.level!.getTile(actor.x, actor.y);
   if (tile.on && tile.on.climb) {
     tile.on.climb.call(tile, game, actor);
     return actor.hasActed();
   } else {
-    return idle(game, actor);
+    return idle(level, actor);
   }
 }
 
 install("climb", climb);
 
-export function pickup(game: Game, actor: Actor): boolean {
-  const level = game.level;
-  if (level) {
-    const item = level.itemAt(actor.x, actor.y);
-    if (item) {
-      item.emit("pickup", game, actor);
-      return true;
-    }
-    game.addMessage("Nothing to pickup.");
+export function pickup(level: Level, actor: Actor): boolean {
+  const game = level.game;
+  const item = level.itemAt(actor.x, actor.y);
+  if (item) {
+    item.emit("pickup", level, item, actor);
+    return true;
   }
-  return idle(game, actor);
+  game.addMessage("Nothing to pickup.");
+  return idle(level, actor);
 }
 
 install("pickup", pickup);

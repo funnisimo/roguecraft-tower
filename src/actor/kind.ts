@@ -1,26 +1,66 @@
 import * as GWU from "gw-utils";
-import { CallbackFn } from "../game/obj";
+import { CallbackFn, ObjCreateOpts, ObjEvents } from "../game/obj";
+import { Actor, ActorCreateOpts } from "./actor";
+import { Level } from "../level";
+import { Item } from "../item";
+import { SidebarEntry } from "../widgets";
+
+export type ActorMakeFn = (kind: ActorKind, opts: ActorCreateOpts) => Actor;
+export type ActorCreateFn = (actor: Actor, opts: ActorCreateOpts) => void;
+export type ActorSpawnFn = (level: Level, actor: Actor) => void;
+export type ActorDestroyFn = (level: Level, actor: Actor) => void;
+
+export type ActorLocFn = (
+  level: Level,
+  actor: Actor,
+  x: number,
+  y: number
+) => void;
+
+export type ActorItemFn = (level: Level, actor: Actor, item: Item) => void;
 
 export interface ActorEvents {
   // bump?: (game: Game, actor: Actor, other: Actor) => void;
-  [key: string]: CallbackFn | undefined;
+  make?: ActorMakeFn;
+  create?: ActorCreateFn;
+
+  add?: ActorSpawnFn; // Fired when an Actor is placed into the map at creation time
+  remove?: ActorSpawnFn;
+  destroy?: ActorDestroyFn; // Actor is destroyed (different from death?)
+
+  move?: ActorLocFn;
+  death?: (level: Level, actor: Actor) => void; // TODO - use destroy instead?
+
+  sidebar?: (actor: Actor, entry: SidebarEntry) => number;
+  turn_start?: (level: Level, actor: Actor) => void;
+  turn_end?: (level: Level, actor: Actor, time: number) => void;
+  tick?: (level: Level, actor: Actor, time: number) => void;
+
+  // pickup?: ActorItemFn;
+  // drop?: ActorItemFn;
+
+  // equip?: ActorItemFn;
+  // unequip?: ActorItemFn;
+
+  // use?: ActorItemFn;
 }
 
-export interface KindConfig {
+export interface ActorKindOpts {
   id: string;
   name?: string;
+  hero?: boolean;
   health?: number;
 
   notice?: number;
   moveSpeed?: number;
 
-  ch: string;
-  fg: GWU.color.ColorBase;
+  ch?: string;
+  fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
 
   bump?: string | string[];
 
-  on?: ActorEvents;
+  on?: ActorEvents & ObjEvents;
 
   // melee
   damage?: number;
@@ -45,6 +85,7 @@ export interface KindConfig {
 export interface ActorKind {
   id: string;
   name: string;
+  hero: boolean;
 
   health: number;
 
@@ -57,7 +98,7 @@ export interface ActorKind {
 
   bump: string[];
 
-  on: ActorEvents;
+  on: ActorEvents & ObjEvents;
 
   damage: number;
   attackSpeed: number;
@@ -71,7 +112,7 @@ export interface ActorKind {
   rangedAttackSpeed: number;
   ammo: number;
 
-  slots: Map<string, string>;
+  // slots: Map<string, string>;
 
   dropChance: number;
   dropMatch: string[];
@@ -82,10 +123,11 @@ export const kinds: Record<string, ActorKind> = {};
 // @ts-ignore
 globalThis.ActorKinds = kinds;
 
-export function install(cfg: KindConfig) {
+export function makeKind(cfg: ActorKindOpts) {
   const kind = Object.assign(
     {
       name: "",
+      hero: false,
       health: 10,
       notice: 10,
       moveSpeed: 100,
@@ -161,8 +203,13 @@ export function install(cfg: KindConfig) {
   if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
     kind.dropChance = 100;
   }
+  return kind;
+}
 
-  kinds[cfg.id.toLowerCase()] = kind;
+export function install(cfg: ActorKindOpts) {
+  const kind = makeKind(cfg);
+
+  kinds[kind.id.toLowerCase()] = kind;
 }
 
 export function getKind(id: string): ActorKind | null {

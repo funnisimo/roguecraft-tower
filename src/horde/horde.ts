@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import { Level } from "../game/level";
+import { Level } from "../level/level";
 import * as ACTOR from "../actor";
 import * as FX from "../fx";
 
@@ -53,6 +53,7 @@ export interface HordeConfig {
   flags?: GWU.flag.FlagBase;
   requiredTile?: string;
 
+  // These are for Tower game -- should they be extensions?
   warnMs?: number;
   memberWarnMs?: number;
   warnColor?: GWU.color.ColorBase;
@@ -175,7 +176,7 @@ export class Horde {
     leader.x = x;
     leader.y = y;
 
-    FX.flashGameTime(game, x, y, this.warnColor, this.warnMs).then(() => {
+    FX.flashGameTime(map, x, y, this.warnColor, this.warnMs).then(() => {
       map.addActor(leader);
     });
 
@@ -195,7 +196,7 @@ export class Horde {
     member.x = x;
     member.y = y;
 
-    FX.flashGameTime(game, x, y, this.warnColor, this.memberWarnMs).then(() => {
+    FX.flashGameTime(map, x, y, this.warnColor, this.memberWarnMs).then(() => {
       map.addActor(member);
     });
 

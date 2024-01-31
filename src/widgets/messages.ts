@@ -1,5 +1,6 @@
 import * as GWU from "gw-utils";
 import { Game } from "../game/game";
+import { Level } from "../level";
 
 export function messages(scene: GWU.app.Scene, y: number) {
   const widget = GWU.widget.make({
@@ -29,7 +30,10 @@ export function messages(scene: GWU.app.Scene, y: number) {
       const fg = GWU.color.from(this._used.fg);
       const fgc = fg.alpha(50);
 
-      const game = this.scene!.data as Game;
+      const scene = this.scene! as GWU.app.Scene;
+      const level = scene.data.level as Level;
+      const game = level.game;
+
       if (game && game.messages) {
         let h = 0;
         game.messages.forEach((msg, confirmed, i) => {

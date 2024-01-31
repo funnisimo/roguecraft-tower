@@ -1,41 +1,54 @@
 import * as GWU from "gw-utils";
+import * as GWD from "gw-dig";
 
 import * as ACTOR from "../actor/index";
 import * as ACTIONS from "../action";
-import * as LEVEL from "./level";
-import { Hero } from "../actor/hero";
-// import { default as CONFIG } from "../config";
-import { CallbackFn } from "./obj";
-import { FX } from "../fx/flash";
+import * as LEVEL from "../level";
+import * as HERO from "../hero";
 import * as TILE from "../tile";
 import * as ITEM from "../item";
 import * as HORDE from "../horde";
-import * as PLUGINS from "./plugins";
+import { Level } from "../level";
+import { factory } from "./factory";
+import { CallbackFn } from "./obj";
+
+export type EventFn = (level: Level, e: GWU.app.Event) => void;
+
+export interface GameEvents {
+  make?(app: GWU.app.App, opts: GameOpts): Game;
+  create?(game: Game, opts: GameOpts);
+  // start - use create for things you want at game start time.
+  destroy?(game: Game);
+}
 
 export interface GameOpts {
   seed?: number;
-  app?: GWU.app.App;
+  levels?: {
+    [id: string]: string | (LEVEL.LevelCreateOpts & { kind: string });
+  };
+  keymap?: {
+    [id: string]: string | EventFn;
+  };
+  start_level?: string | number;
+  hero_kind?: string | (HERO.HeroCreateOpts & { kind: string });
+  // on?: ObjEvents & GameEvents;
 }
 
-// export function make(opts: GameOpts | number = 0) {
-//   if (typeof opts === "number") {
-//     opts = { seed: opts };
-//   }
-
-//   return new Game(opts);
-// }
-
 export class Game {
-  hero: Hero;
-  app: GWU.app.App | null;
-  scene: GWU.app.Scene | null;
-  level: LEVEL.Level | null;
-  depth: number;
-  scheduler: GWU.scheduler.Scheduler;
+  hero: HERO.Hero;
+  app: GWU.app.App;
+  // scene: GWU.app.Scene;
+  level: LEVEL.Level;
+  levels: { [id: string]: LEVEL.LevelCreateOpts & { kind: string } };
+  _levelObjs: { [id: string | number]: Level };
+  start_level: string | number;
+
+  // depth: number;
+  // scheduler: GWU.scheduler.Scheduler;
   inputQueue: GWU.app.Queue;
   seed: number;
   rng: GWU.rng.Random;
-  seeds: number[];
+  seeds: { [key: string | number]: number };
   messages: GWU.message.Cache;
   events: GWU.app.Events;
   needInput = false;
@@ -43,293 +56,230 @@ export class Game {
   actors: Record<string, ACTOR.ActorKind>;
   items: Record<string, ITEM.ItemKind>;
   hordes: Record<string, HORDE.Horde>;
+  // TODO - tiles: ...
 
-  keymap: Record<string, string>;
+  keymap: Record<string, string | EventFn> = {};
+  data: { [id: string]: any } = {};
 
-  constructor(opts: GameOpts) {
-    this.app = opts.app || null;
-    this.scene = null;
-    this.level = null;
-    this.depth = 0;
-    this.scheduler = new GWU.scheduler.Scheduler();
+  constructor(app: GWU.app.App) {
+    this.app = app;
+    // this.scene = null;
+    // this.level = null;
+    // this.depth = 0;
+    // this.scheduler = new GWU.scheduler.Scheduler();
 
-    this.seed = opts.seed || GWU.random.number(100000);
-    console.log("GAME, seed=", this.seed);
-
-    GWU.rng.random.seed(this.seed);
     this.rng = GWU.rng.random; // Can access here or via GWU.rng.random
-    this.seeds = [];
+    this.seed = 0;
+    this.seeds = {};
+    this.levels = { default: { kind: "DEFAULT" } };
+    this._levelObjs = {};
+    this.start_level = 1;
 
-    // TODO - Change this so that the default class does not have the LAST_LEVEL concept
-    const LAST_LEVEL = 10;
-    for (let i = 0; i < LAST_LEVEL; ++i) {
-      const levelSeed = this.rng.number(100000);
-      this.seeds.push(levelSeed);
-      console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
-    }
-
-    // Why??
+    // Exposes types to world
     this.actors = ACTOR.kinds;
     this.items = ITEM.kinds;
     this.hordes = HORDE.hordes;
     //
 
-    this.hero = ACTOR.makeHero("HERO");
+    // TODO - Should be a reference or a copy?
+    this.data = app.data; // GWU.utils.mergeDeep(this.data, app.data);
+
+    // this.hero = ACTOR.Hero.make("HERO") as Hero;
 
     this.inputQueue = new GWU.app.Queue();
 
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);
-
-    this.keymap = {
-      a: "attack",
-      f: "fire",
-      g: "pickup",
-      " ": "idle",
-      ".": "idle",
-    };
-
-    // TODO - Get these as parameters...
-    // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
-    this.events.on("Enter", (e) => {
-      if (this.hero.goalPath && this.hero.goalPath.length) {
-        this.hero.followPath = true;
-        this.hero.act(this);
-      } else {
-        // pickup?
-      }
-      this.scene!.needsDraw = true;
-      e.stopPropagation();
-    });
-    this.events.on("dir", (e) => {
-      ACTIONS.moveDir(this, this.hero, e.dir);
-      this.scene!.needsDraw = true;
-      e.stopPropagation();
-    });
-    // this.events.on("a", (e) => {
-    //   ACTIONS.attack(this, this.hero);
-    //   this.scene!.needsDraw = true;
-    // });
-    // this.events.on("f", (e) => {
-    //   ACTIONS.fire(this, this.hero);
-    //   this.scene!.needsDraw = true;
-    // });
-    // this.events.on("g", (e) => {
-    //   ACTIONS.pickup(this, this.hero);
-    //   this.scene!.needsDraw = true;
-    // });
-    this.events.on("i", (e) => {
-      if (this.keymap["i"]) {
-        return; // continue to keypress handler
-      }
-      console.log(">> INVENTORY <<");
-      // TODO - Set focus to the player so that it shows their info
-      //      - Send event to level scene?
-      this.scene!.emit("inventory", this);
-      e.stopPropagation();
-    });
-    // this.events.on("p", (e) => {
-    //   console.log("POTION");
-    //   ACTIONS.potion(this, this.hero);
-    // });
-    // this.events.on(" ", (e) => {
-    //   ACTIONS.idle(this, this.hero);
-    //   this.scene!.needsDraw = true;
-    // });
-    this.events.on(">", (e) => {
-      if (this.keymap[">"]) {
-        return; // continue to keypress handler
-      }
-      if (!this.level) return;
-      // find stairs
-      let loc: GWU.xy.Loc = [-1, -1];
-      this.level.tiles.forEach((t, x, y) => {
-        const tile = TILE.tilesByIndex[t];
-        if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-          loc[0] = x;
-          loc[1] = y;
-        }
-      });
-      // set player goal
-      if (loc[0] >= 0) {
-        this.hero.setGoal(loc[0], loc[1]);
-        this.scene!.needsDraw = true;
-      }
-      this.scene!.needsDraw = true;
-      e.stopPropagation();
-    });
-    this.events.on("<", (e) => {
-      if (this.keymap["<"]) {
-        return; // continue to keypress handler
-      }
-
-      if (!this.level) return;
-      // find stairs
-      let loc: GWU.xy.Loc = [-1, -1];
-      this.level.tiles.forEach((t, x, y) => {
-        const tile = TILE.tilesByIndex[t];
-        if (tile.id === "DOWN_STAIRS") {
-          loc[0] = x;
-          loc[1] = y;
-        }
-      });
-      // set player goal
-      if (loc[0] >= 0) {
-        this.hero.setGoal(loc[0], loc[1]);
-        this.scene!.needsDraw = true;
-      }
-      this.scene!.needsDraw = true;
-      e.stopPropagation();
-    });
-
-    // this.events.on("z", (e) => {
-    //   ACTOR.spawn(this.level!, "zombie", this.hero.x, this.hero.y);
-    //   this.scene!.needsDraw = true;
-    // });
-
-    this.events.on("keypress", (e) => {
-      let action = this.keymap[e.key];
-      if (!action) return;
-
-      let fn = ACTIONS.get(action);
-      if (!fn) {
-        console.warn(`Failed to find action: ${action} for key: ${e.key}`);
-      } else {
-        fn(this, this.hero);
-        this.scene!.needsDraw = true;
-      }
-    });
-
-    PLUGINS.trigger("new_game", { game: this }, null);
-    // Object.values(plugins).forEach((p) => p.new_game({ this }, null, ));
-
-    // @ts-ignore
-    globalThis.GAME = this;
   }
 
-  startLevel(scene: GWU.app.Scene, width: number, height: number) {
-    this.scene = scene;
-    this.depth += 1;
-    this.scheduler.clear();
-
-    // let level = LEVEL.levels.find((l) => l.depth === this.depth);
-    // if (!level) {
-    const level = LEVEL.from({
-      width: 60,
-      height: 35,
-      depth: this.depth,
-      seed: this.seeds[this.depth - 1],
-    });
-    // LEVEL.levels.push(level);
-    // } else if (level.width != 60 || level.height != 35) {
-    //   throw new Error(
-    //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
-    //   );
-    // }
-    this.level = level;
-    this.needInput = false;
-
-    this.scene.needsDraw = true;
-
-    // we want the events that the widgets ignore...
-    const cancelEvents = scene.on({
-      update: () => this.update(),
-      keypress: (e) => this.keypress(e),
-      click: (e) => this.click(e),
-    });
-    scene.once("stop", cancelEvents);
-
-    // @ts-ignore
-    globalThis.LEVEL = level;
-    // @ts-ignore
-    globalThis.HERO = this.hero;
-
-    PLUGINS.trigger("new_level", { game: this, level }, null);
-    // Object.values(plugins).forEach((p) => p.new_level(this, level));
-
-    level.start(this);
-    this.tick();
-  }
-
-  lose() {
-    this.scene!.emit("lose", this);
-  }
-
-  win() {
-    this.scene!.emit("win", this);
-  }
-
-  update() {
-    while (this.inputQueue.length && this.needInput) {
-      const e = this.inputQueue.dequeue();
-      e && e.dispatch(this.events);
+  _create(opts: GameOpts) {
+    // SEED
+    if (typeof opts.seed === "number" && opts.seed > 0) {
+      this.seed = opts.seed;
+    } else {
+      this.seed = this.rng.int(100000);
     }
 
-    if (this.needInput) return;
+    console.log("GAME, seed=", this.seed);
+    this.rng.seed(this.seed);
 
-    let filter = false;
-    let actor = this.scheduler.pop();
-
-    const startTime = this.scheduler.time;
-    let elapsed = 0;
-
-    while (actor) {
-      if (typeof actor === "function") {
-        actor(this);
-        if (elapsed > 16) return;
-      } else if (actor.health <= 0) {
-        // skip
-        filter = true;
-      } else if (actor === this.hero) {
-        actor.act(this);
-        if (filter) {
-          this.level!.actors = this.level!.actors.filter(
-            (a) => a && a.health > 0
-          );
-        }
-        this.scene!.needsDraw = true;
-        return;
-      } else {
-        actor.act(this);
-      }
-      if (this.scene!.timers.length || this.scene!.tweens.length) {
-        return;
-      }
-      if (this.scene!.paused.update) {
-        return;
-      }
-      actor = this.scheduler.pop();
-      elapsed = this.scheduler.time - startTime;
+    // LEVELS
+    Object.assign(this.levels, opts.levels || {});
+    if (opts.start_level) {
+      this.start_level = opts.start_level;
     }
 
-    // no other actors
-    this.needInput = true;
+    // KEYMAP
+    // TODO - move to default plugin
+    this.keymap = Object.assign(
+      {
+        a: "attack",
+        f: "fire",
+        g: "pickup",
+        i: (level: Level, e: GWU.app.Event) => {
+          console.log(">> INVENTORY <<");
+          // TODO - Set focus to the player so that it shows their info
+          //      - Send event to level scene?
+          level.emit("inventory", level.game);
+          e.stopPropagation();
+        },
+        // z: (level: Level, e) => {
+        //   ACTOR.spawn(game.level!, "zombie", game.hero.x, game.hero.y);
+        //   game.level.needsDraw = true;
+        //   e.stopPropagation();
+        // },
+        " ": "idle",
+        ".": "idle",
+        ">": (level: Level, e: GWU.app.Event) => {
+          // find stairs
+          let loc: GWU.xy.Loc = [-1, -1];
+          level.tiles.forEach((t, x, y) => {
+            const tile = TILE.tilesByIndex[t];
+            if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+              loc[0] = x;
+              loc[1] = y;
+            }
+          });
+          // set player goal
+          if (loc[0] >= 0) {
+            level.game.hero.setGoal(loc[0], loc[1]);
+          }
+          level.scene.needsDraw = true;
+          e.stopPropagation();
+        },
+        "<": (level: Level, e: GWU.app.Event) => {
+          // find stairs
+          let loc: GWU.xy.Loc = [-1, -1];
+          level.tiles.forEach((t, x, y) => {
+            const tile = TILE.tilesByIndex[t];
+            if (tile.id === "DOWN_STAIRS") {
+              loc[0] = x;
+              loc[1] = y;
+            }
+          });
+          // set player goal
+          if (loc[0] >= 0) {
+            level.game.hero.setGoal(loc[0], loc[1]);
+          }
+          level.scene.needsDraw = true;
+          e.stopPropagation();
+        },
+        dir: (level: Level, e: GWU.app.Event) => {
+          // @ts-ignore
+          ACTIONS.moveDir(level, level.game.hero, e.dir);
+          level.scene.needsDraw = true;
+          e.stopPropagation();
+        },
+        Enter: (level: Level, e: GWU.app.Event) => {
+          const hero = level.game.hero;
+          if (hero.goalPath && hero.goalPath.length) {
+            hero.followPath = true;
+            hero.act(level);
+          } else {
+            // pickup?
+          }
+          level.scene.needsDraw = true;
+          e.stopPropagation();
+        },
+        // keypress: (level: Level, e) => {
+        //   let action = game.keymap[e.key];
+        //   if (!action) return;
+        //   if (typeof action === "function") {
+        //     return action(level: Level, e);
+        //   }
+
+        //   let fn = ACTIONS.get(action);
+        //   if (!fn) {
+        //     console.warn(`Failed to find action: ${action} for key: ${e.key}`);
+        //   } else {
+        //     fn(game.level, game.hero);
+        //     game.level.needsDraw = true;
+        //   }
+        // },
+      },
+      opts.keymap || {}
+    );
+
+    // CREATE HERO
+
+    // EVENTS - There are no events on GameOpts!!!  Must use plugins
+    // Object.entries(opts).forEach(([key, val]) => {
+    //   if (typeof val === "function") {
+    //     this.on(key, val);
+    //   }
+    // });
+    // Object.entries(opts.on || {}).forEach(([key, val]) => {
+    //   if (typeof val === "function") {
+    //     this.on(key, val);
+    //   }
+    // });
+
+    // HERO
+    // TODO - move to default plugin
+    let hero_cfg = opts.hero_kind || { kind: "HERO" };
+    if (typeof hero_cfg === "string") {
+      hero_cfg = { kind: hero_cfg };
+    }
+    this.hero = HERO.make(hero_cfg.kind, hero_cfg);
   }
+
+  makeLevel(
+    levelId: string | number,
+    opts: LEVEL.LevelCreateOpts & { kind?: string } = {}
+  ): Level {
+    let info = this.levels[levelId] ||
+      this.levels["default"] || { kind: "DEFAULT" };
+    if (typeof info === "string") {
+      info = { kind: info };
+    }
+
+    const config = GWU.utils.mergeDeep(info, opts);
+    const level = LEVEL.make(this, levelId, config.kind, config);
+    level.on("show", (level) => {
+      this.level = level;
+    });
+
+    this._levelObjs[levelId] = level;
+    return level;
+  }
+
+  getLevel(levelId: string | number): Level {
+    return this._levelObjs[levelId] || this.makeLevel(levelId);
+  }
+
+  // lose() {
+  //   this.scene!.emit("lose", this);
+  // }
+
+  // win() {
+  //   this.scene!.emit("win", this);
+  // }
 
   //   input(e) {
   //     this.inputQueue.enqueue(e.clone());
   //     e.stopPropagation();
   //   }
 
-  keypress(e: GWU.app.Event) {
-    this.inputQueue.enqueue(e.clone());
-    e.stopPropagation();
-  }
+  // keypress(e: GWU.app.Event) {
+  //   this.inputQueue.enqueue(e.clone());
+  //   e.stopPropagation();
+  // }
 
-  click(e: GWU.app.Event) {
-    this.inputQueue.enqueue(e.clone());
-    e.stopPropagation();
-  }
+  // click(e: GWU.app.Event) {
+  //   this.inputQueue.enqueue(e.clone());
+  //   e.stopPropagation();
+  // }
 
-  tick(dt: number = 50) {
-    this.level!.tick(this, dt);
-    this.wait(dt, () => this.tick(dt));
-  }
+  // tick(dt: number = 50) {
+  //   this.level.tick(this, dt);
+  //   this.level.wait(dt, () => this.tick(dt));
+  // }
 
   endTurn(actor: ACTOR.Actor, time: number) {
     if (!actor.hasActed()) {
-      actor.endTurn(this, time);
-      this.scheduler.push(actor, time);
+      actor.endTurn(this.level, time);
+      this.level.scheduler.push(actor, time);
+      // @ts-ignore
       if (actor === this.hero) {
         this.needInput = false;
       }
@@ -338,26 +288,101 @@ export class Game {
     }
   }
 
-  wait(time: number, fn: GWU.app.CallbackFn) {
-    this.scheduler.push(fn, time);
-  }
+  // wait(time: number, fn: GWU.app.CallbackFn) {
+  //   this.level.scheduler.push(fn, time);
+  // }
 
   addMessage(msg: string) {
     this.messages.add(msg);
-    this.scene!.get("MESSAGES")!.draw(this.scene!.buffer);
+    // TODO - Is this necessary?
+    if (!!this.level && !!this.level.scene) {
+      // this.level.scene.get("MESSAGES")!.draw(this.level.scene.buffer);
+      this.level.scene.needsDraw = true;
+    }
   }
 
-  makeActor(
-    id: string | ACTOR.ActorKind,
-    opts: Partial<ACTOR.ActorConfig> | number = 1
-  ): ACTOR.Actor {
-    return ACTOR.make(id, opts);
+  on(cfg: Record<string, CallbackFn>): GWU.app.CancelFn;
+  on(event: string, fn: CallbackFn): GWU.app.CancelFn;
+  on(...args: any[]): GWU.app.CancelFn {
+    if (args.length == 1) {
+      return this.events.on(args[0]);
+    }
+    return this.events.on(args[0], args[1]);
   }
-
-  makeItem(
-    id: string | ITEM.ItemKind,
-    opts: Partial<ITEM.ItemConfig> | number = 1
-  ): ITEM.Item {
-    return ITEM.make(id, opts);
+  once(event: string, fn: CallbackFn) {
+    return this.events.once(event, fn);
+  }
+  emit(event: string, ...args: any[]) {
+    return this.events.emit(event, ...args);
   }
 }
+
+// export function startLevel(levelId: string | number): Level {
+//     // this.depth += 1;
+//     // this.scheduler.clear();
+
+//     let level = this._levelObjs[levelId] || this.makeLevel(levelId);
+//     // let level = LEVEL.levels.find((l) => l.depth === this.depth);
+//     if (!level) {
+//       console.error("Failed to start level: " + levelId);
+//       GWU.app.active.stop();
+//       return;
+//     }
+//     // LEVEL.levels.push(level);
+//     // } else if (level.width != 60 || level.height != 35) {
+//     //   throw new Error(
+//     //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+//     //   );
+//     // }
+
+//     this.level = level;
+//     this.needInput = false;
+
+//     // @ts-ignore
+//     globalThis.LEVEL = level;
+//     // @ts-ignore
+//     globalThis.HERO = this.hero;
+
+//     const startRes = PLUGINS.trigger(
+//       "start_level",
+//       { game: this, level: level, sceneId: "level", startOpts: {} },
+//       (req: {
+//         game: Game;
+//         level: Level;
+//         sceneId: string;
+//         startOpts: GWU.app.SceneStartOpts;
+//       }): Result<{ scene: GWU.app.Scene }> => {
+//         let { sceneId, startOpts } = req;
+//         startOpts = startOpts || {};
+//         startOpts.game = req.game;
+//         startOpts.level = req.level;
+//         const scene = GWU.app.active.scenes.start(sceneId, startOpts);
+
+//         req.level.show(req.game, scene);
+//         return Result.Ok({ scene });
+//       }
+//     );
+//     if (startRes.isErr()) {
+//       console.error("Failed to start level: " + startRes.unwrapErr());
+//       GWU.app.active.stop();
+//       return;
+//     }
+//   }
+
+// export function start(config: GameOpts = {}): Game {
+//   const game = PLUGINS.make(config);
+
+//   const resMake = PLUGINS.trigger("make_game", { config }, (config) => {
+//     const game = new Game();
+//     game.create(config);
+//     return Result.Ok(game);
+//   });
+//   resMake.expect("Failed to make Game");
+
+//   const game = resMake.unwrap();
+//   if (!game.hero) {
+//     console.log("Making default Hero: HERO");
+//     game.hero = Hero.make("HERO");
+//   }
+//   return game;
+// }

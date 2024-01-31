@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 
-import { Level } from "../game/level";
+import { Level } from "../level/level";
 import { Game } from "../game/game";
 
 export class Map extends GWU.app.Widget {
@@ -15,7 +15,9 @@ export class Map extends GWU.app.Widget {
   }
 
   _draw(buf: GWU.buffer.Buffer) {
-    const game = this.scene!.data as Game;
+    const scene = this.scene! as GWU.app.Scene;
+    const level = scene.data.level as Level;
+    const game = level.game;
     const player = game.hero;
 
     buf.fillRect(
@@ -28,13 +30,14 @@ export class Map extends GWU.app.Widget {
       "black"
     );
 
-    const level = game.level!;
     level.tiles.forEach((index, x, y) => {
-      buf.blackOut(x, y);
-      level.drawAt(buf, x, y);
+      if (this.bounds.contains(x, y)) {
+        buf.blackOut(x, y);
+        level.drawAt(buf, x, y);
 
-      if (!player.fov || !player.fov.get(x, y)) {
-        buf.get(x, y).mix("black", 25, 25);
+        if (!player.fov || !player.fov.get(x, y)) {
+          buf.get(x, y).mix("black", 25, 25);
+        }
       }
     });
 

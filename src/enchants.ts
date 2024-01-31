@@ -1,9 +1,10 @@
 import * as ENCHANT from "./enchant";
 import { Item } from "./item";
-import { Actor, Hero } from "./actor";
+import { Actor } from "./actor";
+import { Hero } from "./hero";
 import * as PLUGIN from "./game/plugins";
 import { Game } from "./game/game";
-import { Level } from "./game/level";
+import { Level } from "./level/level";
 import { DamageConfig } from "./effect/damage";
 import * as GWU from "gw-utils";
 

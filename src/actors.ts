@@ -1,7 +1,8 @@
 import * as ACTOR from "./actor";
 import * as ACTIONS from "./action";
+import * as HERO from "./hero";
 
-ACTOR.install({
+HERO.install({
   id: "HERO",
   name: "Hero",
   ch: "@",

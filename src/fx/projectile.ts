@@ -2,20 +2,21 @@ import * as GWU from "gw-utils";
 import { Game } from "../game/game";
 import { FX, flash } from "./flash";
 import { CallbackFn } from "../game/obj";
+import { Level } from "../level";
 
 export type Pos = GWU.xy.Loc | GWU.xy.XY;
 
 export type ProjectileCb = (xy: GWU.xy.XY, ok: boolean) => void;
 
 export function projectile(
-  game: Game,
+  level: Level,
   from: Pos,
   to: Pos,
   sprite: GWU.sprite.SpriteConfig,
   ms: number
 ) {
-  const level = game.level!;
-  const scene = game.scene!;
+  const game = level.game;
+  const scene = level.scene;
 
   from = GWU.xy.asXY(from);
   to = GWU.xy.asXY(to);
@@ -42,7 +43,7 @@ export function projectile(
     );
   }
 
-  const fx = new FX(sprite);
+  const fx = FX.make(sprite);
 
   // console.log("- fire", from, to);
 
@@ -68,7 +69,7 @@ export function projectile(
       scene.resume({ update: true });
       _success(vals, isSuccess);
     })
-    .start(game.scene!.tweens);
+    .start(scene.tweens);
 
   return {
     then(success: ProjectileCb) {

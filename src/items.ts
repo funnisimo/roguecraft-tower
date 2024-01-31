@@ -1,18 +1,20 @@
 import { Actor, RegenStatus } from "./actor";
 import { Game } from "./game";
 import * as ITEM from "./item";
+import { Item } from "./item";
+import { Level } from "./level";
 
 ITEM.install({
   id: "HEALTH_POTION",
   ch: "!",
   fg: "pink",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       // TODO - vary the messages
       // TODO - Different healing amounts?
       actor.health = actor.kind.health; // TODO - move this to an effect
-      game.addMessage("You drink the potion.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You drink the potion.");
+      level.removeItem(item);
       // destroy
       return true;
     },
@@ -25,10 +27,10 @@ ITEM.install({
   ch: "|",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   actor.health = actor.kind.health;
-      game.addMessage("You pickup some ammo.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You pickup some ammo.");
+      level.removeItem(this);
       // destroy
 
       actor.ammo += 10;
@@ -46,13 +48,13 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Apples - 20%/3s
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200)
       );
-      game.addMessage("You eat an apple.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat an apple.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -65,11 +67,11 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Bread - 100%/30s
       actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
-      game.addMessage("You eat some bread.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some bread.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -82,13 +84,13 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Pork - 50%/10s
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200)
       );
-      game.addMessage("You eat some pork.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some pork.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -101,13 +103,13 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Salmon - 35%/8s
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200)
       );
-      game.addMessage("You eat some salmon.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some salmon.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -120,14 +122,14 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Berries - 20%/5s + speedup
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200)
       );
 
-      game.addMessage("You eat some berries.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some berries.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -140,13 +142,13 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Melon - 75%/15s
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200)
       );
-      game.addMessage("You eat some melon.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some melon.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -159,13 +161,13 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Fruit - 30%/1s
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200)
       );
-      game.addMessage("You eat some fruit.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some fruit.");
+      level.removeItem(this);
       // destroy
       return true;
     },
@@ -178,13 +180,13 @@ ITEM.install({
   ch: "&",
   fg: "yellow",
   on: {
-    pickup(this: ITEM.Item, game: Game, actor: Actor): boolean {
+    pickup(level: Level, item: Item, actor: Actor): boolean {
       //   [] Fish - 20%/2s + 10% oxygen
       actor.addStatus(
         new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200)
       );
-      game.addMessage("You eat some fish.");
-      game.level!.removeItem(this);
+      level.game.addMessage("You eat some fish.");
+      level.removeItem(this);
       // destroy
       return true;
     },

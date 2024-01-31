@@ -1,13 +1,23 @@
 import * as GWU from "gw-utils";
 
-import * as ACTOR from "./actor";
-import * as KIND from "./kind";
+import * as ACTOR from "../actor";
 import * as ACTION from "../action";
-import { Level } from "../game/level";
-import { Game } from "../game/game";
+import { Level } from "../level";
+import { Game, ObjCreateOpts, ObjEvents } from "../game";
 import * as ITEM from "../item";
+import { HeroEvents, HeroKind, getKind } from "./kind";
+import { factory } from "./factory";
+// import * as PLUGINS from "../game/plugins";
+
+export interface HeroCreateOpts extends ObjCreateOpts, HeroEvents {
+  power?: number;
+  slots?: { [id: string]: string }; // TODO - Allow more object create options here
+  on?: HeroEvents & ObjEvents;
+}
 
 export class Hero extends ACTOR.Actor {
+  // @ts-ignore
+  declare kind: HeroKind;
   mapToMe: GWU.path.DijkstraMap;
   fov: GWU.grid.NumGrid | null;
 
@@ -19,8 +29,8 @@ export class Hero extends ACTOR.Actor {
 
   slots: { [id: string]: ITEM.Item | null };
 
-  constructor(cfg: ACTOR.ActorConfig) {
-    super(cfg);
+  constructor(kind: HeroKind) {
+    super(kind as unknown as ACTOR.ActorKind);
     this.mapToMe = new GWU.path.DijkstraMap();
     this.fov = null;
     this.goalPath = null;
@@ -28,12 +38,18 @@ export class Hero extends ACTOR.Actor {
     this.slots = {};
     this.potion_max = 40 * 200;
     this.potion = this.potion_max; // Potion is ready
+  }
+
+  // @ts-ignore
+  _create(opts: HeroCreateOpts) {
+    // @ts-ignore
+    super._create(opts);
 
     this.on("add", (level: Level) => {
       this._level = level;
       this.updateMapToMe();
       this.updateFov();
-      level.game!.scene!.needsDraw = true;
+      // level.game!.scene!.needsDraw = true;
     });
     this.on("move", () => {
       this.updateMapToMe();
@@ -52,7 +68,7 @@ export class Hero extends ACTOR.Actor {
     this.on("damage", () => this.clearGoal());
 
     // Need items in slots....
-    Object.entries(cfg.kind.slots).forEach(([slot, id]) => {
+    Object.entries(this.kind.slots).forEach(([slot, id]) => {
       const item = ITEM.make(id);
       if (item === null) {
         console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
@@ -164,17 +180,18 @@ export class Hero extends ACTOR.Actor {
     this.combo_index = 0;
   }
 
-  act(game: Game) {
-    this.startTurn(game);
+  act(level: Level) {
+    this.startTurn(level);
 
     if (this.goalPath && this.followPath && this.goalPath.length) {
       const step = this.goalPath[0];
       if (step) {
-        if (game.level!.hasActor(step[0], step[1])) {
-          game.addMessage("You are blocked.");
+        if (level.hasActor(step[0], step[1])) {
+          level.game.addMessage("You are blocked.");
         } else {
           const dir = GWU.xy.dirFromTo(this, step);
-          if (ACTION.moveDir(game, this, dir, true)) {
+          // @ts-ignore
+          if (ACTION.moveDir(level, this, dir, true)) {
             if (GWU.xy.equals(this, step)) {
               this.goalPath.shift(); // we moved there, so remove that step
             } else {
@@ -182,14 +199,14 @@ export class Hero extends ACTOR.Actor {
             }
             return;
           }
-          game.addMessage("You lost track of path.");
+          level.game.addMessage("You lost track of path.");
         }
       }
     }
     this.clearGoal();
 
-    game.needInput = true;
-    console.log("Hero - await input", game.scheduler.time);
+    level.game.needInput = true;
+    console.log("Hero - await input", level.scheduler.time);
   }
 
   setGoal(x: number, y: number) {
@@ -260,18 +277,6 @@ export class Hero extends ACTOR.Actor {
       return this.fov.get(GWU.xy.x(pos), GWU.xy.y(pos))! > 0;
     }
   }
-}
-
-export function makeHero(id: string = "HERO") {
-  const kind = KIND.getKind(id);
-  if (!kind) throw new Error("Failed to find hero's actor kind - " + id);
-
-  return new Hero({
-    x: 1,
-    y: 1,
-    z: 1, // items, actors, player, fx
-    kind,
-  });
 }
 
 export function isHero(obj: any): obj is Hero {

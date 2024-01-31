@@ -9,6 +9,7 @@ export const lose = {
     build.pos(10, 17).text("LOSE!", { fg: "green" });
 
     build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
+    build.pos(10, 24).text("{reason}", { fg: "pink", id: "REASON" });
 
     build.pos(10, 30).text("Press any key to restart.");
 
@@ -16,9 +17,12 @@ export const lose = {
       this.app.scenes.start("title");
     });
   },
-  start(this: GWU.app.Scene, game: Game) {
-    const id = game.depth || 1;
+  start(this: GWU.app.Scene, opts: { game: Game; reason: string }) {
+    const id = opts.game.level.id || "???";
     const w = this.get("LEVEL")!;
     w.text("On Level: " + id);
+
+    const r = this.get("REASON")!;
+    r.text(opts.reason);
   },
 };

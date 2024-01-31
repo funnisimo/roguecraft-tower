@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
-import { Game } from "../game/game";
+import { Game } from "../game";
 import * as Item from "../item";
-import { Hero } from "../actor";
+import { Hero } from "../hero";
 
 export const reward = {
   create(this: GWU.app.Scene) {
@@ -62,18 +62,20 @@ export const reward = {
     list.on("action", () => {
       const items = this.data.items as (Item.Item | null)[];
       const item = items[list.selectedRow];
+      const game = this.data.game as Game;
       if (item) {
         console.log("list selection - " + item.name);
-        const game = this.data.game as Game;
         const player = game.hero;
         player.equip(item);
         game.addMessage(`You equip a ${item.name}`);
       }
-      this.app.scenes.start("level", this.data.game);
+      const level = game.getLevel(this.data.depth);
+      level.show();
     });
   },
-  start(this: GWU.app.Scene, game: Game) {
-    const depth = game.level!.depth;
+  start(this: GWU.app.Scene, opts: { depth: number; game: Game }) {
+    const depth = opts.depth;
+    const game = opts.game;
 
     const w = this.get("LEVEL")!;
     w.text("Choose your \nreward for Level: " + depth);
@@ -94,7 +96,13 @@ export const reward = {
       return o;
     }, {});
 
-    this.data = { game, items: [null, armor, melee, ranged], equipped };
+    // depth + 1 to indicate that we are going to the next level
+    this.data = {
+      game,
+      items: [null, armor, melee, ranged],
+      equipped,
+      depth: depth + 1, // NOTE: Adding 1 here so we always have the next level in mind!
+    };
 
     s.data(["None", armor.name, melee.name, ranged.name]); // triggers - change
   },

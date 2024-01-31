@@ -3,20 +3,27 @@ import * as GWD from "gw-dig";
 import { CallbackFn, Game } from "../game";
 import { Actor } from "../actor";
 import { Obj } from "../game/obj";
+import { Level } from "../level";
 
 export interface TileEvents {
   // tile is this
-  place?: (this: TileInfo, game: Game, x: number, y: number) => void;
+  place?: (this: TileInfo, level: Level, x: number, y: number) => void;
 
-  tick?: (this: TileInfo, game: Game, x: number, y: number, dt: number) => void;
+  tick?: (
+    this: TileInfo,
+    level: Level,
+    x: number,
+    y: number,
+    dt: number
+  ) => void;
 
   // x, y from actor, tile is this
-  enter?: (this: TileInfo, game: Game, actor: Actor) => void;
-  exit?: (this: TileInfo, game: Game, actor: Actor) => void;
+  enter?: (this: TileInfo, level: Level, actor: Actor) => void;
+  exit?: (this: TileInfo, level: Level, actor: Actor) => void;
 
   // x, y from item, tile is this
-  drop?: (this: TileInfo, game: Game, item: Obj) => void;
-  pickup?: (this: TileInfo, game: Game, item: Obj) => void;
+  drop?: (this: TileInfo, level: Level, item: Obj) => void;
+  pickup?: (this: TileInfo, level: Level, item: Obj) => void;
 
   [key: string]: CallbackFn | undefined;
 }
@@ -76,9 +83,9 @@ install({
       //   }
       // });
     },
-    tick(game: Game, x: number, y: number) {
-      if (game.rng.chance(5)) {
-        game.level!.setTile(x, y, "FLOOR");
+    tick(level: Level, x: number, y: number) {
+      if (level.rng.chance(5)) {
+        level.setTile(x, y, "FLOOR");
       }
     },
   },
@@ -88,8 +95,8 @@ install({
   ch: "<",
   fg: "gray",
   on: {
-    enter(game, actor) {
-      game.addMessage("There is no turning back.");
+    enter(level: Level, actor) {
+      level.game.addMessage("There is no turning back.");
     },
   },
 });
@@ -98,9 +105,9 @@ install({
   ch: ">",
   fg: "orange",
   on: {
-    enter(game, actor) {
-      game.addMessage("Going up!");
-      game.scene!.emit("win");
+    enter(level, actor) {
+      level.game.addMessage("Going up!");
+      level.emit("up_stairs", level, actor);
     },
   },
 });
@@ -110,8 +117,8 @@ install({
   fg: "gray",
   priority: 75,
   on: {
-    enter(game, actor) {
-      game.addMessage("There is more to do.");
+    enter(level, actor) {
+      level.game.addMessage("There is more to do.");
     },
   },
 });

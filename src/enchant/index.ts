@@ -1,12 +1,12 @@
 import { Actor, ActorEvents } from "../actor";
-import { CallbackFn } from "../game";
+import { CallbackFn, ObjEvents } from "../game";
 import { ItemEvents } from "../item";
 
 export interface Enchant {
   apply(actor: Actor, level: number);
   unapply(actor: Actor);
-  actor: ActorEvents;
-  item: ItemEvents;
+  actor: ActorEvents & ObjEvents;
+  item: ItemEvents & ObjEvents;
 }
 
 const enchants: Record<string, Enchant> = {};

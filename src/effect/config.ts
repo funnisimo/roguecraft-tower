@@ -1,4 +1,4 @@
-import { valueType } from "gw-utils";
+import * as GWU from "gw-utils";
 
 function combineValues(a: any, b: any): any {
   if (a == undefined) {
@@ -8,8 +8,8 @@ function combineValues(a: any, b: any): any {
     return a;
   }
 
-  const ta = valueType(a);
-  const tb = valueType(b);
+  const ta = GWU.utils.valueType(a);
+  const tb = GWU.utils.valueType(b);
 
   if (ta == "array" && tb == "array") {
     if (a.length >= b.length) {

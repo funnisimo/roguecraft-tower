@@ -1,4 +1,5 @@
 import * as GWU from "gw-utils";
+import { Level } from "../level";
 
 export function flavor(scene: GWU.app.Scene, x: number, y: number) {
   const widget = GWU.widget.make({
@@ -15,7 +16,10 @@ export function flavor(scene: GWU.app.Scene, x: number, y: number) {
     fg: GWU.color.from("purple"),
 
     draw(this: GWU.app.Widget, buf: GWU.buffer.Buffer) {
-      const game = this.scene!.data;
+      const scene = this.scene! as GWU.app.Scene;
+      const level = scene.data.level as Level;
+      const game = level.game;
+
       buf.fillRect(
         this.bounds.x,
         this.bounds.y,

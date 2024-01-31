@@ -16,8 +16,8 @@ export const win = {
       this.app.scenes.start("title");
     });
   },
-  start(this: GWU.app.Scene, game: Game) {
-    const level = game.level!;
+  start(this: GWU.app.Scene, opts: { game: Game }) {
+    const level = opts.game.level!;
     const id = level.depth || 1;
     const w = this.get("LEVEL")!;
     w.text("Final Level: " + id);

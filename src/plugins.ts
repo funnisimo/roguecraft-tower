@@ -1,19 +1,17 @@
 import * as GWU from "gw-utils";
 import { Game } from "./game/game";
-import { Level } from "./game/level";
-import * as Plugin from "./game/plugins";
+import { Level } from "./level/level";
 import * as ACTIONS from "./action";
 import { Actor } from "./actor/actor";
 import { SidebarEntry } from "./widgets/sidebar";
-import { NextFn } from "./game/plugins";
-import { Obj } from "./game";
-import { isHero } from "./actor";
+import { GameOpts, Obj, install } from "./game";
+import { Hero, HeroCreateOpts } from "./hero";
 
-ACTIONS.install("potion", (game: Game, actor: Actor): boolean => {
+ACTIONS.install("potion", (level: Level, actor: Actor): boolean => {
   if (!actor.isHero) return false;
 
   if (actor.data.potion < actor.data.potion_max) {
-    game.addMessage("Not ready.");
+    level.game.addMessage("Not ready.");
     // TODO - spend time? idle?
     return false;
   }
@@ -22,7 +20,7 @@ ACTIONS.install("potion", (game: Game, actor: Actor): boolean => {
 
   if (actor.health >= actor.health_max) {
     // TODO - check for nearby
-    game.addMessage("You do not need to drink a potion.");
+    level.game.addMessage("You do not need to drink a potion.");
     // TODO - spend time? idle?
     return false;
   }
@@ -33,57 +31,39 @@ ACTIONS.install("potion", (game: Game, actor: Actor): boolean => {
   const heal = Math.floor(actor.health_max * 0.75);
   actor.health = Math.min(actor.health + heal, actor.health_max);
   actor.data.potion = 0; // Needs to recharge
-  game.addMessage("You drink a #{blue potion}.");
-  game.endTurn(actor, actor.moveSpeed);
+  level.game.addMessage("You drink a #{blue potion}.");
+  level.game.endTurn(actor, actor.moveSpeed);
   return true;
 });
 
-Plugin.install("potion", {
-  new_game(req: { game: Game }, next: Plugin.NextFn): Plugin.Result {
-    req.game.keymap["p"] = "potion";
-    return next();
+install("potion", {
+  game: {
+    create(game: Game) {
+      game.keymap["p"] = "potion";
+    },
   },
-
-  spawn(
-    req: { level: Level; obj: Obj; x: number; y: number },
-    next: Plugin.NextFn
-  ): Plugin.Result {
-    if (isHero(req.obj)) {
-      const hero = req.obj;
+  hero: {
+    create(hero: Hero, opts: HeroCreateOpts) {
       hero.data.potion_max = 40 * 100; // 40 moves
       hero.data.potion = hero.data.potion_max;
-    }
-    return next();
-  },
-
-  tick(req: { obj: Obj; time: number }, next: Plugin.NextFn): Plugin.Result {
-    if (isHero(req.obj)) {
-      const hero = req.obj;
+    },
+    tick: (level: Level, hero: Hero, time: number) => {
       let rate = Math.round(
         100 * Math.pow(0.85, hero.data.potion_cooldown || 0)
       );
 
       hero.data.potion = Math.min(
-        hero.data.potion + Math.round((req.time * 100) / rate),
+        hero.data.potion + Math.round((time * 100) / rate),
         hero.data.potion_max
       );
-    }
-    return next();
-  },
-
-  sidebar(
-    req: { obj: Obj; entry: SidebarEntry },
-    next: Plugin.NextFn
-  ): Plugin.Result {
-    if (isHero(req.obj)) {
-      const hero = req.obj;
-      req.entry.add_progress(
+    },
+    sidebar: (hero: Hero, entry: SidebarEntry) => {
+      entry.add_progress(
         "Potion",
         "blue",
         hero.data.potion,
         hero.data.potion_max
       );
-    }
-    return next();
+    },
   },
 });

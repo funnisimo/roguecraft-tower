@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import { Game } from "../game/game";
+import * as GAME from "../game";
 
 export const title = {
   create(this: GWU.app.Scene) {
@@ -11,27 +11,41 @@ export const title = {
     build.pos(10, 32).text("Press s to enter seed.");
     build.pos(10, 34).text("Press h for help.");
 
+    // Press 's' to choose a seed and start a game
     this.on("s", (e) => {
       const prompt = this.app.prompt("What is your starting seed?", {
         numbersOnly: true,
         bg: GWU.color.BLACK.alpha(50),
       });
+      // TODO - This should be something better than "stop"
       prompt.on("stop", (seed) => {
         e.stopPropagation();
         if (seed) {
-          const game = new Game({ seed, app: this.app });
-          this.app.scenes.start("level", game);
+          // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
+          const full_opts = GWU.utils.mergeDeep(this.app.data.start_opts, {
+            seed,
+          });
+          const game = GAME.make(this.app, full_opts);
+          const level = game.getLevel(game.start_level);
+          level.show();
         }
       });
       e.stopPropagation();
     });
+
+    // press 'h' for help
     this.on("h", (e) => {
       this.app.scenes.start("help");
       e.stopPropagation();
     });
+
+    // Any 'other' key results in starting a new game with a random seed
     this.on("keypress", (e) => {
-      const game = new Game({ app: this.app });
-      this.app.scenes.start("level", game);
+      // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
+      const full_opts = GWU.utils.mergeDeep(this.app.data.start_opts, {});
+      const game = GAME.make(this.app, full_opts);
+      const level = game.getLevel(game.start_level);
+      level.show();
       e.stopPropagation();
     });
   },

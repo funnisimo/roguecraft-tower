@@ -1,24 +1,24 @@
 import * as GWU from "gw-utils";
 
 import * as FX from "../fx/index";
-import { Obj, ObjConfig } from "../game/obj";
+import { CallbackFn, Obj, ObjCreateOpts, ObjEvents } from "../game/obj";
 import { Game } from "../game/game";
-import { Level } from "../game/level";
+import { Level } from "../level/level";
 import { TileInfo } from "../tile";
 import * as AI from "./ai";
 import * as ACTIONS from "../action";
 
-import { ActorKind, getKind } from "./kind";
+import { ActorEvents, ActorKind, getKind } from "./kind";
 import { Item, placeRandom, ARMOR_FLAGS } from "../item";
 import { Status } from "./status";
-import { plugins } from "../game/plugins";
 import { SidebarEntry } from "../widgets";
-import { Hero } from "./hero";
+import { Hero } from "../hero/hero";
+import { factory } from "./factory";
 
-export interface ActorConfig extends ObjConfig {
-  kind: ActorKind;
+export interface ActorCreateOpts extends ObjCreateOpts, ActorEvents {
   power?: number;
   machineHome?: number;
+  on?: ActorEvents & ObjEvents;
 }
 
 export class AttackInfo {
@@ -35,42 +35,46 @@ export class Actor extends Obj {
   _turnTime = 0;
   _level: Level | null = null;
   kind: ActorKind;
-  data: Record<string, any>;
-  health: number;
-  health_max: number;
-  ammo: number;
-  power: number;
-  armor_flags: number;
-  statuses: (Status | null)[];
-  combo_index: number;
+  data: Record<string, any> = {};
+  health: number = 0;
+  health_max: number = 0;
+  ammo: number = 0;
+  _power: number = 1;
+  armor_flags: number = 0;
+  statuses: (Status | null)[] = [];
+  combo_index: number = 0;
 
   leader: Actor | null = null;
 
-  constructor(cfg: ActorConfig) {
-    super(cfg);
-    this.kind = cfg.kind;
-    if (!this.kind) throw new Error("Must have kind.");
+  constructor(kind: ActorKind) {
+    super();
+    this.kind = kind;
+    if (!this.kind) throw new Error("Missing ActorKind!");
 
-    this.combo_index = 0;
-    this.armor_flags = 0;
-    this.data = {};
-    this.health_max = Math.round(
-      (this.kind.health || 10) * (1 + ((cfg.power || 1) - 1) / 2)
-    ); // TODO - scale with power?
+    this.z = 1;
+    this.health_max = this.kind.health || 10;
     this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
-    this.statuses = [];
+
+    const onFns = kind.on || {};
+    Object.entries(onFns).forEach(([key, val]: [string, CallbackFn]) => {
+      this.on(key, val);
+    });
+  }
+
+  _create(opts: ActorCreateOpts) {
+    super._create(opts);
 
     this.on("add", (level: Level) => {
-      level.game!.scheduler.push(this, this.kind.moveSpeed);
+      level.scheduler.push(this, this.kind.moveSpeed);
       this._level = level;
     });
-    this.on("remove", (level: Level) => {
+    this.on("destroy", (level: Level) => {
       // console.group("ACTOR REMOVE", this);
       // console.group("before");
       // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
       // console.groupEnd();
-      level.game!.scheduler.remove(this);
+      level.scheduler.remove(this);
       this._level = null;
       // console.group("after");
       // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
@@ -86,13 +90,15 @@ export class Actor extends Obj {
       }
     });
 
-    Object.entries(this.kind.on).forEach(([key, value]) => {
-      if (!value) return;
-      this.on(key, value);
+    // install emit handlers for ItemEvents
+    Object.entries(opts).forEach(([key, val]) => {
+      if (typeof val === "function") {
+        this.on(key, val);
+      }
     });
 
-    // Do this last so the scaling will work
-    this.power = cfg.power || 1;
+    this.power = opts.power || 1;
+    // machineHome
   }
 
   // attributes
@@ -102,7 +108,7 @@ export class Actor extends Obj {
 
   get damage(): number {
     // TODO - combo damage
-    return Math.round(this.kind.damage * (1 + (this.power - 1) / 2));
+    return Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
   }
 
   get attackSpeed(): number {
@@ -115,7 +121,7 @@ export class Actor extends Obj {
   }
 
   get rangedDamage(): number {
-    return Math.round(this.kind.rangedDamage * (1 + (this.power - 1) / 2));
+    return Math.round(this.kind.rangedDamage * (1 + (this._power - 1) / 2));
   }
 
   get rangedAttackSpeed(): number {
@@ -128,6 +134,16 @@ export class Actor extends Obj {
 
   get comboLen(): number {
     return this.kind.combo;
+  }
+
+  get power(): number {
+    return this._power;
+  }
+
+  set power(val: number) {
+    this._power = val;
+    this.health = Math.round(this.kind.health * (1 + (this._power - 1) / 2));
+    this.health_max = this.health;
   }
 
   isHero(): this is Hero {
@@ -173,14 +189,14 @@ export class Actor extends Obj {
     }
   }
 
-  startTurn(game: Game) {
+  startTurn(level: Level) {
     this._turnTime = 0;
-    this.emit("turn_start", game);
+    this.emit("turn_start", level, this);
   }
 
-  endTurn(game: Game, time: number) {
+  endTurn(level: Level, time: number) {
     this._turnTime = time;
-    this.emit("turn_end", game, time);
+    this.emit("turn_end", level, this, time);
   }
 
   hasActed() {
@@ -211,20 +227,20 @@ export class Actor extends Obj {
     return path;
   }
 
-  act(game: Game) {
-    this.startTurn(game);
-    AI.ai(game, this);
+  act(level: Level) {
+    this.startTurn(level);
+    AI.ai(level, this);
     if (!this.hasActed()) {
       console.log("No actor AI action.");
     }
   }
 
-  bump(game: Game, actor: Actor): boolean {
+  bump(level: Level, actor: Actor): boolean {
     const actions = this.kind.bump;
 
     for (let action of actions) {
       const fn = ACTIONS.get(action);
-      if (fn && fn(game, actor, this)) {
+      if (fn && fn(level, actor, this)) {
         return true;
       }
     }
@@ -232,10 +248,11 @@ export class Actor extends Obj {
     return false; // did nothing
   }
 
-  tick(game: Game, time: number) {
+  tick(level: Level, time: number) {
+    this.emit("tick", level, this, time);
     Object.values(this.statuses).forEach((status, i) => {
       if (status) {
-        if (!status.tick(this, game, time)) {
+        if (!status.tick(this, level, time)) {
           this.statuses[i] = null;
         }
       }
@@ -248,83 +265,9 @@ export class Actor extends Obj {
     this.statuses.forEach((s) => {
       s && s.update_sidebar(this, entry);
     });
-    this.emit("sidebar", entry); // Allow plugins to update sidebar
+    this.emit("sidebar", this, entry); // Allow plugins to update sidebar
     return entry;
   }
-}
-
-export function make(
-  id: string | ActorKind,
-  opts: Partial<ActorConfig> | number = 1
-) {
-  let kind: ActorKind | null;
-  if (typeof opts === "number") {
-    opts = { power: opts };
-  }
-  if (typeof id === "string") {
-    kind = getKind(id);
-    if (!kind) throw new Error("Failed to find actor kind - " + id);
-  } else {
-    kind = id;
-  }
-
-  const config = Object.assign(
-    {
-      x: 1,
-      y: 1,
-      z: 1, // items, actors, player, fx
-      kind,
-      // health: kind.health || 10,
-      // damage: kind.damage || 2,
-    },
-    opts
-  );
-
-  return new Actor(config);
-}
-
-export type ActorCallback = (actor: Actor) => void;
-
-export interface ThenActor {
-  then(cb: ActorCallback): void;
-}
-
-export function spawn(
-  level: Level,
-  id: string | Actor,
-  x?: number,
-  y?: number,
-  ms = 500
-): ThenActor {
-  const newbie = typeof id === "string" ? make(id) : id;
-
-  const bg = newbie.kind.fg;
-  const game = level.game!;
-  const scene = game.scene!;
-  // const level = level.level;
-
-  if (x === undefined || y === undefined) {
-    do {
-      x = level.rng.number(level.width);
-      y = level.rng.number(level.height);
-    } while (!level.hasTile(x, y, "FLOOR") || level.actorAt(x, y));
-  }
-
-  newbie.x = x;
-  newbie.y = y;
-
-  let _success: ActorCallback = GWU.NOOP;
-
-  FX.flashGameTime(game, newbie.x, newbie.y, bg).then(() => {
-    level.addActor(newbie);
-    _success(newbie);
-  });
-
-  return {
-    then(cb: ActorCallback) {
-      _success = cb || GWU.NOOP;
-    },
-  };
 }
 
 export function isActor(obj: any): obj is Actor {

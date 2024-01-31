@@ -1,8 +1,9 @@
 import * as GWU from "gw-utils";
 
 import { Actor } from "../actor/actor";
-import { Hero } from "../actor/hero";
+import { Hero } from "../hero/hero";
 import { Game } from "../game/game";
+import { Level } from "../level";
 
 export interface StatusInfo {
   text: string;
@@ -218,8 +219,8 @@ export class Sidebar extends GWU.app.Widget {
 
   _draw(buf: GWU.buffer.Buffer) {
     const scene = this.scene! as GWU.app.Scene;
-    const game = scene.data as Game;
-    const level = game.level!;
+    const level = scene.data.level as Level;
+    const game = level.game;
 
     buf.fillRect(
       this.bounds.x,
@@ -239,7 +240,7 @@ export class Sidebar extends GWU.app.Widget {
     // buf.drawText(x);
     y += buf.drawText(x, y, scene.app.name, "green");
     y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-    y += buf.drawText(x, y, "Level: " + game.level!.depth, "pink");
+    y += buf.drawText(x, y, "Level: " + level.data.depth, "pink");
     y += 1;
 
     let px = game.hero.x;
@@ -249,6 +250,7 @@ export class Sidebar extends GWU.app.Widget {
     //   py = this._focus[1];
     // }
     this.entries = level.actors.filter(
+      // @ts-ignore
       (a) => a && a !== game.hero && a.health > 0
     );
     this.entries.sort(
@@ -259,11 +261,13 @@ export class Sidebar extends GWU.app.Widget {
 
     let focused = this.entries.find((a) => GWU.xy.equals(a, this._focus));
 
+    // @ts-ignore
     let used = this.drawActor(buf, x, y, game.hero);
     game.hero.data.sideY = y;
     game.hero.data.sideH = used;
     if (GWU.xy.equals(game.hero, this._focus)) {
       buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+      // @ts-ignore
       focused = game.hero;
     } else if (focused) {
       buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
@@ -296,7 +300,8 @@ export class Sidebar extends GWU.app.Widget {
 
     const wasFocus = this._focus.slice() as GWU.xy.Loc;
     this.clearFocus();
-    const game = this.scene!.data as Game;
+    const level = this.scene.data.level as Level;
+    const game = level.game;
     const hero = game.hero;
     if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
       this.setFocus(hero.x, hero.y);

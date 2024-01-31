@@ -1,5 +1,5 @@
 import { Actor } from "./actor";
-import { Level } from "../game/level";
+import { Level } from "../level/level";
 
 export type TargetCb = (target: Actor) => void;
 

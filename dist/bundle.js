@@ -98,12 +98,12 @@
    * // => false
    */
 
-  function isObject$4(value) {
+  function isObject$5(value) {
     var type = typeof value;
     return value != null && (type == 'object' || type == 'function');
   }
 
-  var isObject_1 = isObject$4;
+  var isObject_1 = isObject$5;
 
   /** Detect free variable `global` from Node.js. */
 
@@ -290,7 +290,7 @@
   var isSymbol_1 = isSymbol$4;
 
   var baseTrim = _baseTrim,
-      isObject$3 = isObject_1,
+      isObject$4 = isObject_1,
       isSymbol$3 = isSymbol_1;
 
   /** Used as references for various `Number` constants. */
@@ -338,9 +338,9 @@
     if (isSymbol$3(value)) {
       return NAN;
     }
-    if (isObject$3(value)) {
+    if (isObject$4(value)) {
       var other = typeof value.valueOf == 'function' ? value.valueOf() : value;
-      value = isObject$3(other) ? (other + '') : other;
+      value = isObject$4(other) ? (other + '') : other;
     }
     if (typeof value != 'string') {
       return value === 0 ? value : +value;
@@ -395,877 +395,6 @@
   var clamp_1 = clamp$1;
 
   var _clamp = /*@__PURE__*/getDefaultExportFromCjs(clamp_1);
-
-  /**
-   * GW.utils
-   * @module utils
-   */
-  function NOOP() { }
-  function TRUE() {
-      return true;
-  }
-  function FALSE() {
-      return false;
-  }
-  function ONE() {
-      return 1;
-  }
-  function ZERO() {
-      return 0;
-  }
-  function IDENTITY(x) {
-      return x;
-  }
-  function IS_ZERO(x) {
-      return x == 0;
-  }
-  function IS_NONZERO(x) {
-      return x != 0;
-  }
-  /**
-   * clamps a value between min and max (inclusive)
-   * @param v {Number} the value to clamp
-   * @param min {Number} the minimum value
-   * @param max {Number} the maximum value
-   * @returns {Number} the clamped value
-   */
-  const clamp = _clamp;
-  // export function clamp(v: number, min: number, max: number) {
-  //     if (v < min) return min;
-  //     if (v > max) return max;
-  //     return v;
-  // }
-  function lerp$1(from, to, pct) {
-      if (pct > 1)
-          pct = 1;
-      if (pct < 0)
-          pct = 0;
-      return Math.floor(from + (to - from) * pct);
-  }
-  function xave(rate, value, newValue) {
-      return value * rate + newValue * (1 - rate);
-  }
-  function ERROR(message) {
-      throw new Error(message);
-  }
-  function WARN(...args) {
-      console.warn(...args);
-  }
-  function first(...args) {
-      return args.find((v) => v !== undefined);
-  }
-  function arraysIntersect(a, b) {
-      return a.some((av) => b.includes(av));
-  }
-  function arrayIncludesAll(a, b) {
-      return b.every((av) => a.includes(av));
-  }
-  function arrayRevEach(a, fn) {
-      for (let i = a.length - 1; i > -1; --i) {
-          fn(a[i], i, a);
-      }
-  }
-  function arrayDelete(a, b) {
-      const index = a.indexOf(b);
-      if (index < 0)
-          return false;
-      a.splice(index, 1);
-      return true;
-  }
-  function arrayNullify(a, b) {
-      const index = a.indexOf(b);
-      if (index < 0)
-          return false;
-      a[index] = null;
-      return true;
-  }
-  function arrayInsert(a, b, beforeFn) {
-      if (!beforeFn) {
-          a.push(b);
-          return;
-      }
-      const index = a.findIndex(beforeFn);
-      if (index < 0) {
-          a.push(b);
-      }
-      else {
-          a.splice(index, 0, b);
-      }
-  }
-  function arrayFindRight(a, fn) {
-      for (let i = a.length - 1; i >= 0; --i) {
-          const e = a[i];
-          if (fn(e))
-              return e;
-      }
-      return undefined;
-  }
-  function sum(arr) {
-      return arr.reduce((a, b) => a + b);
-  }
-  function arrayNext(a, current, fn, wrap = true, forward = true) {
-      const len = a.length;
-      if (len <= 1)
-          return undefined;
-      const startIndex = a.indexOf(current);
-      if (startIndex < 0)
-          return undefined;
-      const dx = forward ? 1 : -1;
-      let startI = wrap ? (len + startIndex + dx) % len : startIndex + dx;
-      let endI = wrap ? startIndex : forward ? len : -1;
-      for (let index = startI; index !== endI; index = wrap ? (len + index + dx) % len : index + dx) {
-          const e = a[index];
-          if (fn(e))
-              return e;
-      }
-      return undefined;
-  }
-  function arrayPrev(a, current, fn, wrap = true) {
-      return arrayNext(a, current, fn, wrap, false);
-  }
-  function nextIndex(index, length, wrap = true) {
-      ++index;
-      if (index >= length) {
-          if (wrap)
-              return index % length;
-          return -1;
-      }
-      return index;
-  }
-  function prevIndex(index, length, wrap = true) {
-      if (index < 0)
-          return length - 1; // start in back
-      --index;
-      if (index < 0) {
-          if (wrap)
-              return length - 1;
-          return -1;
-      }
-      return index;
-  }
-  function valueType(a) {
-      const ta = typeof a;
-      if (ta == 'object') {
-          if (Array.isArray(a)) {
-              return 'array';
-          }
-      }
-      return ta;
-  }
-
-  // DIRS are organized clockwise
-  // - first 4 are arrow directions
-  //   >> rotate 90 degrees clockwise ==>> newIndex = (oldIndex + 1) % 4
-  //   >> opposite direction ==>> oppIndex = (index + 2) % 4
-  // - last 4 are diagonals
-  //   >> rotate 90 degrees clockwise ==>> newIndex = 4 + (oldIndex + 1) % 4;
-  //   >> opposite diagonal ==>> newIndex = 4 + (index + 2) % 4;
-  const DIRS$2 = [
-      [0, -1],
-      [1, 0],
-      [0, 1],
-      [-1, 0],
-      [1, -1],
-      [1, 1],
-      [-1, 1],
-      [-1, -1],
-  ];
-  const NO_DIRECTION = -1;
-  const UP = 0;
-  const RIGHT = 1;
-  const DOWN = 2;
-  const LEFT = 3;
-  const RIGHT_UP = 4;
-  const RIGHT_DOWN = 5;
-  const LEFT_DOWN = 6;
-  const LEFT_UP = 7;
-  // CLOCK DIRS are organized clockwise, starting at UP
-  // >> opposite = (index + 4) % 8
-  // >> 90 degrees rotate right = (index + 2) % 8
-  // >> 90 degrees rotate left = (8 + index - 2) % 8
-  const CLOCK_DIRS = [
-      [0, 1],
-      [1, 1],
-      [1, 0],
-      [1, -1],
-      [0, -1],
-      [-1, -1],
-      [-1, 0],
-      [-1, 1],
-  ];
-  function isLoc(a) {
-      return (Array.isArray(a) &&
-          a.length == 2 &&
-          typeof a[0] === 'number' &&
-          typeof a[1] === 'number');
-  }
-  function isXY(a) {
-      return a && typeof a.x === 'number' && typeof a.y === 'number';
-  }
-  function asLoc(v) {
-      if (Array.isArray(v))
-          return v;
-      return [x(v), y(v)];
-  }
-  function asXY(v) {
-      if (!Array.isArray(v))
-          return v;
-      return { x: x(v), y: y(v) };
-  }
-  function x(src) {
-      // @ts-ignore
-      return src.x || src[0] || 0;
-  }
-  function y(src) {
-      // @ts-ignore
-      return src.y || src[1] || 0;
-  }
-  function contains(size, x, y) {
-      return x >= 0 && y >= 0 && x < size.width && y < size.height;
-  }
-  class Bounds {
-      constructor(x = 0, y = 0, w = 0, h = 0) {
-          if (typeof x !== 'number') {
-              const opts = x;
-              h = opts.height || 0;
-              w = opts.width || 0;
-              y = opts.y || 0;
-              x = opts.x || 0;
-          }
-          this.x = x;
-          this.y = y;
-          this.width = w;
-          this.height = h;
-      }
-      get left() {
-          return this.x;
-      }
-      set left(v) {
-          this.x = v;
-      }
-      get right() {
-          return this.x + this.width;
-      }
-      set right(v) {
-          this.x = v - this.width;
-      }
-      get top() {
-          return this.y;
-      }
-      set top(v) {
-          this.y = v;
-      }
-      get bottom() {
-          return this.y + this.height;
-      }
-      set bottom(v) {
-          this.y = v - this.height;
-      }
-      get center() {
-          return this.x + Math.floor(this.width / 2);
-      }
-      set center(v) {
-          this.x += v - this.center;
-      }
-      get middle() {
-          return this.y + Math.floor(this.height / 2);
-      }
-      set middle(v) {
-          this.y += v - this.middle;
-      }
-      clone() {
-          return new Bounds(this.x, this.y, this.width, this.height);
-      }
-      copy(other) {
-          this.x = other.x;
-          this.y = other.y;
-          this.width = other.width;
-          this.height = other.height;
-      }
-      contains(...args) {
-          let i = args[0];
-          let j = args[1];
-          if (typeof i !== 'number') {
-              j = y(i);
-              i = x(i);
-          }
-          return (this.x <= i &&
-              this.y <= j &&
-              this.x + this.width > i &&
-              this.y + this.height > j);
-      }
-      include(xy) {
-          const left = Math.min(x(xy), this.x);
-          const top = Math.min(y(xy), this.y);
-          const right = Math.max(xy instanceof Bounds ? xy.right : left, this.right);
-          const bottom = Math.max(xy instanceof Bounds ? xy.bottom : top, this.bottom);
-          this.left = left;
-          this.top = top;
-          this.width = right - left;
-          this.height = bottom - top;
-      }
-      pad(n = 1) {
-          this.x -= n;
-          this.y -= n;
-          this.width += n * 2;
-          this.height += n * 2;
-      }
-      forEach(cb) {
-          forRect(this.x, this.y, this.width, this.height, cb);
-      }
-      toString() {
-          return `[${this.x},${this.y} -> ${this.right},${this.bottom}]`;
-      }
-  }
-  function copy(dest, src) {
-      dest.x = x(src);
-      dest.y = y(src);
-  }
-  function addTo(dest, src) {
-      dest.x += x(src);
-      dest.y += y(src);
-  }
-  function add(a, b) {
-      if (Array.isArray(a)) {
-          return [a[0] + x(b), a[1] + y(b)];
-      }
-      return { x: a.x + x(b), y: a.y + y(b) };
-  }
-  function equals(dest, src) {
-      if (!dest && !src)
-          return true;
-      if (!dest || !src)
-          return false;
-      return x(dest) == x(src) && y(dest) == y(src);
-  }
-  function isDiagonal(xy) {
-      return x(xy) != 0 && y(xy) != 0;
-  }
-  function lerp(a, b, pct) {
-      if (pct > 1) {
-          pct = pct / 100;
-      }
-      pct = clamp(pct, 0, 1);
-      const dx = x(b) - x(a);
-      const dy = y(b) - y(a);
-      const x2 = x(a) + Math.floor(dx * pct);
-      const y2 = y(a) + Math.floor(dy * pct);
-      return [x2, y2];
-  }
-  function eachNeighbor(x, y, fn, only4dirs = false) {
-      const max = only4dirs ? 4 : 8;
-      for (let i = 0; i < max; ++i) {
-          const dir = DIRS$2[i];
-          const x1 = x + dir[0];
-          const y1 = y + dir[1];
-          fn(x1, y1, dir);
-      }
-  }
-  async function eachNeighborAsync(x, y, fn, only4dirs = false) {
-      const max = only4dirs ? 4 : 8;
-      for (let i = 0; i < max; ++i) {
-          const dir = DIRS$2[i];
-          const x1 = x + dir[0];
-          const y1 = y + dir[1];
-          await fn(x1, y1, dir);
-      }
-  }
-  function matchingNeighbor(x, y, matchFn, only4dirs = false) {
-      const maxIndex = only4dirs ? 4 : 8;
-      for (let d = 0; d < maxIndex; ++d) {
-          const dir = DIRS$2[d];
-          const i = x + dir[0];
-          const j = y + dir[1];
-          if (matchFn(i, j, dir))
-              return [i, j];
-      }
-      return [-1, -1];
-  }
-  function straightDistanceBetween(x1, y1, x2, y2) {
-      const x = Math.abs(x1 - x2);
-      const y = Math.abs(y1 - y2);
-      return x + y;
-  }
-  function maxAxisFromTo(a, b) {
-      const xa = Math.abs(x(a) - x(b));
-      const ya = Math.abs(y(a) - y(b));
-      return Math.max(xa, ya);
-  }
-  function maxAxisBetween(x1, y1, x2, y2) {
-      const xa = Math.abs(x1 - x2);
-      const ya = Math.abs(y1 - y2);
-      return Math.max(xa, ya);
-  }
-  function distanceBetween(x1, y1, x2, y2) {
-      const x = Math.abs(x1 - x2);
-      const y = Math.abs(y1 - y2);
-      const min = Math.min(x, y);
-      return x + y - 0.6 * min;
-  }
-  function distanceFromTo(a, b) {
-      return distanceBetween(x(a), y(a), x(b), y(b));
-  }
-  function calcRadius(x, y) {
-      return distanceBetween(0, 0, x, y);
-  }
-  function dirBetween(x, y, toX, toY) {
-      let diffX = toX - x;
-      let diffY = toY - y;
-      if (diffX && diffY) {
-          const absX = Math.abs(diffX);
-          const absY = Math.abs(diffY);
-          if (absX >= 2 * absY) {
-              diffY = 0;
-          }
-          else if (absY >= 2 * absX) {
-              diffX = 0;
-          }
-      }
-      return [Math.sign(diffX), Math.sign(diffY)];
-  }
-  function dirFromTo(a, b) {
-      return dirBetween(x(a), y(a), x(b), y(b));
-  }
-  function dirIndex(dir) {
-      const x0 = x(dir);
-      const y0 = y(dir);
-      return DIRS$2.findIndex((a) => a[0] == x0 && a[1] == y0);
-  }
-  function isOppositeDir(a, b) {
-      if (Math.sign(a[0]) + Math.sign(b[0]) != 0)
-          return false;
-      if (Math.sign(a[1]) + Math.sign(b[1]) != 0)
-          return false;
-      return true;
-  }
-  function isSameDir(a, b) {
-      return (Math.sign(a[0]) == Math.sign(b[0]) && Math.sign(a[1]) == Math.sign(b[1]));
-  }
-  function dirSpread(dir) {
-      const result = [dir];
-      if (dir[0] == 0) {
-          result.push([1, dir[1]]);
-          result.push([-1, dir[1]]);
-      }
-      else if (dir[1] == 0) {
-          result.push([dir[0], 1]);
-          result.push([dir[0], -1]);
-      }
-      else {
-          result.push([dir[0], 0]);
-          result.push([0, dir[1]]);
-      }
-      return result;
-  }
-  function stepFromTo(a, b, fn) {
-      const x0 = x(a);
-      const y0 = y(a);
-      const diff = [x(b) - x0, y(b) - y0];
-      const steps = Math.abs(diff[0]) + Math.abs(diff[1]);
-      const c = [0, 0];
-      const last = [99999, 99999];
-      for (let step = 0; step <= steps; ++step) {
-          c[0] = x0 + Math.floor((diff[0] * step) / steps);
-          c[1] = y0 + Math.floor((diff[1] * step) / steps);
-          if (c[0] != last[0] || c[1] != last[1]) {
-              fn(c[0], c[1]);
-          }
-          last[0] = c[0];
-          last[1] = c[1];
-      }
-  }
-  // LINES
-  function forLine(x, y, dir, length, fn) {
-      for (let l = 0; l < length; ++l) {
-          fn(x + l * dir[0], y + l * dir[1]);
-      }
-  }
-  const FP_BASE = 16;
-  const FP_FACTOR = 1 << 16;
-  function forLineBetween(fromX, fromY, toX, toY, stepFn) {
-      let targetVector = [], error = [], currentVector = [], quadrantTransform = [];
-      let largerTargetComponent, i;
-      let currentLoc = [-1, -1];
-      if (fromX == toX && fromY == toY) {
-          return true;
-      }
-      const originLoc = [fromX, fromY];
-      const targetLoc = [toX, toY];
-      // Neither vector is negative. We keep track of negatives with quadrantTransform.
-      for (i = 0; i <= 1; i++) {
-          targetVector[i] = (targetLoc[i] - originLoc[i]) << FP_BASE; // FIXME: should use parens?
-          if (targetVector[i] < 0) {
-              targetVector[i] *= -1;
-              quadrantTransform[i] = -1;
-          }
-          else {
-              quadrantTransform[i] = 1;
-          }
-          currentVector[i] = error[i] = 0;
-          currentLoc[i] = originLoc[i];
-      }
-      // normalize target vector such that one dimension equals 1 and the other is in [0, 1].
-      largerTargetComponent = Math.max(targetVector[0], targetVector[1]);
-      // targetVector[0] = Math.floor( (targetVector[0] << FP_BASE) / largerTargetComponent);
-      // targetVector[1] = Math.floor( (targetVector[1] << FP_BASE) / largerTargetComponent);
-      targetVector[0] = Math.floor((targetVector[0] * FP_FACTOR) / largerTargetComponent);
-      targetVector[1] = Math.floor((targetVector[1] * FP_FACTOR) / largerTargetComponent);
-      do {
-          for (i = 0; i <= 1; i++) {
-              currentVector[i] += targetVector[i] >> FP_BASE;
-              error[i] += targetVector[i] == FP_FACTOR ? 0 : targetVector[i];
-              if (error[i] >= Math.floor(FP_FACTOR / 2)) {
-                  currentVector[i]++;
-                  error[i] -= FP_FACTOR;
-              }
-              currentLoc[i] = Math.floor(quadrantTransform[i] * currentVector[i] + originLoc[i]);
-          }
-          const r = stepFn(...currentLoc);
-          if (r === false) {
-              return false;
-          }
-          else if (r !== true &&
-              currentLoc[0] === toX &&
-              currentLoc[1] === toY) {
-              return true;
-          }
-      } while (true);
-  }
-  function forLineFromTo(a, b, stepFn) {
-      return forLineBetween(x(a), y(a), x(b), y(b), stepFn);
-  }
-  // ADAPTED FROM BROGUE 1.7.5
-  // Simple line algorithm (maybe this is Bresenham?) that returns a list of coordinates
-  // that extends all the way to the edge of the map based on an originLoc (which is not included
-  // in the list of coordinates) and a targetLoc.
-  // Returns the number of entries in the list, and includes (-1, -1) as an additional
-  // terminus indicator after the end of the list.
-  function getLine(fromX, fromY, toX, toY) {
-      const line = [];
-      forLineBetween(fromX, fromY, toX, toY, (x, y) => {
-          line.push([x, y]);
-      });
-      return line;
-  }
-  // ADAPTED FROM BROGUE 1.7.5
-  // Simple line algorithm (maybe this is Bresenham?) that returns a list of coordinates
-  // that extends all the way to the edge of the map based on an originLoc (which is not included
-  // in the list of coordinates) and a targetLoc.
-  function getLineThru(fromX, fromY, toX, toY, width, height) {
-      const line = [];
-      forLineBetween(fromX, fromY, toX, toY, (x, y) => {
-          if (x < 0 || y < 0 || x >= width || y >= height)
-              return false;
-          line.push([x, y]);
-          return true;
-      });
-      return line;
-  }
-  // CIRCLE
-  function forCircle(x, y, radius, fn) {
-      let i, j;
-      for (i = x - radius - 1; i < x + radius + 1; i++) {
-          for (j = y - radius - 1; j < y + radius + 1; j++) {
-              if ((i - x) * (i - x) + (j - y) * (j - y) <
-                  radius * radius + radius) {
-                  // + radius softens the circle
-                  fn(i, j);
-              }
-          }
-      }
-  }
-  function forRect(...args) {
-      let left = 0;
-      let top = 0;
-      if (arguments.length > 3) {
-          left = args.shift();
-          top = args.shift();
-      }
-      const right = left + args[0];
-      const bottom = top + args[1];
-      const fn = args[2];
-      for (let i = left; i < right; ++i) {
-          for (let j = top; j < bottom; ++j) {
-              fn(i, j);
-          }
-      }
-  }
-  function dumpRect(left, top, width, height, fmtFn, log = console.log) {
-      let i, j;
-      const bottom = top + height;
-      const right = left + width;
-      let output = [];
-      for (j = top; j < bottom; j++) {
-          let line = ('' + j + ']').padStart(3, ' ');
-          for (i = left; i < right; i++) {
-              if (i % 10 == 0) {
-                  line += ' ';
-              }
-              line += fmtFn(i, j);
-          }
-          output.push(line);
-      }
-      log(output.join('\n'));
-  }
-  function dumpAround(x, y, radius, fmtFn, log = console.log) {
-      dumpRect(x - radius, y - radius, 2 * radius + 1, 2 * radius + 1, fmtFn, log);
-  }
-  function forBorder(...args) {
-      let left = 0;
-      let top = 0;
-      if (arguments.length > 3) {
-          left = args.shift();
-          top = args.shift();
-      }
-      const right = left + args[0] - 1;
-      const bottom = top + args[1] - 1;
-      const fn = args[2];
-      for (let x = left; x <= right; ++x) {
-          fn(x, top);
-          fn(x, bottom);
-      }
-      for (let y = top; y <= bottom; ++y) {
-          fn(left, y);
-          fn(right, y);
-      }
-  }
-  // ARC COUNT
-  // Rotates around the cell, counting up the number of distinct strings of neighbors with the same test result in a single revolution.
-  //		Zero means there are no impassable tiles adjacent.
-  //		One means it is adjacent to a wall.
-  //		Two means it is in a hallway or something similar.
-  //		Three means it is the center of a T-intersection or something similar.
-  //		Four means it is in the intersection of two hallways.
-  //		Five or more means there is a bug.
-  function arcCount(x, y, testFn) {
-      let oldX, oldY, newX, newY;
-      // brogueAssert(grid.hasXY(x, y));
-      let arcCount = 0;
-      let matchCount = 0;
-      for (let dir = 0; dir < CLOCK_DIRS.length; dir++) {
-          oldX = x + CLOCK_DIRS[(dir + 7) % 8][0];
-          oldY = y + CLOCK_DIRS[(dir + 7) % 8][1];
-          newX = x + CLOCK_DIRS[dir][0];
-          newY = y + CLOCK_DIRS[dir][1];
-          // Counts every transition from passable to impassable or vice-versa on the way around the cell:
-          const newOk = testFn(newX, newY);
-          const oldOk = testFn(oldX, oldY);
-          if (newOk)
-              ++matchCount;
-          if (newOk != oldOk) {
-              arcCount++;
-          }
-      }
-      if (arcCount == 0 && matchCount)
-          return 1;
-      return Math.floor(arcCount / 2); // Since we added one when we entered a wall and another when we left.
-  }
-  function closestMatchingLocs(x, y, matchFn) {
-      const locs = [];
-      let i, j, k;
-      // count up the number of candidate locations
-      for (k = 0; k < 100 && !locs.length; k++) {
-          for (i = x - k; i <= x + k; i++) {
-              for (j = y - k; j <= y + k; j++) {
-                  if (Math.ceil(distanceBetween(x, y, i, j)) == k &&
-                      matchFn(i, j)) {
-                      locs.push([i, j]);
-                  }
-              }
-          }
-      }
-      return locs.length ? locs : null;
-  }
-
-  var xy = /*#__PURE__*/Object.freeze({
-  	__proto__: null,
-  	Bounds: Bounds,
-  	CLOCK_DIRS: CLOCK_DIRS,
-  	DIRS: DIRS$2,
-  	DOWN: DOWN,
-  	LEFT: LEFT,
-  	LEFT_DOWN: LEFT_DOWN,
-  	LEFT_UP: LEFT_UP,
-  	NO_DIRECTION: NO_DIRECTION,
-  	RIGHT: RIGHT,
-  	RIGHT_DOWN: RIGHT_DOWN,
-  	RIGHT_UP: RIGHT_UP,
-  	UP: UP,
-  	add: add,
-  	addTo: addTo,
-  	arcCount: arcCount,
-  	asLoc: asLoc,
-  	asXY: asXY,
-  	calcRadius: calcRadius,
-  	closestMatchingLocs: closestMatchingLocs,
-  	contains: contains,
-  	copy: copy,
-  	dirBetween: dirBetween,
-  	dirFromTo: dirFromTo,
-  	dirIndex: dirIndex,
-  	dirSpread: dirSpread,
-  	distanceBetween: distanceBetween,
-  	distanceFromTo: distanceFromTo,
-  	dumpAround: dumpAround,
-  	dumpRect: dumpRect,
-  	eachNeighbor: eachNeighbor,
-  	eachNeighborAsync: eachNeighborAsync,
-  	equals: equals,
-  	forBorder: forBorder,
-  	forCircle: forCircle,
-  	forLine: forLine,
-  	forLineBetween: forLineBetween,
-  	forLineFromTo: forLineFromTo,
-  	forRect: forRect,
-  	getLine: getLine,
-  	getLineThru: getLineThru,
-  	isDiagonal: isDiagonal,
-  	isLoc: isLoc,
-  	isOppositeDir: isOppositeDir,
-  	isSameDir: isSameDir,
-  	isXY: isXY,
-  	lerp: lerp,
-  	matchingNeighbor: matchingNeighbor,
-  	maxAxisBetween: maxAxisBetween,
-  	maxAxisFromTo: maxAxisFromTo,
-  	stepFromTo: stepFromTo,
-  	straightDistanceBetween: straightDistanceBetween,
-  	x: x,
-  	y: y
-  });
-
-  // CHAIN
-  function length$1(root) {
-      let count = 0;
-      while (root) {
-          count += 1;
-          root = root.next;
-      }
-      return count;
-  }
-  function at(root, index) {
-      while (root && index) {
-          root = root.next;
-          --index;
-      }
-      return root;
-  }
-  function includes(root, entry) {
-      while (root && root !== entry) {
-          root = root.next;
-      }
-      return root === entry;
-  }
-  function forEach(root, fn) {
-      let index = 0;
-      while (root) {
-          const next = root.next;
-          fn(root, index++);
-          root = next;
-      }
-      return index; // really count
-  }
-  function push(obj, name, entry) {
-      entry.next = obj[name] || null;
-      obj[name] = entry;
-      return true;
-  }
-  function remove(obj, name, entry) {
-      const root = obj[name];
-      if (root === entry) {
-          obj[name] = entry.next || null;
-          entry.next = null;
-          return true;
-      }
-      else if (!root) {
-          return false;
-      }
-      else {
-          let prev = root;
-          let current = prev.next;
-          while (current && current !== entry) {
-              prev = current;
-              current = prev.next;
-          }
-          if (current === entry) {
-              prev.next = current.next;
-              entry.next = null;
-              return true;
-          }
-      }
-      return false;
-  }
-  function find(root, cb) {
-      while (root && !cb(root)) {
-          root = root.next;
-      }
-      return root;
-  }
-  function insert(obj, name, entry, sort) {
-      let root = obj[name];
-      sort = sort || (() => -1); // always insert first
-      if (!root || sort(root, entry) < 0) {
-          entry.next = root;
-          obj[name] = entry;
-          return true;
-      }
-      let prev = root;
-      let current = root.next;
-      while (current && sort(current, entry) > 0) {
-          prev = current;
-          current = current.next;
-      }
-      entry.next = current;
-      prev.next = entry;
-      return true;
-  }
-  function reduce(root, cb, out) {
-      let current = root;
-      if (out === undefined) {
-          if (!current)
-              throw new TypeError('Empty list reduce without initial value not allowed.');
-          out = current;
-          current = current.next;
-      }
-      while (current) {
-          out = cb(out, current);
-          current = current.next;
-      }
-      return out;
-  }
-  function some(root, cb) {
-      let current = root;
-      while (current) {
-          if (cb(current))
-              return true;
-          current = current.next;
-      }
-      return false;
-  }
-  function every(root, cb) {
-      let current = root;
-      while (current) {
-          if (!cb(current))
-              return false;
-          current = current.next;
-      }
-      return true;
-  }
-
-  var list = /*#__PURE__*/Object.freeze({
-  	__proto__: null,
-  	at: at,
-  	every: every,
-  	find: find,
-  	forEach: forEach,
-  	includes: includes,
-  	insert: insert,
-  	length: length$1,
-  	push: push,
-  	reduce: reduce,
-  	remove: remove,
-  	some: some
-  });
 
   /**
    * Checks if `value` is classified as an `Array` object.
@@ -1326,7 +455,7 @@
   var _isKey = isKey$1;
 
   var baseGetTag = _baseGetTag,
-      isObject$2 = isObject_1;
+      isObject$3 = isObject_1;
 
   /** `Object#toString` result references. */
   var asyncTag = '[object AsyncFunction]',
@@ -1352,7 +481,7 @@
    * // => false
    */
   function isFunction$1(value) {
-    if (!isObject$2(value)) {
+    if (!isObject$3(value)) {
       return false;
     }
     // The use of `Object#toString` avoids issues with the `typeof` operator
@@ -1421,7 +550,7 @@
 
   var isFunction = isFunction_1,
       isMasked = _isMasked,
-      isObject$1 = isObject_1,
+      isObject$2 = isObject_1,
       toSource = _toSource;
 
   /**
@@ -1458,7 +587,7 @@
    *  else `false`.
    */
   function baseIsNative$1(value) {
-    if (!isObject$1(value) || isMasked(value)) {
+    if (!isObject$2(value) || isMasked(value)) {
       return false;
     }
     var pattern = isFunction(value) ? reIsNative : reIsHostCtor;
@@ -2361,6 +1490,1135 @@
   var get_1 = get$1;
 
   var get$1$1 = /*@__PURE__*/getDefaultExportFromCjs(get_1);
+
+  var getNative = _getNative;
+
+  var defineProperty$1 = (function() {
+    try {
+      var func = getNative(Object, 'defineProperty');
+      func({}, '', {});
+      return func;
+    } catch (e) {}
+  }());
+
+  var _defineProperty = defineProperty$1;
+
+  var defineProperty = _defineProperty;
+
+  /**
+   * The base implementation of `assignValue` and `assignMergeValue` without
+   * value checks.
+   *
+   * @private
+   * @param {Object} object The object to modify.
+   * @param {string} key The key of the property to assign.
+   * @param {*} value The value to assign.
+   */
+  function baseAssignValue$1(object, key, value) {
+    if (key == '__proto__' && defineProperty) {
+      defineProperty(object, key, {
+        'configurable': true,
+        'enumerable': true,
+        'value': value,
+        'writable': true
+      });
+    } else {
+      object[key] = value;
+    }
+  }
+
+  var _baseAssignValue = baseAssignValue$1;
+
+  var baseAssignValue = _baseAssignValue,
+      eq = eq_1;
+
+  /** Used for built-in method references. */
+  var objectProto = Object.prototype;
+
+  /** Used to check objects for own properties. */
+  var hasOwnProperty = objectProto.hasOwnProperty;
+
+  /**
+   * Assigns `value` to `key` of `object` if the existing value is not equivalent
+   * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
+   * for equality comparisons.
+   *
+   * @private
+   * @param {Object} object The object to modify.
+   * @param {string} key The key of the property to assign.
+   * @param {*} value The value to assign.
+   */
+  function assignValue$1(object, key, value) {
+    var objValue = object[key];
+    if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
+        (value === undefined && !(key in object))) {
+      baseAssignValue(object, key, value);
+    }
+  }
+
+  var _assignValue = assignValue$1;
+
+  /** Used as references for various `Number` constants. */
+
+  var MAX_SAFE_INTEGER = 9007199254740991;
+
+  /** Used to detect unsigned integer values. */
+  var reIsUint = /^(?:0|[1-9]\d*)$/;
+
+  /**
+   * Checks if `value` is a valid array-like index.
+   *
+   * @private
+   * @param {*} value The value to check.
+   * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
+   * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
+   */
+  function isIndex$1(value, length) {
+    var type = typeof value;
+    length = length == null ? MAX_SAFE_INTEGER : length;
+
+    return !!length &&
+      (type == 'number' ||
+        (type != 'symbol' && reIsUint.test(value))) &&
+          (value > -1 && value % 1 == 0 && value < length);
+  }
+
+  var _isIndex = isIndex$1;
+
+  var assignValue = _assignValue,
+      castPath = _castPath,
+      isIndex = _isIndex,
+      isObject$1 = isObject_1,
+      toKey = _toKey;
+
+  /**
+   * The base implementation of `_.set`.
+   *
+   * @private
+   * @param {Object} object The object to modify.
+   * @param {Array|string} path The path of the property to set.
+   * @param {*} value The value to set.
+   * @param {Function} [customizer] The function to customize path creation.
+   * @returns {Object} Returns `object`.
+   */
+  function baseSet$1(object, path, value, customizer) {
+    if (!isObject$1(object)) {
+      return object;
+    }
+    path = castPath(path, object);
+
+    var index = -1,
+        length = path.length,
+        lastIndex = length - 1,
+        nested = object;
+
+    while (nested != null && ++index < length) {
+      var key = toKey(path[index]),
+          newValue = value;
+
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        return object;
+      }
+
+      if (index != lastIndex) {
+        var objValue = nested[key];
+        newValue = customizer ? customizer(objValue, key, nested) : undefined;
+        if (newValue === undefined) {
+          newValue = isObject$1(objValue)
+            ? objValue
+            : (isIndex(path[index + 1]) ? [] : {});
+        }
+      }
+      assignValue(nested, key, newValue);
+      nested = nested[key];
+    }
+    return object;
+  }
+
+  var _baseSet = baseSet$1;
+
+  var baseSet = _baseSet;
+
+  /**
+   * Sets the value at `path` of `object`. If a portion of `path` doesn't exist,
+   * it's created. Arrays are created for missing index properties while objects
+   * are created for all other missing properties. Use `_.setWith` to customize
+   * `path` creation.
+   *
+   * **Note:** This method mutates `object`.
+   *
+   * @static
+   * @memberOf _
+   * @since 3.7.0
+   * @category Object
+   * @param {Object} object The object to modify.
+   * @param {Array|string} path The path of the property to set.
+   * @param {*} value The value to set.
+   * @returns {Object} Returns `object`.
+   * @example
+   *
+   * var object = { 'a': [{ 'b': { 'c': 3 } }] };
+   *
+   * _.set(object, 'a[0].b.c', 4);
+   * console.log(object.a[0].b.c);
+   * // => 4
+   *
+   * _.set(object, ['x', '0', 'y', 'z'], 5);
+   * console.log(object.x[0].y.z);
+   * // => 5
+   */
+  function set(object, path, value) {
+    return object == null ? object : baseSet(object, path, value);
+  }
+
+  var set_1 = set;
+
+  var _setPath = /*@__PURE__*/getDefaultExportFromCjs(set_1);
+
+  /**
+   * GW.utils
+   * @module utils
+   */
+  function NOOP() { }
+  function TRUE() {
+      return true;
+  }
+  function FALSE() {
+      return false;
+  }
+  function ONE() {
+      return 1;
+  }
+  function ZERO() {
+      return 0;
+  }
+  function IDENTITY(x) {
+      return x;
+  }
+  function IS_ZERO(x) {
+      return x == 0;
+  }
+  function IS_NONZERO(x) {
+      return x != 0;
+  }
+  function ERROR(message, options) {
+      throw new Error(message, options);
+  }
+  function WARN(...args) {
+      console.warn(...args);
+  }
+  /**
+   * clamps a value between min and max (inclusive)
+   * @param v {Number} the value to clamp
+   * @param min {Number} the minimum value
+   * @param max {Number} the maximum value
+   * @returns {Number} the clamped value
+   */
+  const clamp = _clamp;
+  const getPath = get$1$1;
+  const setPath = _setPath;
+  // export function clamp(v: number, min: number, max: number) {
+  //     if (v < min) return min;
+  //     if (v > max) return max;
+  //     return v;
+  // }
+  function lerp$1(from, to, pct) {
+      if (pct > 1)
+          pct = 1;
+      if (pct < 0)
+          pct = 0;
+      return Math.floor(from + (to - from) * pct);
+  }
+  function xave(rate, value, newValue) {
+      return value * rate + newValue * (1 - rate);
+  }
+  function firstDefined(...args) {
+      return args.find((v) => v !== undefined);
+  }
+  function arraysIntersect(a, b) {
+      return a.some((av) => b.includes(av));
+  }
+  function arrayIncludesAll(a, b) {
+      return b.every((av) => a.includes(av));
+  }
+  function arrayRevEach(a, fn) {
+      for (let i = a.length - 1; i > -1; --i) {
+          fn(a[i], i, a);
+      }
+  }
+  function arrayDelete(a, b) {
+      const index = a.indexOf(b);
+      if (index < 0)
+          return false;
+      a.splice(index, 1);
+      return true;
+  }
+  function arrayNullify(a, b) {
+      const index = a.indexOf(b);
+      if (index < 0)
+          return false;
+      a[index] = null;
+      return true;
+  }
+  function arrayInsert(a, b, beforeFn) {
+      if (!beforeFn) {
+          a.push(b);
+          return;
+      }
+      const index = a.findIndex(beforeFn);
+      if (index < 0) {
+          a.push(b);
+      }
+      else {
+          a.splice(index, 0, b);
+      }
+  }
+  function arrayFindRight(a, fn) {
+      for (let i = a.length - 1; i >= 0; --i) {
+          const e = a[i];
+          if (fn(e))
+              return e;
+      }
+      return undefined;
+  }
+  function sum(arr) {
+      return arr.reduce((a, b) => a + b);
+  }
+  function arrayNext(a, current, fn, wrap = true, forward = true) {
+      const len = a.length;
+      if (len <= 1)
+          return undefined;
+      const startIndex = a.indexOf(current);
+      if (startIndex < 0)
+          return undefined;
+      const dx = forward ? 1 : -1;
+      let startI = wrap ? (len + startIndex + dx) % len : startIndex + dx;
+      let endI = wrap ? startIndex : forward ? len : -1;
+      for (let index = startI; index !== endI; index = wrap ? (len + index + dx) % len : index + dx) {
+          const e = a[index];
+          if (fn(e))
+              return e;
+      }
+      return undefined;
+  }
+  function arrayPrev(a, current, fn, wrap = true) {
+      return arrayNext(a, current, fn, wrap, false);
+  }
+  function nextIndex(index, length, wrap = true) {
+      ++index;
+      if (index >= length) {
+          if (wrap)
+              return index % length;
+          return -1;
+      }
+      return index;
+  }
+  function prevIndex(index, length, wrap = true) {
+      if (index < 0)
+          return length - 1; // start in back
+      --index;
+      if (index < 0) {
+          if (wrap)
+              return length - 1;
+          return -1;
+      }
+      return index;
+  }
+  function valueType(a) {
+      const ta = typeof a;
+      if (a === undefined)
+          return 'undefined';
+      if (ta == 'object') {
+          if (Array.isArray(a)) {
+              return 'array';
+          }
+      }
+      return ta;
+  }
+  /// https://www.30secondsofcode.org/js/s/is-plain-object/
+  function isPlainObject(val) {
+      return !!val && typeof val === 'object' && val.constructor === Object;
+  }
+  /// https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
+  ///
+  function isObject(item) {
+      return !!item && typeof item === 'object' && !Array.isArray(item);
+  }
+  // Modified to use: isPlainObject
+  // Modified to mergeDeep recursively if key is not in target
+  function mergeDeep(target, source) {
+      let output = Object.assign({}, target);
+      if (isPlainObject(target) && isPlainObject(source)) {
+          Object.keys(source).forEach((key) => {
+              if (isPlainObject(source[key])) {
+                  if (!(key in target))
+                      Object.assign(output, {
+                          [key]: mergeDeep({}, source[key]),
+                      });
+                  else
+                      output[key] = mergeDeep(target[key], source[key]);
+              }
+              else {
+                  Object.assign(output, { [key]: source[key] });
+              }
+          });
+      }
+      else {
+          throw new Error('mergeDeep only works on plain objects, not classes.');
+      }
+      return output;
+  }
+  ///
+
+  var utils = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	ERROR: ERROR,
+  	FALSE: FALSE,
+  	IDENTITY: IDENTITY,
+  	IS_NONZERO: IS_NONZERO,
+  	IS_ZERO: IS_ZERO,
+  	NOOP: NOOP,
+  	ONE: ONE,
+  	TRUE: TRUE,
+  	WARN: WARN,
+  	ZERO: ZERO,
+  	arrayDelete: arrayDelete,
+  	arrayFindRight: arrayFindRight,
+  	arrayIncludesAll: arrayIncludesAll,
+  	arrayInsert: arrayInsert,
+  	arrayNext: arrayNext,
+  	arrayNullify: arrayNullify,
+  	arrayPrev: arrayPrev,
+  	arrayRevEach: arrayRevEach,
+  	arraysIntersect: arraysIntersect,
+  	clamp: clamp,
+  	firstDefined: firstDefined,
+  	getPath: getPath,
+  	isObject: isObject,
+  	isPlainObject: isPlainObject,
+  	lerp: lerp$1,
+  	mergeDeep: mergeDeep,
+  	nextIndex: nextIndex,
+  	prevIndex: prevIndex,
+  	setPath: setPath,
+  	sum: sum,
+  	valueType: valueType,
+  	xave: xave
+  });
+
+  // DIRS are organized clockwise
+  // - first 4 are arrow directions
+  //   >> rotate 90 degrees clockwise ==>> newIndex = (oldIndex + 1) % 4
+  //   >> opposite direction ==>> oppIndex = (index + 2) % 4
+  // - last 4 are diagonals
+  //   >> rotate 90 degrees clockwise ==>> newIndex = 4 + (oldIndex + 1) % 4;
+  //   >> opposite diagonal ==>> newIndex = 4 + (index + 2) % 4;
+  const DIRS$2 = [
+      [0, -1],
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+      [1, -1],
+      [1, 1],
+      [-1, 1],
+      [-1, -1],
+  ];
+  const NO_DIRECTION = -1;
+  const UP = 0;
+  const RIGHT = 1;
+  const DOWN = 2;
+  const LEFT = 3;
+  const RIGHT_UP = 4;
+  const RIGHT_DOWN = 5;
+  const LEFT_DOWN = 6;
+  const LEFT_UP = 7;
+  // CLOCK DIRS are organized clockwise, starting at UP
+  // >> opposite = (index + 4) % 8
+  // >> 90 degrees rotate right = (index + 2) % 8
+  // >> 90 degrees rotate left = (8 + index - 2) % 8
+  const CLOCK_DIRS = [
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [1, -1],
+      [0, -1],
+      [-1, -1],
+      [-1, 0],
+      [-1, 1],
+  ];
+  function isLoc(a) {
+      return (Array.isArray(a) &&
+          a.length == 2 &&
+          typeof a[0] === 'number' &&
+          typeof a[1] === 'number');
+  }
+  function isXY(a) {
+      return a && typeof a.x === 'number' && typeof a.y === 'number';
+  }
+  function asLoc(v) {
+      if (Array.isArray(v))
+          return v;
+      return [x(v), y(v)];
+  }
+  function asXY(v) {
+      if (!Array.isArray(v))
+          return v;
+      return { x: x(v), y: y(v) };
+  }
+  function x(src) {
+      // @ts-ignore
+      return src.x || src[0] || 0;
+  }
+  function y(src) {
+      // @ts-ignore
+      return src.y || src[1] || 0;
+  }
+  function contains(size, x, y) {
+      return x >= 0 && y >= 0 && x < size.width && y < size.height;
+  }
+  class Bounds {
+      constructor(x = 0, y = 0, w = 0, h = 0) {
+          if (typeof x !== 'number') {
+              const opts = x;
+              h = opts.height || 0;
+              w = opts.width || 0;
+              y = opts.y || 0;
+              x = opts.x || 0;
+          }
+          this.x = x;
+          this.y = y;
+          this.width = w;
+          this.height = h;
+      }
+      get left() {
+          return this.x;
+      }
+      set left(v) {
+          this.x = v;
+      }
+      get right() {
+          return this.x + this.width;
+      }
+      set right(v) {
+          this.x = v - this.width;
+      }
+      get top() {
+          return this.y;
+      }
+      set top(v) {
+          this.y = v;
+      }
+      get bottom() {
+          return this.y + this.height;
+      }
+      set bottom(v) {
+          this.y = v - this.height;
+      }
+      get center() {
+          return this.x + Math.floor(this.width / 2);
+      }
+      set center(v) {
+          this.x += v - this.center;
+      }
+      get middle() {
+          return this.y + Math.floor(this.height / 2);
+      }
+      set middle(v) {
+          this.y += v - this.middle;
+      }
+      clone() {
+          return new Bounds(this.x, this.y, this.width, this.height);
+      }
+      copy(other) {
+          this.x = other.x;
+          this.y = other.y;
+          this.width = other.width;
+          this.height = other.height;
+      }
+      contains(...args) {
+          let i = args[0];
+          let j = args[1];
+          if (typeof i !== 'number') {
+              j = y(i);
+              i = x(i);
+          }
+          return (this.x <= i &&
+              this.y <= j &&
+              this.x + this.width > i &&
+              this.y + this.height > j);
+      }
+      include(xy) {
+          const left = Math.min(x(xy), this.x);
+          const top = Math.min(y(xy), this.y);
+          const right = Math.max(xy instanceof Bounds ? xy.right : left, this.right);
+          const bottom = Math.max(xy instanceof Bounds ? xy.bottom : top, this.bottom);
+          this.left = left;
+          this.top = top;
+          this.width = right - left;
+          this.height = bottom - top;
+      }
+      pad(n = 1) {
+          this.x -= n;
+          this.y -= n;
+          this.width += n * 2;
+          this.height += n * 2;
+      }
+      forEach(cb) {
+          forRect(this.x, this.y, this.width, this.height, cb);
+      }
+      toString() {
+          return `[${this.x},${this.y} -> ${this.right},${this.bottom}]`;
+      }
+  }
+  function copy(dest, src) {
+      dest.x = x(src);
+      dest.y = y(src);
+  }
+  function addTo(dest, src) {
+      dest.x += x(src);
+      dest.y += y(src);
+  }
+  function add(a, b) {
+      if (Array.isArray(a)) {
+          return [a[0] + x(b), a[1] + y(b)];
+      }
+      return { x: a.x + x(b), y: a.y + y(b) };
+  }
+  function equals(dest, src) {
+      if (!dest && !src)
+          return true;
+      if (!dest || !src)
+          return false;
+      return x(dest) == x(src) && y(dest) == y(src);
+  }
+  function isDiagonal(xy) {
+      return x(xy) != 0 && y(xy) != 0;
+  }
+  function lerp(a, b, pct) {
+      if (pct > 1) {
+          pct = pct / 100;
+      }
+      pct = clamp(pct, 0, 1);
+      const dx = x(b) - x(a);
+      const dy = y(b) - y(a);
+      const x2 = x(a) + Math.floor(dx * pct);
+      const y2 = y(a) + Math.floor(dy * pct);
+      return [x2, y2];
+  }
+  function eachNeighbor(x, y, fn, only4dirs = false) {
+      const max = only4dirs ? 4 : 8;
+      for (let i = 0; i < max; ++i) {
+          const dir = DIRS$2[i];
+          const x1 = x + dir[0];
+          const y1 = y + dir[1];
+          fn(x1, y1, dir);
+      }
+  }
+  async function eachNeighborAsync(x, y, fn, only4dirs = false) {
+      const max = only4dirs ? 4 : 8;
+      for (let i = 0; i < max; ++i) {
+          const dir = DIRS$2[i];
+          const x1 = x + dir[0];
+          const y1 = y + dir[1];
+          await fn(x1, y1, dir);
+      }
+  }
+  function matchingNeighbor(x, y, matchFn, only4dirs = false) {
+      const maxIndex = only4dirs ? 4 : 8;
+      for (let d = 0; d < maxIndex; ++d) {
+          const dir = DIRS$2[d];
+          const i = x + dir[0];
+          const j = y + dir[1];
+          if (matchFn(i, j, dir))
+              return [i, j];
+      }
+      return [-1, -1];
+  }
+  function straightDistanceBetween(x1, y1, x2, y2) {
+      const x = Math.abs(x1 - x2);
+      const y = Math.abs(y1 - y2);
+      return x + y;
+  }
+  function maxAxisFromTo(a, b) {
+      const xa = Math.abs(x(a) - x(b));
+      const ya = Math.abs(y(a) - y(b));
+      return Math.max(xa, ya);
+  }
+  function maxAxisBetween(x1, y1, x2, y2) {
+      const xa = Math.abs(x1 - x2);
+      const ya = Math.abs(y1 - y2);
+      return Math.max(xa, ya);
+  }
+  function distanceBetween(x1, y1, x2, y2) {
+      const x = Math.abs(x1 - x2);
+      const y = Math.abs(y1 - y2);
+      const min = Math.min(x, y);
+      return x + y - 0.6 * min;
+  }
+  function distanceFromTo(a, b) {
+      return distanceBetween(x(a), y(a), x(b), y(b));
+  }
+  function calcRadius(x, y) {
+      return distanceBetween(0, 0, x, y);
+  }
+  function dirBetween(x, y, toX, toY) {
+      let diffX = toX - x;
+      let diffY = toY - y;
+      if (diffX && diffY) {
+          const absX = Math.abs(diffX);
+          const absY = Math.abs(diffY);
+          if (absX >= 2 * absY) {
+              diffY = 0;
+          }
+          else if (absY >= 2 * absX) {
+              diffX = 0;
+          }
+      }
+      return [Math.sign(diffX), Math.sign(diffY)];
+  }
+  function dirFromTo(a, b) {
+      return dirBetween(x(a), y(a), x(b), y(b));
+  }
+  function dirIndex(dir) {
+      const x0 = x(dir);
+      const y0 = y(dir);
+      return DIRS$2.findIndex((a) => a[0] == x0 && a[1] == y0);
+  }
+  function isOppositeDir(a, b) {
+      if (Math.sign(a[0]) + Math.sign(b[0]) != 0)
+          return false;
+      if (Math.sign(a[1]) + Math.sign(b[1]) != 0)
+          return false;
+      return true;
+  }
+  function isSameDir(a, b) {
+      return (Math.sign(a[0]) == Math.sign(b[0]) && Math.sign(a[1]) == Math.sign(b[1]));
+  }
+  function dirSpread(dir) {
+      const result = [dir];
+      if (dir[0] == 0) {
+          result.push([1, dir[1]]);
+          result.push([-1, dir[1]]);
+      }
+      else if (dir[1] == 0) {
+          result.push([dir[0], 1]);
+          result.push([dir[0], -1]);
+      }
+      else {
+          result.push([dir[0], 0]);
+          result.push([0, dir[1]]);
+      }
+      return result;
+  }
+  function stepFromTo(a, b, fn) {
+      const x0 = x(a);
+      const y0 = y(a);
+      const diff = [x(b) - x0, y(b) - y0];
+      const steps = Math.abs(diff[0]) + Math.abs(diff[1]);
+      const c = [0, 0];
+      const last = [99999, 99999];
+      for (let step = 0; step <= steps; ++step) {
+          c[0] = x0 + Math.floor((diff[0] * step) / steps);
+          c[1] = y0 + Math.floor((diff[1] * step) / steps);
+          if (c[0] != last[0] || c[1] != last[1]) {
+              fn(c[0], c[1]);
+          }
+          last[0] = c[0];
+          last[1] = c[1];
+      }
+  }
+  // LINES
+  function forLine(x, y, dir, length, fn) {
+      for (let l = 0; l < length; ++l) {
+          fn(x + l * dir[0], y + l * dir[1]);
+      }
+  }
+  const FP_BASE = 16;
+  const FP_FACTOR = 1 << 16;
+  function forLineBetween(fromX, fromY, toX, toY, stepFn) {
+      let targetVector = [], error = [], currentVector = [], quadrantTransform = [];
+      let largerTargetComponent, i;
+      let currentLoc = [-1, -1];
+      if (fromX == toX && fromY == toY) {
+          return true;
+      }
+      const originLoc = [fromX, fromY];
+      const targetLoc = [toX, toY];
+      // Neither vector is negative. We keep track of negatives with quadrantTransform.
+      for (i = 0; i <= 1; i++) {
+          targetVector[i] = (targetLoc[i] - originLoc[i]) << FP_BASE; // FIXME: should use parens?
+          if (targetVector[i] < 0) {
+              targetVector[i] *= -1;
+              quadrantTransform[i] = -1;
+          }
+          else {
+              quadrantTransform[i] = 1;
+          }
+          currentVector[i] = error[i] = 0;
+          currentLoc[i] = originLoc[i];
+      }
+      // normalize target vector such that one dimension equals 1 and the other is in [0, 1].
+      largerTargetComponent = Math.max(targetVector[0], targetVector[1]);
+      // targetVector[0] = Math.floor( (targetVector[0] << FP_BASE) / largerTargetComponent);
+      // targetVector[1] = Math.floor( (targetVector[1] << FP_BASE) / largerTargetComponent);
+      targetVector[0] = Math.floor((targetVector[0] * FP_FACTOR) / largerTargetComponent);
+      targetVector[1] = Math.floor((targetVector[1] * FP_FACTOR) / largerTargetComponent);
+      do {
+          for (i = 0; i <= 1; i++) {
+              currentVector[i] += targetVector[i] >> FP_BASE;
+              error[i] += targetVector[i] == FP_FACTOR ? 0 : targetVector[i];
+              if (error[i] >= Math.floor(FP_FACTOR / 2)) {
+                  currentVector[i]++;
+                  error[i] -= FP_FACTOR;
+              }
+              currentLoc[i] = Math.floor(quadrantTransform[i] * currentVector[i] + originLoc[i]);
+          }
+          const r = stepFn(...currentLoc);
+          if (r === false) {
+              return false;
+          }
+          else if (r !== true &&
+              currentLoc[0] === toX &&
+              currentLoc[1] === toY) {
+              return true;
+          }
+      } while (true);
+  }
+  function forLineFromTo(a, b, stepFn) {
+      return forLineBetween(x(a), y(a), x(b), y(b), stepFn);
+  }
+  // ADAPTED FROM BROGUE 1.7.5
+  // Simple line algorithm (maybe this is Bresenham?) that returns a list of coordinates
+  // that extends all the way to the edge of the map based on an originLoc (which is not included
+  // in the list of coordinates) and a targetLoc.
+  // Returns the number of entries in the list, and includes (-1, -1) as an additional
+  // terminus indicator after the end of the list.
+  function getLine(fromX, fromY, toX, toY) {
+      const line = [];
+      forLineBetween(fromX, fromY, toX, toY, (x, y) => {
+          line.push([x, y]);
+      });
+      return line;
+  }
+  // ADAPTED FROM BROGUE 1.7.5
+  // Simple line algorithm (maybe this is Bresenham?) that returns a list of coordinates
+  // that extends all the way to the edge of the map based on an originLoc (which is not included
+  // in the list of coordinates) and a targetLoc.
+  function getLineThru(fromX, fromY, toX, toY, width, height) {
+      const line = [];
+      forLineBetween(fromX, fromY, toX, toY, (x, y) => {
+          if (x < 0 || y < 0 || x >= width || y >= height)
+              return false;
+          line.push([x, y]);
+          return true;
+      });
+      return line;
+  }
+  // CIRCLE
+  function forCircle(x, y, radius, fn) {
+      let i, j;
+      for (i = x - radius - 1; i < x + radius + 1; i++) {
+          for (j = y - radius - 1; j < y + radius + 1; j++) {
+              if ((i - x) * (i - x) + (j - y) * (j - y) <
+                  radius * radius + radius) {
+                  // + radius softens the circle
+                  fn(i, j);
+              }
+          }
+      }
+  }
+  function forRect(...args) {
+      let left = 0;
+      let top = 0;
+      if (arguments.length > 3) {
+          left = args.shift();
+          top = args.shift();
+      }
+      const right = left + args[0];
+      const bottom = top + args[1];
+      const fn = args[2];
+      for (let i = left; i < right; ++i) {
+          for (let j = top; j < bottom; ++j) {
+              fn(i, j);
+          }
+      }
+  }
+  function dumpRect(left, top, width, height, fmtFn, log = console.log) {
+      let i, j;
+      const bottom = top + height;
+      const right = left + width;
+      let output = [];
+      for (j = top; j < bottom; j++) {
+          let line = ('' + j + ']').padStart(3, ' ');
+          for (i = left; i < right; i++) {
+              if (i % 10 == 0) {
+                  line += ' ';
+              }
+              line += fmtFn(i, j);
+          }
+          output.push(line);
+      }
+      log(output.join('\n'));
+  }
+  function dumpAround(x, y, radius, fmtFn, log = console.log) {
+      dumpRect(x - radius, y - radius, 2 * radius + 1, 2 * radius + 1, fmtFn, log);
+  }
+  function forBorder(...args) {
+      let left = 0;
+      let top = 0;
+      if (arguments.length > 3) {
+          left = args.shift();
+          top = args.shift();
+      }
+      const right = left + args[0] - 1;
+      const bottom = top + args[1] - 1;
+      const fn = args[2];
+      for (let x = left; x <= right; ++x) {
+          fn(x, top);
+          fn(x, bottom);
+      }
+      for (let y = top; y <= bottom; ++y) {
+          fn(left, y);
+          fn(right, y);
+      }
+  }
+  // ARC COUNT
+  // Rotates around the cell, counting up the number of distinct strings of neighbors with the same test result in a single revolution.
+  //		Zero means there are no impassable tiles adjacent.
+  //		One means it is adjacent to a wall.
+  //		Two means it is in a hallway or something similar.
+  //		Three means it is the center of a T-intersection or something similar.
+  //		Four means it is in the intersection of two hallways.
+  //		Five or more means there is a bug.
+  function arcCount(x, y, testFn) {
+      let oldX, oldY, newX, newY;
+      // brogueAssert(grid.hasXY(x, y));
+      let arcCount = 0;
+      let matchCount = 0;
+      for (let dir = 0; dir < CLOCK_DIRS.length; dir++) {
+          oldX = x + CLOCK_DIRS[(dir + 7) % 8][0];
+          oldY = y + CLOCK_DIRS[(dir + 7) % 8][1];
+          newX = x + CLOCK_DIRS[dir][0];
+          newY = y + CLOCK_DIRS[dir][1];
+          // Counts every transition from passable to impassable or vice-versa on the way around the cell:
+          const newOk = testFn(newX, newY);
+          const oldOk = testFn(oldX, oldY);
+          if (newOk)
+              ++matchCount;
+          if (newOk != oldOk) {
+              arcCount++;
+          }
+      }
+      if (arcCount == 0 && matchCount)
+          return 1;
+      return Math.floor(arcCount / 2); // Since we added one when we entered a wall and another when we left.
+  }
+  function closestMatchingLocs(x, y, matchFn) {
+      const locs = [];
+      let i, j, k;
+      // count up the number of candidate locations
+      for (k = 0; k < 100 && !locs.length; k++) {
+          for (i = x - k; i <= x + k; i++) {
+              for (j = y - k; j <= y + k; j++) {
+                  if (Math.ceil(distanceBetween(x, y, i, j)) == k &&
+                      matchFn(i, j)) {
+                      locs.push([i, j]);
+                  }
+              }
+          }
+      }
+      return locs.length ? locs : null;
+  }
+
+  var xy = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	Bounds: Bounds,
+  	CLOCK_DIRS: CLOCK_DIRS,
+  	DIRS: DIRS$2,
+  	DOWN: DOWN,
+  	LEFT: LEFT,
+  	LEFT_DOWN: LEFT_DOWN,
+  	LEFT_UP: LEFT_UP,
+  	NO_DIRECTION: NO_DIRECTION,
+  	RIGHT: RIGHT,
+  	RIGHT_DOWN: RIGHT_DOWN,
+  	RIGHT_UP: RIGHT_UP,
+  	UP: UP,
+  	add: add,
+  	addTo: addTo,
+  	arcCount: arcCount,
+  	asLoc: asLoc,
+  	asXY: asXY,
+  	calcRadius: calcRadius,
+  	closestMatchingLocs: closestMatchingLocs,
+  	contains: contains,
+  	copy: copy,
+  	dirBetween: dirBetween,
+  	dirFromTo: dirFromTo,
+  	dirIndex: dirIndex,
+  	dirSpread: dirSpread,
+  	distanceBetween: distanceBetween,
+  	distanceFromTo: distanceFromTo,
+  	dumpAround: dumpAround,
+  	dumpRect: dumpRect,
+  	eachNeighbor: eachNeighbor,
+  	eachNeighborAsync: eachNeighborAsync,
+  	equals: equals,
+  	forBorder: forBorder,
+  	forCircle: forCircle,
+  	forLine: forLine,
+  	forLineBetween: forLineBetween,
+  	forLineFromTo: forLineFromTo,
+  	forRect: forRect,
+  	getLine: getLine,
+  	getLineThru: getLineThru,
+  	isDiagonal: isDiagonal,
+  	isLoc: isLoc,
+  	isOppositeDir: isOppositeDir,
+  	isSameDir: isSameDir,
+  	isXY: isXY,
+  	lerp: lerp,
+  	matchingNeighbor: matchingNeighbor,
+  	maxAxisBetween: maxAxisBetween,
+  	maxAxisFromTo: maxAxisFromTo,
+  	stepFromTo: stepFromTo,
+  	straightDistanceBetween: straightDistanceBetween,
+  	x: x,
+  	y: y
+  });
+
+  // CHAIN
+  function length$1(root) {
+      let count = 0;
+      while (root) {
+          count += 1;
+          root = root.next;
+      }
+      return count;
+  }
+  function at(root, index) {
+      while (root && index) {
+          root = root.next;
+          --index;
+      }
+      return root;
+  }
+  function includes(root, entry) {
+      while (root && root !== entry) {
+          root = root.next;
+      }
+      return root === entry;
+  }
+  function forEach(root, fn) {
+      let index = 0;
+      while (root) {
+          const next = root.next;
+          fn(root, index++);
+          root = next;
+      }
+      return index; // really count
+  }
+  function push(obj, name, entry) {
+      entry.next = obj[name] || null;
+      obj[name] = entry;
+      return true;
+  }
+  function remove(obj, name, entry) {
+      const root = obj[name];
+      if (root === entry) {
+          obj[name] = entry.next || null;
+          entry.next = null;
+          return true;
+      }
+      else if (!root) {
+          return false;
+      }
+      else {
+          let prev = root;
+          let current = prev.next;
+          while (current && current !== entry) {
+              prev = current;
+              current = prev.next;
+          }
+          if (current === entry) {
+              prev.next = current.next;
+              entry.next = null;
+              return true;
+          }
+      }
+      return false;
+  }
+  function find(root, cb) {
+      while (root && !cb(root)) {
+          root = root.next;
+      }
+      return root;
+  }
+  function insert(obj, name, entry, sort) {
+      let root = obj[name];
+      sort = sort || (() => -1); // always insert first
+      if (!root || sort(root, entry) < 0) {
+          entry.next = root;
+          obj[name] = entry;
+          return true;
+      }
+      let prev = root;
+      let current = root.next;
+      while (current && sort(current, entry) > 0) {
+          prev = current;
+          current = current.next;
+      }
+      entry.next = current;
+      prev.next = entry;
+      return true;
+  }
+  function reduce(root, cb, out) {
+      let current = root;
+      if (out === undefined) {
+          if (!current)
+              throw new TypeError('Empty list reduce without initial value not allowed.');
+          out = current;
+          current = current.next;
+      }
+      while (current) {
+          out = cb(out, current);
+          current = current.next;
+      }
+      return out;
+  }
+  function some(root, cb) {
+      let current = root;
+      while (current) {
+          if (cb(current))
+              return true;
+          current = current.next;
+      }
+      return false;
+  }
+  function every(root, cb) {
+      let current = root;
+      while (current) {
+          if (!cb(current))
+              return false;
+          current = current.next;
+      }
+      return true;
+  }
+
+  var list = /*#__PURE__*/Object.freeze({
+  	__proto__: null,
+  	at: at,
+  	every: every,
+  	find: find,
+  	forEach: forEach,
+  	includes: includes,
+  	insert: insert,
+  	length: length$1,
+  	push: push,
+  	reduce: reduce,
+  	remove: remove,
+  	some: some
+  });
 
   const getValue = get$1$1;
   // export function extend(obj, name, fn) {
@@ -4470,7 +4728,7 @@
 
   class Mixer {
       constructor(base = {}) {
-          this.ch = first(base.ch, null);
+          this.ch = firstDefined(base.ch, null);
           this.fg = make$9(base.fg);
           this.bg = make$9(base.bg);
       }
@@ -8558,7 +8816,7 @@ void main() {
           bg = -1;
       return new Sprite(ch, fg, bg, opacity);
   }
-  function from$1$1(config) {
+  function from$1(config) {
       if (typeof config === 'string') {
           const sprite = sprites[config];
           if (!sprite)
@@ -8580,7 +8838,7 @@ void main() {
   	__proto__: null,
   	Mixer: Mixer,
   	Sprite: Sprite,
-  	from: from$1$1,
+  	from: from$1,
   	install: install$1$2,
   	make: make$5,
   	makeMixer: makeMixer,
@@ -8702,207 +8960,6 @@ void main() {
   var message = /*#__PURE__*/Object.freeze({
   	__proto__: null,
   	Cache: Cache
-  });
-
-  var getNative = _getNative;
-
-  var defineProperty$1 = (function() {
-    try {
-      var func = getNative(Object, 'defineProperty');
-      func({}, '', {});
-      return func;
-    } catch (e) {}
-  }());
-
-  var _defineProperty = defineProperty$1;
-
-  var defineProperty = _defineProperty;
-
-  /**
-   * The base implementation of `assignValue` and `assignMergeValue` without
-   * value checks.
-   *
-   * @private
-   * @param {Object} object The object to modify.
-   * @param {string} key The key of the property to assign.
-   * @param {*} value The value to assign.
-   */
-  function baseAssignValue$1(object, key, value) {
-    if (key == '__proto__' && defineProperty) {
-      defineProperty(object, key, {
-        'configurable': true,
-        'enumerable': true,
-        'value': value,
-        'writable': true
-      });
-    } else {
-      object[key] = value;
-    }
-  }
-
-  var _baseAssignValue = baseAssignValue$1;
-
-  var baseAssignValue = _baseAssignValue,
-      eq = eq_1;
-
-  /** Used for built-in method references. */
-  var objectProto = Object.prototype;
-
-  /** Used to check objects for own properties. */
-  var hasOwnProperty = objectProto.hasOwnProperty;
-
-  /**
-   * Assigns `value` to `key` of `object` if the existing value is not equivalent
-   * using [`SameValueZero`](http://ecma-international.org/ecma-262/7.0/#sec-samevaluezero)
-   * for equality comparisons.
-   *
-   * @private
-   * @param {Object} object The object to modify.
-   * @param {string} key The key of the property to assign.
-   * @param {*} value The value to assign.
-   */
-  function assignValue$1(object, key, value) {
-    var objValue = object[key];
-    if (!(hasOwnProperty.call(object, key) && eq(objValue, value)) ||
-        (value === undefined && !(key in object))) {
-      baseAssignValue(object, key, value);
-    }
-  }
-
-  var _assignValue = assignValue$1;
-
-  /** Used as references for various `Number` constants. */
-
-  var MAX_SAFE_INTEGER = 9007199254740991;
-
-  /** Used to detect unsigned integer values. */
-  var reIsUint = /^(?:0|[1-9]\d*)$/;
-
-  /**
-   * Checks if `value` is a valid array-like index.
-   *
-   * @private
-   * @param {*} value The value to check.
-   * @param {number} [length=MAX_SAFE_INTEGER] The upper bounds of a valid index.
-   * @returns {boolean} Returns `true` if `value` is a valid index, else `false`.
-   */
-  function isIndex$1(value, length) {
-    var type = typeof value;
-    length = length == null ? MAX_SAFE_INTEGER : length;
-
-    return !!length &&
-      (type == 'number' ||
-        (type != 'symbol' && reIsUint.test(value))) &&
-          (value > -1 && value % 1 == 0 && value < length);
-  }
-
-  var _isIndex = isIndex$1;
-
-  var assignValue = _assignValue,
-      castPath = _castPath,
-      isIndex = _isIndex,
-      isObject = isObject_1,
-      toKey = _toKey;
-
-  /**
-   * The base implementation of `_.set`.
-   *
-   * @private
-   * @param {Object} object The object to modify.
-   * @param {Array|string} path The path of the property to set.
-   * @param {*} value The value to set.
-   * @param {Function} [customizer] The function to customize path creation.
-   * @returns {Object} Returns `object`.
-   */
-  function baseSet$1(object, path, value, customizer) {
-    if (!isObject(object)) {
-      return object;
-    }
-    path = castPath(path, object);
-
-    var index = -1,
-        length = path.length,
-        lastIndex = length - 1,
-        nested = object;
-
-    while (nested != null && ++index < length) {
-      var key = toKey(path[index]),
-          newValue = value;
-
-      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-        return object;
-      }
-
-      if (index != lastIndex) {
-        var objValue = nested[key];
-        newValue = customizer ? customizer(objValue, key, nested) : undefined;
-        if (newValue === undefined) {
-          newValue = isObject(objValue)
-            ? objValue
-            : (isIndex(path[index + 1]) ? [] : {});
-        }
-      }
-      assignValue(nested, key, newValue);
-      nested = nested[key];
-    }
-    return object;
-  }
-
-  var _baseSet = baseSet$1;
-
-  var baseSet = _baseSet;
-
-  /**
-   * Sets the value at `path` of `object`. If a portion of `path` doesn't exist,
-   * it's created. Arrays are created for missing index properties while objects
-   * are created for all other missing properties. Use `_.setWith` to customize
-   * `path` creation.
-   *
-   * **Note:** This method mutates `object`.
-   *
-   * @static
-   * @memberOf _
-   * @since 3.7.0
-   * @category Object
-   * @param {Object} object The object to modify.
-   * @param {Array|string} path The path of the property to set.
-   * @param {*} value The value to set.
-   * @returns {Object} Returns `object`.
-   * @example
-   *
-   * var object = { 'a': [{ 'b': { 'c': 3 } }] };
-   *
-   * _.set(object, 'a[0].b.c', 4);
-   * console.log(object.a[0].b.c);
-   * // => 4
-   *
-   * _.set(object, ['x', '0', 'y', 'z'], 5);
-   * console.log(object.x[0].y.z);
-   * // => 5
-   */
-  function set(object, path, value) {
-    return object == null ? object : baseSet(object, path, value);
-  }
-
-  var set_1 = set;
-
-  var set$1 = /*@__PURE__*/getDefaultExportFromCjs(set_1);
-
-  class Data {
-      constructor(config = {}) {
-          Object.assign(this, config);
-      }
-      get(path) {
-          return get$1$1(this, path);
-      }
-      set(path, value) {
-          return set$1(this, path, value);
-      }
-  }
-
-  var data = /*#__PURE__*/Object.freeze({
-  	__proto__: null,
-  	Data: Data
   });
 
   class Blob {
@@ -9036,7 +9093,7 @@ void main() {
       const blob = new Blob(opts);
       return blob.carve(grid.width, grid.height, (x, y) => (grid[x][y] = 1));
   }
-  function make$4(opts = {}) {
+  function make$4$1(opts = {}) {
       return new Blob(opts);
   }
 
@@ -9044,7 +9101,7 @@ void main() {
   	__proto__: null,
   	Blob: Blob,
   	fillBlob: fillBlob,
-  	make: make$4
+  	make: make$4$1
   });
 
   // const LIGHT_SMOOTHING_THRESHOLD = 150;       // light components higher than this magnitude will be toned down a little
@@ -9138,7 +9195,7 @@ void main() {
   function isShadowLight(light, threshold = 40) {
       return intensity(light) <= threshold;
   }
-  function make$3(...args) {
+  function make$3$1(...args) {
       if (args.length == 1) {
           const config = args[0];
           if (typeof config === 'string') {
@@ -9178,15 +9235,15 @@ void main() {
       }
       if (arg && arg.paint)
           return arg;
-      return make$3(arg);
+      return make$3$1(arg);
   }
-  function install$7(id, ...args) {
+  function install$9(id, ...args) {
       let source;
       if (args.length == 1) {
-          source = make$3(args[0]);
+          source = make$3$1(args[0]);
       }
       else {
-          source = make$3(args[0], args[1], args[2], args[3]);
+          source = make$3$1(args[0], args[1], args[2], args[3]);
       }
       lights[id] = source;
       source.id = id;
@@ -9195,7 +9252,7 @@ void main() {
   function installAll(config) {
       const entries = Object.entries(config);
       entries.forEach(([name, info]) => {
-          install$7(name, info);
+          install$9(name, info);
       });
   }
   // // TODO - Move?
@@ -9485,13 +9542,13 @@ void main() {
   	Light: Light,
   	LightSystem: LightSystem,
   	from: from$5,
-  	install: install$7,
+  	install: install$9,
   	installAll: installAll,
   	intensity: intensity,
   	isDarkLight: isDarkLight,
   	isShadowLight: isShadowLight,
   	lights: lights,
-  	make: make$3
+  	make: make$3$1
   });
 
   // import * as IO from './io';
@@ -9597,11 +9654,16 @@ void main() {
           this._events = {};
           this.onUnhandled = null;
       }
+      // TODO - why is this here since we have: events.off(name)??
+      /** @deprecated */
       clear_event(name) {
           if (name in this._events) {
+              // Why the new array instead of making each null?  This will not change a currently running emit
               this._events[name] = this._events[name].map(() => null);
           }
       }
+      // TODO - What is this for?
+      /** @deprecated */
       restart() {
           Object.keys(this._events).forEach((ev) => {
               this._events[ev] = this._events[ev].filter((i) => i && !i.once);
@@ -10497,8 +10559,16 @@ void main() {
           return this.isSleeping;
       }
       // GENERAL
-      create(opts = {}) {
+      _create(opts = {}) {
           opts.bg && (this.bg = from$2(opts.bg));
+          if (opts.data) {
+              if (isPlainObject(opts.data)) {
+                  this.data = mergeDeep(this.data, opts.data);
+              }
+              else {
+                  throw new Error("SceneCreateOpts 'data' field must be plain object.");
+              }
+          }
           if (opts.on) {
               Object.entries(opts.on).forEach(([ev, fn]) => {
                   this.on(ev, fn);
@@ -10511,6 +10581,7 @@ void main() {
           });
           this.emit('create', opts);
       }
+      // TODO - Who calls destroy
       destroy(data) {
           this.emit('destroy', data);
           this.all.forEach((c) => c.destroy());
@@ -10521,7 +10592,8 @@ void main() {
       }
       start(opts = {}) {
           this.app.scenes.stop(); // stop all running scenes
-          this._start(opts);
+          this.app.scenes._start(this, opts); // start me
+          return this;
       }
       _start(opts = {}) {
           this.stopped = false;
@@ -10536,6 +10608,7 @@ void main() {
           this.app.scenes.pause();
           this._start(data);
           this.once('stop', () => this.app.scenes.resume());
+          return this;
       }
       stop(data) {
           this.stopped = true;
@@ -10880,233 +10953,6 @@ void main() {
           return this.timers.setInterval(fn, delay);
       }
   }
-  // export class Scene {
-  //     id: string;
-  //     app!: App;
-  //     events: EVENTS.Events;
-  //     timers: TIMERS.Timers;
-  //     buffer!: CANVAS.Buffer;
-  //     tweens: Tweens;
-  //     dt = 0;
-  //     time = 0;
-  //     realTime = 0;
-  //     skipTime = false;
-  //     stopped = true;
-  //     paused: PauseOpts = {};
-  //     debug = false;
-  //     children: SceneObj[] = [];
-  //     data: Record<string, any> = {};
-  //     constructor(id: string, opts: SceneOpts = {}) {
-  //         this.id = id;
-  //         this.events = new EVENTS.Events(this);
-  //         this.timers = new TIMERS.Timers(this);
-  //         this.tweens = new Tweens();
-  //         if (opts.on) {
-  //             Object.entries(opts.on).forEach(([ev, fn]) => {
-  //                 this.on(ev, fn);
-  //             });
-  //         }
-  //         Object.entries(opts).forEach(([ev, fn]) => {
-  //             if (typeof fn !== 'function') return;
-  //             this.on(ev, fn);
-  //         });
-  //     }
-  //     get width() {
-  //         return this.buffer.width;
-  //     }
-  //     get height() {
-  //         return this.buffer.height;
-  //     }
-  //     isActive() {
-  //         return !this.stopped;
-  //     }
-  //     isPaused() {
-  //         return this.isPaused;
-  //     }
-  //     isSleeping() {
-  //         return this.isSleeping;
-  //     }
-  //     on(ev: string, fn: EVENTS.CallbackFn): EVENTS.CancelFn;
-  //     on(ev: string, fn: EVENTS.CallbackFn): EVENTS.CancelFn {
-  //         return this.events.on(ev, fn);
-  //     }
-  //     emit(ev: string, ...args: any[]) {
-  //         return this.events.emit(ev, ...args);
-  //     }
-  //     wait(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
-  //     wait(delay: number, fn: string, ctx?: Record<string, any>): EVENTS.CancelFn;
-  //     wait(
-  //         delay: number,
-  //         fn: TIMERS.TimerFn | string,
-  //         ctx?: Record<string, any>
-  //     ): EVENTS.CancelFn {
-  //         if (typeof fn === 'string') {
-  //             const ev = fn;
-  //             ctx = ctx || {};
-  //             fn = () => this.emit(ev, ctx!);
-  //         }
-  //         return this.timers.setTimeout(fn, delay);
-  //     }
-  //     repeat(delay: number, fn: TIMERS.TimerFn): EVENTS.CancelFn;
-  //     repeat(
-  //         delay: number,
-  //         fn: string,
-  //         ctx?: Record<string, any>
-  //     ): EVENTS.CancelFn;
-  //     repeat(
-  //         delay: number,
-  //         fn: TIMERS.TimerFn | string,
-  //         ctx?: Record<string, any>
-  //     ): EVENTS.CancelFn {
-  //         if (typeof fn === 'string') {
-  //             const ev = fn;
-  //             ctx = ctx || {};
-  //             fn = () => this.emit(ev, ctx!);
-  //         }
-  //         return this.timers.setInterval(fn, delay);
-  //     }
-  //     // run() {
-  //     //     this.emit('run', this);
-  //     //     let running = false;
-  //     //     this.loopID = (setInterval(() => {
-  //     //         if (!running) {
-  //     //             running = true;
-  //     //             this._frame();
-  //     //             running = false;
-  //     //         }
-  //     //     }, 16) as unknown) as number;
-  //     //     this.stopped = false;
-  //     // }
-  //     create(app: App) {
-  //         this.app = app;
-  //         this.buffer = app.buffer.clone();
-  //         this.emit('create');
-  //     }
-  //     destroy() {
-  //         this.emit('destroy');
-  //     }
-  //     start(data?: Record<string, any>) {
-  //         this.stopped = false;
-  //         this.timers.clear();
-  //         this.tweens.clear();
-  //         this.events.emit('start', data || {});
-  //     }
-  //     run(data?: Record<string, any>): Promise<any> {
-  //         return new Promise((resolve) => {
-  //             this.app.scenes.pause();
-  //             const cleanup = this.once('stop', (d) => {
-  //                 cleanup();
-  //                 this.app.scenes.resume();
-  //                 resolve(d);
-  //             });
-  //             this.start(data);
-  //         });
-  //     }
-  //     stop(data?: Record<string, any>) {
-  //         this.stopped = true;
-  //         this.events.emit('stop', data || {});
-  //     }
-  //     pause(opts?: PauseOpts): void {
-  //         opts = opts || {
-  //             timers: true,
-  //             tweens: true,
-  //             update: true,
-  //             input: true,
-  //             draw: true,
-  //         };
-  //         Object.assign(this.paused, opts);
-  //         this.events.emit('pause');
-  //     }
-  //     resume(opts?: ResumeOpts) {
-  //         opts = opts || {
-  //             timers: true,
-  //             tweens: true,
-  //             update: true,
-  //             input: true,
-  //             draw: true,
-  //         };
-  //         Object.entries(opts).forEach(([key, value]) => {
-  //             if (value === true) {
-  //                 this.paused[key as keyof ResumeOpts] = false;
-  //             }
-  //         });
-  //         this.events.emit('resume');
-  //     }
-  //     // CHILDREN
-  //     add(obj: SceneObj) {
-  //         this.children.push(obj);
-  //         obj.emit('add', this);
-  //     }
-  //     remove(obj: SceneObj) {
-  //         UTILS.arrayDelete(this.children, obj);
-  //         obj.emit('remove', this);
-  //     }
-  //     // FRAME STEPS
-  //     frameStart() {
-  //         this.events.emit('frameStart');
-  //     }
-  //     input(ev: IO.Event) {
-  //         if (this.stopped || this.paused.input) return;
-  //         this.events.dispatch(ev);
-  //     }
-  //     update(dt: number) {
-  //         if (this.stopped) return;
-  //         if (!this.paused.timers) this.timers.update(dt);
-  //         if (!this.paused.tweens) this.tweens.update(dt);
-  //         if (!this.paused.update) {
-  //             this.children.forEach((c) => c.update(dt));
-  //             this.events.emit('update', dt);
-  //         }
-  //     }
-  //     draw(buffer: CANVAS.Buffer) {
-  //         if (this.stopped) return;
-  //         if (!this.paused.draw) {
-  //             this.events.emit('draw', this.buffer);
-  //             this.children.forEach((c) => c.draw(this.buffer));
-  //         }
-  //         if (this.buffer.changed) {
-  //             buffer.apply(this.buffer);
-  //             this.buffer.changed = false;
-  //         }
-  //     }
-  //     frameDebug(buffer: CANVAS.Buffer) {
-  //         this.events.emit('frameDebug', buffer);
-  //     }
-  //     frameEnd(buffer: CANVAS.Buffer) {
-  //         this.events.emit('frameEnd', buffer);
-  //         // if (this.buffer.changed) {
-  //         //     buffer.apply(this.buffer);
-  //         //     this.buffer.changed = false;
-  //         // }
-  //     }
-  //     // UI
-  //     alert(text: string): Promise<boolean> {
-  //         return this.app.scenes.run('alert', { text });
-  //     }
-  //     async fadeTo(
-  //         color: COLOR.ColorBase = 'black',
-  //         duration = 1000
-  //     ): Promise<void> {
-  //         return new Promise<void>((resolve) => {
-  //             color = COLOR.from(color);
-  //             this.pause();
-  //             const buffer = this.buffer.clone();
-  //             let pct = 0;
-  //             let elapsed = 0;
-  //             this.app.repeat(32, () => {
-  //                 elapsed += 32;
-  //                 pct = Math.floor((100 * elapsed) / duration);
-  //                 this.buffer.copy(buffer);
-  //                 this.buffer.mix(color, pct);
-  //                 if (elapsed >= duration) {
-  //                     this.resume();
-  //                     resolve();
-  //                     return false; // end timer
-  //                 }
-  //             });
-  //         });
-  //     }
-  // }
 
   class Scenes {
       constructor(gw) {
@@ -11143,9 +10989,9 @@ void main() {
       emit(ev, ...args) {
           this._active.forEach((a) => a.emit(ev, ...args));
       }
-      _create(id, opts = {}) {
+      create(id, opts = {}) {
           let cfg = this._config[id] || {};
-          const used = Object.assign({}, cfg, opts);
+          const used = mergeDeep(cfg, opts);
           let scene;
           if (used.make) {
               scene = used.make(id, this._app);
@@ -11153,9 +10999,9 @@ void main() {
           else {
               scene = new Scene(id, this._app);
           }
-          scene.on('start', () => this._start(scene));
-          scene.on('stop', () => this._stop(scene));
-          scene.create(used);
+          scene.on('start', () => this._started(scene));
+          scene.on('stop', () => this._stopped(scene));
+          scene._create(used);
           // this._scenes[scene.id] = scene;
           return scene;
       }
@@ -11166,19 +11012,22 @@ void main() {
       //     }
       //     return this._create(id, data);
       // }
-      start(id, data) {
-          let scene = this.get(id) || this._create(id, data);
-          this._app.io.clear();
-          if (this.isBusy) {
-              this._pending.push({ action: 'start', scene, data });
-          }
-          else {
-              scene.start(data);
-          }
+      start(id, opts) {
+          let scene = this.get(id) || this.create(id, {});
+          scene.start(opts);
           return scene;
       }
+      _start(scene, opts = {}) {
+          this._app.io.clear();
+          if (this.isBusy) {
+              this._pending.push({ action: '_start', scene, data: opts });
+          }
+          else {
+              scene._start(opts);
+          }
+      }
       run(id, data) {
-          let scene = this.get(id) || this._create(id, data);
+          let scene = this.get(id) || this.create(id, data);
           this._app.io.clear();
           if (this.isBusy) {
               this._pending.push({ action: 'run', scene, data });
@@ -11188,7 +11037,7 @@ void main() {
           }
           return scene;
       }
-      _start(scene) {
+      _started(scene) {
           this._active.push(scene);
       }
       stop(id, data) {
@@ -11210,7 +11059,7 @@ void main() {
               this._active.forEach((s) => this.stop(s.id, id));
           }
       }
-      _stop(_scene) {
+      _stopped(_scene) {
           this._active = this._active.filter((s) => s.isActive());
       }
       destroy(id, data) {
@@ -14697,7 +14546,7 @@ void main() {
   // //     return layer;
   // // };
 
-  function make$1$1(opts) {
+  function make$1$2(opts) {
       const w = new Widget(opts);
       if (opts.with) {
           Object.entries(opts.with).forEach(([name, fn]) => {
@@ -14734,7 +14583,7 @@ void main() {
   	alignChildren: alignChildren,
   	dialog: dialog,
   	drawBorder: drawBorder,
-  	make: make$1$1,
+  	make: make$1$2,
   	spaceChildren: spaceChildren,
   	toPadArray: toPadArray,
   	wrapChildren: wrapChildren
@@ -14777,10 +14626,13 @@ void main() {
           this.fpsBuf = [];
           this.fpsTimer = 0;
           this.numFrames = 0;
-          this.loopID = 0;
+          this.loopId = 0;
           this.stopped = true;
           this.paused = false;
           this.debug = false;
+          if (typeof opts.seed === 'number' && opts.seed > 0) {
+              random$2.seed(opts.seed);
+          }
           if ('loop' in opts) {
               this.loop = opts.loop;
               delete opts.loop;
@@ -14798,7 +14650,7 @@ void main() {
           if (opts.dt !== undefined) {
               this.dt = opts.dt || 16; // Can't have 0
           }
-          this.data = new Data(opts.data);
+          this.data = mergeDeep({}, opts.data || {});
           this.canvas.onclick = this.io.enqueue.bind(this.io);
           this.canvas.onmousemove = this.io.enqueue.bind(this.io);
           this.canvas.onclick = this.io.enqueue.bind(this.io);
@@ -14806,25 +14658,27 @@ void main() {
           this.buffer = new Buffer$1(this.canvas.width, this.canvas.height);
           if (opts.scenes) {
               this.scenes.config(opts.scenes);
-              if (typeof opts.start === 'string') {
-                  this.scenes.start(opts.start);
+              if (typeof opts.scene === 'string') {
+                  this.scenes.start(opts.scene, opts.sceneStartOpts);
               }
               else {
-                  this.scenes.start(Object.keys(opts.scenes)[0]);
+                  this.scenes.start(Object.keys(opts.scenes)[0], opts.sceneStartOpts);
               }
           }
           else if (opts.scene) {
+              if (typeof opts.scene === 'string') {
+                  throw new Error("Cannot use string 'scene' option without including 'scenes'.");
+              }
               if (opts.scene === true)
                   opts.scene = {};
               this.scenes.config('default', opts.scene);
-              this.scenes.start('default');
-              // } else {
-              //     this.scenes.install('default', { bg: COLOR.colors.NONE }); // NONE just in case you draw directly on app.buffer
-              //     this.scenes.start('default');
+              this.scenes.start('default', opts.sceneStartOpts);
           }
           if (opts.start !== false) {
               this.start();
           }
+          globalThis.APP = this;
+          active$1 = this;
       }
       // get buffer() {
       //     return this.scene.buffer;
@@ -14925,7 +14779,7 @@ void main() {
               this._input(ev);
           }
           if (!this.paused && this.debug !== true) {
-              // call fixed_update
+              // TODO - Should update be called first to run timers, etc...?
               while (this.time + this.dt <= realTime) {
                   this.time += this.dt;
                   this._fixed_update(this.dt);
@@ -14987,7 +14841,7 @@ void main() {
           // TODO - Do we really have to do this?  Can't we reset the scene instead?
           // NEED TO CREATE A NEW SCENE EVERY TIME SO WE DON"T HAVE HOLDOVER EVENTS, etc...
           opts.prompt = text;
-          const prompt = this.scenes._create('prompt', PromptScene);
+          const prompt = this.scenes.create('prompt', PromptScene);
           prompt.run(opts);
           return prompt;
       }
@@ -14996,6 +14850,7 @@ void main() {
       const app = new App(opts);
       return app;
   }
+  var active$1;
 
   var index = /*#__PURE__*/Object.freeze({
   	__proto__: null,
@@ -15019,6 +14874,7 @@ void main() {
   	Timers: Timers,
   	Tweens: Tweens,
   	Widget: Widget,
+  	get active () { return active$1; },
   	alignChildren: alignChildren,
   	compile: compile,
   	defaultStyle: defaultStyle,
@@ -16245,2132 +16101,37 @@ void main() {
     WARN: WARN,
     ZERO: ZERO,
     app: index,
-    arrayDelete: arrayDelete,
-    arrayFindRight: arrayFindRight,
-    arrayIncludesAll: arrayIncludesAll,
-    arrayInsert: arrayInsert,
-    arrayNext: arrayNext,
-    arrayNullify: arrayNullify,
-    arrayPrev: arrayPrev,
-    arrayRevEach: arrayRevEach,
-    arraysIntersect: arraysIntersect,
     blob: blob,
     buffer: buffer,
     canvas: index$5,
-    clamp: clamp,
     color: index$9,
     colors: colors,
     cosmetic: cosmetic,
-    data: data,
-    first: first,
     flag: flag,
     fov: index$7,
     frequency: frequency,
     grid: grid,
-    lerp: lerp$1,
     light: index$3,
     list: list,
     match: match,
     message: message,
-    nextIndex: nextIndex,
     object: object,
     path: index$6,
-    prevIndex: prevIndex,
     queue: queue,
     random: random$2,
     range: range,
     rng: rng,
     scheduler: scheduler,
     sprite: index$4,
-    sum: sum,
     tags: tags,
     text: index$8,
     tween: tween,
     types: types$1,
     ui: index$2$1,
-    valueType: valueType,
+    utils: utils,
     widget: index$1$1,
-    xave: xave,
     xy: xy
   });
-
-  class Obj {
-      x;
-      y;
-      z;
-      events;
-      spawn;
-      constructor(cfg = {}) {
-          this.x = cfg.x || 0;
-          this.y = cfg.y || 0;
-          this.z = cfg.z || 0;
-          this.events = new index.Events(this);
-          this.spawn = false;
-          // Object.assign(this, cfg);
-      }
-      draw(buf) { }
-      on(...args) {
-          if (args.length == 1) {
-              return this.events.on(args[0]);
-          }
-          return this.events.on(args[0], args[1]);
-      }
-      once(event, fn) {
-          return this.events.once(event, fn);
-      }
-      emit(event, ...args) {
-          return this.events.emit(event, ...args);
-      }
-  }
-
-  class FX extends Obj {
-      ch;
-      fg;
-      bg;
-      constructor(cfg) {
-          super(cfg);
-          this.ch = cfg.ch || null;
-          this.fg = cfg.fg || null;
-          this.bg = cfg.bg || null;
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this);
-      }
-  }
-  function flash(game, x, y, color = "white", ms = 300) {
-      const scene = game.scene;
-      scene.pause({ update: true });
-      const fx = new FX({ x, y, bg: color, z: 4 });
-      game.level.addFx(fx);
-      let _success = NOOP;
-      scene.needsDraw = true;
-      scene.wait(ms, () => {
-          game.level.removeFx(fx);
-          scene.resume({ update: true });
-          _success();
-      });
-      return {
-          then(success) {
-              _success = success || NOOP;
-          },
-      };
-  }
-  function flashGameTime(game, x, y, color = "white", ms = 300) {
-      const scene = game.scene;
-      const level = game.level;
-      const startTime = scene.app.time;
-      const fx = new FX({ x, y, bg: color, z: 4 });
-      level.addFx(fx);
-      let _success = NOOP;
-      // let _fail: CallbackFn = GWU.NOOP;
-      game.wait(ms, () => {
-          const nowTime = scene.app.time;
-          const timeLeft = ms - (nowTime - startTime);
-          if (timeLeft > 0) {
-              scene.pause({ update: true });
-              scene.wait(timeLeft, () => {
-                  level.removeFx(fx);
-                  scene.resume({ update: true });
-                  _success();
-              });
-          }
-          else {
-              level.removeFx(fx);
-              _success();
-          }
-      });
-      return {
-          then(fn) {
-              _success = fn || NOOP;
-          },
-      };
-  }
-
-  function projectile(game, from, to, sprite, ms) {
-      const level = game.level;
-      const scene = game.scene;
-      from = xy.asXY(from);
-      to = xy.asXY(to);
-      let _success = NOOP;
-      if (sprite.ch && sprite.ch.length == 4) {
-          const dir = xy.dirFromTo(from, to);
-          let index = 0;
-          if (dir[0] && dir[1]) {
-              index = 2;
-              if (dir[0] != dir[1]) {
-                  // remember up is -y
-                  index = 3;
-              }
-          }
-          else if (dir[0]) {
-              index = 1;
-          }
-          const ch = sprite.ch[index];
-          sprite = index$4.make(ch, sprite.fg, sprite.bg);
-      }
-      else if (sprite.ch && sprite.ch.length !== 1) {
-          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
-      }
-      const fx = new FX(sprite);
-      // console.log("- fire", from, to);
-      scene.pause({ update: true });
-      const tween$1 = tween
-          .make(fx)
-          .from(from)
-          .to(to, ["x", "y"])
-          .duration(ms)
-          .onStart((_vals) => {
-          level.addFx(fx);
-      })
-          .onUpdate((vals) => {
-          if (level.blocksMove(vals.x, vals.y)) {
-              tween$1.stop(false);
-          }
-          // console.log("- >> ", vals);
-          scene.needsDraw = true;
-      })
-          .onFinish((vals, isSuccess) => {
-          level.removeFx(fx);
-          scene.resume({ update: true });
-          _success(vals, isSuccess);
-      })
-          .start(game.scene.tweens);
-      return {
-          then(success) {
-              _success = success || NOOP;
-          },
-      };
-  }
-
-  const fl = flag.fl;
-  var ARMOR_FLAGS;
-  (function (ARMOR_FLAGS) {
-      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
-      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
-      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
-      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
-      // add ?? MOBS_AVOID_YOU_MORE ??
-      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
-      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
-      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
-      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
-  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
-  // @ts-ignore
-  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
-  var MELEE_FLAGS;
-  (function (MELEE_FLAGS) {
-      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
-      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
-      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
-      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
-      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
-      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
-      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
-      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
-      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
-      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
-      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
-      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
-      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
-      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
-      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
-      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
-      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
-      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
-      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
-      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
-      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
-      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
-      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
-      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
-      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
-      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
-      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
-      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
-      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
-      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
-  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
-  // @ts-ignore
-  globalThis.MELEE_FLAGS = MELEE_FLAGS;
-  var RANGED_FLAGS;
-  (function (RANGED_FLAGS) {
-      // "GROWING", // Not going to use
-      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
-      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
-      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
-      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
-      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
-      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
-      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
-      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
-      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
-      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
-      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
-      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
-      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
-      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
-      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
-      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
-      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
-  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
-  // @ts-ignore
-  globalThis.RANGED_FLAGS = RANGED_FLAGS;
-
-  const kinds$1 = {};
-  // @ts-ignore
-  globalThis.ItemKinds = kinds$1;
-  function install$6(cfg) {
-      const kind = Object.assign({
-          name: "",
-          ch: "!",
-          fg: "white",
-          //   bump: ["attack"],
-          on: {},
-          frequency: 10,
-          speed: 100,
-          damage: 0,
-          combo: 0,
-          combo_speed: 0,
-          combo_damage: 0,
-          range: 0,
-          charge: 0,
-          defense: 0,
-          slot: null,
-          tags: [],
-          armor_flags: 0,
-          melee_flags: 0,
-          ranged_flags: 0,
-          effects: {},
-      }, cfg);
-      if (kind.name.length == 0) {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
-      }
-      if (typeof cfg.tags == "string") {
-          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
-      }
-      if (typeof cfg.armor_flags !== "number") {
-          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
-      }
-      if (typeof cfg.melee_flags !== "number") {
-          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
-      }
-      if (typeof cfg.ranged_flags !== "number") {
-          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
-      }
-      //   if (typeof cfg.bump === "string") {
-      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      //   }
-      kind.frequency = frequency.make(kind.frequency);
-      if (kind.slot === null) {
-          if (kind.range > 0) {
-              kind.slot = "ranged";
-          }
-          else if (kind.damage > 0) {
-              kind.slot = "melee";
-          }
-          else if (kind.defense > 0) {
-              kind.slot = "armor";
-          }
-      }
-      kinds$1[cfg.id.toLowerCase()] = kind;
-  }
-  function getKind$1(id) {
-      return kinds$1[id.toLowerCase()] || null;
-  }
-
-  class Item extends Obj {
-      _turnTime = 0;
-      _level = null;
-      kind;
-      data;
-      _power;
-      _damage;
-      _comboDamage;
-      _defense;
-      constructor(cfg) {
-          super(cfg);
-          this.kind = cfg.kind;
-          if (!this.kind)
-              throw new Error("Must have kind.");
-          this.data = {};
-          this._damage = this.kind.damage;
-          this._comboDamage = this.kind.combo_damage;
-          this._defense = this.kind.defense;
-          this._power = cfg.power || 1;
-          this.on("add", (level) => {
-              this._level = level;
-          });
-          this.on("remove", (level) => {
-              this._level = null;
-          });
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-          this.power = this._power; // cause calculations to fire
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      get name() {
-          return this.kind.name;
-      }
-      get power() {
-          return this._power;
-      }
-      set power(val) {
-          val = val || 1;
-          this._power = val;
-          // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
-          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
-          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
-      }
-      get damage() {
-          return this._damage;
-      }
-      get comboDamage() {
-          return this._comboDamage;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get speed() {
-          return this.kind.speed;
-      }
-      get comboSpeed() {
-          return this.kind.combo_speed;
-      }
-      get combo() {
-          return this.kind.combo;
-      }
-      get defense() {
-          return this._defense;
-      }
-      get slot() {
-          return this.kind.slot;
-      }
-      get charge() {
-          return this.kind.charge;
-      }
-  }
-  function make$2(id, opts = 1) {
-      let kind;
-      let power = 1;
-      if (typeof opts === "number") {
-          opts = { power: opts };
-      }
-      if (typeof id === "string") {
-          const parts = id.split(/[\^\[]/).map((v) => v.trim());
-          parts[0];
-          power = Number.parseInt(parts[1] || "1");
-          kind = getKind$1(parts[0]);
-          if (!kind)
-              throw new Error("Failed to find item kind - " + id);
-      }
-      else {
-          kind = id;
-      }
-      const config = Object.assign({
-          x: 1,
-          y: 1,
-          z: 1, // items, actors, player, fx
-          kind,
-          power,
-      }, opts);
-      return new Item(config);
-  }
-  function place(level, x, y, id = null) {
-      let newbie;
-      if (id === null) {
-          newbie = random$1(level); // TODO - default match?
-      }
-      else if (typeof id === "string") {
-          newbie = make$2(id);
-      }
-      else {
-          newbie = id;
-      }
-      if (!newbie)
-          return null;
-      newbie.kind.fg;
-      const game = level.game;
-      game.scene;
-      // const level = level.level;
-      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
-          return !level.blocksMove(i, j) && !level.hasItem(i, j);
-      });
-      if (!locs || locs.length == 0)
-          return null;
-      const loc = game.rng.item(locs);
-      newbie.x = loc[0];
-      newbie.y = loc[1];
-      level.events.emit("spawn_item", level, newbie);
-      level.addItem(newbie);
-      return newbie;
-  }
-  function placeRandom(level, x, y, match = null) {
-      let item = random$1(level, match);
-      if (!item) {
-          return null;
-      }
-      return place(level, x, y, item);
-  }
-  function random$1(level, match = null) {
-      // pick random kind
-      let allKinds = Object.values(kinds$1);
-      let matches;
-      if (match === null) {
-          matches = [];
-      }
-      else if (typeof match == "string") {
-          matches = match.split(/[|,]/).map((v) => v.trim());
-      }
-      else {
-          matches = match.map((v) => v.trim());
-      }
-      if (matches.length > 0) {
-          allKinds = allKinds.filter((kind) => {
-              return matches.every((m) => {
-                  if (m[0] == "!") {
-                      return !kind.tags.includes(m.substring(1));
-                  }
-                  else {
-                      return kind.tags.includes(m);
-                  }
-              });
-          });
-      }
-      const chances = allKinds.map((k) => k.frequency(level.depth));
-      const index = level.rng.weighted(chances);
-      if (index < 0)
-          return null;
-      const kind = allKinds[index];
-      const item = new Item({ kind });
-      return item;
-  }
-
-  // @returns boolean - indicates whether or not the target dies
-  function damage(game, target, damage) {
-      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
-      const armor_flags = target.armor_flags;
-      let amount = (damage.amount = damage.amount || 0);
-      damage.msg = damage.msg || `${target.name} is damaged`;
-      damage.color = damage.color || "red";
-      if (!damage.isRanged) {
-          damage.isRanged = false;
-      }
-      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
-          if (game.rng.chance(30)) {
-              game.messages.addCombat(damage.msg + "#{orange [X]}");
-              flash(game, target.x, target.y, "orange", 150);
-              damage.amount = 0;
-              return false;
-          }
-      }
-      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
-          damage.amount = Math.round(damage.amount * 0.65);
-      }
-      target.emit("damage", damage);
-      if (damage.amount <= 0) {
-          return false;
-      }
-      target.health -= damage.amount || 0;
-      if (damage.amount < amount) {
-          damage.color = "orange";
-      }
-      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
-      flash(game, target.x, target.y, damage.color, 150);
-      if (target.health <= 0) {
-          // do all of these move to event handlers?
-          game.messages.addCombat(`${target.name} dies`);
-          // TODO - This should be above the floor (FIXTURE)
-          // that way when it decays the floor returns as normal
-          // and corpses can be custom to the creature that died
-          // no matter what the floor is
-          game.level.setTile(target.x, target.y, "CORPSE");
-          target.emit("death");
-          game.level.removeActor(target);
-          return true;
-      }
-      return false;
-  }
-
-  function heal(game, target, heal) {
-      if (heal.amount <= 0)
-          return;
-      heal.amount = Math.min(heal.amount, target.health_max - target.health);
-      target.health += heal.amount;
-  }
-
-  const actionsByName = {};
-  function install$5(name, fn) {
-      actionsByName[name] = fn;
-  }
-  function get(name) {
-      return actionsByName[name] || null;
-  }
-  function idle(game, actor) {
-      console.log("- idle", actor.name, actor.x, actor.y);
-      game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
-      return true;
-  }
-  install$5("idle", idle);
-  function moveRandom(game, actor, quiet = false) {
-      const dir = game.rng.item(xy.DIRS);
-      return moveDir(game, actor, dir, quiet);
-  }
-  install$5("move_random", moveRandom);
-  function moveDir(game, actor, dir, quiet = false) {
-      const level = game.level;
-      const newX = actor.x + dir[0];
-      const newY = actor.y + dir[1];
-      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
-          if (!quiet) {
-              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
-              game.addMessage(`Blocked by a ${tile.id}.`);
-              flash(game, newX, newY, "orange", 150);
-              idle(game, actor);
-              return true;
-          }
-          else {
-              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      const other = level.actorAt(newX, newY);
-      if (other) {
-          if (other.kind && other.bump(game, actor)) {
-              return true;
-          }
-          if (actor.hasActed())
-              return true;
-          if (!quiet) {
-              game.addMessage(`You bump into a ${other.name}.`);
-              flash(game, newX, newY, "orange", 150);
-              idle(game, actor);
-              return true;
-          }
-          else {
-              console.log("- nothing!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      if (level.blocksMove(newX, newY)) {
-          if (!quiet) {
-              game.addMessage("You bump into a wall.");
-              flash(game, newX, newY, "orange", 150);
-              idle(game, actor);
-              return false;
-          }
-          else {
-              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      actor.x;
-      actor.y;
-      actor.x = newX;
-      actor.y = newY;
-      // game.drawAt(oldX, oldY);
-      // game.drawAt(newX, newY);
-      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
-      actor.emit("move", game, newX, newY);
-      level.triggerAction("enter", actor);
-      game.endTurn(actor, speed);
-      return true;
-  }
-  function moveTowardHero(game, actor, quiet = false) {
-      const map = game.level;
-      const player = game.hero;
-      const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
-          return map.hasActor(x, y);
-      });
-      if (dir) {
-          if (moveDir(game, actor, dir, true)) {
-              return true; // success
-          }
-          if (!quiet) {
-              flash(game, actor.x, actor.y, "orange", 150);
-          }
-          return idle(game, actor);
-      }
-      return false;
-  }
-  install$5("move_toward_hero", moveTowardHero);
-  function moveAwayFromHero(game, actor, quiet = false) {
-      const map = game.level;
-      const player = game.hero;
-      // compute safety map
-      const safety = new index$6.DijkstraMap(map.width, map.height);
-      safety.copy(player.mapToMe);
-      safety.update((v, x, y) => {
-          if (v >= index$6.BLOCKED)
-              return v;
-          v = -1.2 * v;
-          if (map.isInLoop(x, y))
-              v -= 2;
-          if (map.isGateSite(x, y))
-              v -= 2;
-          return Math.round(v);
-      });
-      safety.setDistance(player.x, player.y, index$6.BLOCKED);
-      safety.rescan((x, y) => actor.moveCost(x, y));
-      safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
-      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-          return map.hasActor(x, y);
-      });
-      console.log(`- move away (${actor.x},${actor.y}) from player (${player.x},${player.y}) - ${dir}`);
-      // if (dir === null) {
-      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-      //     return map.hasActor(x, y);
-      //   });
-      // }
-      if (dir) {
-          const spread = xy.dirSpread(dir);
-          for (let d of spread) {
-              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
-              if (moveDir(game, actor, d, true)) {
-                  console.log("- success");
-                  return true; // success
-              }
-          }
-          if (!quiet) {
-              flash(game, actor.x, actor.y, "orange", 150);
-          }
-          return idle(game, actor);
-      }
-      return false;
-  }
-  install$5("move_away_from_hero", moveAwayFromHero);
-  function attack(game, actor, target = null) {
-      const level = game.level;
-      if (target) {
-          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
-              return false;
-          }
-      }
-      else {
-          // todo - long reach melee -- spear, etc...
-          const targets = game.level.actors.filter((a) => a !== actor &&
-              actor.health > 0 &&
-              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
-              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
-          if (targets.length == 0) {
-              game.addMessage("no targets.");
-              flash(game, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-              return true; // did something
-          }
-          else if (targets.length > 1) {
-              game
-                  .scene.app.scenes.run("target", { game, actor, targets })
-                  .once("stop", (result) => {
-                  if (!result) {
-                      flash(game, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-                  }
-                  else {
-                      attack(game, actor, result);
-                  }
-              });
-              return true; // didSomething
-          }
-          else {
-              target = targets[0];
-          }
-      }
-      const actorIsPlayer = actor === game.hero;
-      const otherIsPlayer = target === game.hero;
-      if (!actorIsPlayer && !otherIsPlayer) {
-          return idle(game, actor); // no attacking
-      }
-      const attackInfo = actor.getMeleeAttack();
-      if (!attackInfo) {
-          game.addMessage("Cannot attack.");
-          flash(game, actor.x, actor.y, "orange", 150);
-          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-      }
-      // we have an actor and a target
-      damage(game, target, {
-          amount: attackInfo.damage,
-          msg: `${actor.name} attacks ${target.name}`,
-      });
-      game.endTurn(actor, attackInfo.time);
-      return true;
-  }
-  install$5("attack", attack);
-  function fire(game, actor, target = null) {
-      const level = game.level;
-      const hero = game.hero;
-      if (!actor.range) {
-          game.addMessage("Nothing to fire.");
-          return false;
-      }
-      if (!actor.ammo) {
-          game.addMessage("No ammo.");
-          return false;
-      }
-      if (target) {
-          if (xy.distanceFromTo(actor, target) > actor.range)
-              return false;
-      }
-      else {
-          // todo - long reach melee -- spear, etc...
-          const targets = game
-              .level.actors.filter((a) => {
-              if (a === actor)
-                  return false;
-              if (actor.health <= 0)
-                  return false;
-              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
-              if (dist > actor.range) {
-                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
-                  return false;
-              }
-              console.log("checking fov...");
-              // HACK - for actor.canSee(a)
-              if (!hero.isInFov(actor)) {
-                  console.log("actor not visible");
-                  return false;
-              }
-              if (!hero.isInFov(a)) {
-                  console.log("target not visible");
-                  return false;
-              }
-              // end hack
-              console.log("ok - ", a.name);
-              return true;
-          })
-              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
-          if (targets.length == 0) {
-              game.addMessage("no targets.");
-              // flash tiles you can fire into
-              const fov = new index$7.FOV({
-                  isBlocked(x, y) {
-                      // TODO - This should be more about visible than move
-                      return actor.moveCost(x, y) >= index$6.BLOCKED;
-                  },
-                  hasXY(x, y) {
-                      return level.hasXY(x, y);
-                  },
-              });
-              // TODO - FOV highlights cells we can't fire into...
-              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
-                  flash(game, x, y, "dark_teal", 125);
-              });
-              // FX.flash(game, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
-              return true; // did something
-          }
-          else if (targets.length > 1) {
-              game
-                  .scene.app.scenes.run("target", { game, actor, targets })
-                  .once("stop", (result) => {
-                  if (!result) {
-                      flash(game, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
-                  }
-                  else {
-                      fire(game, actor, result);
-                  }
-              });
-              return true; // didSomething
-          }
-          else {
-              target = targets[0];
-          }
-      }
-      const actorIsHero = actor === game.hero;
-      const otherIsHero = target === game.hero;
-      if (!actorIsHero && !otherIsHero) {
-          return idle(game, actor); // no attacking
-      }
-      // we have an actor and a target
-      // Does this move to an event handler?  'damage', { amount: #, type: string }
-      actor.ammo -= 1;
-      // TODO - get next attack details (and increment counter in actor)
-      projectile(game, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
-          if (!ok) {
-              flash(game, xy.x, xy.y, "orange", 150);
-          }
-          else {
-              damage(game, target, {
-                  amount: actor.rangedDamage,
-                  msg: `${actor.name} shoots ${target.name}`,
-              });
-          }
-      });
-      game.endTurn(actor, actor.rangedAttackSpeed);
-      return true;
-  }
-  install$5("fire", fire);
-  function fireAtHero(game, actor) {
-      const hero = game.hero;
-      // if player can't see actor then actor can't see player!
-      if (!hero.isInFov(actor.x, actor.y))
-          return false;
-      if (!actor.ammo)
-          return false;
-      actor.ammo -= 1;
-      // TODO - get next attack details (and increment counter in actor)
-      projectile(game, actor, game.hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
-          if (!ok) {
-              flash(game, xy.x, xy.y, "orange", 150);
-          }
-          else {
-              damage(game, hero, {
-                  amount: actor.rangedDamage,
-                  msg: `${actor.name} shoots ${hero.name}`,
-              });
-          }
-      });
-      game.endTurn(actor, actor.rangedAttackSpeed);
-      return true;
-  }
-  install$5("fire_at_hero", fireAtHero);
-  function climb(game, actor) {
-      const tile = game.level.getTile(actor.x, actor.y);
-      if (tile.on && tile.on.climb) {
-          tile.on.climb.call(tile, game, actor);
-          return actor.hasActed();
-      }
-      else {
-          return idle(game, actor);
-      }
-  }
-  install$5("climb", climb);
-  function pickup(game, actor) {
-      const level = game.level;
-      if (level) {
-          const item = level.itemAt(actor.x, actor.y);
-          if (item) {
-              item.emit("pickup", game, actor);
-              return true;
-          }
-          game.addMessage("Nothing to pickup.");
-      }
-      return idle(game, actor);
-  }
-  install$5("pickup", pickup);
-  // export function potion(game: Game, hero: Hero): boolean {
-  //   if (!hero.canUsePotion) {
-  //     game.addMessage("Not ready.");
-  //     // TODO - spend time? idle?
-  //     return false;
-  //   }
-  //   if (hero.health >= hero.health_max) {
-  //     game.addMessage("You do not need to drink a potion.");
-  //     // TODO - spend time? idle?
-  //     return false;
-  //   }
-  //   const heal = Math.floor(hero.health_max * 0.75);
-  //   hero.health = Math.min(hero.health + heal, hero.health_max);
-  //   hero.potion = 0; // Needs to recharge
-  //   game.addMessage("You feel much better.");
-  //   game.endTurn(hero, hero.moveSpeed);
-  //   return true;
-  // }
-
-  function ai(game, actor) {
-      const hero = game.hero;
-      const noticeDistance = actor.kind.notice || 10;
-      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
-      const canSeeHero = hero.isInFov(actor);
-      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
-      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
-      // TODO - Noticed prior to hero going out of range/view should skip this
-      // Do this with a flag/mode/state/time value?
-      if (distToHero > noticeDistance || !canSeeHero) {
-          // wander to goal?  [wanderChance]
-          // step randomly [idleMoveChance]
-          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
-          // random chance? [randomMoveChance]
-          if (game.rng.chance(20)) {
-              if (moveRandom(game, actor, true))
-                  return;
-          }
-          return idle(game, actor);
-      }
-      if (distToHero <= actor.kind.tooClose) {
-          // should there be a random chance on this?
-          if (moveAwayFromHero(game, actor))
-              return;
-      }
-      // shoot at player?
-      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
-          if (fireAtHero(game, actor))
-              return;
-      }
-      if (distToHero < 2) {
-          // can attack diagonal
-          if (actor.canMeleeAttack) {
-              if (attack(game, actor, hero))
-                  return;
-          }
-          if (distToHero == 1) {
-              // Hmmm...
-              return idle(game, actor);
-          }
-      }
-      // If we don't have a min distance from hero then move closer (to get to melee range)
-      if (!actor.kind.tooClose) {
-          if (moveTowardHero(game, actor))
-              return;
-      }
-      return idle(game, actor);
-  }
-
-  const kinds = {};
-  // @ts-ignore
-  globalThis.ActorKinds = kinds;
-  function install$4(cfg) {
-      const kind = Object.assign({
-          name: "",
-          health: 10,
-          notice: 10,
-          moveSpeed: 100,
-          ch: "!",
-          fg: "white",
-          bump: ["attack"],
-          on: {},
-          damage: 0,
-          attackSpeed: 0,
-          combo: 0,
-          comboDamage: 0,
-          comboSpeed: 0,
-          range: 0,
-          rangedDamage: 0,
-          rangedAttackSpeed: 0,
-          ammo: 0,
-          tooClose: 0,
-          dropChance: 0,
-          dropMatch: [],
-          slots: new Map(),
-      }, cfg);
-      if (kind.name == "") {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
-      }
-      if (typeof cfg.bump === "string") {
-          kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      }
-      if (typeof cfg.dropMatch === "string") {
-          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
-      }
-      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
-          kind.dropMatch.push("drop"); // Default drops
-      }
-      if (kind.attackSpeed == 0 && kind.damage > 0) {
-          kind.attackSpeed = kind.moveSpeed;
-      }
-      if (kind.comboDamage == 0) {
-          kind.combo = 0;
-          kind.comboSpeed = 0;
-      }
-      else if (kind.combo < 2) {
-          kind.comboDamage = 0;
-          kind.comboSpeed = 0;
-      }
-      else if (kind.comboSpeed == 0) {
-          kind.comboSpeed = kind.attackSpeed;
-      }
-      if (kind.ammo == 0 && kind.range > 0) {
-          kind.ammo = 10; // You get 10 shots by default
-      }
-      // TODO: Create drop language
-      //      - 50 (drop default treasure 50% of time)
-      //      - ARROWS (always drop arrows)
-      //      - ARROWS@35 (35% drop arrows)
-      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
-      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
-      //      - #TREASURE@50% (50% drop from the TREASURE tag)
-      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
-      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
-      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
-      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
-      if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
-          kind.dropChance = 100;
-      }
-      kinds[cfg.id.toLowerCase()] = kind;
-  }
-  function getKind(id) {
-      return kinds[id.toLowerCase()] || null;
-  }
-
-  function messages(scene, y) {
-      const widget = index$1$1.make({
-          id: "MESSAGES",
-          tag: "msg",
-          x: 0,
-          y: y,
-          width: scene.width,
-          height: scene.height - y,
-          scene,
-          bg: "darkest_gray",
-          fg: "white",
-          draw(buf) {
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              const fg = index$9.from(this._used.fg);
-              const fgc = fg.alpha(50);
-              const game = this.scene.data;
-              if (game && game.messages) {
-                  game.messages.forEach((msg, confirmed, i) => {
-                      if (i < this.bounds.height) {
-                          const color = confirmed ? fgc : fg;
-                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
-                      }
-                  });
-              }
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  let Map$1 = class Map extends index.Widget {
-      _focus = [-1, -1];
-      constructor(opts) {
-          super(opts);
-          this.on("draw", this._draw);
-          this.on("mousemove", this._setFocus);
-          this.on("mouseleave", this._clearFocus);
-          this.on("keypress", this._clearFocus);
-      }
-      _draw(buf) {
-          const game = this.scene.data;
-          const player = game.hero;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
-          const level = game.level;
-          level.tiles.forEach((index, x, y) => {
-              buf.blackOut(x, y);
-              level.drawAt(buf, x, y);
-              if (!player.fov || !player.fov.get(x, y)) {
-                  buf.get(x, y).mix("black", 25, 25);
-              }
-          });
-          if (player.goalPath) {
-              player.goalPath.forEach(([x, y]) => {
-                  buf.get(x, y).mix("green", 0, 25).separate();
-              });
-          }
-      }
-      _setFocus(e) {
-          this._focus[0] = e.x;
-          this._focus[1] = e.y;
-          this.needsDraw = true;
-          // e.stopPropagation();
-      }
-      _clearFocus() {
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-      }
-  };
-  function map(scene, width, height) {
-      const widget = new Map$1({
-          id: "MAP",
-          tag: "map",
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-          scene,
-          bg: index$9.BLACK,
-      });
-      return widget;
-  }
-
-  class SidebarEntry {
-      // TODO - icon: GWU.sprite.SpriteData | null;
-      name;
-      nameColor;
-      progressbars;
-      statuses;
-      constructor(name, color) {
-          // TODO: this.icon = null;
-          this.name = name;
-          this.nameColor = color === undefined ? "white" : color;
-          this.progressbars = [];
-          this.statuses = [];
-      }
-      add_progress(text, color, val, max) {
-          this.progressbars.push({
-              text,
-              color,
-              val,
-              max,
-          });
-          return this;
-      }
-      add_status(text, color) {
-          this.statuses.push({ text, color });
-          return this;
-      }
-  }
-  class Sidebar extends index.Widget {
-      _focus = [-1, -1];
-      entries = [];
-      constructor(opts) {
-          super(opts);
-      }
-      setFocus(x, y) {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = x;
-          this._focus[1] = y;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.emit("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      clearFocus() {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.emit("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
-      //   buf.drawText(x, y, "Hero");
-      //   this.drawHealth(buf, x, y + 1, 28, player);
-      //   this.drawPotion(buf, x, y + 2, 28, player);
-      //   let lines = 3; // Hero + health + potion
-      //   player.statuses.forEach((status) => {
-      //     if (status) {
-      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
-      //     }
-      //   });
-      //   return lines;
-      // }
-      drawActor(buf, x, y, actor) {
-          //   buf.drawText(x, y, actor.name, actor.kind.fg);
-          //   this.drawHealth(buf, x, y + 1, 28, actor);
-          //   let lines = 2; // name + health
-          //   actor.statuses.forEach((status) => {
-          //     if (status) {
-          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
-          //     }
-          //   });
-          //   return lines;
-          let entry = actor.getSidebarEntry();
-          return this.drawEntry(buf, x, y, entry);
-      }
-      drawEntry(buf, x, y, entry) {
-          buf.drawText(x, y, entry.name, entry.nameColor);
-          let lines = 1;
-          entry.progressbars.forEach((p) => {
-              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
-              lines += 1;
-          });
-          entry.statuses.forEach((s) => {
-              buf.drawText(x, y + lines, s.text, s.color);
-              lines += 1;
-          });
-          return lines;
-      }
-      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
-          const pct = val / max;
-          const full = Math.floor(w * pct);
-          const partialPct = Math.floor(100 * (w * pct - full));
-          buf.fillRect(x, y, full, 1, null, null, bg);
-          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
-          if (text && text.length) {
-              buf.drawText(x, y, text, fg, null, w, "center");
-          }
-      }
-      // drawHealth(
-      //   buf: GWU.buffer.Buffer,
-      //   x: number,
-      //   y: number,
-      //   w: number,
-      //   actor: Actor
-      // ) {
-      //   const pct = actor.health / actor.health_max;
-      //   const bg = GWU.color.colors.green.mix(
-      //     GWU.color.colors.red,
-      //     100 * (1 - pct)
-      //   );
-      //   this.drawProgress(
-      //     buf,
-      //     x,
-      //     y,
-      //     w,
-      //     "white",
-      //     bg,
-      //     actor.health,
-      //     actor.health_max,
-      //     "HEALTH"
-      //   );
-      // }
-      // drawPotion(
-      //   buf: GWU.buffer.Buffer,
-      //   x: number,
-      //   y: number,
-      //   w: number,
-      //   player: Hero
-      // ) {
-      //   this.drawProgress(
-      //     buf,
-      //     x,
-      //     y,
-      //     w,
-      //     "white",
-      //     GWU.color.colors.blue,
-      //     player.potion,
-      //     player.potion_max,
-      //     "Potion"
-      //   );
-      // }
-      _draw(buf) {
-          const scene = this.scene;
-          const game = scene.data;
-          const level = game.level;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-          const x = this.bounds.x + 1;
-          let y = this.bounds.y;
-          buf.setClip(this.bounds);
-          // buf.drawText(x);
-          y += buf.drawText(x, y, scene.app.name, "green");
-          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-          y += buf.drawText(x, y, "Level: " + game.level.depth, "pink");
-          y += 1;
-          let px = game.hero.x;
-          let py = game.hero.y;
-          // if (this._focus[0] != -1) {
-          //   px = this._focus[0];
-          //   py = this._focus[1];
-          // }
-          this.entries = level.actors.filter((a) => a && a !== game.hero && a.health > 0);
-          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
-              xy.distanceBetween(b.x, b.y, px, py));
-          let focused = this.entries.find((a) => xy.equals(a, this._focus));
-          let used = this.drawActor(buf, x, y, game.hero);
-          game.hero.data.sideY = y;
-          game.hero.data.sideH = used;
-          if (xy.equals(game.hero, this._focus)) {
-              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              focused = game.hero;
-          }
-          else if (focused) {
-              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-          }
-          y += used + 1;
-          this.entries.forEach((a) => {
-              const used = this.drawActor(buf, x, y, a);
-              if (a === focused) {
-                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              }
-              else if (focused) {
-                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-              }
-              a.data.sideY = y;
-              a.data.sideH = used;
-              y += used + 1;
-          });
-          y += 1;
-          // y += buf.drawText(x, y, "Press Escape to lose.");
-          buf.clearClip();
-      }
-      _mousemove(e) {
-          super._mousemove(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          this._focus.slice();
-          this.clearFocus();
-          const game = this.scene.data;
-          const hero = game.hero;
-          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
-              this.setFocus(hero.x, hero.y);
-          }
-          else {
-              this.entries.forEach((a) => {
-                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
-                      this.setFocus(a.x, a.y);
-                  }
-              });
-          }
-          // if (!GWU.xy.equals(wasFocus, this._focus)) {
-          //   this.emit("focus", this._focus);
-          //   this.needsDraw = true;
-          // }
-          e.stopPropagation();
-      }
-      _click(e) {
-          super._click(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          if (this._focus[0] > -1) {
-              this.emit("choose", this._focus);
-          }
-      }
-  }
-  function sidebar(scene, x, height) {
-      const widget = new Sidebar({
-          id: "SIDEBAR",
-          tag: "sidebar",
-          x: x,
-          y: 0,
-          width: scene.width - x,
-          height: height,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  function flavor(scene, x, y) {
-      const widget = index$1$1.make({
-          id: "FLAVOR",
-          tag: "flavor",
-          x: x,
-          y: y,
-          width: scene.width - x,
-          height: 1,
-          scene,
-          bg: index$9.from("darker_gray"),
-          fg: index$9.from("purple"),
-          draw(buf) {
-              this.scene.data;
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  class Details extends index$1$1.Dialog {
-      _text;
-      constructor(opts) {
-          opts.border = opts.border ?? "ascii";
-          super(opts);
-          this._text = new index$1$1.Text({
-              id: "INFO",
-              text: "details...",
-              x: this.bounds.x + 1,
-              y: this.bounds.y + 1,
-          });
-          this.addChild(this._text);
-          this.hidden = true;
-      }
-      showActor(actor) {
-          let text = actor.name + " [" + actor.power + "]\n";
-          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
-          text += "Moves : " + actor.moveSpeed + "\n";
-          if (actor.damage > 0) {
-              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          if (actor.range > 0) {
-              text +=
-                  "Ranged: " +
-                      actor.rangedDamage +
-                      " / " +
-                      actor.rangedAttackSpeed +
-                      " @ " +
-                      actor.range +
-                      " (" +
-                      actor.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-      showHero(player) {
-          let text = player.name + "\n";
-          const armor = player.slots.armor;
-          if (armor) {
-              text += "Health: " + player.health + " / " + player.health_max + "\n";
-              text += "#{teal}";
-              text += "  " + armor.name + " [" + armor.power + "]\n";
-              if (armor.kind.armor_flags != 0) {
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
-                      text += "  {-35% Damage Received}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
-                      text += "  {30% Negate Hits}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
-                      text += "  {-40% Artifact Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
-                      text += "  {+10 Arrows Per Bundle}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
-                      text += "  {100% Longer Roll Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
-                      text += "  {+30% Melee Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
-                      text += "  {Mobs Target You More}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
-                      text += "  {+15% Move Speed Aura}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
-                      text += "  {-40% Potion Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
-                      text += "  {Potion Boosts Defense}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
-                      text += "  {Potion Heals Nearby Allies}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
-                      text += "  {+30% Ranged Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
-                      text += "  {+20% Weapon Damage Aura}\n";
-                  }
-              }
-              text += "#{}";
-          }
-          else {
-              text += "Health: " + player.health + "/" + player.health_max + "\n";
-          }
-          text += "Moves : " + player.moveSpeed + "\n";
-          const melee = player.slots.melee;
-          if (melee) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-              text += "#{teal}";
-              text += `  ${melee.name} [${melee.power}]\n`;
-              text += "#{}";
-          }
-          else if (player.damage > 0) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          const ranged = player.slots.ranged;
-          if (ranged) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      " / " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-              text += "#{teal}";
-              text += "  " + ranged.name + " [" + ranged.power + "]\n";
-          }
-          else if (player.range > 0) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      "  " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-  }
-  function details(scene, width, height) {
-      const widget = new Details({
-          id: "DETAILS",
-          tag: "details",
-          x: 2,
-          y: 2,
-          width: width - 4,
-          height: height - 4,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  class AttackInfo {
-      damage;
-      time;
-      constructor(damage, time) {
-          this.damage = damage;
-          this.time = time;
-      }
-  }
-  class Actor extends Obj {
-      _turnTime = 0;
-      _level = null;
-      kind;
-      data;
-      health;
-      health_max;
-      ammo;
-      power;
-      armor_flags;
-      statuses;
-      combo_index;
-      leader = null;
-      constructor(cfg) {
-          super(cfg);
-          this.kind = cfg.kind;
-          if (!this.kind)
-              throw new Error("Must have kind.");
-          this.combo_index = 0;
-          this.armor_flags = 0;
-          this.data = {};
-          this.health_max = Math.round((this.kind.health || 10) * (1 + ((cfg.power || 1) - 1) / 2)); // TODO - scale with power?
-          this.health = this.health_max;
-          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
-          this.statuses = [];
-          this.on("add", (level) => {
-              level.game.scheduler.push(this, this.kind.moveSpeed);
-              this._level = level;
-          });
-          this.on("remove", (level) => {
-              // console.group("ACTOR REMOVE", this);
-              // console.group("before");
-              // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-              // console.groupEnd();
-              level.game.scheduler.remove(this);
-              this._level = null;
-              // console.group("after");
-              // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-              // console.groupEnd();
-              // console.groupEnd();
-          });
-          this.on("death", () => {
-              if (this.kind.dropChance &&
-                  this._level.rng.chance(this.kind.dropChance)) {
-                  placeRandom(this._level, this.x, this.y, this.kind.dropMatch);
-              }
-          });
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-          // Do this last so the scaling will work
-          this.power = cfg.power || 1;
-      }
-      // attributes
-      get name() {
-          return this.kind.name;
-      }
-      get damage() {
-          // TODO - combo damage
-          return Math.round(this.kind.damage * (1 + (this.power - 1) / 2));
-      }
-      get attackSpeed() {
-          // TODO - combo speed
-          return this.kind.attackSpeed;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get rangedDamage() {
-          return Math.round(this.kind.rangedDamage * (1 + (this.power - 1) / 2));
-      }
-      get rangedAttackSpeed() {
-          return this.kind.rangedAttackSpeed;
-      }
-      get moveSpeed() {
-          return this.kind.moveSpeed;
-      }
-      get comboLen() {
-          return this.kind.combo;
-      }
-      isHero() {
-          return false;
-      }
-      //
-      getMeleeAttack() {
-          const attack = new AttackInfo(this.damage, this.attackSpeed);
-          this.combo_index += 1;
-          this.combo_index = this.combo_index % this.comboLen;
-          return attack;
-      }
-      hasArmorFlag(flag) {
-          return (this.armor_flags & flag) > 0;
-      }
-      // TODO - Should this be a method instead of a property?
-      get canMeleeAttack() {
-          return this.damage > 0 && this.attackSpeed > 0;
-      }
-      addStatus(status) {
-          const current = this.statuses.findIndex((current) => current && current.merge(status));
-          if (current >= 0) {
-              return;
-          }
-          const empty = this.statuses.findIndex((s) => !s);
-          if (empty >= 0) {
-              this.statuses[empty] = status;
-          }
-          else {
-              this.statuses.push(status);
-          }
-      }
-      remove_status(status) {
-          const index = this.statuses.indexOf(status);
-          if (index >= 0) {
-              this.statuses[index] = null;
-          }
-      }
-      startTurn(game) {
-          this._turnTime = 0;
-          this.emit("turn_start", game);
-      }
-      endTurn(game, time) {
-          this._turnTime = time;
-          this.emit("turn_end", game, time);
-      }
-      hasActed() {
-          return this._turnTime > 0;
-      }
-      draw(buf) {
-          if (this.health <= 0)
-              return;
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      avoidsTile(tile) {
-          return tile.blocksMove || false;
-      }
-      moveCost(x, y) {
-          const level = this._level;
-          if (!level)
-              return index$6.OBSTRUCTION;
-          if (!level.hasXY(x, y))
-              return index$6.OBSTRUCTION;
-          if (level.blocksDiagonal(x, y))
-              return index$6.OBSTRUCTION;
-          if (level.blocksMove(x, y))
-              return index$6.BLOCKED;
-          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
-          return index$6.OK;
-      }
-      pathTo(loc) {
-          const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
-          return path;
-      }
-      act(game) {
-          this.startTurn(game);
-          ai(game, this);
-          if (!this.hasActed()) {
-              console.log("No actor AI action.");
-          }
-      }
-      bump(game, actor) {
-          const actions = this.kind.bump;
-          for (let action of actions) {
-              const fn = get(action);
-              if (fn && fn(game, actor, this)) {
-                  return true;
-              }
-          }
-          return false; // did nothing
-      }
-      tick(game, time) {
-          Object.values(this.statuses).forEach((status, i) => {
-              if (status) {
-                  if (!status.tick(this, game, time)) {
-                      this.statuses[i] = null;
-                  }
-              }
-          });
-      }
-      getSidebarEntry() {
-          const entry = new SidebarEntry(this.name, this.kind.fg);
-          entry.add_progress("Health", "green", this.health, this.health_max);
-          this.statuses.forEach((s) => {
-              s && s.update_sidebar(this, entry);
-          });
-          this.emit("sidebar", entry); // Allow plugins to update sidebar
-          return entry;
-      }
-  }
-  function make(id, opts = 1) {
-      let kind;
-      if (typeof opts === "number") {
-          opts = { power: opts };
-      }
-      if (typeof id === "string") {
-          kind = getKind(id);
-          if (!kind)
-              throw new Error("Failed to find actor kind - " + id);
-      }
-      else {
-          kind = id;
-      }
-      const config = Object.assign({
-          x: 1,
-          y: 1,
-          z: 1, // items, actors, player, fx
-          kind,
-          // health: kind.health || 10,
-          // damage: kind.damage || 2,
-      }, opts);
-      return new Actor(config);
-  }
-  function spawn(level, id, x, y, ms = 500) {
-      const newbie = typeof id === "string" ? make(id) : id;
-      const bg = newbie.kind.fg;
-      const game = level.game;
-      game.scene;
-      // const level = level.level;
-      if (x === undefined || y === undefined) {
-          do {
-              x = level.rng.number(level.width);
-              y = level.rng.number(level.height);
-          } while (!level.hasTile(x, y, "FLOOR") || level.actorAt(x, y));
-      }
-      newbie.x = x;
-      newbie.y = y;
-      let _success = NOOP;
-      flashGameTime(game, newbie.x, newbie.y, bg).then(() => {
-          level.addActor(newbie);
-          _success(newbie);
-      });
-      return {
-          then(cb) {
-              _success = cb || NOOP;
-          },
-      };
-  }
-
-  class Hero extends Actor {
-      mapToMe;
-      fov;
-      potion;
-      potion_max;
-      goalPath;
-      followPath;
-      slots;
-      constructor(cfg) {
-          super(cfg);
-          this.mapToMe = new index$6.DijkstraMap();
-          this.fov = null;
-          this.goalPath = null;
-          this.followPath = false;
-          this.slots = {};
-          this.potion_max = 40 * 200;
-          this.potion = this.potion_max; // Potion is ready
-          this.on("add", (level) => {
-              this._level = level;
-              this.updateMapToMe();
-              this.updateFov();
-              level.game.scene.needsDraw = true;
-          });
-          this.on("move", () => {
-              this.updateMapToMe();
-              this.updateFov();
-          });
-          this.on("remove", () => {
-              if (this.fov) {
-                  grid.free(this.fov);
-                  this.fov = null;
-              }
-              this.clearGoal();
-          });
-          this.on("turn_end", (game, time) => {
-              this.potion = Math.min(this.potion + time, this.potion_max);
-          });
-          this.on("damage", () => this.clearGoal());
-          // Need items in slots....
-          Object.entries(cfg.kind.slots).forEach(([slot, id]) => {
-              const item = make$2(id);
-              if (item === null) {
-                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
-              }
-              else {
-                  this.equip(item);
-                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
-              }
-          });
-      }
-      // attributes
-      get damage() {
-          const melee = this.slots.melee;
-          if (melee) {
-              // track combo...
-              if (this.combo_index == melee.kind.combo - 1) {
-                  return melee.comboDamage;
-              }
-              return melee.damage;
-          }
-          return super.damage;
-      }
-      get attackSpeed() {
-          const melee = this.slots.melee;
-          if (melee) {
-              // track combo...
-              if (this.combo_index == melee.kind.combo - 1) {
-                  return melee.comboSpeed;
-              }
-              return melee.speed;
-          }
-          return super.attackSpeed;
-      }
-      get range() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.range;
-          }
-          return super.range;
-      }
-      get rangedDamage() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.damage;
-          }
-          return super.rangedDamage;
-      }
-      get rangedAttackSpeed() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.speed;
-          }
-          return super.rangedAttackSpeed;
-      }
-      get canUsePotion() {
-          return this.potion >= this.potion_max;
-      }
-      get comboLen() {
-          const melee = this.slots.melee;
-          if (melee) {
-              return melee.combo;
-          }
-          return this.kind.combo;
-      }
-      isHero() {
-          return true;
-      }
-      //
-      equip(item) {
-          if (item.slot === null) {
-              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
-          }
-          this.slots[item.slot] = item;
-          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
-          const health_pct = this.health / this.health_max;
-          let new_health_max = this.kind.health;
-          Object.entries(this.slots).forEach(([s, i]) => {
-              if (i) {
-                  this.armor_flags |= i.kind.armor_flags;
-                  new_health_max += i.defense;
-              }
-          });
-          this.health_max = new_health_max;
-          this.health = Math.round(new_health_max * health_pct);
-          this.combo_index = 0;
-      }
-      unequipSlot(slot) {
-          this.slots[slot] = null;
-          this.armor_flags = 0;
-          const health_pct = this.health / this.health_max;
-          let new_health_max = this.kind.health;
-          Object.entries(this.slots).forEach(([s, i]) => {
-              if (i) {
-                  this.armor_flags |= i.kind.armor_flags;
-                  new_health_max += i.defense;
-              }
-          });
-          this.health_max = new_health_max;
-          this.health = Math.round(new_health_max * health_pct);
-          this.combo_index = 0;
-      }
-      act(game) {
-          this.startTurn(game);
-          if (this.goalPath && this.followPath && this.goalPath.length) {
-              const step = this.goalPath[0];
-              if (step) {
-                  if (game.level.hasActor(step[0], step[1])) {
-                      game.addMessage("You are blocked.");
-                  }
-                  else {
-                      const dir = xy.dirFromTo(this, step);
-                      if (moveDir(game, this, dir, true)) {
-                          if (xy.equals(this, step)) {
-                              this.goalPath.shift(); // we moved there, so remove that step
-                          }
-                          else {
-                              this.clearGoal();
-                          }
-                          return;
-                      }
-                      game.addMessage("You lost track of path.");
-                  }
-              }
-          }
-          this.clearGoal();
-          game.needInput = true;
-          console.log("Hero - await input", game.scheduler.time);
-      }
-      setGoal(x, y) {
-          if (!this._level || this.followPath)
-              return;
-          const level = this._level;
-          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
-              if (level.hasActor(i, j))
-                  return index$6.AVOIDED;
-              return this.moveCost(i, j);
-          });
-          if (this.goalPath &&
-              this.goalPath.length &&
-              xy.equals(this.goalPath[0], this)) {
-              this.goalPath.shift(); // remove the spot we are standing on
-          }
-      }
-      clearGoal() {
-          this.followPath = false;
-          this.goalPath = null;
-      }
-      updateMapToMe() {
-          const level = this._level;
-          if (!level)
-              return;
-          this.mapToMe.reset(level.width, level.height);
-          this.mapToMe.setGoal(this.x, this.y);
-          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
-      }
-      updateFov() {
-          const level = this._level;
-          if (!level)
-              return;
-          if (!this.fov ||
-              this.fov.width !== level.width ||
-              this.fov.height !== level.height) {
-              this.fov && grid.free(this.fov);
-              this.fov = grid.alloc(level.width, level.height);
-          }
-          index$7.calculate(this.fov, (x, y) => {
-              return this.moveCost(x, y) >= index$6.BLOCKED;
-          }, this.x, this.y, 100);
-      }
-      isInFov(...args) {
-          if (!this.fov)
-              return false;
-          if (args.length == 2) {
-              const [x, y] = args;
-              return this.fov.get(x, y) > 0;
-          }
-          else {
-              const pos = args[0];
-              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
-          }
-      }
-  }
-  function makeHero(id = "HERO") {
-      const kind = getKind(id);
-      if (!kind)
-          throw new Error("Failed to find hero's actor kind - " + id);
-      return new Hero({
-          x: 1,
-          y: 1,
-          z: 1, // items, actors, player, fx
-          kind,
-      });
-  }
-  function isHero(obj) {
-      return obj instanceof Hero;
-  }
-
-  class Status {
-      start(actor, game) { }
-      tick(actor, game, time) {
-          return false; // no longer active
-      }
-      stop(actor, game) { }
-      merge(status) {
-          return false;
-      }
-      // TODO - Wrap this with higher level interface
-      //      - Allow modifying the health bar
-      //      - Allow set text { set_status("Regen") }
-      update_sidebar(actor, entry) { }
-      // TODO - Wrap this with higher level interface
-      //      - Allow modifying other parts
-      //      - Allow set text { set_status("Regen") }
-      draw_details() { }
-  }
-  class RegenData {
-      amount;
-      time;
-      elapsed;
-      constructor(amount, time) {
-          this.amount = amount;
-          this.time = time;
-          this.elapsed = 0;
-      }
-      get isActive() {
-          return this.amount > 0.0 && this.elapsed < this.time;
-      }
-      tick(time) {
-          let used = Math.floor((this.amount * this.elapsed) / this.time);
-          this.elapsed = Math.min(this.time, this.elapsed + time);
-          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
-          return new_used - used;
-      }
-  }
-  class RegenStatus extends Status {
-      data;
-      constructor(amount, time) {
-          super();
-          this.data = [new RegenData(amount, time)];
-      }
-      tick(actor, game, time) {
-          let still_active = false;
-          this.data.forEach((d) => {
-              if (d.isActive) {
-                  still_active = true;
-                  const amount = d.tick(time);
-                  if (amount > 0) {
-                      heal(game, actor, { amount });
-                  }
-              }
-          });
-          return still_active;
-      }
-      merge(status) {
-          if (status instanceof RegenStatus) {
-              // do merge
-              this.data = this.data.concat(status.data);
-              status.data = [];
-              return true;
-          }
-          return false;
-      }
-      update_sidebar(actor, entry) {
-          entry.add_status("{Regen}", "green");
-      }
-  }
 
   const tileIds = {};
   const allTiles = [];
@@ -18530,7 +16291,7 @@ void main() {
   installType('feature', feature);
   installType('effect', feature);
   installType('id', feature);
-  function make$1(id, config) {
+  function make$1$1(id, config) {
       if (!id)
           return FALSE;
       if (typeof id === 'string') {
@@ -18554,7 +16315,7 @@ void main() {
       let steps;
       if (Array.isArray(id)) {
           steps = id
-              .map((config) => make$1(config))
+              .map((config) => make$1$1(config))
               .filter((a) => a !== null);
       }
       else if (typeof id === 'function') {
@@ -18562,7 +16323,7 @@ void main() {
       }
       else {
           steps = Object.entries(id)
-              .map(([key, config]) => make$1(key, config))
+              .map(([key, config]) => make$1$1(key, config))
               .filter((a) => a !== null);
       }
       if (steps.length === 1) {
@@ -18577,7 +16338,7 @@ void main() {
           return [];
       if (Array.isArray(cfg)) {
           return cfg
-              .map((c) => make$1(c))
+              .map((c) => make$1$1(c))
               .filter((fn) => fn !== null);
       }
       if (typeof cfg === 'string') {
@@ -18593,7 +16354,7 @@ void main() {
       else if (typeof cfg === 'function') {
           return [cfg];
       }
-      const steps = Object.entries(cfg).map(([key, config]) => make$1(key, config));
+      const steps = Object.entries(cfg).map(([key, config]) => make$1$1(key, config));
       return steps.filter((s) => s !== null);
   }
 
@@ -19032,7 +16793,7 @@ void main() {
       info.frequency = frequency.make(config.frequency);
       info.flags = 0;
       info.requiredTile = config.requiredTile || null;
-      info.feature = config.feature ? make$1(config.feature) : null;
+      info.feature = config.feature ? make$1$1(config.feature) : null;
       info.blueprint = config.blueprint || null;
       hordes$1.push(info);
       return info;
@@ -21204,7 +18965,7 @@ void main() {
       return true;
   }
   function pickWidth(width, rng) {
-      return clamp(_pickWidth(width, rng), 1, 3);
+      return utils.clamp(_pickWidth(width, rng), 1, 3);
   }
   function _pickWidth(width, rng$1) {
       if (!width)
@@ -22483,6 +20244,2588 @@ void main() {
       Flags[Flags["BP_NOT_IN_HALLWAY"] = Fl$3(15)] = "BP_NOT_IN_HALLWAY";
   })(Flags$3 || (Flags$3 = {}));
 
+  // export interface TileInfo extends TileConfig {
+  //   index: number;
+  // }
+  const tilesByIndex = [];
+  const tilesByName = {};
+  function install$8(cfg) {
+      const info = index$1.installTile(cfg);
+      tilesByIndex[info.index] = info;
+      tilesByName[info.id] = info;
+  }
+  install$8({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
+  install$8({
+      id: "WALL",
+      ch: "#",
+      fg: 0x333,
+      bg: 0x666,
+      blocksMove: true,
+      blocksVision: true,
+      blocksDiagonal: true,
+  });
+  install$8({
+      id: "CORPSE",
+      ch: "&",
+      fg: 0x666,
+      bg: 0x222,
+      priority: 15,
+      on: {
+          place(game, x, y) {
+              // game.wait(1000, () => {
+              //   if (game.map.hasTile(x, y, ids.CORPSE)) {
+              //     game.setTile(x, y, ids.FLOOR);
+              //   }
+              // });
+          },
+          tick(level, x, y) {
+              if (level.rng.chance(5)) {
+                  level.setTile(x, y, "FLOOR");
+              }
+          },
+      },
+  });
+  install$8({
+      id: "DOWN_STAIRS",
+      ch: "<",
+      fg: "gray",
+      on: {
+          enter(level, actor) {
+              level.game.addMessage("There is no turning back.");
+          },
+      },
+  });
+  install$8({
+      id: "UP_STAIRS",
+      ch: ">",
+      fg: "orange",
+      on: {
+          enter(level, actor) {
+              level.game.addMessage("Going up!");
+              level.emit("up_stairs", level, actor);
+          },
+      },
+  });
+  install$8({
+      id: "UP_STAIRS_INACTIVE",
+      ch: ">",
+      fg: "gray",
+      priority: 75,
+      on: {
+          enter(level, actor) {
+              level.game.addMessage("There is more to do.");
+          },
+      },
+  });
+  install$8({
+      id: "IMPREGNABLE",
+      ch: "#",
+      fg: 0x222,
+      bg: 0x444,
+      priority: 200,
+      blocksMove: true,
+      blocksVision: true,
+      blocksDiagonal: true,
+  });
+  index$1.allTiles.forEach((t) => {
+      if (tilesByName[t.id])
+          return;
+      install$8(t);
+  });
+
+  class Obj {
+      x;
+      y;
+      z;
+      events;
+      // spawn: boolean;
+      constructor() {
+          this.x = -1;
+          this.y = -1;
+          this.z = 0;
+          this.events = new index.Events(this);
+          // this.spawn = false;
+          // Object.assign(this, cfg);
+      }
+      // create(opts: ObjCreateOpts) {
+      //   this._create(opts);
+      //   this.emit("create", opts);
+      // }
+      _create(cfg) {
+          this.x = cfg.x !== undefined ? cfg.x : this.x;
+          this.y = cfg.y !== undefined ? cfg.y : this.y;
+          this.z = cfg.z !== undefined ? cfg.z : this.z;
+          const onFns = cfg.on || {};
+          Object.entries(onFns).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+      }
+      draw(buf) { }
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
+      }
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
+      }
+  }
+
+  class FX extends Obj {
+      ch;
+      fg;
+      bg;
+      constructor(cfg) {
+          super();
+          this.ch = cfg.ch || null;
+          this.fg = cfg.fg || null;
+          this.bg = cfg.bg || null;
+          this._create(cfg);
+          this.emit("create", this, cfg);
+      }
+      static make(cfg) {
+          const fx = new FX(cfg);
+          // fx._create(cfg);
+          return fx;
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this);
+      }
+  }
+  function flash(level, x, y, color = "white", ms = 300) {
+      const scene = level.scene;
+      scene.pause({ update: true });
+      const fx = FX.make({ x, y, bg: color, z: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      scene.needsDraw = true;
+      scene.wait(ms, () => {
+          level.removeFx(fx);
+          scene.resume({ update: true });
+          _success();
+      });
+      return {
+          then(success) {
+              _success = success || NOOP;
+          },
+      };
+  }
+  function flashGameTime(level, x, y, color = "white", ms = 300) {
+      const scene = level.scene;
+      const startTime = scene.app.time;
+      const fx = FX.make({ x, y, bg: color, z: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      // let _fail: CallbackFn = GWU.NOOP;
+      level.wait(ms, () => {
+          const nowTime = scene.app.time;
+          const timeLeft = ms - (nowTime - startTime);
+          if (timeLeft > 0) {
+              scene.pause({ update: true });
+              scene.wait(timeLeft, () => {
+                  level.removeFx(fx);
+                  scene.resume({ update: true });
+                  _success();
+              });
+          }
+          else {
+              level.removeFx(fx);
+              _success();
+          }
+      });
+      return {
+          then(fn) {
+              _success = fn || NOOP;
+          },
+      };
+  }
+
+  function projectile(level, from, to, sprite, ms) {
+      level.game;
+      const scene = level.scene;
+      from = xy.asXY(from);
+      to = xy.asXY(to);
+      let _success = NOOP;
+      if (sprite.ch && sprite.ch.length == 4) {
+          const dir = xy.dirFromTo(from, to);
+          let index = 0;
+          if (dir[0] && dir[1]) {
+              index = 2;
+              if (dir[0] != dir[1]) {
+                  // remember up is -y
+                  index = 3;
+              }
+          }
+          else if (dir[0]) {
+              index = 1;
+          }
+          const ch = sprite.ch[index];
+          sprite = index$4.make(ch, sprite.fg, sprite.bg);
+      }
+      else if (sprite.ch && sprite.ch.length !== 1) {
+          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
+      }
+      const fx = FX.make(sprite);
+      // console.log("- fire", from, to);
+      scene.pause({ update: true });
+      const tween$1 = tween
+          .make(fx)
+          .from(from)
+          .to(to, ["x", "y"])
+          .duration(ms)
+          .onStart((_vals) => {
+          level.addFx(fx);
+      })
+          .onUpdate((vals) => {
+          if (level.blocksMove(vals.x, vals.y)) {
+              tween$1.stop(false);
+          }
+          // console.log("- >> ", vals);
+          scene.needsDraw = true;
+      })
+          .onFinish((vals, isSuccess) => {
+          level.removeFx(fx);
+          scene.resume({ update: true });
+          _success(vals, isSuccess);
+      })
+          .start(scene.tweens);
+      return {
+          then(success) {
+              _success = success || NOOP;
+          },
+      };
+  }
+
+  const fl = flag.fl;
+  var ARMOR_FLAGS;
+  (function (ARMOR_FLAGS) {
+      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
+      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
+      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
+      // add ?? MOBS_AVOID_YOU_MORE ??
+      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
+      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
+      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
+      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
+  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
+  // @ts-ignore
+  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
+  var MELEE_FLAGS;
+  (function (MELEE_FLAGS) {
+      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
+      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
+      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
+      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
+      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
+      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
+      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
+      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
+      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
+      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
+      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
+      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
+      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
+      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
+      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
+      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
+      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
+      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
+      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
+      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
+      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
+      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
+      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
+      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
+      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
+      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
+      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
+      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
+      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
+      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
+  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
+  // @ts-ignore
+  globalThis.MELEE_FLAGS = MELEE_FLAGS;
+  var RANGED_FLAGS;
+  (function (RANGED_FLAGS) {
+      // "GROWING", // Not going to use
+      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
+      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
+      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
+      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
+      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
+      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
+      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
+      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
+      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
+      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
+      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
+      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
+      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
+      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
+      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
+      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
+      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
+  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
+  // @ts-ignore
+  globalThis.RANGED_FLAGS = RANGED_FLAGS;
+
+  const kinds$3 = {};
+  // @ts-ignore
+  globalThis.ItemKinds = kinds$3;
+  function makeKind$3(cfg) {
+      const kind = Object.assign({
+          name: "",
+          ch: "!",
+          fg: "white",
+          //   bump: ["attack"],
+          on: {},
+          frequency: 10,
+          speed: 100,
+          damage: 0,
+          combo: 0,
+          combo_speed: 0,
+          combo_damage: 0,
+          range: 0,
+          charge: 0,
+          defense: 0,
+          slot: null,
+          tags: [],
+          armor_flags: 0,
+          melee_flags: 0,
+          ranged_flags: 0,
+          effects: {},
+      }, cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("ItemKind must have 'id'.");
+      }
+      if (kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+      }
+      if (typeof cfg.tags == "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      if (typeof cfg.armor_flags !== "number") {
+          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+      }
+      if (typeof cfg.melee_flags !== "number") {
+          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
+      }
+      if (typeof cfg.ranged_flags !== "number") {
+          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
+      }
+      //   if (typeof cfg.bump === "string") {
+      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      //   }
+      kind.frequency = frequency.make(kind.frequency);
+      if (kind.slot === null) {
+          if (kind.range > 0) {
+              kind.slot = "ranged";
+          }
+          else if (kind.damage > 0) {
+              kind.slot = "melee";
+          }
+          else if (kind.defense > 0) {
+              kind.slot = "armor";
+          }
+      }
+      return kind;
+  }
+  function install$7(cfg) {
+      const kind = makeKind$3(cfg);
+      kinds$3[kind.id.toLowerCase()] = kind;
+  }
+  function getKind$3(id) {
+      return kinds$3[id.toLowerCase()] || null;
+  }
+
+  class Item extends Obj {
+      _turnTime = 0;
+      kind;
+      data;
+      _power;
+      _damage;
+      _comboDamage;
+      _defense;
+      constructor(kind) {
+          super();
+          this.kind = kind;
+          if (!this.kind)
+              throw new Error("Must have kind.");
+          this.data = {};
+          this._damage = this.kind.damage;
+          this._comboDamage = this.kind.combo_damage;
+          this._defense = this.kind.defense;
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+          this.power = 1; // cause calculations to fire
+      }
+      // create(opts: ItemCreateOpts) {
+      //   this._create(opts);
+      //   this.emit("create", this, opts);
+      // }
+      _create(opts) {
+          super._create(opts);
+          // install emit handlers for ItemEvents
+          Object.entries(opts).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.power = opts.power || this.power;
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      get name() {
+          return this.kind.name;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          val = val || 1;
+          this._power = val;
+          // Value = POWER * BASE * Math.pow(1.025,POWER)
+          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
+          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
+      }
+      get damage() {
+          return this._damage;
+      }
+      get comboDamage() {
+          return this._comboDamage;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get speed() {
+          return this.kind.speed;
+      }
+      get comboSpeed() {
+          return this.kind.combo_speed;
+      }
+      get combo() {
+          return this.kind.combo;
+      }
+      get defense() {
+          return this._defense;
+      }
+      get slot() {
+          return this.kind.slot;
+      }
+      get charge() {
+          return this.kind.charge;
+      }
+  }
+
+  class ItemFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(kind, opts = {}) {
+          let item;
+          if (opts.make) {
+              item = opts.make(kind, opts);
+          }
+          else {
+              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+              if (makePlugin) {
+                  item = makePlugin.make(kind, opts);
+              }
+              else {
+                  item = new Item(kind);
+              }
+          }
+          this.apply(item);
+          item._create(opts);
+          item.emit("create", item, opts);
+          return item;
+      }
+      apply(item) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              item.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(item.data, val);
+                  }
+                  else if (typeof val === "function") {
+                      item.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$4 = new ItemFactory();
+  function use$4(plugin) {
+      factory$4.use(plugin);
+  }
+  function make$4(id, opts = {}) {
+      let kind = typeof id === "string" ? getKind$3(id) : id;
+      if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
+          throw new Error("Invalid ItemKind: " + JSON.stringify(id));
+      }
+      return factory$4.make(kind, opts);
+  }
+  function place(level, x, y, id = null) {
+      let newbie;
+      if (id === null) {
+          newbie = random$1(level); // TODO - default match?
+      }
+      else if (typeof id === "string") {
+          newbie = make$4(id);
+      }
+      else {
+          newbie = id;
+      }
+      if (!newbie)
+          return null;
+      newbie.kind.fg;
+      const game = level.game;
+      // const scene = level.scene;
+      // const level = level.level;
+      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
+          return !level.blocksMove(i, j) && !level.hasItem(i, j);
+      });
+      if (!locs || locs.length == 0)
+          return null;
+      const loc = game.rng.item(locs);
+      newbie.x = loc[0];
+      newbie.y = loc[1];
+      // level.events.emit("spawn_item", level, newbie);
+      level.addItem(newbie);
+      return newbie;
+  }
+  function placeRandom(level, x, y, match = null) {
+      let item = random$1(level, match);
+      if (!item) {
+          return null;
+      }
+      return place(level, x, y, item);
+  }
+  function random$1(level, match = null) {
+      // pick random kind
+      let allKinds = Object.values(kinds$3);
+      let matches;
+      if (match === null) {
+          matches = [];
+      }
+      else if (typeof match == "string") {
+          matches = match.split(/[|,]/).map((v) => v.trim());
+      }
+      else {
+          matches = match.map((v) => v.trim());
+      }
+      if (matches.length > 0) {
+          allKinds = allKinds.filter((kind) => {
+              return matches.every((m) => {
+                  if (m[0] == "!") {
+                      return !kind.tags.includes(m.substring(1));
+                  }
+                  else {
+                      return kind.tags.includes(m);
+                  }
+              });
+          });
+      }
+      const chances = allKinds.map((k) => k.frequency(level.depth));
+      const index = level.rng.weighted(chances);
+      if (index < 0)
+          return null;
+      const kind = allKinds[index];
+      const item = make$4(kind);
+      return item;
+  }
+
+  // @returns boolean - indicates whether or not the target dies
+  function damage(level, target, damage) {
+      const game = level.game;
+      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
+      const armor_flags = target.armor_flags;
+      let amount = (damage.amount = damage.amount || 0);
+      damage.msg = damage.msg || `${target.name} is damaged`;
+      damage.color = damage.color || "red";
+      if (!damage.isRanged) {
+          damage.isRanged = false;
+      }
+      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
+          if (game.rng.chance(30)) {
+              game.messages.addCombat(damage.msg + "#{orange [X]}");
+              flash(level, target.x, target.y, "orange", 150);
+              damage.amount = 0;
+              return false;
+          }
+      }
+      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
+          damage.amount = Math.round(damage.amount * 0.65);
+      }
+      target.emit("damage", damage);
+      if (damage.amount <= 0) {
+          return false;
+      }
+      target.health -= damage.amount || 0;
+      if (damage.amount < amount) {
+          damage.color = "orange";
+      }
+      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
+      flash(level, target.x, target.y, damage.color, 150);
+      if (target.health <= 0) {
+          // do all of these move to event handlers?
+          game.messages.addCombat(`${target.name} dies`);
+          // TODO - This should be above the floor (FIXTURE)
+          // that way when it decays the floor returns as normal
+          // and corpses can be custom to the creature that died
+          // no matter what the floor is
+          level.setTile(target.x, target.y, "CORPSE");
+          target.emit("death", level, target);
+          level.removeActor(target);
+          return true;
+      }
+      return false;
+  }
+
+  function heal(level, target, heal) {
+      if (heal.amount <= 0)
+          return;
+      heal.amount = Math.min(heal.amount, target.health_max - target.health);
+      target.health += heal.amount;
+  }
+
+  const actionsByName = {};
+  function install$6(name, fn) {
+      actionsByName[name] = fn;
+  }
+  function get(name) {
+      return actionsByName[name] || null;
+  }
+  function idle(level, actor) {
+      console.log("- idle", actor.name, actor.x, actor.y);
+      level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+      return true;
+  }
+  install$6("idle", idle);
+  function moveRandom(level, actor, quiet = false) {
+      const dir = level.rng.item(xy.DIRS);
+      return moveDir(level, actor, dir, quiet);
+  }
+  install$6("move_random", moveRandom);
+  function moveDir(level, actor, dir, quiet = false) {
+      const game = level.game;
+      const newX = actor.x + dir[0];
+      const newY = actor.y + dir[1];
+      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
+          if (!quiet) {
+              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
+              game.addMessage(`Blocked by a ${tile.id}.`);
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return true;
+          }
+          else {
+              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      const other = level.actorAt(newX, newY);
+      if (other) {
+          if (other.kind && other.bump(level, actor)) {
+              return true;
+          }
+          if (actor.hasActed())
+              return true;
+          if (!quiet) {
+              game.addMessage(`You bump into a ${other.name}.`);
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return true;
+          }
+          else {
+              console.log("- nothing!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      if (level.blocksMove(newX, newY)) {
+          if (!quiet) {
+              game.addMessage("You bump into a wall.");
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return false;
+          }
+          else {
+              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      actor.x;
+      actor.y;
+      actor.x = newX;
+      actor.y = newY;
+      // game.drawAt(oldX, oldY);
+      // game.drawAt(newX, newY);
+      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
+      actor.emit("move", level, actor, newX, newY);
+      level.triggerAction("enter", actor);
+      game.endTurn(actor, speed);
+      return true;
+  }
+  function moveTowardHero(level, actor, quiet = false) {
+      const game = level.game;
+      const player = game.hero;
+      const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+          return level.hasActor(x, y);
+      });
+      if (dir) {
+          if (moveDir(level, actor, dir, true)) {
+              return true; // success
+          }
+          if (!quiet) {
+              flash(level, actor.x, actor.y, "orange", 150);
+          }
+          return idle(level, actor);
+      }
+      return false;
+  }
+  install$6("move_toward_hero", moveTowardHero);
+  function moveAwayFromHero(level, actor, quiet = false) {
+      const game = level.game;
+      const player = game.hero;
+      // compute safety map
+      const safety = new index$6.DijkstraMap(level.width, level.height);
+      safety.copy(player.mapToMe);
+      safety.update((v, x, y) => {
+          if (v >= index$6.BLOCKED)
+              return v;
+          v = -1.2 * v;
+          if (level.isInLoop(x, y))
+              v -= 2;
+          if (level.isGateSite(x, y))
+              v -= 2;
+          return Math.round(v);
+      });
+      safety.setDistance(player.x, player.y, index$6.BLOCKED);
+      safety.rescan((x, y) => actor.moveCost(x, y));
+      safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+          return level.hasActor(x, y);
+      });
+      console.log(`- move away (${actor.x},${actor.y}) from player (${player.x},${player.y}) - ${dir}`);
+      // if (dir === null) {
+      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+      //     return map.hasActor(x, y);
+      //   });
+      // }
+      if (dir) {
+          const spread = xy.dirSpread(dir);
+          for (let d of spread) {
+              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
+              if (moveDir(level, actor, d, true)) {
+                  console.log("- success");
+                  return true; // success
+              }
+          }
+          if (!quiet) {
+              flash(level, actor.x, actor.y, "orange", 150);
+          }
+          return idle(level, actor);
+      }
+      return false;
+  }
+  install$6("move_away_from_hero", moveAwayFromHero);
+  function attack(level, actor, target = null) {
+      const game = level.game;
+      if (target) {
+          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
+              return false;
+          }
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game.level.actors.filter((a) => a !== actor &&
+              actor.health > 0 &&
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
+              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              flash(level, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              level.scene.app.scenes
+                  .run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(level, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+                  }
+                  else {
+                      attack(level, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      // @ts-ignore
+      const actorIsPlayer = actor === game.hero;
+      // @ts-ignore
+      const otherIsPlayer = target === game.hero;
+      if (!actorIsPlayer && !otherIsPlayer) {
+          return idle(level, actor); // no attacking
+      }
+      const attackInfo = actor.getMeleeAttack();
+      if (!attackInfo) {
+          game.addMessage("Cannot attack.");
+          flash(level, actor.x, actor.y, "orange", 150);
+          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      }
+      // we have an actor and a target
+      damage(level, target, {
+          amount: attackInfo.damage,
+          msg: `${actor.name} attacks ${target.name}`,
+      });
+      game.endTurn(actor, attackInfo.time);
+      return true;
+  }
+  install$6("attack", attack);
+  function fire(level, actor, target = null) {
+      const game = level.game;
+      const hero = game.hero;
+      if (!actor.range) {
+          game.addMessage("Nothing to fire.");
+          return false;
+      }
+      if (!actor.ammo) {
+          game.addMessage("No ammo.");
+          return false;
+      }
+      if (target) {
+          if (xy.distanceFromTo(actor, target) > actor.range)
+              return false;
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game
+              .level.actors.filter((a) => {
+              if (a === actor)
+                  return false;
+              if (actor.health <= 0)
+                  return false;
+              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
+              if (dist > actor.range) {
+                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
+                  return false;
+              }
+              console.log("checking fov...");
+              // HACK - for actor.canSee(a)
+              if (!hero.isInFov(actor)) {
+                  console.log("actor not visible");
+                  return false;
+              }
+              if (!hero.isInFov(a)) {
+                  console.log("target not visible");
+                  return false;
+              }
+              // end hack
+              console.log("ok - ", a.name);
+              return true;
+          })
+              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              // flash tiles you can fire into
+              const fov = new index$7.FOV({
+                  isBlocked(x, y) {
+                      // TODO - This should be more about visible than move
+                      return actor.moveCost(x, y) >= index$6.BLOCKED;
+                  },
+                  hasXY(x, y) {
+                      return level.hasXY(x, y);
+                  },
+              });
+              // TODO - FOV highlights cells we can't fire into...
+              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
+                  flash(level, x, y, "dark_teal", 125);
+              });
+              // FX.flash(game, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              level.scene.app.scenes
+                  .run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(level, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
+                  }
+                  else {
+                      fire(level, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      // @ts-ignore
+      const actorIsHero = actor === game.hero;
+      // @ts-ignore
+      const otherIsHero = target === game.hero;
+      if (!actorIsHero && !otherIsHero) {
+          return idle(level, actor); // no attacking
+      }
+      // we have an actor and a target
+      // Does this move to an event handler?  'damage', { amount: #, type: string }
+      actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
+      projectile(level, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(level, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              damage(level, target, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${target.name}`,
+              });
+          }
+      });
+      game.endTurn(actor, actor.rangedAttackSpeed);
+      return true;
+  }
+  install$6("fire", fire);
+  function fireAtHero(level, actor) {
+      const game = level.game;
+      const hero = game.hero;
+      // if player can't see actor then actor can't see player!
+      if (!hero.isInFov(actor.x, actor.y))
+          return false;
+      if (!actor.ammo)
+          return false;
+      actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
+      projectile(level, actor, hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(level, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              // @ts-ignore
+              damage(level, hero, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${hero.name}`,
+              });
+          }
+      });
+      game.endTurn(actor, actor.rangedAttackSpeed);
+      return true;
+  }
+  install$6("fire_at_hero", fireAtHero);
+  function climb(level, actor) {
+      const game = level.game;
+      const tile = game.level.getTile(actor.x, actor.y);
+      if (tile.on && tile.on.climb) {
+          tile.on.climb.call(tile, game, actor);
+          return actor.hasActed();
+      }
+      else {
+          return idle(level, actor);
+      }
+  }
+  install$6("climb", climb);
+  function pickup(level, actor) {
+      const game = level.game;
+      const item = level.itemAt(actor.x, actor.y);
+      if (item) {
+          item.emit("pickup", level, item, actor);
+          return true;
+      }
+      game.addMessage("Nothing to pickup.");
+      return idle(level, actor);
+  }
+  install$6("pickup", pickup);
+  // export function potion(game: Game, hero: Hero): boolean {
+  //   if (!hero.canUsePotion) {
+  //     game.addMessage("Not ready.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   if (hero.health >= hero.health_max) {
+  //     game.addMessage("You do not need to drink a potion.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   const heal = Math.floor(hero.health_max * 0.75);
+  //   hero.health = Math.min(hero.health + heal, hero.health_max);
+  //   hero.potion = 0; // Needs to recharge
+  //   game.addMessage("You feel much better.");
+  //   game.endTurn(hero, hero.moveSpeed);
+  //   return true;
+  // }
+
+  function ai(level, actor) {
+      const game = level.game;
+      const hero = game.hero;
+      const noticeDistance = actor.kind.notice || 10;
+      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
+      const canSeeHero = hero.isInFov(actor);
+      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
+      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
+      // TODO - Noticed prior to hero going out of range/view should skip this
+      // Do this with a flag/mode/state/time value?
+      if (distToHero > noticeDistance || !canSeeHero) {
+          // wander to goal?  [wanderChance]
+          // step randomly [idleMoveChance]
+          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
+          // random chance? [randomMoveChance]
+          if (game.rng.chance(20)) {
+              if (moveRandom(level, actor, true))
+                  return;
+          }
+          return idle(level, actor);
+      }
+      if (distToHero <= actor.kind.tooClose) {
+          // should there be a random chance on this?
+          if (moveAwayFromHero(level, actor))
+              return;
+      }
+      // shoot at player?
+      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
+          if (fireAtHero(level, actor))
+              return;
+      }
+      if (distToHero < 2) {
+          // can attack diagonal
+          if (actor.canMeleeAttack) {
+              // @ts-ignore
+              if (attack(level, actor, hero))
+                  return;
+          }
+          if (distToHero == 1) {
+              // Hmmm...
+              return idle(level, actor);
+          }
+      }
+      // If we don't have a min distance from hero then move closer (to get to melee range)
+      if (!actor.kind.tooClose) {
+          if (moveTowardHero(level, actor))
+              return;
+      }
+      return idle(level, actor);
+  }
+
+  function messages(scene, y) {
+      const widget = index$1$1.make({
+          id: "MESSAGES",
+          tag: "msg",
+          x: 0,
+          y: y,
+          width: scene.width,
+          height: scene.height - y,
+          scene,
+          bg: "darkest_gray",
+          fg: "white",
+          draw(buf) {
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              const fg = index$9.from(this._used.fg);
+              const fgc = fg.alpha(50);
+              const scene = this.scene;
+              const level = scene.data.level;
+              const game = level.game;
+              if (game && game.messages) {
+                  game.messages.forEach((msg, confirmed, i) => {
+                      if (i < this.bounds.height) {
+                          const color = confirmed ? fgc : fg;
+                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
+                      }
+                  });
+              }
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  let Map$1 = class Map extends index.Widget {
+      _focus = [-1, -1];
+      constructor(opts) {
+          super(opts);
+          this.on("draw", this._draw);
+          this.on("mousemove", this._setFocus);
+          this.on("mouseleave", this._clearFocus);
+          this.on("keypress", this._clearFocus);
+      }
+      _draw(buf) {
+          const scene = this.scene;
+          const level = scene.data.level;
+          const game = level.game;
+          const player = game.hero;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
+          level.tiles.forEach((index, x, y) => {
+              if (this.bounds.contains(x, y)) {
+                  buf.blackOut(x, y);
+                  level.drawAt(buf, x, y);
+                  if (!player.fov || !player.fov.get(x, y)) {
+                      buf.get(x, y).mix("black", 25, 25);
+                  }
+              }
+          });
+          if (player.goalPath) {
+              player.goalPath.forEach(([x, y]) => {
+                  buf.get(x, y).mix("green", 0, 25).separate();
+              });
+          }
+      }
+      _setFocus(e) {
+          this._focus[0] = e.x;
+          this._focus[1] = e.y;
+          this.needsDraw = true;
+          // e.stopPropagation();
+      }
+      _clearFocus() {
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+      }
+  };
+  function map(scene, width, height) {
+      const widget = new Map$1({
+          id: "MAP",
+          tag: "map",
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          scene,
+          bg: index$9.BLACK,
+      });
+      return widget;
+  }
+
+  class SidebarEntry {
+      // TODO - icon: GWU.sprite.SpriteData | null;
+      name;
+      nameColor;
+      progressbars;
+      statuses;
+      constructor(name, color) {
+          // TODO: this.icon = null;
+          this.name = name;
+          this.nameColor = color === undefined ? "white" : color;
+          this.progressbars = [];
+          this.statuses = [];
+      }
+      add_progress(text, color, val, max) {
+          this.progressbars.push({
+              text,
+              color,
+              val,
+              max,
+          });
+          return this;
+      }
+      add_status(text, color) {
+          this.statuses.push({ text, color });
+          return this;
+      }
+  }
+  class Sidebar extends index.Widget {
+      _focus = [-1, -1];
+      entries = [];
+      constructor(opts) {
+          super(opts);
+      }
+      setFocus(x, y) {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = x;
+          this._focus[1] = y;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.emit("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      clearFocus() {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.emit("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
+      //   buf.drawText(x, y, "Hero");
+      //   this.drawHealth(buf, x, y + 1, 28, player);
+      //   this.drawPotion(buf, x, y + 2, 28, player);
+      //   let lines = 3; // Hero + health + potion
+      //   player.statuses.forEach((status) => {
+      //     if (status) {
+      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+      //     }
+      //   });
+      //   return lines;
+      // }
+      drawActor(buf, x, y, actor) {
+          //   buf.drawText(x, y, actor.name, actor.kind.fg);
+          //   this.drawHealth(buf, x, y + 1, 28, actor);
+          //   let lines = 2; // name + health
+          //   actor.statuses.forEach((status) => {
+          //     if (status) {
+          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+          //     }
+          //   });
+          //   return lines;
+          let entry = actor.getSidebarEntry();
+          return this.drawEntry(buf, x, y, entry);
+      }
+      drawEntry(buf, x, y, entry) {
+          buf.drawText(x, y, entry.name, entry.nameColor);
+          let lines = 1;
+          entry.progressbars.forEach((p) => {
+              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
+              lines += 1;
+          });
+          entry.statuses.forEach((s) => {
+              buf.drawText(x, y + lines, s.text, s.color);
+              lines += 1;
+          });
+          return lines;
+      }
+      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
+          const pct = val / max;
+          const full = Math.floor(w * pct);
+          const partialPct = Math.floor(100 * (w * pct - full));
+          buf.fillRect(x, y, full, 1, null, null, bg);
+          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
+          if (text && text.length) {
+              buf.drawText(x, y, text, fg, null, w, "center");
+          }
+      }
+      // drawHealth(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   actor: Actor
+      // ) {
+      //   const pct = actor.health / actor.health_max;
+      //   const bg = GWU.color.colors.green.mix(
+      //     GWU.color.colors.red,
+      //     100 * (1 - pct)
+      //   );
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     bg,
+      //     actor.health,
+      //     actor.health_max,
+      //     "HEALTH"
+      //   );
+      // }
+      // drawPotion(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   player: Hero
+      // ) {
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     GWU.color.colors.blue,
+      //     player.potion,
+      //     player.potion_max,
+      //     "Potion"
+      //   );
+      // }
+      _draw(buf) {
+          const scene = this.scene;
+          const level = scene.data.level;
+          const game = level.game;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+          const x = this.bounds.x + 1;
+          let y = this.bounds.y;
+          buf.setClip(this.bounds);
+          // buf.drawText(x);
+          y += buf.drawText(x, y, scene.app.name, "green");
+          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
+          y += buf.drawText(x, y, "Level: " + level.data.depth, "pink");
+          y += 1;
+          let px = game.hero.x;
+          let py = game.hero.y;
+          // if (this._focus[0] != -1) {
+          //   px = this._focus[0];
+          //   py = this._focus[1];
+          // }
+          this.entries = level.actors.filter(
+          // @ts-ignore
+          (a) => a && a !== game.hero && a.health > 0);
+          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
+              xy.distanceBetween(b.x, b.y, px, py));
+          let focused = this.entries.find((a) => xy.equals(a, this._focus));
+          // @ts-ignore
+          let used = this.drawActor(buf, x, y, game.hero);
+          game.hero.data.sideY = y;
+          game.hero.data.sideH = used;
+          if (xy.equals(game.hero, this._focus)) {
+              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              // @ts-ignore
+              focused = game.hero;
+          }
+          else if (focused) {
+              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+          }
+          y += used + 1;
+          this.entries.forEach((a) => {
+              const used = this.drawActor(buf, x, y, a);
+              if (a === focused) {
+                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              }
+              else if (focused) {
+                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+              }
+              a.data.sideY = y;
+              a.data.sideH = used;
+              y += used + 1;
+          });
+          y += 1;
+          // y += buf.drawText(x, y, "Press Escape to lose.");
+          buf.clearClip();
+      }
+      _mousemove(e) {
+          super._mousemove(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          this._focus.slice();
+          this.clearFocus();
+          const level = this.scene.data.level;
+          const game = level.game;
+          const hero = game.hero;
+          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
+              this.setFocus(hero.x, hero.y);
+          }
+          else {
+              this.entries.forEach((a) => {
+                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
+                      this.setFocus(a.x, a.y);
+                  }
+              });
+          }
+          // if (!GWU.xy.equals(wasFocus, this._focus)) {
+          //   this.emit("focus", this._focus);
+          //   this.needsDraw = true;
+          // }
+          e.stopPropagation();
+      }
+      _click(e) {
+          super._click(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          if (this._focus[0] > -1) {
+              this.emit("choose", this._focus);
+          }
+      }
+  }
+  function sidebar(scene, x, height) {
+      const widget = new Sidebar({
+          id: "SIDEBAR",
+          tag: "sidebar",
+          x: x,
+          y: 0,
+          width: scene.width - x,
+          height: height,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  function flavor(scene, x, y) {
+      const widget = index$1$1.make({
+          id: "FLAVOR",
+          tag: "flavor",
+          x: x,
+          y: y,
+          width: scene.width - x,
+          height: 1,
+          scene,
+          bg: index$9.from("darker_gray"),
+          fg: index$9.from("purple"),
+          draw(buf) {
+              const scene = this.scene;
+              const level = scene.data.level;
+              level.game;
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  class Details extends index$1$1.Dialog {
+      _text;
+      constructor(opts) {
+          opts.border = opts.border ?? "ascii";
+          super(opts);
+          this._text = new index$1$1.Text({
+              id: "INFO",
+              text: "details...",
+              x: this.bounds.x + 1,
+              y: this.bounds.y + 1,
+          });
+          this.addChild(this._text);
+          this.hidden = true;
+      }
+      showActor(actor) {
+          let text = actor.name + " [" + actor.power + "]\n";
+          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
+          text += "Moves : " + actor.moveSpeed + "\n";
+          if (actor.damage > 0) {
+              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          if (actor.range > 0) {
+              text +=
+                  "Ranged: " +
+                      actor.rangedDamage +
+                      " / " +
+                      actor.rangedAttackSpeed +
+                      " @ " +
+                      actor.range +
+                      " (" +
+                      actor.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+      showHero(player) {
+          let text = player.name + "\n";
+          const armor = player.slots.armor;
+          if (armor) {
+              text += "Health: " + player.health + " / " + player.health_max + "\n";
+              text += "#{teal}";
+              text += "  " + armor.name + " [" + armor.power + "]\n";
+              if (armor.kind.armor_flags != 0) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+                      text += "  {-35% Damage Received}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+                      text += "  {30% Negate Hits}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+                      text += "  {-40% Artifact Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
+                      text += "  {+10 Arrows Per Bundle}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+                      text += "  {100% Longer Roll Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+                      text += "  {+30% Melee Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+                      text += "  {Mobs Target You More}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+                      text += "  {+15% Move Speed Aura}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+                      text += "  {-40% Potion Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+                      text += "  {Potion Boosts Defense}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                      text += "  {Potion Heals Nearby Allies}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+                      text += "  {+30% Ranged Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+                      text += "  {+20% Weapon Damage Aura}\n";
+                  }
+              }
+              text += "#{}";
+          }
+          else {
+              text += "Health: " + player.health + "/" + player.health_max + "\n";
+          }
+          text += "Moves : " + player.moveSpeed + "\n";
+          const melee = player.slots.melee;
+          if (melee) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+              text += "#{teal}";
+              text += `  ${melee.name} [${melee.power}]\n`;
+              text += "#{}";
+          }
+          else if (player.damage > 0) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          const ranged = player.slots.ranged;
+          if (ranged) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      " / " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+              text += "#{teal}";
+              text += "  " + ranged.name + " [" + ranged.power + "]\n";
+          }
+          else if (player.range > 0) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      "  " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+  }
+  function details(scene, width, height) {
+      const widget = new Details({
+          id: "DETAILS",
+          tag: "details",
+          x: 2,
+          y: 2,
+          width: width - 4,
+          height: height - 4,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  class AttackInfo {
+      damage;
+      time;
+      constructor(damage, time) {
+          this.damage = damage;
+          this.time = time;
+      }
+  }
+  class Actor extends Obj {
+      _turnTime = 0;
+      _level = null;
+      kind;
+      data = {};
+      health = 0;
+      health_max = 0;
+      ammo = 0;
+      _power = 1;
+      armor_flags = 0;
+      statuses = [];
+      combo_index = 0;
+      leader = null;
+      constructor(kind) {
+          super();
+          this.kind = kind;
+          if (!this.kind)
+              throw new Error("Missing ActorKind!");
+          this.z = 1;
+          this.health_max = this.kind.health || 10;
+          this.health = this.health_max;
+          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
+          const onFns = kind.on || {};
+          Object.entries(onFns).forEach(([key, val]) => {
+              this.on(key, val);
+          });
+      }
+      _create(opts) {
+          super._create(opts);
+          this.on("add", (level) => {
+              level.scheduler.push(this, this.kind.moveSpeed);
+              this._level = level;
+          });
+          this.on("destroy", (level) => {
+              // console.group("ACTOR REMOVE", this);
+              // console.group("before");
+              // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
+              // console.groupEnd();
+              level.scheduler.remove(this);
+              this._level = null;
+              // console.group("after");
+              // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
+              // console.groupEnd();
+              // console.groupEnd();
+          });
+          this.on("death", () => {
+              if (this.kind.dropChance &&
+                  this._level.rng.chance(this.kind.dropChance)) {
+                  placeRandom(this._level, this.x, this.y, this.kind.dropMatch);
+              }
+          });
+          // install emit handlers for ItemEvents
+          Object.entries(opts).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.power = opts.power || 1;
+          // machineHome
+      }
+      // attributes
+      get name() {
+          return this.kind.name;
+      }
+      get damage() {
+          // TODO - combo damage
+          return Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+      }
+      get attackSpeed() {
+          // TODO - combo speed
+          return this.kind.attackSpeed;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get rangedDamage() {
+          return Math.round(this.kind.rangedDamage * (1 + (this._power - 1) / 2));
+      }
+      get rangedAttackSpeed() {
+          return this.kind.rangedAttackSpeed;
+      }
+      get moveSpeed() {
+          return this.kind.moveSpeed;
+      }
+      get comboLen() {
+          return this.kind.combo;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          this._power = val;
+          this.health = Math.round(this.kind.health * (1 + (this._power - 1) / 2));
+          this.health_max = this.health;
+      }
+      isHero() {
+          return false;
+      }
+      //
+      getMeleeAttack() {
+          const attack = new AttackInfo(this.damage, this.attackSpeed);
+          this.combo_index += 1;
+          this.combo_index = this.combo_index % this.comboLen;
+          return attack;
+      }
+      hasArmorFlag(flag) {
+          return (this.armor_flags & flag) > 0;
+      }
+      // TODO - Should this be a method instead of a property?
+      get canMeleeAttack() {
+          return this.damage > 0 && this.attackSpeed > 0;
+      }
+      addStatus(status) {
+          const current = this.statuses.findIndex((current) => current && current.merge(status));
+          if (current >= 0) {
+              return;
+          }
+          const empty = this.statuses.findIndex((s) => !s);
+          if (empty >= 0) {
+              this.statuses[empty] = status;
+          }
+          else {
+              this.statuses.push(status);
+          }
+      }
+      remove_status(status) {
+          const index = this.statuses.indexOf(status);
+          if (index >= 0) {
+              this.statuses[index] = null;
+          }
+      }
+      startTurn(level) {
+          this._turnTime = 0;
+          this.emit("turn_start", level, this);
+      }
+      endTurn(level, time) {
+          this._turnTime = time;
+          this.emit("turn_end", level, this, time);
+      }
+      hasActed() {
+          return this._turnTime > 0;
+      }
+      draw(buf) {
+          if (this.health <= 0)
+              return;
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      avoidsTile(tile) {
+          return tile.blocksMove || false;
+      }
+      moveCost(x, y) {
+          const level = this._level;
+          if (!level)
+              return index$6.OBSTRUCTION;
+          if (!level.hasXY(x, y))
+              return index$6.OBSTRUCTION;
+          if (level.blocksDiagonal(x, y))
+              return index$6.OBSTRUCTION;
+          if (level.blocksMove(x, y))
+              return index$6.BLOCKED;
+          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
+          return index$6.OK;
+      }
+      pathTo(loc) {
+          const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
+          return path;
+      }
+      act(level) {
+          this.startTurn(level);
+          ai(level, this);
+          if (!this.hasActed()) {
+              console.log("No actor AI action.");
+          }
+      }
+      bump(level, actor) {
+          const actions = this.kind.bump;
+          for (let action of actions) {
+              const fn = get(action);
+              if (fn && fn(level, actor, this)) {
+                  return true;
+              }
+          }
+          return false; // did nothing
+      }
+      tick(level, time) {
+          this.emit("tick", level, this, time);
+          Object.values(this.statuses).forEach((status, i) => {
+              if (status) {
+                  if (!status.tick(this, level, time)) {
+                      this.statuses[i] = null;
+                  }
+              }
+          });
+      }
+      getSidebarEntry() {
+          const entry = new SidebarEntry(this.name, this.kind.fg);
+          entry.add_progress("Health", "green", this.health, this.health_max);
+          this.statuses.forEach((s) => {
+              s && s.update_sidebar(this, entry);
+          });
+          this.emit("sidebar", this, entry); // Allow plugins to update sidebar
+          return entry;
+      }
+  }
+
+  const kinds$2 = {};
+  // @ts-ignore
+  globalThis.ActorKinds = kinds$2;
+  function makeKind$2(cfg) {
+      const kind = Object.assign({
+          name: "",
+          hero: false,
+          health: 10,
+          notice: 10,
+          moveSpeed: 100,
+          ch: "!",
+          fg: "white",
+          bump: ["attack"],
+          on: {},
+          damage: 0,
+          attackSpeed: 0,
+          combo: 0,
+          comboDamage: 0,
+          comboSpeed: 0,
+          range: 0,
+          rangedDamage: 0,
+          rangedAttackSpeed: 0,
+          ammo: 0,
+          tooClose: 0,
+          dropChance: 0,
+          dropMatch: [],
+          slots: new Map(),
+      }, cfg);
+      if (kind.name == "") {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
+      }
+      if (typeof cfg.bump === "string") {
+          kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      }
+      if (typeof cfg.dropMatch === "string") {
+          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
+      }
+      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
+          kind.dropMatch.push("drop"); // Default drops
+      }
+      if (kind.attackSpeed == 0 && kind.damage > 0) {
+          kind.attackSpeed = kind.moveSpeed;
+      }
+      if (kind.comboDamage == 0) {
+          kind.combo = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.combo < 2) {
+          kind.comboDamage = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.comboSpeed == 0) {
+          kind.comboSpeed = kind.attackSpeed;
+      }
+      if (kind.ammo == 0 && kind.range > 0) {
+          kind.ammo = 10; // You get 10 shots by default
+      }
+      // TODO: Create drop language
+      //      - 50 (drop default treasure 50% of time)
+      //      - ARROWS (always drop arrows)
+      //      - ARROWS@35 (35% drop arrows)
+      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
+      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
+      //      - #TREASURE@50% (50% drop from the TREASURE tag)
+      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
+      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
+      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
+      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
+      if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
+          kind.dropChance = 100;
+      }
+      return kind;
+  }
+  function install$5(cfg) {
+      const kind = makeKind$2(cfg);
+      kinds$2[kind.id.toLowerCase()] = kind;
+  }
+  function getKind$2(id) {
+      return kinds$2[id.toLowerCase()] || null;
+  }
+
+  class Status {
+      start(actor, level) { }
+      tick(actor, level, time) {
+          return false; // no longer active
+      }
+      stop(actor, level) { }
+      merge(status) {
+          return false;
+      }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying the health bar
+      //      - Allow set text { set_status("Regen") }
+      update_sidebar(actor, entry) { }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying other parts
+      //      - Allow set text { set_status("Regen") }
+      draw_details() { }
+  }
+  class RegenData {
+      amount;
+      time;
+      elapsed;
+      constructor(amount, time) {
+          this.amount = amount;
+          this.time = time;
+          this.elapsed = 0;
+      }
+      get isActive() {
+          return this.amount > 0.0 && this.elapsed < this.time;
+      }
+      tick(time) {
+          let used = Math.floor((this.amount * this.elapsed) / this.time);
+          this.elapsed = Math.min(this.time, this.elapsed + time);
+          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
+          return new_used - used;
+      }
+  }
+  class RegenStatus extends Status {
+      data;
+      constructor(amount, time) {
+          super();
+          this.data = [new RegenData(amount, time)];
+      }
+      tick(actor, level, time) {
+          let still_active = false;
+          this.data.forEach((d) => {
+              if (d.isActive) {
+                  still_active = true;
+                  const amount = d.tick(time);
+                  if (amount > 0) {
+                      heal(level, actor, { amount });
+                  }
+              }
+          });
+          return still_active;
+      }
+      merge(status) {
+          if (status instanceof RegenStatus) {
+              // do merge
+              this.data = this.data.concat(status.data);
+              status.data = [];
+              return true;
+          }
+          return false;
+      }
+      update_sidebar(actor, entry) {
+          entry.add_status("{Regen}", "green");
+      }
+  }
+
+  class ActorFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(kind, opts = {}) {
+          let actor;
+          if (opts.make) {
+              actor = opts.make(kind, opts);
+          }
+          else {
+              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+              if (makePlugin) {
+                  actor = makePlugin.make(kind, opts);
+              }
+              else {
+                  actor = new Actor(kind);
+              }
+          }
+          this.apply(actor);
+          actor._create(opts);
+          actor.emit("create", actor, opts);
+          return actor;
+      }
+      apply(item) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              item.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(item.data, val);
+                  }
+                  else if (typeof val === "function") {
+                      item.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$3 = new ActorFactory();
+  function use$3(plugin) {
+      factory$3.use(plugin);
+  }
+  function make$3(kind, config = {}) {
+      if (typeof kind === "string") {
+          kind = getKind$2(kind);
+          if (!kind)
+              throw new Error("Failed to find kind.");
+      }
+      if (typeof config === "number") {
+          config = { power: config };
+      }
+      if (kind.hero) {
+          throw new Error("ActorKind is Hero: " + kind.id);
+      }
+      return factory$3.make(kind, config);
+  }
+  function randomSpawnLocFor(level, actor) {
+      let x;
+      let y;
+      let tries = level.width * level.height;
+      do {
+          --tries;
+          x = level.rng.number(level.width);
+          y = level.rng.number(level.height);
+          // TODO - also not in a currently visible location
+      } while ((tries && !level.hasTile(x, y, "FLOOR")) || level.actorAt(x, y));
+      if (!tries) {
+          return Option.None();
+      }
+      return Option.Some({ x, y });
+  }
+  function spawn(level, id, // Should this be | ActorKind instead of | Actor?
+  x, y) {
+      const newbie = typeof id === "string" ? make$3(id) : id;
+      if (x === undefined || y === undefined) {
+          const loc = randomSpawnLocFor(level);
+          if (loc.isNone()) {
+              console.error("Failed to find spawn location for : " + newbie.name);
+              return;
+          }
+          const xy = loc.unwrap();
+          newbie.x = xy.x;
+          newbie.y = xy.y;
+      }
+      else {
+          newbie.x = x;
+          newbie.y = y;
+      }
+      level.addActor(newbie);
+      return newbie;
+  }
+
+  class Hero extends Actor {
+      mapToMe;
+      fov;
+      potion;
+      potion_max;
+      goalPath;
+      followPath;
+      slots;
+      constructor(kind) {
+          super(kind);
+          this.mapToMe = new index$6.DijkstraMap();
+          this.fov = null;
+          this.goalPath = null;
+          this.followPath = false;
+          this.slots = {};
+          this.potion_max = 40 * 200;
+          this.potion = this.potion_max; // Potion is ready
+      }
+      // @ts-ignore
+      _create(opts) {
+          // @ts-ignore
+          super._create(opts);
+          this.on("add", (level) => {
+              this._level = level;
+              this.updateMapToMe();
+              this.updateFov();
+              // level.game!.scene!.needsDraw = true;
+          });
+          this.on("move", () => {
+              this.updateMapToMe();
+              this.updateFov();
+          });
+          this.on("remove", () => {
+              if (this.fov) {
+                  grid.free(this.fov);
+                  this.fov = null;
+              }
+              this.clearGoal();
+          });
+          this.on("turn_end", (game, time) => {
+              this.potion = Math.min(this.potion + time, this.potion_max);
+          });
+          this.on("damage", () => this.clearGoal());
+          // Need items in slots....
+          Object.entries(this.kind.slots).forEach(([slot, id]) => {
+              const item = make$4(id);
+              if (item === null) {
+                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
+              }
+              else {
+                  this.equip(item);
+                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
+              }
+          });
+      }
+      // attributes
+      get damage() {
+          const melee = this.slots.melee;
+          if (melee) {
+              // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboDamage;
+              }
+              return melee.damage;
+          }
+          return super.damage;
+      }
+      get attackSpeed() {
+          const melee = this.slots.melee;
+          if (melee) {
+              // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboSpeed;
+              }
+              return melee.speed;
+          }
+          return super.attackSpeed;
+      }
+      get range() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.range;
+          }
+          return super.range;
+      }
+      get rangedDamage() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.damage;
+          }
+          return super.rangedDamage;
+      }
+      get rangedAttackSpeed() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.speed;
+          }
+          return super.rangedAttackSpeed;
+      }
+      get canUsePotion() {
+          return this.potion >= this.potion_max;
+      }
+      get comboLen() {
+          const melee = this.slots.melee;
+          if (melee) {
+              return melee.combo;
+          }
+          return this.kind.combo;
+      }
+      isHero() {
+          return true;
+      }
+      //
+      equip(item) {
+          if (item.slot === null) {
+              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
+          }
+          this.slots[item.slot] = item;
+          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.armor_flags |= i.kind.armor_flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
+      }
+      unequipSlot(slot) {
+          this.slots[slot] = null;
+          this.armor_flags = 0;
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.armor_flags |= i.kind.armor_flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
+      }
+      act(level) {
+          this.startTurn(level);
+          if (this.goalPath && this.followPath && this.goalPath.length) {
+              const step = this.goalPath[0];
+              if (step) {
+                  if (level.hasActor(step[0], step[1])) {
+                      level.game.addMessage("You are blocked.");
+                  }
+                  else {
+                      const dir = xy.dirFromTo(this, step);
+                      // @ts-ignore
+                      if (moveDir(level, this, dir, true)) {
+                          if (xy.equals(this, step)) {
+                              this.goalPath.shift(); // we moved there, so remove that step
+                          }
+                          else {
+                              this.clearGoal();
+                          }
+                          return;
+                      }
+                      level.game.addMessage("You lost track of path.");
+                  }
+              }
+          }
+          this.clearGoal();
+          level.game.needInput = true;
+          console.log("Hero - await input", level.scheduler.time);
+      }
+      setGoal(x, y) {
+          if (!this._level || this.followPath)
+              return;
+          const level = this._level;
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
+              if (level.hasActor(i, j))
+                  return index$6.AVOIDED;
+              return this.moveCost(i, j);
+          });
+          if (this.goalPath &&
+              this.goalPath.length &&
+              xy.equals(this.goalPath[0], this)) {
+              this.goalPath.shift(); // remove the spot we are standing on
+          }
+      }
+      clearGoal() {
+          this.followPath = false;
+          this.goalPath = null;
+      }
+      updateMapToMe() {
+          const level = this._level;
+          if (!level)
+              return;
+          this.mapToMe.reset(level.width, level.height);
+          this.mapToMe.setGoal(this.x, this.y);
+          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
+      }
+      updateFov() {
+          const level = this._level;
+          if (!level)
+              return;
+          if (!this.fov ||
+              this.fov.width !== level.width ||
+              this.fov.height !== level.height) {
+              this.fov && grid.free(this.fov);
+              this.fov = grid.alloc(level.width, level.height);
+          }
+          index$7.calculate(this.fov, (x, y) => {
+              return this.moveCost(x, y) >= index$6.BLOCKED;
+          }, this.x, this.y, 100);
+      }
+      isInFov(...args) {
+          if (!this.fov)
+              return false;
+          if (args.length == 2) {
+              const [x, y] = args;
+              return this.fov.get(x, y) > 0;
+          }
+          else {
+              const pos = args[0];
+              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
+          }
+      }
+  }
+
+  const kinds$1 = {};
+  // @ts-ignore
+  globalThis.HeroKinds = kinds$1;
+  function makeKind$1(cfg) {
+      let kind;
+      kind = makeKind$2(cfg);
+      kind = Object.assign(kind, {
+          slots: {},
+      });
+      if (cfg.slots) {
+          kind.slots = cfg.slots;
+      }
+      return kind;
+  }
+  function install$4(cfg) {
+      const kind = makeKind$1(cfg);
+      kinds$1[kind.id.toLowerCase()] = kind;
+  }
+  function getKind$1(id) {
+      return kinds$1[id.toLowerCase()] || null;
+  }
+
+  class HeroFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(kind, opts = {}) {
+          let hero;
+          if (opts.make) {
+              hero = opts.make(kind, opts);
+          }
+          else {
+              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+              if (makePlugin) {
+                  hero = makePlugin.make(kind, opts);
+              }
+              else {
+                  hero = new Hero(kind);
+              }
+          }
+          this.apply(hero);
+          hero._create(opts);
+          hero.emit("create", hero, opts);
+          return hero;
+      }
+      apply(hero) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              hero.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(hero.data, val);
+                  }
+                  else if (typeof val === "function") {
+                      hero.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$2 = new HeroFactory();
+  function use$2(plugin) {
+      factory$2.use(plugin);
+  }
+  function make$2(kind, config = {}) {
+      if (typeof kind === "string") {
+          kind = getKind$1(kind);
+          if (!kind)
+              throw new Error("Failed to find kind.");
+      }
+      if (config === undefined) {
+          config = {};
+      }
+      if (typeof config === "number") {
+          config = { power: config };
+      }
+      if (kind.hero) {
+          throw new Error("ActorKind is Hero: " + kind.id);
+      }
+      return factory$2.make(kind, config);
+  }
+
+  install$4({
+      id: "HERO",
+      name: "Hero",
+      ch: "@",
+      fg: "white",
+      bg: -1,
+      moveSpeed: 100,
+      health: 20,
+      ammo: 20,
+      // damage: 10,
+      // attackSpeed: 100,
+      // rangedDamage: 3,
+      // range: 10,
+      // rangedAttackSpeed: 100,
+      slots: {
+          ranged: "SHORTBOW",
+          melee: "CUTLASS",
+          armor: "PLATE_ARMOR",
+      },
+  });
+  install$5({
+      id: "ZOMBIE",
+      name: "Zombie",
+      ch: "z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 6,
+      damage: 8, // dps=4
+      dropChance: 100,
+  });
+  install$5({
+      id: "ARMOR_ZOMBIE",
+      ch: "Z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 25,
+      damage: 10, // dps=5
+      dropChance: 10,
+  });
+  install$5({
+      id: "ARMOR_ZOMBIE_2",
+      ch: "Z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 50,
+      damage: 12, // dps=6
+      dropChance: 10,
+  });
+  install$5({
+      id: "Vindicator",
+      ch: "v",
+      fg: "blue",
+      moveSpeed: 100,
+      health: 11,
+      damage: 9,
+      // chargeSpeed: 75
+      // chargeDistance: 6
+      // attackSpeed: 150
+      dropChance: 10,
+  });
+  install$5({
+      id: "SKELETON",
+      ch: "s",
+      fg: "white",
+      moveSpeed: 125,
+      health: 6,
+      damage: 0,
+      rangedDamage: 3,
+      range: 8,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+      dropChance: 100,
+  });
+  install$5({
+      id: "ARMOR_SKELETON",
+      ch: "S",
+      fg: "white",
+      moveSpeed: 125,
+      health: 25,
+      damage: 0,
+      rangedDamage: 4,
+      range: 9,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+      dropChance: 10,
+  });
+  install$5({
+      id: "ARMOR_SKELETON_2",
+      ch: "S",
+      fg: "white",
+      moveSpeed: 125,
+      health: 50,
+      damage: 0,
+      rangedDamage: 5,
+      range: 10,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+      dropChance: 10,
+  });
+  /*
+  PLAYER - health = 100
+  SWORD - 10-16 (10,10,16 thrust)
+  BOW - 10-25
+
+  ZOMBIE - 8 damage, 6 health
+  SKELETON - 3 damage, 6 health
+  VINDICATOR - 9 damage, 11 health
+
+  SQUID COAST
+  - Follow the path
+  - Defeat 1 zombie
+  - Defeat a few zombies (3-5)
+  - Pickup arrows
+  - shoot skeleton
+  - follow path
+  - defeat skeleton and raveger
+  - ambush - defeat 3 ravegers
+  - pickup some gear (fireworks arrow, enchantment point)
+  - pull lever to open gate
+  - shoot skeleton to drop bridge
+  - kill a few more things (skeleton, rageger)
+  - roll across gap to get chest
+  - follow path to ending altar
+
+  CREEPER WOODS
+  - drops - food
+  - fishing rod
+  - fireworks arrow
+  - speed potion
+  - tnt
+  - sheep, cows, etc..
+  - free villagers
+  - strength potion
+  - shadow brew
+
+  SPIDER - 5 hp, 3 damage
+    << fires webs
+    << ONLY attack if caught in web
+
+  ARMORED SKELETON BOW - 25 hp, 4 damage
+  ARMORED SKELETON POWER BOW - 50 hp, 4 damage
+
+  ARMORED ZOMBIE DAGGER - 25 hp, 10 damage
+  ARMORED ZOMBIE SWORD - 50 hp, 12 damage
+
+  CREEPER - <10 hp, 36 damage
+
+  VINDICATOR - 11 hp, ? damage
+  ARMORED VINDICATOR AXE -
+  ARMORED VINDICATOR DOUBLE AXE -
+
+  ENCHANTER - <10 hp
+
+  HAWKBRAND (5) = 13-21, CRITICAL HIT CHANCE
+
+
+  NOTES
+  - SUMMONER - 4 damage, 100 HP
+
+  */
+
   const Fl = flag.fl;
   var Flags;
   (function (Flags) {
@@ -22571,11 +22914,11 @@ void main() {
           return leader;
       }
       _spawnLeader(map, x, y, opts) {
-          const leaderKind = getKind(this.leader);
+          const leaderKind = getKind$2(this.leader);
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
-          const leader = make(leaderKind, {
+          const leader = make$3(leaderKind, {
               machineHome: opts.machine,
               power: opts.power,
           });
@@ -22598,20 +22941,20 @@ void main() {
           return leader;
       }
       _addLeader(leader, map, x, y, _opts) {
-          const game = map.game;
+          map.game;
           leader.x = x;
           leader.y = y;
-          flashGameTime(game, x, y, this.warnColor, this.warnMs).then(() => {
+          flashGameTime(map, x, y, this.warnColor, this.warnMs).then(() => {
               map.addActor(leader);
           });
           return true;
       }
       _addMember(member, map, x, y, leader, _opts) {
-          const game = map.game;
+          map.game;
           member.leader = leader;
           member.x = x;
           member.y = y;
-          flashGameTime(game, x, y, this.warnColor, this.memberWarnMs).then(() => {
+          flashGameTime(map, x, y, this.warnColor, this.memberWarnMs).then(() => {
               map.addActor(member);
           });
           return true;
@@ -22630,11 +22973,11 @@ void main() {
           return count;
       }
       _spawnMember(kindId, map, leader, opts) {
-          const kind = getKind(kindId);
+          const kind = getKind$2(kindId);
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
-          const member = make(kind, {
+          const member = make$3(kind, {
               machineHome: opts.machine,
               power: opts.power,
           });
@@ -22698,7 +23041,7 @@ void main() {
       hordes[id] = horde;
       return horde;
   }
-  function from$1(id) {
+  function from(id) {
       if (id instanceof Horde) {
           return id;
       }
@@ -22772,9 +23115,9 @@ void main() {
           match.forbidFlags |= Flags.HORDE_NEVER_OOD;
       }
       const matches = Object.values(hordes).filter((k) => {
-          if (match.tags.length && !arraysIntersect(match.tags, k.tags))
+          if (match.tags.length && !utils.arraysIntersect(match.tags, k.tags))
               return false;
-          if (match.forbidTags && arraysIntersect(match.forbidTags, k.tags))
+          if (match.forbidTags && utils.arraysIntersect(match.forbidTags, k.tags))
               return false;
           if (match.flags && !(k.flags.horde & match.flags)) {
               return false;
@@ -22795,122 +23138,836 @@ void main() {
       return matches[index];
   }
 
-  // export interface TileInfo extends TileConfig {
-  //   index: number;
-  // }
-  const tilesByIndex = [];
-  const tilesByName = {};
-  function install$2(cfg) {
-      const info = index$1.installTile(cfg);
-      tilesByIndex[info.index] = info;
-      tilesByName[info.id] = info;
-  }
-  install$2({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-  install$2({
-      id: "WALL",
-      ch: "#",
-      fg: 0x333,
-      bg: 0x666,
-      blocksMove: true,
-      blocksVision: true,
-      blocksDiagonal: true,
+  install$3("ZOMBIE", {
+      leader: "ZOMBIE",
+      members: { ZOMBIE: "2-3" },
+      frequency: 10,
   });
-  install$2({
-      id: "CORPSE",
-      ch: "&",
-      fg: 0x666,
-      bg: 0x222,
-      priority: 15,
-      on: {
-          place(game, x, y) {
-              // game.wait(1000, () => {
-              //   if (game.map.hasTile(x, y, ids.CORPSE)) {
-              //     game.setTile(x, y, ids.FLOOR);
-              //   }
-              // });
-          },
-          tick(game, x, y) {
-              if (game.rng.chance(5)) {
-                  game.level.setTile(x, y, "FLOOR");
-              }
-          },
-      },
+  install$3("ZOMBIE2", {
+      leader: "ARMOR_ZOMBIE",
+      members: { ZOMBIE: "1-3" },
+      frequency: (l) => l + 5,
   });
-  install$2({
-      id: "DOWN_STAIRS",
-      ch: "<",
-      fg: "gray",
-      on: {
-          enter(game, actor) {
-              game.addMessage("There is no turning back.");
-          },
-      },
+  install$3("ZOMBIE3", {
+      leader: "ARMOR_ZOMBIE_2",
+      members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
+      frequency: (l) => 2 * l,
   });
-  install$2({
-      id: "UP_STAIRS",
-      ch: ">",
-      fg: "orange",
-      on: {
-          enter(game, actor) {
-              game.addMessage("Going up!");
-              game.scene.emit("win");
-          },
-      },
+  install$3("SKELETON", {
+      leader: "SKELETON",
+      members: { SKELETON: "2-3" },
+      frequency: 10,
   });
-  install$2({
-      id: "UP_STAIRS_INACTIVE",
-      ch: ">",
-      fg: "gray",
-      priority: 75,
-      on: {
-          enter(game, actor) {
-              game.addMessage("There is more to do.");
-          },
-      },
+  install$3("SKELETON2", {
+      leader: "ARMOR_SKELETON",
+      members: { SKELETON: "1-3" },
+      frequency: (l) => l + 5,
   });
-  install$2({
-      id: "IMPREGNABLE",
-      ch: "#",
-      fg: 0x222,
-      bg: 0x444,
-      priority: 200,
-      blocksMove: true,
-      blocksVision: true,
-      blocksDiagonal: true,
-  });
-  index$1.allTiles.forEach((t) => {
-      if (tilesByName[t.id])
-          return;
-      install$2(t);
+  install$3("SKELETON3", {
+      leader: "ARMOR_SKELETON_2",
+      members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
+      frequency: (l) => 2 * l,
   });
 
+  install$7({
+      id: "HEALTH_POTION",
+      ch: "!",
+      fg: "pink",
+      on: {
+          pickup(level, item, actor) {
+              // TODO - vary the messages
+              // TODO - Different healing amounts?
+              actor.health = actor.kind.health; // TODO - move this to an effect
+              level.game.addMessage("You drink the potion.");
+              level.removeItem(item);
+              // destroy
+              return true;
+          },
+      },
+      tags: "", // Not a drop because it is innate
+  });
+  install$7({
+      id: "ARROWS",
+      ch: "|",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   actor.health = actor.kind.health;
+              level.game.addMessage("You pickup some ammo.");
+              level.removeItem(this);
+              // destroy
+              actor.ammo += 10;
+              if (actor.data.bonus_arrows > 0) {
+                  actor.ammo += 10 * actor.data.bonus_arrows;
+              }
+              return true;
+          },
+      },
+      tags: "drop",
+  });
+  install$7({
+      id: "APPLE",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Apples - 20%/3s
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
+              level.game.addMessage("You eat an apple.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "BREAD",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Bread - 100%/30s
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
+              level.game.addMessage("You eat some bread.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "PORK",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Pork - 50%/10s
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
+              level.game.addMessage("You eat some pork.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "SALMON",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Salmon - 35%/8s
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
+              level.game.addMessage("You eat some salmon.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "BERRIES",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Berries - 20%/5s + speedup
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
+              level.game.addMessage("You eat some berries.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "MELON",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Melon - 75%/15s
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
+              level.game.addMessage("You eat some melon.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "FRUIT",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Fruit - 30%/1s
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
+              level.game.addMessage("You eat some fruit.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+  install$7({
+      id: "FISH",
+      ch: "&",
+      fg: "yellow",
+      on: {
+          pickup(level, item, actor) {
+              //   [] Fish - 20%/2s + 10% oxygen
+              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
+              level.game.addMessage("You eat some fish.");
+              level.removeItem(this);
+              // destroy
+              return true;
+          },
+      },
+      tags: "drop, food",
+  });
+
+  //////////////////////////////////////////////////////
+  // MELEE
+  //////////////////////////////////////////////////////
+  install$7({
+      id: "DAGGERS",
+      ch: "/",
+      fg: "yellow",
+      speed: 50,
+      damage: 5,
+      combo: 6,
+      combo_speed: 80,
+      combo_damage: 8,
+      tags: "melee",
+  });
+  // FANGS_OF_FROST
+  // MOON_DAGGERS
+  // SHEER_DAGGERS
+  // VOID_BLADES
+  // BEGINNING_AND_END
+  install$7({
+      id: "KNIFE",
+      ch: "/",
+      fg: "yellow",
+      speed: 70,
+      damage: 7,
+      combo: 5,
+      combo_speed: 70,
+      combo_damage: 7,
+      tags: "melee",
+  });
+  // TEMPEST_KNIFE
+  // CHILL_KNIFE
+  // RESOLUTE_KNIFE
+  install$7({
+      id: "SWORD",
+      ch: "/",
+      fg: "yellow",
+      speed: 100,
+      damage: 10, // dps = 10 * 100 / 100 = 10
+      combo: 3,
+      combo_speed: 100,
+      combo_damage: 10,
+      tags: "melee",
+  });
+  // DIAMOND_SWORD
+  // HAWKBRAND
+  // SINISTER_SWORD
+  install$7({
+      id: "CUTLASS",
+      ch: "/",
+      fg: "yellow",
+      speed: 110,
+      damage: 11,
+      combo: 3,
+      combo_speed: 130,
+      combo_damage: 13,
+      tags: "melee",
+  });
+  // CORAL_BLADE
+  // SPONGE_STRIKER
+  install$7({
+      id: "AXE",
+      ch: "/",
+      fg: "yellow",
+      speed: 90,
+      damage: 9,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // HIGHLAND_AXE
+  // FIREBRAND_AXE
+  install$7({
+      id: "DOUBLE_AXE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 150,
+      combo_damage: 15,
+      tags: "melee",
+  });
+  // CURSED_AXE
+  // WHIRLWIND
+  install$7({
+      id: "BACKSTABBER",
+      ch: "/",
+      fg: "yellow",
+      speed: 90,
+      damage: 10,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 10,
+      tags: "melee",
+  });
+  // SWIFT_STRIKER
+  install$7({
+      id: "BATTLESTAFF",
+      ch: "/",
+      fg: "yellow",
+      speed: 70,
+      damage: 7,
+      combo: 4,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // BATTLESTAFF_OF_TERROR
+  // GROWING_STAFF
+  install$7({
+      id: "BONE_CLUB",
+      ch: "/",
+      fg: "yellow",
+      speed: 150,
+      damage: 15,
+      combo: 2,
+      combo_speed: 200,
+      combo_damage: 20,
+      tags: "melee",
+  });
+  // BONE_CUDGEL
+  install$7({
+      id: "CLAYMORE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 180,
+      combo_damage: 18,
+      tags: "melee",
+  });
+  // BROADSWORD
+  // GREAT_AXEBLADE
+  // HEARTSTEALER
+  // OBSIDIAN_CLAYMORE
+  // STARLESS_NIGHT
+  // FROST_SLAYER
+  // DANCERS_SWORD
+  // NAMELESS_BLADE
+  install$7({
+      id: "GLAIVE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 150,
+      combo_damage: 15,
+      tags: "melee",
+  });
+  // GRAVE_BANE
+  // VENOM_GLAIVE
+  install$7({
+      id: "GREAT_HAMMER",
+      ch: "/",
+      fg: "yellow",
+      speed: 180,
+      damage: 18,
+      combo: 2,
+      combo_speed: 200,
+      combo_damage: 20,
+      tags: "melee",
+  });
+  // HAMMER_OF_GRAVITY
+  // STORMLANDER
+  install$7({
+      id: "MACE",
+      ch: "/",
+      fg: "yellow",
+      speed: 110,
+      damage: 11,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // FLAIL
+  // SUNS_GRACE
+  install$7({
+      id: "PICKAXE",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // DIAMOND_PICKAXE
+  install$7({
+      id: "SICKLES",
+      ch: "/",
+      fg: "yellow",
+      speed: 80,
+      damage: 8,
+      combo: 4,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // NIGHTMARES_BITE
+  // LAST_LAUGH
+  // SOUL_KNIFE
+  // ETERNAL_KNIFE
+  // TRUTHSEEKER
+  install$7({
+      id: "WHIP",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 120,
+      combo_damage: 12,
+      tags: "melee",
+  });
+  // VINE_WHIP
+  install$7({
+      id: "GAUNTLETS",
+      ch: "/",
+      fg: "yellow",
+      speed: 50,
+      damage: 5,
+      combo: 7,
+      combo_speed: 60,
+      combo_damage: 6,
+      tags: "melee",
+  });
+  // FIGHTERS_BINDINGS
+  // MAULERS
+  // SOUL_FISTS
+  install$7({
+      id: "SCYTHE",
+      ch: "/",
+      fg: "yellow",
+      speed: 180,
+      damage: 18,
+      combo: 2,
+      combo_speed: 180,
+      combo_damage: 18,
+      tags: "melee",
+  });
+  // SOUL_SCYTHE
+  // FROST_SCYTHE
+  // JAILORS_SCYTHE
+  install$7({
+      id: "KATANA",
+      ch: "/",
+      fg: "yellow",
+      speed: 90,
+      damage: 9,
+      combo: 4,
+      combo_speed: 110,
+      combo_damage: 11,
+      tags: "melee",
+  });
+  // DARK_KATANA
+  // MASTERS_KATANA
+  install$7({
+      id: "SPEAR",
+      ch: "/",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      combo: 3,
+      combo_speed: 140,
+      combo_damage: 14,
+      tags: "melee",
+  });
+  // FORTUNE_SPEAR
+  // WHISPERING_SPEAR
+  install$7({
+      id: "RAPIER",
+      ch: "/",
+      fg: "yellow",
+      speed: 30,
+      damage: 3,
+      combo: 10,
+      combo_speed: 60,
+      combo_damage: 6,
+      tags: "melee",
+  });
+  // BEE_STINGER
+  // FREEZING_FOIL
+
+  install$7({
+      id: "SCALE_MAIL",
+      name: "Scale Mail",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          melee_damage: 30,
+      },
+  });
+  install$7({
+      id: "MERCENARY_ARMOR",
+      name: "Mercenary Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          weapon_damage_aura: 20,
+      },
+  });
+  install$7({
+      id: "GUARDS_ARMOR",
+      name: "Guards Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
+      tags: "armor",
+      effects: {
+          artifact_cooldown: 40,
+          arrows: 10,
+      },
+  });
+  install$7({
+      id: "HUNTERS_ARMOR",
+      name: "Hunters Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
+      tags: "armor",
+      effects: {
+          ranged_damage: 30,
+          arrows: 10,
+      },
+  });
+  install$7({
+      id: "ARCHERS_ARMOR",
+      name: "Archers Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
+      tags: "armor",
+      effects: {
+          ranged_damage: 30,
+          arrows: 10,
+          move_speed_aura: 15,
+      },
+  });
+  install$7({
+      id: "REINFORCED_MAIL",
+      name: "Reinforced Mail",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+      },
+  });
+  install$7({
+      id: "STALWART_ARMOR",
+      name: "Stalwart Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+          potion_boosts_defense: [90, 5 * 200],
+      },
+  });
+  install$7({
+      id: "PLATE_ARMOR",
+      name: "Plate Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+      },
+  });
+  install$7({
+      id: "FULL_METAL_ARMOR",
+      name: "Full Metal Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          negate_hits: 30,
+          roll_cooldown: 100,
+          melee_damage: 30,
+      },
+  });
+  install$7({
+      id: "CHAMPIONS_ARMOR",
+      name: "Champions Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          potion_cooldown: 40,
+          mobs_target_you: 50, // 50%?
+      },
+  });
+  install$7({
+      id: "HEROS_ARMOR",
+      name: "Heros Armor",
+      ch: "]",
+      fg: "yellow",
+      defense: 50,
+      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
+      tags: "armor",
+      effects: {
+          damage_reduction: 35,
+          potion_cooldown: 40,
+          mobs_target_you: 50, // 50%?
+          potion_heals_allies: 3,
+      },
+  });
+
+  //////////////////////////////////////////////////////
+  // RANGED
+  //////////////////////////////////////////////////////
+  install$7({
+      id: "BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 100,
+      damage: 10,
+      range: 10,
+      charge: 3,
+      tags: "ranged, bow",
+  });
+  // BONE_BOW
+  // TWIN_BOW
+  install$7({
+      id: "HUNTING_BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 90,
+      damage: 9,
+      range: 13,
+      charge: 3,
+      tags: "ranged, bow",
+  });
+  // ANCIENT_BOW
+  // HUNTERS_PROMISE
+  // MASTERS_BOW
+  install$7({
+      id: "LONGBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 130,
+      damage: 13,
+      range: 15,
+      charge: 4,
+      tags: "ranged, bow",
+  });
+  // GUARDIAN_BOW
+  // RED_SNAKE
+  install$7({
+      id: "POWER_BOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 150,
+      damage: 15,
+      range: 20,
+      charge: 5,
+      tags: "ranged, bow",
+  });
+  // ELITE_POWER_BOW
+  // SABREWING
+  install$7({
+      id: "SHORTBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 70,
+      damage: 7,
+      range: 8,
+      charge: 2,
+      tags: "ranged, bow",
+  });
+  // LOVE_SHORTBOW
+  // MECHANICAL_SHORTBOW
+  // PURPLE_STORM
+  // SNOW_BOW
+  // WINTERS_TOUCH
+  install$7({
+      id: "TRICKBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 80,
+      damage: 8,
+      range: 10,
+      charge: 2,
+      tags: "ranged, bow",
+  });
+  // GREEN_MENACE
+  // PINK_SCOUNDREL
+  install$7({
+      id: "CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 120,
+      damage: 12,
+      range: 10,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // AZURE_SEEKER
+  // SLICER
+  // EXPLODING_CROSSBOW
+  // FIREBOLT_THROWER
+  // IMPLODING_CROSSBOW
+  install$7({
+      id: "DUAL_CROSSBOWS",
+      ch: "}",
+      fg: "yellow",
+      speed: 60,
+      damage: 6,
+      range: 8,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // BABY_CROSSBOWS
+  // SPELLBOUND_CROSSBOWS
+  install$7({
+      id: "HEAVY_CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 200,
+      damage: 20,
+      range: 15,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // DOOM_CROSSBOW
+  // SLAYER_CROSSBOW
+  install$7({
+      id: "RAPID_CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 80,
+      damage: 8,
+      range: 10,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // AUTO_CROSSBOW
+  // BUTTERFLY_CROSSBOW
+  install$7({
+      id: "SCATTER_CROSSBOW",
+      ch: "}",
+      fg: "yellow",
+      speed: 100,
+      damage: 10,
+      range: 10,
+      charge: 0,
+      tags: "ranged, xbow",
+  });
+  // HARP_CROSSBOW
+  // LIGHTNING_HARP_CROSSBOW
+
   class Level {
+      id = 0;
       depth = 0;
+      kind;
+      // TODO - Convert to >> messages: { [id: string]: string }
       welcome = "";
       proceed = "";
+      tick_time = 50;
+      scheduler;
       done = false;
       started = false;
+      // needsDraw = false;
       data = {};
-      waves = [];
+      // TODO - move to Tower specific plugin
+      // waves: WaveInfo[] = [];
       actors = [];
       items = [];
       fxs = [];
       tiles;
       flags;
       choke;
-      game = null;
-      player = null;
+      game;
+      scene_id = "level";
+      scene_opts = {};
+      scene = null;
+      // // TODO - Can we do this without a hero?
+      // hero: Hero;
       seed;
       // rng: GWU.rng.Random;
       locations = {};
       events;
-      constructor(width, height, seed = 0) {
+      constructor(game, id, kind) {
+          this.id = id;
+          this.game = game;
+          this.kind = kind;
+          const { width, height, seed } = kind;
           this.events = new index.Events(this);
           this.tiles = grid.make(width, height);
           this.flags = grid.make(width, height);
           this.choke = grid.make(width, height);
           this.seed = seed || random$2.number(100000);
           // this.rng = GWU.rng.make(this.seed);
+          this.scheduler = new scheduler.Scheduler();
+          if (kind.scene) {
+              this.scene_id = kind.scene;
+              this.scene_opts = kind.scene_opts;
+          }
+          // TODO - Move to Tower specific plugin
           this.data.wavesLeft = 0;
       }
       get width() {
@@ -22925,97 +23982,197 @@ void main() {
       hasXY(x, y) {
           return this.tiles.hasXY(x, y);
       }
-      start(game) {
-          this.game = game;
-          this.player = game.hero;
+      create(kind, opts) {
+          if (opts.seed) {
+              this.seed = opts.seed;
+          }
+          this.depth = opts.depth || kind.depth || 1;
+          if (kind.layout) {
+              const { data, tiles } = kind.layout;
+              loadLevel(this, data, tiles);
+          }
+          else if (kind.dig) {
+              digLevel(this, kind.dig, this.seed);
+          }
+          else {
+              throw new Error("Level must have either 'dig' or 'layout'.");
+          }
+          if (kind.welcome) {
+              this.welcome = kind.welcome;
+          }
+          else {
+              this.welcome = "Welcome.";
+          }
+          if (kind.proceed) {
+              this.proceed = kind.proceed;
+          }
+          else {
+              this.proceed = "Proceed.";
+          }
+          // if (kind.waves) {
+          //   this.waves = kind.waves;
+          // } else {
+          //   this.waves = [];
+          //   for (let i = 0; i < this.depth; ++i) {
+          //     this.waves.push({
+          //       delay: 500 + i * 2000,
+          //       power: this.depth * 2 - 1 + this.rng.dice(1, 3),
+          //       horde: { depth: this.depth },
+          //     });
+          //   }
+          // }
+          // if (kind.start) {
+          //   level.startLoc = kind.start;
+          // }
+          // if (kind.finish) {
+          //   level.finishLoc = kind.finish;
+          // }
+          this.tick_time = kind.tick_time || this.tick_time;
+          if (this.tick_time > 0) {
+              this.repeat(this.tick_time, this._tick);
+          }
+          if (opts.scene) {
+              this.scene_id = opts.scene;
+              this.scene_opts = opts.scene_opts || {};
+          }
+          else if (opts.scene_opts) {
+              this.scene_opts = utils.mergeDeep(this.scene_opts, opts.scene_opts);
+          }
+          let onFns = kind.on || {};
+          Object.entries(onFns).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          onFns = opts.on || {};
+          Object.entries(onFns).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.emit("create", this, opts);
+      }
+      show() {
           this.done = false;
-          this.started = false;
-          // this.rng = game.rng;
-          // put player in starting location
-          let startLoc = this.locations.start || [
-              Math.floor(this.width / 2),
-              Math.floor(this.height / 2),
-          ];
-          startLoc = this.rng.matchingLocNear(startLoc[0], startLoc[1], (x, y) => this.hasTile(x, y, "FLOOR"));
-          game.hero.clearGoal();
-          spawn(this, game.hero, startLoc[0], startLoc[1]).then(() => {
-              this.started = true;
-              this.emit("start");
-              this.data.wavesLeft = this.waves.length;
-              this.waves.forEach((wave) => {
-                  console.log("WAVE - " + wave.delay);
-                  game.wait(wave.delay || 0, () => {
-                      let horde = null;
-                      if (wave.horde) {
-                          if (typeof wave.horde === "string") {
-                              horde = from$1(wave.horde);
+          this.started = true;
+          this.scene = this.game.app.scenes
+              .create(this.scene_id, this.scene_opts)
+              .start({ level: this });
+          this.scene.once("start", () => {
+              this.emit("show", this, this.scene);
+          });
+          this.scene.once("stop", () => {
+              this.hide();
+          });
+      }
+      hide() {
+          // TODO - Should we remove the emit('stop') and let plugins handle this?
+          this.emit("hide", this);
+          this.scene = null;
+      }
+      update(time) {
+          // TODO - Need to support replacing this with a different update loop
+          //      - For "turn_based", "real_time", "combo"
+          const game = this.game;
+          // TODO - Move inputQueue to Level
+          while (game.inputQueue.length && game.needInput) {
+              const e = game.inputQueue.dequeue();
+              e &&
+                  e.dispatch({
+                      emit: (evt, e) => {
+                          let action = game.keymap[evt];
+                          if (!action)
+                              return;
+                          if (typeof action === "function") {
+                              return action(this, e);
+                          }
+                          let fn = get(action);
+                          if (!fn) {
+                              console.warn(`Failed to find action: ${action} for key: ${evt}`);
                           }
                           else {
-                              wave.horde.depth = wave.horde.depth || this.depth;
-                              horde = random(wave.horde);
+                              // @ts-ignore
+                              fn(this, game.hero);
+                              this.scene.needsDraw = true;
+                              e.stopPropagation(); // We handled it
                           }
-                      }
-                      else {
-                          horde = random({ depth: this.depth });
-                      }
-                      if (!horde) {
-                          throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
-                      }
-                      const leader = horde.spawn(this, wave);
-                      if (!leader)
-                          throw new Error("Failed to place horde!");
-                      leader.once("add", () => {
-                          --this.data.wavesLeft;
-                      });
+                      },
                   });
-              });
-          });
-          if (this.welcome) {
-              game.addMessage(this.welcome);
           }
+          if (game.needInput)
+              return;
+          let filter = false;
+          let actor = this.scheduler.pop();
+          const startTime = this.scheduler.time;
+          let elapsed = 0;
+          while (actor) {
+              if (typeof actor === "function") {
+                  actor(this);
+                  if (elapsed > 16)
+                      return;
+              }
+              else if (actor.health <= 0) {
+                  // skip
+                  filter = true;
+              }
+              else if (actor === game.hero) {
+                  actor.act(this);
+                  if (filter) {
+                      this.actors = this.actors.filter((a) => a && a.health > 0);
+                  }
+                  this.scene.needsDraw = true;
+                  return;
+              }
+              else {
+                  actor.act(this);
+              }
+              if (this.scene.timers.length || this.scene.tweens.length) {
+                  return;
+              }
+              if (this.scene.paused.update) {
+                  return;
+              }
+              actor = this.scheduler.pop();
+              elapsed = this.scheduler.time - startTime;
+          }
+          // no other actors
+          game.needInput = true;
+          return;
       }
-      stop(game) {
-          this.emit("stop");
-          this.game = null;
-      }
-      tick(game, dt) {
-          this.emit("tick", dt);
+      _tick(dt) {
+          // this.wait(this.tick_time, this.tick.bind(this));
           // tick actors
           this.actors.forEach((a) => {
-              a.tick(game, dt);
+              // TODO - check if alive?
+              a.tick(this, dt);
           });
           // tick tiles
           this.tiles.forEach((index, x, y) => {
               const tile = tilesByIndex[index];
               if (tile.on && tile.on.tick) {
-                  tile.on.tick.call(tile, game, x, y, dt);
+                  tile.on.tick.call(tile, this, x, y, dt);
               }
           });
           if (this.done || !this.started)
               return;
-          if (!this.actors.includes(game.hero)) {
+          // TODO - Should we remove this and let plugins handle it?
+          this.emit("tick", this, dt);
+          // @ts-ignore
+          if (!this.actors.includes(this.game.hero)) {
+              this.done = true;
               // lose
-              return game.lose();
+              // TODO - Do a real time flash before transitioning the scene
+              this.emit("lose", this, "You died.");
           }
-          // Do we have work left to do on the level?
-          if (this.data.wavesLeft > 0)
-              return;
-          if (this.actors.length > 1)
-              return;
-          // win level
-          this.done = true;
-          if (this.proceed) {
-              game.addMessage(this.proceed);
-          }
-          const inactiveStairs = tilesByName["UP_STAIRS_INACTIVE"].index;
-          this.tiles.forEach((index, x, y) => {
-              if (index === inactiveStairs) {
-                  flash(game, x, y, "yellow").then(() => {
-                      game.level.setTile(x, y, "UP_STAIRS");
-                  });
-              }
-          });
       }
+      // keypress(e: GWU.app.Event) {
+      //   this.game.inputQueue.enqueue(e.clone());
+      //   e.stopPropagation();
+      // }
+      // click(e: GWU.app.Event) {
+      //   this.game.inputQueue.enqueue(e.clone());
+      //   e.stopPropagation();
+      // }
       fill(tile) {
           if (typeof tile === "string") {
               tile = tilesByName[tile].index;
@@ -23024,15 +24181,18 @@ void main() {
       }
       setTile(x, y, id, opts = {}) {
           const tile = typeof id === "string" ? tilesByName[id] : tilesByIndex[id];
+          if (!tile) {
+              console.warn("Failed to find tile: " + id);
+              return;
+          }
           // priority, etc...
-          // allows plugins to change the tile
-          let data = { x, y, tile };
-          this.emit("set_tile", data);
+          let data = { x, y, tile }; // allows plugins to change the tile
+          this.emit("set_tile", data); // TODO - Is this good?
           if (data.tile) {
               this.tiles[x][y] = data.tile.index;
               // this.game && this.game.drawAt(x, y);
               if (tile.on && tile.on.place) {
-                  tile.on.place.call(tile, this.game, x, y);
+                  tile.on.place.call(tile, this, x, y);
               }
           }
       }
@@ -23104,7 +24264,6 @@ void main() {
       isAreaMachine(x, y) {
           return !!(this.flags[x][y] & index$1.Flags.IN_AREA_MACHINE);
       }
-      //
       drawAt(buf, x, y) {
           buf.blackOut(x, y);
           buf.drawSprite(x, y, this.getTile(x, y));
@@ -23119,18 +24278,14 @@ void main() {
           return this.actors.find((a) => a.x === x && a.y === y);
       }
       addActor(obj) {
-          if (!obj.spawn) {
-              obj.spawn = true;
-              this.emit("spawn_actor", obj);
-          }
           this.actors.push(obj);
-          obj.emit("add", this);
-          // this.scene.needsDraw = true; // need to update sidebar too
+          obj.emit("add", this, obj);
+          this.scene.needsDraw = true; // need to update sidebar too
       }
       removeActor(obj) {
-          arrayDelete(this.actors, obj);
-          obj.emit("remove", this);
-          // this.scene.needsDraw = true;
+          utils.arrayDelete(this.actors, obj);
+          obj.emit("remove", this, obj);
+          this.scene.needsDraw = true;
       }
       hasActor(x, y) {
           return this.actors.some((a) => a.x === x && a.y === y);
@@ -23139,18 +24294,14 @@ void main() {
           return this.items.find((i) => i.x === x && i.y === y);
       }
       addItem(obj) {
-          if (!obj.spawn) {
-              obj.spawn = true;
-              this.emit("spawn_item", obj);
-          }
           this.items.push(obj);
-          obj.emit("add", this);
-          // this.scene.needsDraw = true; // need to update sidebar too
+          obj.emit("add", this, obj);
+          this.scene.needsDraw = true; // need to update sidebar too
       }
       removeItem(obj) {
-          arrayDelete(this.items, obj);
-          obj.emit("remove", this);
-          // this.scene.needsDraw = true;
+          utils.arrayDelete(this.items, obj);
+          obj.emit("remove", this, obj);
+          this.scene.needsDraw = true;
       }
       hasItem(x, y) {
           return this.items.some((i) => i.x === x && i.y === y);
@@ -23159,18 +24310,14 @@ void main() {
           return this.fxs.find((i) => i.x === x && i.y === y);
       }
       addFx(obj) {
-          if (!obj.spawn) {
-              obj.spawn = true;
-              this.emit("spawn_fx", obj);
-          }
           this.fxs.push(obj);
-          obj.emit("add", this);
-          // this.scene.needsDraw = true; // need to update sidebar too
+          obj.emit("add", this, obj);
+          this.scene.needsDraw = true; // need to update sidebar too
       }
       removeFx(obj) {
-          arrayDelete(this.fxs, obj);
-          obj.emit("remove", this);
-          // this.scene.needsDraw = true;
+          utils.arrayDelete(this.fxs, obj);
+          obj.emit("remove", this, obj);
+          this.scene.needsDraw = true;
       }
       hasFx(x, y) {
           return this.fxs.some((f) => f.x === x && f.y === y);
@@ -23193,7 +24340,7 @@ void main() {
       triggerAction(event, actor) {
           const tile = this.getTile(actor.x, actor.y);
           if (tile && tile.on && tile.on[event]) {
-              tile.on[event].call(tile, this.game, actor);
+              tile.on[event].call(tile, this, actor);
           }
       }
       diagonalBlocked(fromX, fromY, toX, toY) {
@@ -23220,62 +24367,29 @@ void main() {
       emit(event, ...args) {
           return this.events.emit(event, ...args);
       }
+      // TODO - test me!!!
+      wait(time, fn) {
+          this.scheduler.push(fn, time);
+      }
+      // TODO - test me!!!
+      repeat(time, fn, ...args) {
+          function repeat_fn() {
+              fn.call(this, time, ...args);
+              this.scheduler.push(repeat_fn.bind(this), time);
+          }
+          this.scheduler.push(repeat_fn.bind(this), time);
+      }
   }
-  // export function install(cfg: LevelConfig) {
-  //   const level = from(cfg);
-  //   levels.push(level);
-  //   level.depth = level.depth || levels.length;
-  //   return level;
-  // }
-  function from(cfg) {
-      let w = 0;
-      let h = 0;
-      if ("data" in cfg) {
-          const data = cfg.data;
-          cfg.tiles;
-          h = data.length;
-          w = data[0].length;
-      }
-      else {
-          h = cfg.height;
-          w = cfg.width;
-      }
-      const level = new Level(w, h);
-      level.depth = cfg.depth || 1;
-      // loadLevel(level, data, tiles);
-      digLevel(level, cfg.seed);
-      if (cfg.welcome) {
-          level.welcome = cfg.welcome;
-      }
-      else {
-          level.welcome = "Welcome.";
-      }
-      if (cfg.proceed) {
-          level.proceed = cfg.proceed;
-      }
-      else {
-          level.proceed = "Proceed.";
-      }
-      if (cfg.waves) {
-          level.waves = cfg.waves;
-      }
-      else {
-          level.waves = [];
-          for (let i = 0; i < level.depth; ++i) {
-              level.waves.push({
-                  delay: 500 + i * 2000,
-                  power: level.depth * 2 - 1 + level.rng.dice(1, 3),
-                  horde: { depth: level.depth },
-              });
+  function loadLevel(level, data, tiles) {
+      level.fill("NONE");
+      for (let y = 0; y < data.length; ++y) {
+          const line = data[y];
+          for (let x = 0; x < line.length; ++x) {
+              const ch = line[x];
+              const tile = tiles[ch] || "NONE";
+              level.setTile(x, y, tile);
           }
       }
-      // if (cfg.start) {
-      //   level.startLoc = cfg.start;
-      // }
-      // if (cfg.finish) {
-      //   level.finishLoc = cfg.finish;
-      // }
-      return level;
   }
   room.install("ENTRANCE", new room.BrogueEntrance());
   room.install("ROOM", new room.Rectangular());
@@ -23359,15 +24473,58 @@ void main() {
           CHUNKY: 5,
       },
   }));
-  function digLevel(level, seed = 12345) {
-      const firstRoom = level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
-      const digger = new Digger({
-          seed,
-          rooms: { count: 20, first: firstRoom, digger: "PROFILE" },
-          doors: false, // { chance: 50 },
-          halls: { chance: 50 },
-          loops: { minDistance: 30, maxLength: 5 },
-          lakes: false /* {
+  function digLevel(level, dig, seed = 12345) {
+      level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
+      const digger = new Digger(dig);
+      digger.seed = seed;
+      digger.create(level.width, level.height, (x, y, v) => {
+          level.setTile(x, y, v);
+      });
+      index$1.analyze(level);
+      level.locations = digger.locations;
+  }
+
+  const kinds = {};
+  // @ts-ignore
+  globalThis.LevelKinds = kinds;
+  function makeKind(cfg) {
+      const kind = Object.assign({
+          id: "",
+          tick_time: 50, // TODO - Is this a good default?
+          on: {},
+          data: {},
+          scene: "level",
+          scene_opts: {},
+      }, cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("LevelKind must have 'id'.");
+      }
+      if (kind.layout) {
+          const data = kind.layout.data;
+          if (!data || !kind.layout.tiles)
+              throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
+          const h = data.length;
+          const w = data[0].length;
+          if (kind.width != w) {
+              console.log("Changing LevelKind width to match 'layout' dimensions.");
+              kind.width = w;
+          }
+          if (kind.height != h) {
+              console.log("Changing LevelKind height to match 'layout' dimensions.");
+              kind.height = h;
+          }
+      }
+      else {
+          kind.dig = kind.dig || {};
+          // Is the default dig a good idea?
+          kind.dig = utils.mergeDeep(
+          // This is the default dig
+          {
+              rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
+              doors: false, // { chance: 50 },
+              halls: { chance: 50 },
+              loops: { minDistance: 30, maxLength: 5 },
+              lakes: false /* {
             count: 5,
             wreathSize: 1,
             wreathChance: 100,
@@ -23378,97 +24535,111 @@ void main() {
             minDistance: 10,
             maxLength: 10,
           }, */,
-          stairs: {
-              start: "down",
-              up: true,
-              upTile: "UP_STAIRS_INACTIVE",
-              down: true,
-          },
-          goesUp: true,
-      });
-      digger.create(60, 35, (x, y, v) => {
-          level.setTile(x, y, v);
-      });
-      index$1.analyze(level);
-      level.locations = digger.locations;
-  }
-
-  const plugins = {};
-  const active = [];
-  // @ts-ignore
-  globalThis.PLUGINS = plugins;
-  function NOFUNC(req, next) {
-      return next();
-  }
-  function install$1(name, cfg) {
-      const plugin = Object.assign({
-          name,
-          plugins: [],
-          start: NOOP,
-          stop: NOOP,
-          new_game: NOFUNC,
-          dig_level: NOFUNC,
-          new_level: NOFUNC,
-          start_level: NOFUNC,
-          // Level
-          level_tick: NOFUNC,
-          set_tile: NOFUNC,
-          // Object
-          spawn: NOFUNC,
-          tick: NOFUNC,
-          sidebar: NOFUNC,
-          add: NOFUNC,
-          remove: NOFUNC,
-          move: NOFUNC,
-          destroy: NOFUNC,
-          // Actor
-          calc_melee: NOFUNC,
-          calc_ranged: NOFUNC,
-          calc_damage: NOFUNC,
-          apply_damage: NOFUNC,
-          charge_ranged: NOFUNC,
-          equip: NOFUNC,
-          unequip: NOFUNC,
-          // Item
-          pickup: NOFUNC,
-      }, cfg);
-      if (plugin.name != name) {
-          plugin.name = name;
+              stairs: {
+                  start: "down",
+                  up: true,
+                  upTile: "UP_STAIRS_INACTIVE",
+                  down: true,
+              },
+              goesUp: true,
+          }, 
+          // Whatever you pass in overrides this
+          kind.dig);
       }
-      plugins[name.toLowerCase()] = plugin;
+      return kind;
   }
-  /**
-   * Helper function for invoking a chain of middlewares on a context.
-   */
-  function invoke(req, fns, base) {
-      if (!fns.length)
-          return base(req);
-      const fn = fns[0];
-      return fn(req, () => {
-          return invoke(req, fns.slice(1), base);
-      });
+  function install$2(...args) {
+      let id, config;
+      if (args.length == 1) {
+          config = args[0];
+          id = config.id;
+      }
+      else {
+          id = args[0];
+          config = args[1];
+      }
+      const kind = makeKind(config);
+      kind.id = id;
+      kinds[id.toLowerCase()] = kind;
+      return kind;
   }
-  function trigger(evt, req, base) {
-      const fns = active.map((p) => {
-          // @ts-ignore
-          return p[evt].bind(p);
-      });
-      return invoke(req, fns, base);
+  function getKind(id) {
+      return kinds[id.toLowerCase()] || null;
   }
 
-  // export function make(opts: GameOpts | number = 0) {
-  //   if (typeof opts === "number") {
-  //     opts = { seed: opts };
-  //   }
-  //   return new Game(opts);
-  // }
+  class LevelFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(game, id, kind, opts) {
+          let level;
+          if (opts.on && opts.on.make) {
+              level = opts.on.make(game, id, kind, opts);
+          }
+          else {
+              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+              if (makePlugin) {
+                  level = makePlugin.make(game, id, kind, opts);
+              }
+              else {
+                  level = new Level(game, id, kind);
+              }
+          }
+          this.apply(level);
+          level.create(kind, opts);
+          return level;
+      }
+      apply(level) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              level.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(level.data, val);
+                  }
+                  else if (typeof val === "function") {
+                      level.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$1 = new LevelFactory();
+  function use$1(plugin) {
+      factory$1.use(plugin);
+  }
+  function make$1(game, id, kind, opts) {
+      if (typeof kind === "string") {
+          const id = kind;
+          kind = getKind(id);
+          if (!kind)
+              throw new Error("Failed to find LevelKind: " + id);
+      }
+      return factory$1.make(game, id, kind, opts);
+  }
+
   class Game {
       hero;
       app;
-      scene;
+      // scene: GWU.app.Scene;
       level;
-      depth;
-      scheduler;
+      levels;
+      _levelObjs;
+      start_level;
+      // depth: number;
+      // scheduler: GWU.scheduler.Scheduler;
       inputQueue;
       seed;
       rng;
@@ -23479,261 +24650,196 @@ void main() {
       actors;
       items;
       hordes;
-      keymap;
-      constructor(opts) {
-          this.app = opts.app || null;
-          this.scene = null;
-          this.level = null;
-          this.depth = 0;
-          this.scheduler = new scheduler.Scheduler();
-          this.seed = opts.seed || random$2.number(100000);
-          console.log("GAME, seed=", this.seed);
-          rng.random.seed(this.seed);
+      // TODO - tiles: ...
+      keymap = {};
+      data = {};
+      constructor(app) {
+          this.app = app;
+          // this.scene = null;
+          // this.level = null;
+          // this.depth = 0;
+          // this.scheduler = new GWU.scheduler.Scheduler();
           this.rng = rng.random; // Can access here or via GWU.rng.random
-          this.seeds = [];
-          // TODO - Change this so that the default class does not have the LAST_LEVEL concept
-          const LAST_LEVEL = 10;
-          for (let i = 0; i < LAST_LEVEL; ++i) {
-              const levelSeed = this.rng.number(100000);
-              this.seeds.push(levelSeed);
-              console.log(`Level: ${this.seeds.length}, seed=${levelSeed}`);
-          }
-          // Why??
-          this.actors = kinds;
-          this.items = kinds$1;
+          this.seed = 0;
+          this.seeds = {};
+          this.levels = { default: { kind: "DEFAULT" } };
+          this._levelObjs = {};
+          this.start_level = 1;
+          // Exposes types to world
+          this.actors = kinds$2;
+          this.items = kinds$3;
           this.hordes = hordes;
           //
-          this.hero = makeHero("HERO");
+          // TODO - Should be a reference or a copy?
+          this.data = app.data; // GWU.utils.mergeDeep(this.data, app.data);
+          // this.hero = ACTOR.Hero.make("HERO") as Hero;
           this.inputQueue = new index.Queue();
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
-          this.keymap = {
+      }
+      _create(opts) {
+          // SEED
+          if (typeof opts.seed === "number" && opts.seed > 0) {
+              this.seed = opts.seed;
+          }
+          else {
+              this.seed = this.rng.int(100000);
+          }
+          console.log("GAME, seed=", this.seed);
+          this.rng.seed(this.seed);
+          // LEVELS
+          Object.assign(this.levels, opts.levels || {});
+          if (opts.start_level) {
+              this.start_level = opts.start_level;
+          }
+          // KEYMAP
+          // TODO - move to default plugin
+          this.keymap = Object.assign({
               a: "attack",
               f: "fire",
               g: "pickup",
+              i: (level, e) => {
+                  console.log(">> INVENTORY <<");
+                  // TODO - Set focus to the player so that it shows their info
+                  //      - Send event to level scene?
+                  level.emit("inventory", level.game);
+                  e.stopPropagation();
+              },
+              // z: (level: Level, e) => {
+              //   ACTOR.spawn(game.level!, "zombie", game.hero.x, game.hero.y);
+              //   game.level.needsDraw = true;
+              //   e.stopPropagation();
+              // },
               " ": "idle",
               ".": "idle",
-          };
-          // TODO - Get these as parameters...
-          // keymap: { dir: 'moveDir', a: 'attack', z: 'spawnZombie' }
-          this.events.on("Enter", (e) => {
-              if (this.hero.goalPath && this.hero.goalPath.length) {
-                  this.hero.followPath = true;
-                  this.hero.act(this);
-              }
-              this.scene.needsDraw = true;
-              e.stopPropagation();
-          });
-          this.events.on("dir", (e) => {
-              moveDir(this, this.hero, e.dir);
-              this.scene.needsDraw = true;
-              e.stopPropagation();
-          });
-          // this.events.on("a", (e) => {
-          //   ACTIONS.attack(this, this.hero);
-          //   this.scene!.needsDraw = true;
-          // });
-          // this.events.on("f", (e) => {
-          //   ACTIONS.fire(this, this.hero);
-          //   this.scene!.needsDraw = true;
-          // });
-          // this.events.on("g", (e) => {
-          //   ACTIONS.pickup(this, this.hero);
-          //   this.scene!.needsDraw = true;
-          // });
-          this.events.on("i", (e) => {
-              if (this.keymap["i"]) {
-                  return; // continue to keypress handler
-              }
-              console.log(">> INVENTORY <<");
-              // TODO - Set focus to the player so that it shows their info
-              //      - Send event to level scene?
-              this.scene.emit("inventory", this);
-              e.stopPropagation();
-          });
-          // this.events.on("p", (e) => {
-          //   console.log("POTION");
-          //   ACTIONS.potion(this, this.hero);
-          // });
-          // this.events.on(" ", (e) => {
-          //   ACTIONS.idle(this, this.hero);
-          //   this.scene!.needsDraw = true;
-          // });
-          this.events.on(">", (e) => {
-              if (this.keymap[">"]) {
-                  return; // continue to keypress handler
-              }
-              if (!this.level)
-                  return;
-              // find stairs
-              let loc = [-1, -1];
-              this.level.tiles.forEach((t, x, y) => {
-                  const tile = tilesByIndex[t];
-                  if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-                      loc[0] = x;
-                      loc[1] = y;
+              ">": (level, e) => {
+                  // find stairs
+                  let loc = [-1, -1];
+                  level.tiles.forEach((t, x, y) => {
+                      const tile = tilesByIndex[t];
+                      if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+                          loc[0] = x;
+                          loc[1] = y;
+                      }
+                  });
+                  // set player goal
+                  if (loc[0] >= 0) {
+                      level.game.hero.setGoal(loc[0], loc[1]);
                   }
-              });
-              // set player goal
-              if (loc[0] >= 0) {
-                  this.hero.setGoal(loc[0], loc[1]);
-                  this.scene.needsDraw = true;
-              }
-              this.scene.needsDraw = true;
-              e.stopPropagation();
-          });
-          this.events.on("<", (e) => {
-              if (this.keymap["<"]) {
-                  return; // continue to keypress handler
-              }
-              if (!this.level)
-                  return;
-              // find stairs
-              let loc = [-1, -1];
-              this.level.tiles.forEach((t, x, y) => {
-                  const tile = tilesByIndex[t];
-                  if (tile.id === "DOWN_STAIRS") {
-                      loc[0] = x;
-                      loc[1] = y;
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              "<": (level, e) => {
+                  // find stairs
+                  let loc = [-1, -1];
+                  level.tiles.forEach((t, x, y) => {
+                      const tile = tilesByIndex[t];
+                      if (tile.id === "DOWN_STAIRS") {
+                          loc[0] = x;
+                          loc[1] = y;
+                      }
+                  });
+                  // set player goal
+                  if (loc[0] >= 0) {
+                      level.game.hero.setGoal(loc[0], loc[1]);
                   }
-              });
-              // set player goal
-              if (loc[0] >= 0) {
-                  this.hero.setGoal(loc[0], loc[1]);
-                  this.scene.needsDraw = true;
-              }
-              this.scene.needsDraw = true;
-              e.stopPropagation();
-          });
-          // this.events.on("z", (e) => {
-          //   ACTOR.spawn(this.level!, "zombie", this.hero.x, this.hero.y);
-          //   this.scene!.needsDraw = true;
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              dir: (level, e) => {
+                  // @ts-ignore
+                  moveDir(level, level.game.hero, e.dir);
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              Enter: (level, e) => {
+                  const hero = level.game.hero;
+                  if (hero.goalPath && hero.goalPath.length) {
+                      hero.followPath = true;
+                      hero.act(level);
+                  }
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              // keypress: (level: Level, e) => {
+              //   let action = game.keymap[e.key];
+              //   if (!action) return;
+              //   if (typeof action === "function") {
+              //     return action(level: Level, e);
+              //   }
+              //   let fn = ACTIONS.get(action);
+              //   if (!fn) {
+              //     console.warn(`Failed to find action: ${action} for key: ${e.key}`);
+              //   } else {
+              //     fn(game.level, game.hero);
+              //     game.level.needsDraw = true;
+              //   }
+              // },
+          }, opts.keymap || {});
+          // CREATE HERO
+          // EVENTS - There are no events on GameOpts!!!  Must use plugins
+          // Object.entries(opts).forEach(([key, val]) => {
+          //   if (typeof val === "function") {
+          //     this.on(key, val);
+          //   }
           // });
-          this.events.on("keypress", (e) => {
-              let action = this.keymap[e.key];
-              if (!action)
-                  return;
-              let fn = get(action);
-              if (!fn) {
-                  console.warn(`Failed to find action: ${action} for key: ${e.key}`);
-              }
-              else {
-                  fn(this, this.hero);
-                  this.scene.needsDraw = true;
-              }
-          });
-          trigger("new_game", { game: this }, null);
-          // Object.values(plugins).forEach((p) => p.new_game({ this }, null, ));
-          // @ts-ignore
-          globalThis.GAME = this;
-      }
-      startLevel(scene, width, height) {
-          this.scene = scene;
-          this.depth += 1;
-          this.scheduler.clear();
-          // let level = LEVEL.levels.find((l) => l.depth === this.depth);
-          // if (!level) {
-          const level = from({
-              width: 60,
-              height: 35,
-              depth: this.depth,
-              seed: this.seeds[this.depth - 1],
-          });
-          // LEVEL.levels.push(level);
-          // } else if (level.width != 60 || level.height != 35) {
-          //   throw new Error(
-          //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
-          //   );
-          // }
-          this.level = level;
-          this.needInput = false;
-          this.scene.needsDraw = true;
-          // we want the events that the widgets ignore...
-          const cancelEvents = scene.on({
-              update: () => this.update(),
-              keypress: (e) => this.keypress(e),
-              click: (e) => this.click(e),
-          });
-          scene.once("stop", cancelEvents);
-          // @ts-ignore
-          globalThis.LEVEL = level;
-          // @ts-ignore
-          globalThis.HERO = this.hero;
-          trigger("new_level", { game: this, level }, null);
-          // Object.values(plugins).forEach((p) => p.new_level(this, level));
-          level.start(this);
-          this.tick();
-      }
-      lose() {
-          this.scene.emit("lose", this);
-      }
-      win() {
-          this.scene.emit("win", this);
-      }
-      update() {
-          while (this.inputQueue.length && this.needInput) {
-              const e = this.inputQueue.dequeue();
-              e && e.dispatch(this.events);
+          // Object.entries(opts.on || {}).forEach(([key, val]) => {
+          //   if (typeof val === "function") {
+          //     this.on(key, val);
+          //   }
+          // });
+          // HERO
+          // TODO - move to default plugin
+          let hero_cfg = opts.hero_kind || { kind: "HERO" };
+          if (typeof hero_cfg === "string") {
+              hero_cfg = { kind: hero_cfg };
           }
-          if (this.needInput)
-              return;
-          let filter = false;
-          let actor = this.scheduler.pop();
-          const startTime = this.scheduler.time;
-          let elapsed = 0;
-          while (actor) {
-              if (typeof actor === "function") {
-                  actor(this);
-                  if (elapsed > 16)
-                      return;
-              }
-              else if (actor.health <= 0) {
-                  // skip
-                  filter = true;
-              }
-              else if (actor === this.hero) {
-                  actor.act(this);
-                  if (filter) {
-                      this.level.actors = this.level.actors.filter((a) => a && a.health > 0);
-                  }
-                  this.scene.needsDraw = true;
-                  return;
-              }
-              else {
-                  actor.act(this);
-              }
-              if (this.scene.timers.length || this.scene.tweens.length) {
-                  return;
-              }
-              if (this.scene.paused.update) {
-                  return;
-              }
-              actor = this.scheduler.pop();
-              elapsed = this.scheduler.time - startTime;
-          }
-          // no other actors
-          this.needInput = true;
+          this.hero = make$2(hero_cfg.kind, hero_cfg);
       }
+      makeLevel(levelId, opts = {}) {
+          let info = this.levels[levelId] ||
+              this.levels["default"] || { kind: "DEFAULT" };
+          if (typeof info === "string") {
+              info = { kind: info };
+          }
+          const config = utils.mergeDeep(info, opts);
+          const level = make$1(this, levelId, config.kind, config);
+          level.on("show", (level) => {
+              this.level = level;
+          });
+          this._levelObjs[levelId] = level;
+          return level;
+      }
+      getLevel(levelId) {
+          return this._levelObjs[levelId] || this.makeLevel(levelId);
+      }
+      // lose() {
+      //   this.scene!.emit("lose", this);
+      // }
+      // win() {
+      //   this.scene!.emit("win", this);
+      // }
       //   input(e) {
       //     this.inputQueue.enqueue(e.clone());
       //     e.stopPropagation();
       //   }
-      keypress(e) {
-          this.inputQueue.enqueue(e.clone());
-          e.stopPropagation();
-      }
-      click(e) {
-          this.inputQueue.enqueue(e.clone());
-          e.stopPropagation();
-      }
-      tick(dt = 50) {
-          this.level.tick(this, dt);
-          this.wait(dt, () => this.tick(dt));
-      }
+      // keypress(e: GWU.app.Event) {
+      //   this.inputQueue.enqueue(e.clone());
+      //   e.stopPropagation();
+      // }
+      // click(e: GWU.app.Event) {
+      //   this.inputQueue.enqueue(e.clone());
+      //   e.stopPropagation();
+      // }
+      // tick(dt: number = 50) {
+      //   this.level.tick(this, dt);
+      //   this.level.wait(dt, () => this.tick(dt));
+      // }
       endTurn(actor, time) {
           if (!actor.hasActed()) {
-              actor.endTurn(this, time);
-              this.scheduler.push(actor, time);
+              actor.endTurn(this.level, time);
+              this.level.scheduler.push(actor, time);
+              // @ts-ignore
               if (actor === this.hero) {
                   this.needInput = false;
               }
@@ -23742,20 +24848,91 @@ void main() {
               console.log("double end turn.!");
           }
       }
-      wait(time, fn) {
-          this.scheduler.push(fn, time);
-      }
+      // wait(time: number, fn: GWU.app.CallbackFn) {
+      //   this.level.scheduler.push(fn, time);
+      // }
       addMessage(msg) {
           this.messages.add(msg);
-          this.scene.get("MESSAGES").draw(this.scene.buffer);
+          // TODO - Is this necessary?
+          if (!!this.level && !!this.level.scene) {
+              // this.level.scene.get("MESSAGES")!.draw(this.level.scene.buffer);
+              this.level.scene.needsDraw = true;
+          }
       }
-      makeActor(id, opts = 1) {
-          return make(id, opts);
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
       }
-      makeItem(id, opts = 1) {
-          return make$2(id, opts);
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
       }
   }
+  // export function startLevel(levelId: string | number): Level {
+  //     // this.depth += 1;
+  //     // this.scheduler.clear();
+  //     let level = this._levelObjs[levelId] || this.makeLevel(levelId);
+  //     // let level = LEVEL.levels.find((l) => l.depth === this.depth);
+  //     if (!level) {
+  //       console.error("Failed to start level: " + levelId);
+  //       GWU.app.active.stop();
+  //       return;
+  //     }
+  //     // LEVEL.levels.push(level);
+  //     // } else if (level.width != 60 || level.height != 35) {
+  //     //   throw new Error(
+  //     //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+  //     //   );
+  //     // }
+  //     this.level = level;
+  //     this.needInput = false;
+  //     // @ts-ignore
+  //     globalThis.LEVEL = level;
+  //     // @ts-ignore
+  //     globalThis.HERO = this.hero;
+  //     const startRes = PLUGINS.trigger(
+  //       "start_level",
+  //       { game: this, level: level, sceneId: "level", startOpts: {} },
+  //       (req: {
+  //         game: Game;
+  //         level: Level;
+  //         sceneId: string;
+  //         startOpts: GWU.app.SceneStartOpts;
+  //       }): Result<{ scene: GWU.app.Scene }> => {
+  //         let { sceneId, startOpts } = req;
+  //         startOpts = startOpts || {};
+  //         startOpts.game = req.game;
+  //         startOpts.level = req.level;
+  //         const scene = GWU.app.active.scenes.start(sceneId, startOpts);
+  //         req.level.show(req.game, scene);
+  //         return Result.Ok({ scene });
+  //       }
+  //     );
+  //     if (startRes.isErr()) {
+  //       console.error("Failed to start level: " + startRes.unwrapErr());
+  //       GWU.app.active.stop();
+  //       return;
+  //     }
+  //   }
+  // export function start(config: GameOpts = {}): Game {
+  //   const game = PLUGINS.make(config);
+  //   const resMake = PLUGINS.trigger("make_game", { config }, (config) => {
+  //     const game = new Game();
+  //     game.create(config);
+  //     return Result.Ok(game);
+  //   });
+  //   resMake.expect("Failed to make Game");
+  //   const game = resMake.unwrap();
+  //   if (!game.hero) {
+  //     console.log("Making default Hero: HERO");
+  //     game.hero = Hero.make("HERO");
+  //   }
+  //   return game;
+  // }
 
   const title = {
       create() {
@@ -23765,34 +24942,46 @@ void main() {
           build.pos(10, 30).text("Press any key to start.");
           build.pos(10, 32).text("Press s to enter seed.");
           build.pos(10, 34).text("Press h for help.");
+          // Press 's' to choose a seed and start a game
           this.on("s", (e) => {
               const prompt = this.app.prompt("What is your starting seed?", {
                   numbersOnly: true,
                   bg: index$9.BLACK.alpha(50),
               });
+              // TODO - This should be something better than "stop"
               prompt.on("stop", (seed) => {
                   e.stopPropagation();
                   if (seed) {
-                      const game = new Game({ seed, app: this.app });
-                      this.app.scenes.start("level", game);
+                      // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
+                      const full_opts = utils.mergeDeep(this.app.data.start_opts, {
+                          seed,
+                      });
+                      const game = make(this.app, full_opts);
+                      const level = game.getLevel(game.start_level);
+                      level.show();
                   }
               });
               e.stopPropagation();
           });
+          // press 'h' for help
           this.on("h", (e) => {
               this.app.scenes.start("help");
               e.stopPropagation();
           });
+          // Any 'other' key results in starting a new game with a random seed
           this.on("keypress", (e) => {
-              const game = new Game({ app: this.app });
-              this.app.scenes.start("level", game);
+              // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
+              const full_opts = utils.mergeDeep(this.app.data.start_opts, {});
+              const game = make(this.app, full_opts);
+              const level = game.getLevel(game.start_level);
+              level.show();
               e.stopPropagation();
           });
       },
   };
 
   const level = {
-      create() {
+      create(opts) {
           this.bg = index$9.from("dark_gray");
           // const level = this;
           // TODO - Get these sizes and locations dynamically
@@ -23804,11 +24993,12 @@ void main() {
           sidebar$1.on("focus", (loc) => {
               loc = loc || [-1, -1];
               map$1._focus = loc;
-              const game = this.data;
+              const level = this.data.level;
+              const game = level.game;
               const hero = game.hero;
               if (loc[0] < 0) {
                   // game.level.clearPath();
-                  game.hero.clearGoal();
+                  hero.clearGoal();
               }
               else {
                   // highlight path
@@ -23817,9 +25007,10 @@ void main() {
                   // const path = player.pathTo(loc);
                   // game.level.setPath(path);
               }
-              const actor = game.level.actorAt(loc[0], loc[1]);
+              const actor = level.actorAt(loc[0], loc[1]);
               if (actor) {
                   details$1.hidden = false;
+                  // @ts-ignore
                   if (actor === hero) {
                       details$1.showHero(hero);
                   }
@@ -23836,13 +25027,15 @@ void main() {
           });
           sidebar$1.on("choose", (loc) => {
               console.log("sidebar choose - hero go to :", loc[0], loc[1]);
-              const game = this.data;
+              const level = this.data.level;
+              const game = level.game;
               game.hero.setGoal(loc[0], loc[1]);
               game.hero.followPath = true;
-              game.hero.act(game);
+              game.hero.act(level);
           });
           messages$1.on("click", (e) => {
-              const game = this.data;
+              const level = this.data.level;
+              const game = level.game;
               if (game.messages.length > 10) {
                   this.app.scenes.run("archive", {
                       messages: game.messages,
@@ -23852,8 +25045,8 @@ void main() {
               e.stopPropagation();
           });
           map$1.on("mousemove", (e) => {
-              const game = this.data;
-              const level = game.level;
+              const level = this.data.level;
+              const game = level.game;
               const text = level.getFlavor(e.x, e.y);
               flavor$1.prop("text", text);
               sidebar$1.setFocus(e.x, e.y);
@@ -23866,31 +25059,30 @@ void main() {
               // game.level.setPath(path);
           });
           map$1.on("mouseleave", (e) => {
-              const game = this.data;
+              const level = this.data.level;
+              const game = level.game;
               sidebar$1.clearFocus();
               // game.level.clearPath();
               game.hero.clearGoal();
           });
           map$1.on("click", (e) => {
               console.log("map click - player go to:", e.x, e.y);
-              const game = this.data;
-              const level = game.level;
+              const level = this.data.level;
+              const game = level.game;
               if (!level.started)
                   return;
+              // TODO - This should follow the enqueue path..
               game.hero.setGoal(e.x, e.y);
               game.hero.followPath = true;
-              game.hero.act(game);
+              game.hero.act(level);
           });
       },
-      start(game) {
-          this.data = game;
-          game.scene = this;
-          // const w = this.get("LEVEL");
-          // w.text("Level: " + game.level);
-          // const seed = game.seed || 12345;
-          // const s = this.get("SEED");
-          // s.text("Seed: " + seed);
-          game.startLevel(this, 60, 35);
+      start(opts) {
+          this.data.level = opts.level;
+          this.needsDraw = true;
+      },
+      update(dt) {
+          this.data.level.update(dt);
       },
       on: {
           // dir(e) {
@@ -23903,36 +25095,44 @@ void main() {
           //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
           // },
           inventory() {
-              const game = this.data;
+              const level = this.data.level;
+              const game = level.game;
               const hero = game.hero;
               const sidebar = this.get("SIDEBAR");
               sidebar.setFocus(hero.x, hero.y);
           },
-          win() {
-              const game = this.data;
-              game.messages.confirmAll();
-              const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
-              if (this.data.level.depth === LAST_LEVEL) {
-                  this.app.scenes.start("win", this.data);
-              }
-              else {
-                  this.app.scenes.start("reward", this.data);
-              }
-          },
-          lose() {
-              this.app.scenes.start("lose", this.data);
-          },
+          // win(this: GWU.app.Scene) {
+          //   const game = this.data.game as Game;
+          //   game.messages.confirmAll();
+          //   const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
+          //   if (this.data.level.depth === LAST_LEVEL) {
+          //     this.app.scenes.start("win", this.data);
+          //   } else {
+          //     this.app.scenes.start("reward", this.data);
+          //   }
+          // },
+          // lose(this: GWU.app.Scene) {
+          //   this.app.scenes.start("lose", this.data);
+          // },
           keypress(e) {
               const sidebar = this.get("SIDEBAR");
               sidebar.clearFocus();
               // this.data.level.clearPath();
-              const game = this.data;
-              if (e.key !== "Enter") {
-                  game.hero.clearGoal();
-              }
+              const level = this.data.level;
+              const game = level.game;
+              game.inputQueue.enqueue(e.clone());
+              // if (e.key !== "Enter") {
+              //   game.hero.clearGoal();
+              // }
               // if (e.key == "Escape") {
               //   this.emit("lose"); // todo -- remove
               // }
+              e.stopPropagation();
+          },
+          click(e) {
+              const level = this.data.level;
+              const game = level.game;
+              game.inputQueue.enqueue(e.clone());
               e.stopPropagation();
           },
       },
@@ -23950,8 +25150,8 @@ void main() {
               this.app.scenes.start("title");
           });
       },
-      start(game) {
-          const level = game.level;
+      start(opts) {
+          const level = opts.game.level;
           const id = level.depth || 1;
           const w = this.get("LEVEL");
           w.text("Final Level: " + id);
@@ -23965,15 +25165,18 @@ void main() {
           build.pos(10, 15).text(this.app.name, { fg: "green" });
           build.pos(10, 17).text("LOSE!", { fg: "green" });
           build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
+          build.pos(10, 24).text("{reason}", { fg: "pink", id: "REASON" });
           build.pos(10, 30).text("Press any key to restart.");
           this.on("keypress", () => {
               this.app.scenes.start("title");
           });
       },
-      start(game) {
-          const id = game.depth || 1;
+      start(opts) {
+          const id = opts.game.level.id || "???";
           const w = this.get("LEVEL");
           w.text("On Level: " + id);
+          const r = this.get("REASON");
+          r.text(opts.reason);
       },
   };
 
@@ -24029,18 +25232,20 @@ void main() {
           list.on("action", () => {
               const items = this.data.items;
               const item = items[list.selectedRow];
+              const game = this.data.game;
               if (item) {
                   console.log("list selection - " + item.name);
-                  const game = this.data.game;
                   const player = game.hero;
                   player.equip(item);
                   game.addMessage(`You equip a ${item.name}`);
               }
-              this.app.scenes.start("level", this.data.game);
+              const level = game.getLevel(this.data.depth);
+              level.show();
           });
       },
-      start(game) {
-          const depth = game.level.depth;
+      start(opts) {
+          const depth = opts.depth;
+          const game = opts.game;
           const w = this.get("LEVEL");
           w.text("Choose your \nreward for Level: " + depth);
           const s = this.get("STUFF");
@@ -24055,7 +25260,13 @@ void main() {
               o[current[0]] = current[1];
               return o;
           }, {});
-          this.data = { game, items: [null, armor, melee, ranged], equipped };
+          // depth + 1 to indicate that we are going to the next level
+          this.data = {
+              game,
+              items: [null, armor, melee, ranged],
+              equipped,
+              depth: depth + 1, // NOTE: Adding 1 here so we always have the next level in mind!
+          };
           s.data(["None", armor.name, melee.name, ranged.name]); // triggers - change
       },
   };
@@ -24314,964 +25525,153 @@ void main() {
       }
   }
 
-  install$4({
-      id: "HERO",
-      name: "Hero",
-      ch: "@",
-      fg: "white",
-      bg: -1,
-      moveSpeed: 100,
-      health: 20,
-      ammo: 20,
-      // damage: 10,
-      // attackSpeed: 100,
-      // rangedDamage: 3,
-      // range: 10,
-      // rangedAttackSpeed: 100,
-      slots: {
-          ranged: "SHORTBOW",
-          melee: "CUTLASS",
-          armor: "PLATE_ARMOR",
-      },
-  });
-  install$4({
-      id: "ZOMBIE",
-      name: "Zombie",
-      ch: "z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 6,
-      damage: 8, // dps=4
-      dropChance: 100,
-  });
-  install$4({
-      id: "ARMOR_ZOMBIE",
-      ch: "Z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 25,
-      damage: 10, // dps=5
-      dropChance: 10,
-  });
-  install$4({
-      id: "ARMOR_ZOMBIE_2",
-      ch: "Z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 50,
-      damage: 12, // dps=6
-      dropChance: 10,
-  });
-  install$4({
-      id: "Vindicator",
-      ch: "v",
-      fg: "blue",
-      moveSpeed: 100,
-      health: 11,
-      damage: 9,
-      // chargeSpeed: 75
-      // chargeDistance: 6
-      // attackSpeed: 150
-      dropChance: 10,
-  });
-  install$4({
-      id: "SKELETON",
-      ch: "s",
-      fg: "white",
-      moveSpeed: 125,
-      health: 6,
-      damage: 0,
-      rangedDamage: 3,
-      range: 8,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 100,
-  });
-  install$4({
-      id: "ARMOR_SKELETON",
-      ch: "S",
-      fg: "white",
-      moveSpeed: 125,
-      health: 25,
-      damage: 0,
-      rangedDamage: 4,
-      range: 9,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 10,
-  });
-  install$4({
-      id: "ARMOR_SKELETON_2",
-      ch: "S",
-      fg: "white",
-      moveSpeed: 125,
-      health: 50,
-      damage: 0,
-      rangedDamage: 5,
-      range: 10,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 10,
-  });
-  /*
-  PLAYER - health = 100
-  SWORD - 10-16 (10,10,16 thrust)
-  BOW - 10-25
+  class GameFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(app, opts = {}) {
+          let game;
+          const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+          if (makePlugin) {
+              game = makePlugin.make(app, opts);
+          }
+          else {
+              game = new Game(app);
+          }
+          this.apply(game);
+          game._create(opts);
+          game.emit("create", game, opts);
+          globalThis.GAME = game;
+          return game;
+      }
+      apply(game) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (typeof val === "function") {
+                      game.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of 'game' events on plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory = new GameFactory();
+  function use(plugin) {
+      factory.use(plugin);
+  }
+  function make(app, opts) {
+      const game = factory.make(app, opts);
+      return game;
+  }
 
-  ZOMBIE - 8 damage, 6 health
-  SKELETON - 3 damage, 6 health
-  VINDICATOR - 9 damage, 11 health
-
-  SQUID COAST
-  - Follow the path
-  - Defeat 1 zombie
-  - Defeat a few zombies (3-5)
-  - Pickup arrows
-  - shoot skeleton
-  - follow path
-  - defeat skeleton and raveger
-  - ambush - defeat 3 ravegers
-  - pickup some gear (fireworks arrow, enchantment point)
-  - pull lever to open gate
-  - shoot skeleton to drop bridge
-  - kill a few more things (skeleton, rageger)
-  - roll across gap to get chest
-  - follow path to ending altar
-
-  CREEPER WOODS
-  - drops - food
-  - fishing rod
-  - fireworks arrow
-  - speed potion
-  - tnt
-  - sheep, cows, etc..
-  - free villagers
-  - strength potion
-  - shadow brew
-
-  SPIDER - 5 hp, 3 damage
-    << fires webs
-    << ONLY attack if caught in web
-
-  ARMORED SKELETON BOW - 25 hp, 4 damage
-  ARMORED SKELETON POWER BOW - 50 hp, 4 damage
-
-  ARMORED ZOMBIE DAGGER - 25 hp, 10 damage
-  ARMORED ZOMBIE SWORD - 50 hp, 12 damage
-
-  CREEPER - <10 hp, 36 damage
-
-  VINDICATOR - 11 hp, ? damage
-  ARMORED VINDICATOR AXE -
-  ARMORED VINDICATOR DOUBLE AXE -
-
-  ENCHANTER - <10 hp
-
-  HAWKBRAND (5) = 13-21, CRITICAL HIT CHANCE
-
-
-  NOTES
-  - SUMMONER - 4 damage, 100 HP
-
-  */
-
-  install$3("ZOMBIE", {
-      leader: "ZOMBIE",
-      members: { ZOMBIE: "2-3" },
-      frequency: 10,
-  });
-  install$3("ZOMBIE2", {
-      leader: "ARMOR_ZOMBIE",
-      members: { ZOMBIE: "1-3" },
-      frequency: (l) => l + 5,
-  });
-  install$3("ZOMBIE3", {
-      leader: "ARMOR_ZOMBIE_2",
-      members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
-      frequency: (l) => 2 * l,
-  });
-  install$3("SKELETON", {
-      leader: "SKELETON",
-      members: { SKELETON: "2-3" },
-      frequency: 10,
-  });
-  install$3("SKELETON2", {
-      leader: "ARMOR_SKELETON",
-      members: { SKELETON: "1-3" },
-      frequency: (l) => l + 5,
-  });
-  install$3("SKELETON3", {
-      leader: "ARMOR_SKELETON_2",
-      members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
-      frequency: (l) => 2 * l,
-  });
-
-  install$6({
-      id: "HEALTH_POTION",
-      ch: "!",
-      fg: "pink",
-      on: {
-          pickup(game, actor) {
-              // TODO - vary the messages
-              // TODO - Different healing amounts?
-              actor.health = actor.kind.health; // TODO - move this to an effect
-              game.addMessage("You drink the potion.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "", // Not a drop because it is innate
-  });
-  install$6({
-      id: "ARROWS",
-      ch: "|",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   actor.health = actor.kind.health;
-              game.addMessage("You pickup some ammo.");
-              game.level.removeItem(this);
-              // destroy
-              actor.ammo += 10;
-              if (actor.data.bonus_arrows > 0) {
-                  actor.ammo += 10 * actor.data.bonus_arrows;
+  const plugins = {};
+  const active = [];
+  // @ts-ignore
+  globalThis.PLUGINS = plugins;
+  // function NOFUNC(
+  //   req: any,
+  //   next: () => GWU.Result<any, string>
+  // ): GWU.Result<any, string> {
+  //   return next();
+  // }
+  function install$1(name, cfg) {
+      const plugin = Object.assign({
+          name,
+          plugins: [],
+      }, cfg);
+      if (plugin.name != name) {
+          plugin.name = name;
+      }
+      plugins[name.toLowerCase()] = plugin;
+  }
+  function getPlugin(id) {
+      return plugins[id.toLowerCase()] || null;
+  }
+  function startPlugins(app, ...names) {
+      names.forEach((name) => {
+          // if already started, ignore
+          if (!active.find((p) => p.name == name)) {
+              const plugin = getPlugin(name);
+              if (plugin) {
+                  console.log("Starting plugin: " + name);
+                  // start dependencies
+                  if (plugin.plugins.length) {
+                      startPlugins(app, ...plugin.plugins);
+                  }
+                  // install factory plugins
+                  if (plugin.game) {
+                      use(plugin.game);
+                  }
+                  if (plugin.actor) {
+                      use$3(plugin.actor);
+                  }
+                  if (plugin.hero) {
+                      use$2(plugin.hero);
+                  }
+                  if (plugin.item) {
+                      use$4(plugin.item);
+                  }
+                  if (plugin.level) {
+                      use$1(plugin.level);
+                  }
+                  // Start the plugin
+                  if (plugin.app && plugin.app.start) {
+                      plugin.app.start(app);
+                  }
+                  active.push(plugin);
               }
-              return true;
-          },
-      },
-      tags: "drop",
-  });
-  install$6({
-      id: "APPLE",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Apples - 20%/3s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
-              game.addMessage("You eat an apple.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "BREAD",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Bread - 100%/30s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
-              game.addMessage("You eat some bread.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "PORK",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Pork - 50%/10s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
-              game.addMessage("You eat some pork.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "SALMON",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Salmon - 35%/8s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
-              game.addMessage("You eat some salmon.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "BERRIES",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Berries - 20%/5s + speedup
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
-              game.addMessage("You eat some berries.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "MELON",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Melon - 75%/15s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
-              game.addMessage("You eat some melon.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "FRUIT",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Fruit - 30%/1s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
-              game.addMessage("You eat some fruit.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$6({
-      id: "FISH",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(game, actor) {
-              //   [] Fish - 20%/2s + 10% oxygen
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
-              game.addMessage("You eat some fish.");
-              game.level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
+              else {
+                  console.error(`MISSING PLUGIN: ${name}`);
+              }
+          }
+      });
+  }
 
-  //////////////////////////////////////////////////////
-  // MELEE
-  //////////////////////////////////////////////////////
-  install$6({
-      id: "DAGGERS",
-      ch: "/",
-      fg: "yellow",
-      speed: 50,
-      damage: 5,
-      combo: 6,
-      combo_speed: 80,
-      combo_damage: 8,
-      tags: "melee",
-  });
-  // FANGS_OF_FROST
-  // MOON_DAGGERS
-  // SHEER_DAGGERS
-  // VOID_BLADES
-  // BEGINNING_AND_END
-  install$6({
-      id: "KNIFE",
-      ch: "/",
-      fg: "yellow",
-      speed: 70,
-      damage: 7,
-      combo: 5,
-      combo_speed: 70,
-      combo_damage: 7,
-      tags: "melee",
-  });
-  // TEMPEST_KNIFE
-  // CHILL_KNIFE
-  // RESOLUTE_KNIFE
-  install$6({
-      id: "SWORD",
-      ch: "/",
-      fg: "yellow",
-      speed: 100,
-      damage: 10, // dps = 10 * 100 / 100 = 10
-      combo: 3,
-      combo_speed: 100,
-      combo_damage: 10,
-      tags: "melee",
-  });
-  // DIAMOND_SWORD
-  // HAWKBRAND
-  // SINISTER_SWORD
-  install$6({
-      id: "CUTLASS",
-      ch: "/",
-      fg: "yellow",
-      speed: 110,
-      damage: 11,
-      combo: 3,
-      combo_speed: 130,
-      combo_damage: 13,
-      tags: "melee",
-  });
-  // CORAL_BLADE
-  // SPONGE_STRIKER
-  install$6({
-      id: "AXE",
-      ch: "/",
-      fg: "yellow",
-      speed: 90,
-      damage: 9,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // HIGHLAND_AXE
-  // FIREBRAND_AXE
-  install$6({
-      id: "DOUBLE_AXE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 150,
-      combo_damage: 15,
-      tags: "melee",
-  });
-  // CURSED_AXE
-  // WHIRLWIND
-  install$6({
-      id: "BACKSTABBER",
-      ch: "/",
-      fg: "yellow",
-      speed: 90,
-      damage: 10,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 10,
-      tags: "melee",
-  });
-  // SWIFT_STRIKER
-  install$6({
-      id: "BATTLESTAFF",
-      ch: "/",
-      fg: "yellow",
-      speed: 70,
-      damage: 7,
-      combo: 4,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // BATTLESTAFF_OF_TERROR
-  // GROWING_STAFF
-  install$6({
-      id: "BONE_CLUB",
-      ch: "/",
-      fg: "yellow",
-      speed: 150,
-      damage: 15,
-      combo: 2,
-      combo_speed: 200,
-      combo_damage: 20,
-      tags: "melee",
-  });
-  // BONE_CUDGEL
-  install$6({
-      id: "CLAYMORE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 180,
-      combo_damage: 18,
-      tags: "melee",
-  });
-  // BROADSWORD
-  // GREAT_AXEBLADE
-  // HEARTSTEALER
-  // OBSIDIAN_CLAYMORE
-  // STARLESS_NIGHT
-  // FROST_SLAYER
-  // DANCERS_SWORD
-  // NAMELESS_BLADE
-  install$6({
-      id: "GLAIVE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 150,
-      combo_damage: 15,
-      tags: "melee",
-  });
-  // GRAVE_BANE
-  // VENOM_GLAIVE
-  install$6({
-      id: "GREAT_HAMMER",
-      ch: "/",
-      fg: "yellow",
-      speed: 180,
-      damage: 18,
-      combo: 2,
-      combo_speed: 200,
-      combo_damage: 20,
-      tags: "melee",
-  });
-  // HAMMER_OF_GRAVITY
-  // STORMLANDER
-  install$6({
-      id: "MACE",
-      ch: "/",
-      fg: "yellow",
-      speed: 110,
-      damage: 11,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // FLAIL
-  // SUNS_GRACE
-  install$6({
-      id: "PICKAXE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // DIAMOND_PICKAXE
-  install$6({
-      id: "SICKLES",
-      ch: "/",
-      fg: "yellow",
-      speed: 80,
-      damage: 8,
-      combo: 4,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // NIGHTMARES_BITE
-  // LAST_LAUGH
-  // SOUL_KNIFE
-  // ETERNAL_KNIFE
-  // TRUTHSEEKER
-  install$6({
-      id: "WHIP",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // VINE_WHIP
-  install$6({
-      id: "GAUNTLETS",
-      ch: "/",
-      fg: "yellow",
-      speed: 50,
-      damage: 5,
-      combo: 7,
-      combo_speed: 60,
-      combo_damage: 6,
-      tags: "melee",
-  });
-  // FIGHTERS_BINDINGS
-  // MAULERS
-  // SOUL_FISTS
-  install$6({
-      id: "SCYTHE",
-      ch: "/",
-      fg: "yellow",
-      speed: 180,
-      damage: 18,
-      combo: 2,
-      combo_speed: 180,
-      combo_damage: 18,
-      tags: "melee",
-  });
-  // SOUL_SCYTHE
-  // FROST_SCYTHE
-  // JAILORS_SCYTHE
-  install$6({
-      id: "KATANA",
-      ch: "/",
-      fg: "yellow",
-      speed: 90,
-      damage: 9,
-      combo: 4,
-      combo_speed: 110,
-      combo_damage: 11,
-      tags: "melee",
-  });
-  // DARK_KATANA
-  // MASTERS_KATANA
-  install$6({
-      id: "SPEAR",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 140,
-      combo_damage: 14,
-      tags: "melee",
-  });
-  // FORTUNE_SPEAR
-  // WHISPERING_SPEAR
-  install$6({
-      id: "RAPIER",
-      ch: "/",
-      fg: "yellow",
-      speed: 30,
-      damage: 3,
-      combo: 10,
-      combo_speed: 60,
-      combo_damage: 6,
-      tags: "melee",
-  });
-  // BEE_STINGER
-  // FREEZING_FOIL
+  function startApp(config) {
+      const appOpts = utils.mergeDeep({
+          name: "Goblinwerks",
+          width: 90,
+          height: 45,
+          div: "game",
+          scenes: {
+              title: title,
+              level: level,
+              win: win,
+              lose: lose,
+              help: help,
+              reward: reward,
+          },
+          scene: "title",
+          plugins: [],
+      }, config);
+      // make the App
+      // - default is to start the app which will start the "title" scene
+      // - the title screen will make and start a new game
+      // - starting a game will make the default level
+      // - ... and then start the level kind's screen with that level
+      const app = index.make(appOpts);
+      // This will be used when we start the game
+      app.data.start_opts = config;
+      // Start Plugins...
+      startPlugins(app, ...config.plugins);
+      return app;
+  }
 
-  install$6({
-      id: "SCALE_MAIL",
-      name: "Scale Mail",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          melee_damage: 30,
-      },
-  });
-  install$6({
-      id: "MERCENARY_ARMOR",
-      name: "Mercenary Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          weapon_damage_aura: 20,
-      },
-  });
-  install$6({
-      id: "GUARDS_ARMOR",
-      name: "Guards Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
-      tags: "armor",
-      effects: {
-          artifact_cooldown: 40,
-          arrows: 10,
-      },
-  });
-  install$6({
-      id: "HUNTERS_ARMOR",
-      name: "Hunters Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
-      tags: "armor",
-      effects: {
-          ranged_damage: 30,
-          arrows: 10,
-      },
-  });
-  install$6({
-      id: "ARCHERS_ARMOR",
-      name: "Archers Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
-      tags: "armor",
-      effects: {
-          ranged_damage: 30,
-          arrows: 10,
-          move_speed_aura: 15,
-      },
-  });
-  install$6({
-      id: "REINFORCED_MAIL",
-      name: "Reinforced Mail",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
-      },
-  });
-  install$6({
-      id: "STALWART_ARMOR",
-      name: "Stalwart Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
-          potion_boosts_defense: [90, 5 * 200],
-      },
-  });
-  install$6({
-      id: "PLATE_ARMOR",
-      name: "Plate Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
-      },
-  });
-  install$6({
-      id: "FULL_METAL_ARMOR",
-      name: "Full Metal Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
-          melee_damage: 30,
-      },
-  });
-  install$6({
-      id: "CHAMPIONS_ARMOR",
-      name: "Champions Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          potion_cooldown: 40,
-          mobs_target_you: 50, // 50%?
-      },
-  });
-  install$6({
-      id: "HEROS_ARMOR",
-      name: "Heros Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          potion_cooldown: 40,
-          mobs_target_you: 50, // 50%?
-          potion_heals_allies: 3,
-      },
-  });
-
-  //////////////////////////////////////////////////////
-  // RANGED
-  //////////////////////////////////////////////////////
-  install$6({
-      id: "BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 100,
-      damage: 10,
-      range: 10,
-      charge: 3,
-      tags: "ranged, bow",
-  });
-  // BONE_BOW
-  // TWIN_BOW
-  install$6({
-      id: "HUNTING_BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 90,
-      damage: 9,
-      range: 13,
-      charge: 3,
-      tags: "ranged, bow",
-  });
-  // ANCIENT_BOW
-  // HUNTERS_PROMISE
-  // MASTERS_BOW
-  install$6({
-      id: "LONGBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 130,
-      damage: 13,
-      range: 15,
-      charge: 4,
-      tags: "ranged, bow",
-  });
-  // GUARDIAN_BOW
-  // RED_SNAKE
-  install$6({
-      id: "POWER_BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 150,
-      damage: 15,
-      range: 20,
-      charge: 5,
-      tags: "ranged, bow",
-  });
-  // ELITE_POWER_BOW
-  // SABREWING
-  install$6({
-      id: "SHORTBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 70,
-      damage: 7,
-      range: 8,
-      charge: 2,
-      tags: "ranged, bow",
-  });
-  // LOVE_SHORTBOW
-  // MECHANICAL_SHORTBOW
-  // PURPLE_STORM
-  // SNOW_BOW
-  // WINTERS_TOUCH
-  install$6({
-      id: "TRICKBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 80,
-      damage: 8,
-      range: 10,
-      charge: 2,
-      tags: "ranged, bow",
-  });
-  // GREEN_MENACE
-  // PINK_SCOUNDREL
-  install$6({
-      id: "CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      range: 10,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // AZURE_SEEKER
-  // SLICER
-  // EXPLODING_CROSSBOW
-  // FIREBOLT_THROWER
-  // IMPLODING_CROSSBOW
-  install$6({
-      id: "DUAL_CROSSBOWS",
-      ch: "}",
-      fg: "yellow",
-      speed: 60,
-      damage: 6,
-      range: 8,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // BABY_CROSSBOWS
-  // SPELLBOUND_CROSSBOWS
-  install$6({
-      id: "HEAVY_CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 200,
-      damage: 20,
-      range: 15,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // DOOM_CROSSBOW
-  // SLAYER_CROSSBOW
-  install$6({
-      id: "RAPID_CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 80,
-      damage: 8,
-      range: 10,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // AUTO_CROSSBOW
-  // BUTTERFLY_CROSSBOW
-  install$6({
-      id: "SCATTER_CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 100,
-      damage: 10,
-      range: 10,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // HARP_CROSSBOW
-  // LIGHTNING_HARP_CROSSBOW
-
-  install$5("potion", (game, actor) => {
+  install$6("potion", (level, actor) => {
       if (!actor.isHero)
           return false;
       if (actor.data.potion < actor.data.potion_max) {
-          game.addMessage("Not ready.");
+          level.game.addMessage("Not ready.");
           // TODO - spend time? idle?
           return false;
       }
       // TODO - potion_heals_nearby
       if (actor.health >= actor.health_max) {
           // TODO - check for nearby
-          game.addMessage("You do not need to drink a potion.");
+          level.game.addMessage("You do not need to drink a potion.");
           // TODO - spend time? idle?
           return false;
       }
@@ -25280,37 +25680,28 @@ void main() {
       const heal = Math.floor(actor.health_max * 0.75);
       actor.health = Math.min(actor.health + heal, actor.health_max);
       actor.data.potion = 0; // Needs to recharge
-      game.addMessage("You drink a #{blue potion}.");
-      game.endTurn(actor, actor.moveSpeed);
+      level.game.addMessage("You drink a #{blue potion}.");
+      level.game.endTurn(actor, actor.moveSpeed);
       return true;
   });
   install$1("potion", {
-      new_game(req, next) {
-          req.game.keymap["p"] = "potion";
-          return next();
+      game: {
+          create(game) {
+              game.keymap["p"] = "potion";
+          },
       },
-      spawn(req, next) {
-          if (isHero(req.obj)) {
-              const hero = req.obj;
+      hero: {
+          create(hero, opts) {
               hero.data.potion_max = 40 * 100; // 40 moves
               hero.data.potion = hero.data.potion_max;
-          }
-          return next();
-      },
-      tick(req, next) {
-          if (isHero(req.obj)) {
-              const hero = req.obj;
+          },
+          tick: (level, hero, time) => {
               let rate = Math.round(100 * Math.pow(0.85, hero.data.potion_cooldown || 0));
-              hero.data.potion = Math.min(hero.data.potion + Math.round((req.time * 100) / rate), hero.data.potion_max);
-          }
-          return next();
-      },
-      sidebar(req, next) {
-          if (isHero(req.obj)) {
-              const hero = req.obj;
-              req.entry.add_progress("Potion", "blue", hero.data.potion, hero.data.potion_max);
-          }
-          return next();
+              hero.data.potion = Math.min(hero.data.potion + Math.round((time * 100) / rate), hero.data.potion_max);
+          },
+          sidebar: (hero, entry) => {
+              entry.add_progress("Potion", "blue", hero.data.potion, hero.data.potion_max);
+          },
       },
   });
 
@@ -25453,27 +25844,152 @@ void main() {
   */
 
   function start() {
+      install$2({
+          id: "TOWER",
+          width: 60,
+          height: 35,
+          scene: "level",
+          on: {
+              create(level, opts) {
+                  console.log("TOWER LEVEL CREATE");
+                  const depth = (level.data.depth = parseInt(level.id.toString()));
+                  if (level.kind.data.waves && level.kind.data.waves.length > 0) {
+                      level.data.waves = level.kind.data.waves;
+                  }
+                  else {
+                      level.data.waves = [];
+                      for (let i = 0; i < depth; ++i) {
+                          level.data.waves.push({
+                              delay: 500 + i * 2000,
+                              power: depth * 2 - 1 + level.rng.dice(1, 3),
+                              horde: { depth: depth },
+                          });
+                      }
+                  }
+                  level.data.wavesLeft = level.data.waves.length;
+              },
+              show(level, scene) {
+                  // put player in starting location
+                  let startLoc = level.locations.start || [
+                      Math.floor(level.width / 2),
+                      Math.floor(level.height / 2),
+                  ];
+                  // TODO - this should be an Option<Loc>
+                  startLoc = level.rng.matchingLocNear(startLoc[0], startLoc[1], (x, y) => level.hasTile(x, y, "FLOOR"));
+                  // TODO - if (startLoc.isNone()) { return GWU.Result.Err("Failed to find starting location for Hero on level: " + level.id); }
+                  // TODO - let res = next(req);
+                  // TODO - if (res.isErr()) { return res; }
+                  level.game.hero.clearGoal();
+                  // TODO - real time flash, then do all of this...
+                  // @ts-ignore
+                  spawn(level, level.game.hero, startLoc[0], startLoc[1]);
+                  level.data.wavesLeft = level.data.waves.length;
+                  level.data.waves.forEach((wave) => {
+                      console.log("WAVE - " + wave.delay);
+                      level.wait(wave.delay || 0, () => {
+                          let horde = null;
+                          if (wave.horde) {
+                              if (typeof wave.horde === "string") {
+                                  horde = from(wave.horde);
+                              }
+                              else {
+                                  wave.horde.depth = wave.horde.depth || level.depth;
+                                  horde = random(wave.horde);
+                              }
+                          }
+                          else {
+                              horde = random({ depth: level.depth });
+                          }
+                          if (!horde) {
+                              throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
+                          }
+                          const leader = horde.spawn(level, wave);
+                          if (!leader)
+                              throw new Error("Failed to place horde!");
+                          leader.once("add", () => {
+                              --level.data.wavesLeft;
+                          });
+                      });
+                  });
+                  if (level.welcome) {
+                      level.game.addMessage(level.welcome);
+                  }
+              },
+              tick(level, dt) {
+                  // Do we have work left to do on the level?
+                  if (level.done || !level.started)
+                      return;
+                  if (level.data.wavesLeft > 0)
+                      return;
+                  if (level.actors.length > 1)
+                      return;
+                  // win level
+                  level.done = true;
+                  if (level.proceed) {
+                      level.game.addMessage(level.proceed);
+                  }
+                  const inactiveStairs = tilesByName["UP_STAIRS_INACTIVE"].index;
+                  level.tiles.forEach((index, x, y) => {
+                      if (index === inactiveStairs) {
+                          flash(level, x, y, "yellow").then(() => {
+                              level.setTile(x, y, "UP_STAIRS");
+                          });
+                      }
+                  });
+              },
+              up_stairs(level, actor) {
+                  const game = level.game;
+                  const depth = level.data.depth;
+                  if (depth >= game.data.LAST_LEVEL) {
+                      game.app.scenes.start("win", { game });
+                  }
+                  else {
+                      game.app.scenes.start("reward", { depth: depth, game });
+                  }
+              },
+              lose(level, reason) {
+                  const game = level.game;
+                  game.app.scenes.start("lose", {
+                      depth: level.data.depth,
+                      game,
+                      reason,
+                  });
+              },
+          },
+      });
+      //   win(this: GWU.app.Scene) {
+      //   const game = this.data.game as Game;
+      //   const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
+      //   if (this.data.level.depth === LAST_LEVEL) {
+      //     this.app.scenes.start("win", this.data);
+      //   } else {
+      //     this.app.scenes.start("reward", this.data);
+      //   }
+      // },
+      // lose(this: GWU.app.Scene) {
+      //   this.app.scenes.start("lose", this.data);
+      // },
       // create the user interface
       const opts = {
           name: "Roguecraft: Tower",
-          width: 90,
-          height: 45,
-          div: "game",
-          scenes: {
-              title: title,
-              level: level,
-              win: win,
-              lose: lose,
-              help: help,
-              reward: reward,
+          plugins: ["potion"],
+          start_level: 1,
+          data: { LAST_LEVEL: 10 },
+          levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",
+          game: {
+              create(game, opts) {
+                  for (let i = 1; i <= game.data.LAST_LEVEL; ++i) {
+                      const levelSeed = game.rng.number(100000);
+                      game.seeds[i] = levelSeed;
+                      console.log(`Level: ${i}, seed=${levelSeed}`);
+                  }
+              },
           },
-          start: "title",
-          plugins: [],
       };
-      // @ts-ignore
-      globalThis.APP = index.make(opts);
+      startApp(opts);
   }
   globalThis.onload = start;
+  // TODO - This should be in the gw-utils bundle
   // @ts-ignore
   globalThis.GWU = GWU;
 

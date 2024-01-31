@@ -1,8 +1,9 @@
 import * as GWU from "gw-utils";
-import { Obj, ObjConfig, CallbackFn } from "../game/obj";
+import { Obj, ObjCreateOpts, CallbackFn } from "../game/obj";
 import { Game } from "../game/game";
+import { Level } from "../level";
 
-export interface FXConfig extends ObjConfig {
+export interface FXConfig extends ObjCreateOpts {
   ch?: string | null;
   fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
@@ -13,11 +14,21 @@ export class FX extends Obj {
   fg: GWU.color.ColorBase;
   bg: GWU.color.ColorBase;
 
-  constructor(cfg: FXConfig) {
-    super(cfg);
+  protected constructor(cfg: FXConfig) {
+    super();
     this.ch = cfg.ch || null;
     this.fg = cfg.fg || null;
     this.bg = cfg.bg || null;
+
+    this._create(cfg);
+
+    this.emit("create", this, cfg);
+  }
+
+  static make(cfg: FXConfig): FX {
+    const fx = new FX(cfg);
+    // fx._create(cfg);
+    return fx;
   }
 
   draw(buf: GWU.buffer.Buffer) {
@@ -26,23 +37,23 @@ export class FX extends Obj {
 }
 
 export function flash(
-  game: Game,
+  level: Level,
   x: number,
   y: number,
   color: GWU.color.ColorBase = "white",
   ms = 300
 ) {
-  const scene = game.scene!;
+  const scene = level.scene;
   scene.pause({ update: true });
 
-  const fx = new FX({ x, y, bg: color, z: 4 });
-  game.level!.addFx(fx);
+  const fx = FX.make({ x, y, bg: color, z: 4 });
+  level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
   scene.needsDraw = true;
 
   scene.wait(ms, () => {
-    game.level!.removeFx(fx);
+    level.removeFx(fx);
     scene.resume({ update: true });
     _success();
   });
@@ -55,24 +66,23 @@ export function flash(
 }
 
 export function flashGameTime(
-  game: Game,
+  level: Level,
   x: number,
   y: number,
   color: GWU.color.ColorBase = "white",
   ms = 300
 ) {
-  const scene = game.scene!;
-  const level = game.level!;
+  const scene = level.scene;
 
   const startTime = scene.app.time;
 
-  const fx = new FX({ x, y, bg: color, z: 4 });
+  const fx = FX.make({ x, y, bg: color, z: 4 });
   level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
   // let _fail: CallbackFn = GWU.NOOP;
 
-  game.wait(ms, () => {
+  level.wait(ms, () => {
     const nowTime = scene.app.time;
     const timeLeft = ms - (nowTime - startTime);
     if (timeLeft > 0) {

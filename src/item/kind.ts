@@ -1,27 +1,49 @@
 import * as GWU from "gw-utils";
 import { Actor } from "../actor";
 import { Game } from "../game";
-import { Item } from "./item";
-import { CallbackFn } from "../game/obj";
+import { Item, ItemCreateOpts } from "./item";
+import { CallbackFn, ObjEvents } from "../game/obj";
 import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
+import { Level } from "../level";
+
+export type ItemMakeFn = (kind: ItemKind, opts: ItemCreateOpts) => Item;
+export type ItemCreateFn = (item: Item, opts: ItemCreateOpts) => void;
+export type ItemSpawnFn = (level: Level, item: Item) => void;
+export type ItemDestroyFn = (level: Level, item: Item) => void;
+
+export type ItemLocFn = (
+  level: Level,
+  item: Item,
+  x: number,
+  y: number
+) => void;
+
+export type ItemActionFn = (level: Level, item: Item, actor: Actor) => void;
 
 export interface ItemEvents {
   // bump?: (game: Game, actor: Item, other: Item) => void;
-  use?: (this: Item, game: Game, actor: Actor) => boolean;
-  pickup?: (this: Item, game: Game, actor: Actor) => boolean;
+  make?: ItemMakeFn;
+  create?: ItemCreateFn;
 
-  // TODO - equip?  unequip?
+  spawn?: ItemSpawnFn; // Fired when an item is placed into the map at creation time
+  destroy?: ItemDestroyFn; // Item is destroyed
 
-  [key: string]: CallbackFn | undefined;
+  pickup?: ItemActionFn;
+  drop?: ItemActionFn;
+
+  equip?: ItemActionFn;
+  unequip?: ItemActionFn;
+
+  use?: ItemActionFn;
 }
 
 export interface KindConfig {
   id: string;
   name?: string;
 
-  ch: string;
-  fg: GWU.color.ColorBase;
+  ch?: string;
+  fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
 
   frequency?: GWU.frequency.FrequencyConfig;
@@ -39,11 +61,13 @@ export interface KindConfig {
 
   slot?: string;
 
-  on?: ItemEvents;
+  on?: ItemEvents & ObjEvents;
+
   tags?: string | string[];
   armor_flags?: string | string[];
   melee_flags?: string | string[];
   ranged_flags?: string | string[];
+
   effects?: EffectConfig;
 }
 
@@ -67,7 +91,7 @@ export interface ItemKind {
   defense: number;
 
   slot: string | null;
-  on: ItemEvents;
+  on: ItemEvents & { [id: string]: CallbackFn };
 
   frequency: GWU.frequency.FrequencyFn;
   tags: string[];
@@ -90,7 +114,7 @@ export const kinds: Record<string, ItemKind> = {};
 // @ts-ignore
 globalThis.ItemKinds = kinds;
 
-export function install(cfg: KindConfig) {
+export function makeKind(cfg: KindConfig): ItemKind {
   const kind = Object.assign(
     {
       name: "",
@@ -116,6 +140,10 @@ export function install(cfg: KindConfig) {
     },
     cfg
   ) as ItemKind;
+
+  if (!kind.id || kind.id.length === 0) {
+    throw new Error("ItemKind must have 'id'.");
+  }
 
   if (kind.name.length == 0) {
     kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
@@ -152,8 +180,13 @@ export function install(cfg: KindConfig) {
       kind.slot = "armor";
     }
   }
+  return kind;
+}
 
-  kinds[cfg.id.toLowerCase()] = kind;
+export function install(cfg: KindConfig) {
+  const kind = makeKind(cfg);
+
+  kinds[kind.id.toLowerCase()] = kind;
 }
 
 export function getKind(id: string): ItemKind | null {

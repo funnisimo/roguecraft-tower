@@ -1,15 +1,16 @@
 import * as GWU from "gw-utils";
 import { Game } from "../game";
+import { Level } from "../level";
 import { Actor } from "./actor";
 import * as Effect from "../effect";
 import { SidebarEntry } from "../widgets";
 
 export class Status {
-  start(actor: Actor, game: Game): void {}
-  tick(actor: Actor, game: Game, time: number): boolean {
+  start(actor: Actor, level: Level): void {}
+  tick(actor: Actor, level: Level, time: number): boolean {
     return false; // no longer active
   }
-  stop(actor: Actor, game: Game): void {}
+  stop(actor: Actor, level: Level): void {}
 
   merge(status: Status): boolean {
     return false;
@@ -57,14 +58,14 @@ export class RegenStatus extends Status {
     this.data = [new RegenData(amount, time)];
   }
 
-  tick(actor: Actor, game: Game, time: number): boolean {
+  tick(actor: Actor, level: Level, time: number): boolean {
     let still_active = false;
     this.data.forEach((d) => {
       if (d.isActive) {
         still_active = true;
         const amount = d.tick(time);
         if (amount > 0) {
-          Effect.heal(game, actor, { amount });
+          Effect.heal(level, actor, { amount });
         }
       }
     });

@@ -3,10 +3,11 @@ import * as GWU from "gw-utils";
 import * as WIDGETS from "../widgets/index";
 // import * as ACTOR from "../actor/index";
 // import * as FX from "../fx/index";
-import { Game } from "../game/game";
+import { Game } from "../game";
+import { Level } from "../level";
 
 export const level = {
-  create(this: GWU.app.Scene) {
+  create(this: GWU.app.Scene, opts: GWU.app.SceneCreateOpts) {
     this.bg = GWU.color.from("dark_gray");
     // const level = this;
 
@@ -21,11 +22,13 @@ export const level = {
       loc = loc || [-1, -1];
       map._focus = loc;
 
-      const game = this.data as Game;
+      const level = this.data.level as Level;
+      const game = level.game;
+
       const hero = game.hero;
       if (loc[0] < 0) {
         // game.level.clearPath();
-        game.hero.clearGoal();
+        hero.clearGoal();
       } else {
         // highlight path
         hero.setGoal(loc[0], loc[1]);
@@ -34,9 +37,10 @@ export const level = {
         // game.level.setPath(path);
       }
 
-      const actor = game.level!.actorAt(loc[0], loc[1]);
+      const actor = level.actorAt(loc[0], loc[1]);
       if (actor) {
         details.hidden = false;
+        // @ts-ignore
         if (actor === hero) {
           details.showHero(hero);
         } else {
@@ -51,14 +55,16 @@ export const level = {
     });
     sidebar.on("choose", (loc) => {
       console.log("sidebar choose - hero go to :", loc[0], loc[1]);
-      const game = this.data as Game;
+      const level = this.data.level as Level;
+      const game = level.game;
       game.hero.setGoal(loc[0], loc[1]);
       game.hero.followPath = true;
-      game.hero.act(game);
+      game.hero.act(level);
     });
 
     messages.on("click", (e: GWU.app.Event) => {
-      const game = this.data as Game;
+      const level = this.data.level as Level;
+      const game = level.game;
       if (game.messages.length > 10) {
         this.app.scenes.run("archive", {
           messages: game.messages,
@@ -69,8 +75,8 @@ export const level = {
     });
 
     map.on("mousemove", (e: GWU.app.Event) => {
-      const game = this.data as Game;
-      const level = game.level!;
+      const level = this.data.level as Level;
+      const game = level.game;
 
       const text = level.getFlavor(e.x, e.y);
       flavor.prop("text", text);
@@ -84,34 +90,32 @@ export const level = {
       // game.level.setPath(path);
     });
     map.on("mouseleave", (e: GWU.app.Event) => {
-      const game = this.data as Game;
+      const level = this.data.level as Level;
+      const game = level.game;
       sidebar.clearFocus();
       // game.level.clearPath();
       game.hero.clearGoal();
     });
     map.on("click", (e: GWU.app.Event) => {
       console.log("map click - player go to:", e.x, e.y);
-      const game = this.data as Game;
-      const level = game.level!;
+      const level = this.data.level as Level;
+      const game = level.game;
       if (!level.started) return;
+
+      // TODO - This should follow the enqueue path..
       game.hero.setGoal(e.x, e.y);
       game.hero.followPath = true;
-      game.hero.act(game);
+      game.hero.act(level);
     });
   },
 
-  start(this: GWU.app.Scene, game: Game) {
-    this.data = game;
-    game.scene = this;
+  start(this: GWU.app.Scene, opts: { level: Level }) {
+    this.data.level = opts.level;
+    this.needsDraw = true;
+  },
 
-    // const w = this.get("LEVEL");
-    // w.text("Level: " + game.level);
-
-    // const seed = game.seed || 12345;
-    // const s = this.get("SEED");
-    // s.text("Seed: " + seed);
-
-    game.startLevel(this, 60, 35);
+  update(dt: number) {
+    this.data.level.update(dt);
   },
 
   on: {
@@ -126,39 +130,50 @@ export const level = {
     // },
 
     inventory(this: GWU.app.Scene) {
-      const game = this.data as Game;
+      const level = this.data.level as Level;
+      const game = level.game;
       const hero = game.hero;
       const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
       sidebar.setFocus(hero.x, hero.y);
     },
 
-    win(this: GWU.app.Scene) {
-      const game = this.data as Game;
-      game.messages.confirmAll();
+    // win(this: GWU.app.Scene) {
+    //   const game = this.data.game as Game;
+    //   game.messages.confirmAll();
 
-      const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
-      if (this.data.level.depth === LAST_LEVEL) {
-        this.app.scenes.start("win", this.data);
-      } else {
-        this.app.scenes.start("reward", this.data);
-      }
-    },
-    lose(this: GWU.app.Scene) {
-      this.app.scenes.start("lose", this.data);
-    },
+    //   const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
+    //   if (this.data.level.depth === LAST_LEVEL) {
+    //     this.app.scenes.start("win", this.data);
+    //   } else {
+    //     this.app.scenes.start("reward", this.data);
+    //   }
+    // },
+    // lose(this: GWU.app.Scene) {
+    //   this.app.scenes.start("lose", this.data);
+    // },
 
     keypress(this: GWU.app.Scene, e: GWU.app.Event) {
       const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
       sidebar.clearFocus();
       // this.data.level.clearPath();
 
-      const game = this.data as Game;
-      if (e.key !== "Enter") {
-        game.hero.clearGoal();
-      }
+      const level = this.data.level as Level;
+      const game = level.game;
+      game.inputQueue.enqueue(e.clone());
+
+      // if (e.key !== "Enter") {
+      //   game.hero.clearGoal();
+      // }
       // if (e.key == "Escape") {
       //   this.emit("lose"); // todo -- remove
       // }
+      e.stopPropagation();
+    },
+
+    click(this: GWU.app.Scene, e: GWU.app.Event) {
+      const level = this.data.level as Level;
+      const game = level.game;
+      game.inputQueue.enqueue(e.clone());
       e.stopPropagation();
     },
   },
