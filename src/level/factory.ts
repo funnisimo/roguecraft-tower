@@ -1,10 +1,12 @@
-import { CallbackFn, ObjEvents, Game } from "../game";
-import { LevelKind, getKind } from "./kind";
-import { LevelEvents, LevelCreateOpts, Level } from "./level";
+import * as GWU from "gw-utils";
+import { CallbackFn, ObjEvents, Game, EventFn } from "../game";
+import { LevelEvents, LevelKind, LevelMakeOpts, getKind } from "./kind";
+import { Level } from "./level";
 
 export interface LevelPlugin extends LevelEvents {
-  on?: Omit<LevelEvents, "make"> & ObjEvents;
-  data?: { [key: string]: any };
+  on?: ObjEvents;
+  data?: { [id: string]: any };
+  keymap?: { [id: string]: string | EventFn };
 }
 
 export class LevelFactory {
@@ -18,22 +20,23 @@ export class LevelFactory {
     game: Game,
     id: string | number,
     kind: LevelKind,
-    opts: LevelCreateOpts
+    opts: LevelMakeOpts
   ): Level {
-    let level: Level;
-    if (opts.on && opts.on.make) {
-      level = opts.on.make(game, id, kind, opts);
-    } else {
-      const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-      if (makePlugin) {
-        level = makePlugin.make(game, id, kind, opts);
-      } else {
-        level = new Level(game, id, kind);
-      }
+    // Create the Item
+    let out: GWU.Option<Level> = GWU.Option.None();
+    if (!!opts.on && opts.on.create) {
+      out = opts.on.create(game, id, kind, opts);
     }
+    out = this.plugins.reduce((v, p) => {
+      if (v.isNone() && p.create) {
+        return p.create(game, id, kind, opts);
+      }
+      return v;
+    }, out);
+    let level = out.unwrapOrElse(() => new Level(game, id, kind));
 
     this.apply(level);
-    level.create(kind, opts);
+    level._make(kind, opts);
 
     return level;
   }
@@ -41,16 +44,16 @@ export class LevelFactory {
   apply(level: Level) {
     this.plugins.forEach((p) => {
       Object.entries(p).forEach(([key, val]) => {
-        if (key === "on") {
-          Object.entries(val).forEach(([k2, v2]: [string, CallbackFn]) => {
-            if (typeof v2 === "function") {
-              level.on(k2, v2);
-            } else {
-              console.warn("Invalid 'on' member in Item plugin: " + k2);
+        if (key == "data") {
+          level.data = GWU.utils.mergeDeep(level.data, val);
+        } else if (key == "on") {
+          Object.entries(val).forEach(([k, v]: [string, CallbackFn]) => {
+            if (typeof v === "function") {
+              level.on(k, v);
             }
           });
-        } else if (key === "data") {
-          Object.assign(level.data, val);
+        } else if (key == "keymap") {
+          // TODO - Add to level keymap
         } else if (typeof val === "function") {
           level.on(key, val);
         } else {
@@ -63,7 +66,7 @@ export class LevelFactory {
 
 export const factory = new LevelFactory();
 
-export function use(plugin: LevelPlugin) {
+export function use(plugin: LevelEvents) {
   factory.use(plugin);
 }
 
@@ -71,7 +74,7 @@ export function make(
   game: Game,
   id: string | number,
   kind: string | LevelKind,
-  opts: LevelCreateOpts
+  opts: LevelMakeOpts
 ): Level {
   if (typeof kind === "string") {
     const id = kind;

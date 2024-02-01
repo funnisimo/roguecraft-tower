@@ -54,7 +54,7 @@ describe("Level", () => {
       id: "TEST",
       width: 30,
       height: 20,
-      on: { create: createFn },
+      on: { make: createFn },
     });
 
     // TODO - Figure out how to set 'start' location in opts so that the stairs match

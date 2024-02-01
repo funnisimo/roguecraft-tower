@@ -49,14 +49,16 @@ export function install(...args: any[]) {
     plugin = args[0];
     name = plugin.name;
   } else {
+    name = args[0];
     plugin = Object.assign(
       {
-        name: args[0],
+        name,
         plugins: [],
       },
-      args[0]
-    ) as Plugin;
+      args[1]
+    );
 
+    // TODO - Is this necessary?
     if (plugin.name != name) {
       plugin.name = name;
     }
@@ -77,7 +79,7 @@ export function startPlugins(app: GWU.app.App, ...names: string[]) {
       if (plugin) {
         console.log("Starting plugin: " + name);
         // start dependencies
-        if (plugin.plugins.length) {
+        if (Array.isArray(plugin.plugins) && plugin.plugins.length) {
           startPlugins(app, ...plugin.plugins);
         }
 

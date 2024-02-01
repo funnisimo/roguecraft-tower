@@ -1,6 +1,5 @@
 import * as GWU from "gw-utils";
 import { Actor } from "../actor";
-import { Game } from "../game";
 import { Item } from "./item";
 import { CallbackFn, ObjEvents, ObjMakeOpts } from "../game";
 import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
@@ -10,7 +9,7 @@ import { SidebarEntry } from "../widgets";
 
 export interface ItemMakeOpts extends ObjMakeOpts, ItemEvents {
   power?: number;
-  on?: ItemEvents & { [id: string]: CallbackFn }; // give core events better type help?
+  on?: ObjEvents; // give core events better type help?
   data?: Record<string, string>;
 }
 

@@ -1,19 +1,26 @@
 import * as GWU from "gw-utils";
 import * as SCENES from "./scenes/index";
 import * as TILE from "./tile";
+import "./plugins";
 import "./actors";
 import "./hordes";
 import "./items";
 import "./melee";
 import "./armor";
 import "./ranged";
-import "./plugins";
+import "./potion";
 import "./enchants";
 import * as GAME from "./game";
 import * as FX from "./fx";
-import { install as installLevel, Level, LevelCreateOpts } from "./level";
+import { install as installLevel, Level, LevelMakeOpts } from "./level";
 import * as ACTOR from "./actor";
 import * as HORDE from "./horde";
+
+export interface WaveInfo {
+  delay?: number;
+  horde?: string | Partial<HORDE.MatchOptions>;
+  power?: number;
+}
 
 function start() {
   installLevel({
@@ -22,7 +29,7 @@ function start() {
     height: 35,
     scene: "level",
     on: {
-      create(level: Level, opts: LevelCreateOpts) {
+      make(level: Level, opts: LevelMakeOpts) {
         console.log("TOWER LEVEL CREATE");
         const depth = (level.data.depth = parseInt(level.id.toString()));
 
@@ -153,7 +160,7 @@ function start() {
   // create the user interface
   const opts: GAME.StartAppOpts = {
     name: "Roguecraft: Tower",
-    plugins: ["potion"],
+    plugins: ["core", "potion"],
     start_level: 1,
     data: { LAST_LEVEL: 10 },
     levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",

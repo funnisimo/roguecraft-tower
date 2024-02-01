@@ -24,7 +24,7 @@ export interface GameEvents {
 export interface GameOpts {
   seed?: number;
   levels?: {
-    [id: string]: string | (LEVEL.LevelCreateOpts & { kind: string });
+    [id: string]: string | (LEVEL.LevelMakeOpts & { kind: string });
   };
   keymap?: {
     [id: string]: string | EventFn;
@@ -39,7 +39,7 @@ export class Game {
   app: GWU.app.App;
   // scene: GWU.app.Scene;
   level: LEVEL.Level;
-  levels: { [id: string]: LEVEL.LevelCreateOpts & { kind: string } };
+  levels: { [id: string]: LEVEL.LevelMakeOpts & { kind: string } };
   _levelObjs: { [id: string | number]: Level };
   start_level: string | number;
 
@@ -225,7 +225,7 @@ export class Game {
 
   makeLevel(
     levelId: string | number,
-    opts: LEVEL.LevelCreateOpts & { kind?: string } = {}
+    opts: LEVEL.LevelMakeOpts & { kind?: string } = {}
   ): Level {
     let info = this.levels[levelId] ||
       this.levels["default"] || { kind: "DEFAULT" };

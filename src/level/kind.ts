@@ -1,35 +1,53 @@
 import * as GWU from "gw-utils";
 import * as GWD from "gw-dig";
-import { ObjEvents } from "../game";
+import { Game, ObjEvents } from "../game";
 import * as HORDE from "../horde";
-import { LevelEvents } from "./level";
+import { Level } from "./level";
 
-// TODO - Move to Tower specific plugin
-export interface WaveInfo {
-  delay?: number;
-  horde?: string | Partial<HORDE.MatchOptions>;
-  power?: number;
+export type LevelMakeOpts = Partial<LevelKind>;
+
+export interface LevelEvents {
+  create?: (
+    game: Game,
+    id: string | number,
+    kind: LevelKind,
+    opts: LevelMakeOpts
+  ) => GWU.Option<Level>;
+  make?: (level: Level, opts: LevelMakeOpts) => void;
+
+  // TODO - start & stop
+  show?: (level: Level, scene: GWU.app.Scene) => void;
+  hide?: (level: Level) => void;
+
+  update?: (level: Level, dt: number) => void;
+  tick?: (level: Level, dt: number) => void;
+
+  scene_event?: (
+    level: Level,
+    scene: GWU.app.Scene,
+    event: GWU.app.Event
+  ) => void;
 }
 
 export interface LevelKind {
   id: string;
   width: number;
   height: number;
-  depth: number;
+  depth: number; // TODO - challenge or difficulty
   seed: number;
-  welcome: string;
-  proceed: string;
-  waves: WaveInfo[];
+  welcome: string; // messages.welcome
+  proceed: string; // messages.proceed
   tick_time: number;
 
   scene: string;
-  scene_opts: GWU.app.SceneCreateOpts;
+  scene_opts: GWU.app.SceneStartOpts;
 
   dig?: GWD.DiggerOptions;
   layout?: { data: string[]; tiles: { [id: string]: string } };
 
   on: ObjEvents & LevelEvents;
   data: { [id: string]: any };
+  locations: { [id: string]: GWU.xy.Loc };
 }
 
 export type LevelConfig = Partial<LevelKind> & {

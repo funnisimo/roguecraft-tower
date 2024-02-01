@@ -20746,24 +20746,16 @@ void main() {
       make(kind, opts = {}) {
           // Create the Item
           let out = Option.None();
-          if (!!opts.create) {
+          if (opts.create) {
               out = opts.create(kind, opts);
           }
-          else if (!!opts.on && opts.on.create) {
-              out = opts.on.create(kind, opts);
-          }
           out = this.plugins.reduce((v, p) => {
-              if (!!v && v.isSome())
-                  return v;
-              if (p.create) {
+              if (v.isNone() && p.create) {
                   return p.create(kind, opts);
-              }
-              else if (!!p.on && p.on.create) {
-                  return p.on.create(kind, opts);
               }
               return v;
           }, out);
-          let item = out.isSome() ? out.unwrap() : new Item(kind);
+          let item = out.unwrapOrElse(() => new Item(kind));
           // Update the item events/data
           this.apply(item);
           // finish making the item
@@ -20774,19 +20766,17 @@ void main() {
       apply(item) {
           this.plugins.forEach((p) => {
               Object.entries(p).forEach(([key, val]) => {
-                  if (key === "on") {
-                      Object.entries(val).forEach(([k2, v2]) => {
-                          if (typeof v2 === "function") {
-                              item.on(k2, v2);
-                          }
-                          else {
-                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                  if (key == "data") {
+                      item.data = utils.mergeDeep(item.data, val);
+                  }
+                  else if (key == "on") {
+                      Object.entries(val).forEach(([k, v]) => {
+                          if (typeof v === "function") {
+                              item.on(k, v);
                           }
                       });
                   }
-                  else if (key === "data") {
-                      item.data = utils.mergeDeep(item.data, val);
-                  }
+                  else if (key == "keymap") ;
                   else if (typeof val === "function") {
                       item.on(key, val);
                   }
@@ -22671,169 +22661,598 @@ void main() {
       return factory$2.make(kind, config);
   }
 
-  install$4({
-      id: "HERO",
-      name: "Hero",
-      ch: "@",
-      fg: "white",
-      bg: -1,
-      moveSpeed: 100,
-      health: 20,
-      ammo: 20,
-      // damage: 10,
-      // attackSpeed: 100,
-      // rangedDamage: 3,
-      // range: 10,
-      // rangedAttackSpeed: 100,
-      slots: {
-          ranged: "SHORTBOW",
-          melee: "CUTLASS",
-          armor: "PLATE_ARMOR",
+  class Level {
+      id = 0;
+      depth = 0;
+      kind;
+      // TODO - Convert to >> messages: { [id: string]: string }
+      welcome = "";
+      proceed = "";
+      tick_time = 50;
+      scheduler;
+      // TODO - state: { done, started, ... }
+      done = false;
+      started = false;
+      // needsDraw = false;
+      data = {};
+      // TODO - move to Tower specific plugin
+      // waves: WaveInfo[] = [];
+      actors = [];
+      items = [];
+      fxs = [];
+      tiles;
+      flags;
+      choke;
+      game;
+      scene_id = "level";
+      scene_opts = {};
+      scene = null;
+      // // TODO - Can we do this without a hero?
+      // hero: Hero;
+      seed;
+      // rng: GWU.rng.Random;
+      locations = {};
+      events;
+      constructor(game, id, kind) {
+          this.id = id;
+          this.game = game;
+          this.kind = kind;
+          const { width, height, seed } = kind;
+          this.events = new index.Events(this);
+          this.tiles = grid.make(width, height);
+          this.flags = grid.make(width, height);
+          this.choke = grid.make(width, height);
+          this.seed = seed || random$2.number(100000);
+          // this.rng = GWU.rng.make(this.seed);
+          this.scheduler = new scheduler.Scheduler();
+          if (kind.scene) {
+              this.scene_id = kind.scene;
+              this.scene_opts = kind.scene_opts;
+          }
+          // // TODO - Move to Tower specific plugin
+          // this.data.wavesLeft = 0;
+      }
+      get width() {
+          return this.tiles.width;
+      }
+      get height() {
+          return this.tiles.height;
+      }
+      get rng() {
+          return this.game ? this.game.rng : random$2;
+      }
+      hasXY(x, y) {
+          return this.tiles.hasXY(x, y);
+      }
+      _make(kind, opts) {
+          if (opts.seed) {
+              this.seed = opts.seed;
+          }
+          this.depth = opts.depth || kind.depth || 1;
+          if (kind.layout) {
+              const { data, tiles } = kind.layout;
+              loadLevel(this, data, tiles);
+          }
+          else if (kind.dig) {
+              digLevel(this, kind.dig, this.seed);
+          }
+          else {
+              throw new Error("Level must have either 'dig' or 'layout'.");
+          }
+          if (kind.welcome) {
+              this.welcome = kind.welcome;
+          }
+          else {
+              this.welcome = "Welcome.";
+          }
+          if (kind.proceed) {
+              this.proceed = kind.proceed;
+          }
+          else {
+              this.proceed = "Proceed.";
+          }
+          this.tick_time = kind.tick_time || this.tick_time;
+          if (this.tick_time > 0) {
+              this.repeat(this.tick_time, this._tick);
+          }
+          if (opts.scene) {
+              this.scene_id = opts.scene;
+              this.scene_opts = opts.scene_opts || {};
+          }
+          else if (opts.scene_opts) {
+              this.scene_opts = utils.mergeDeep(this.scene_opts, opts.scene_opts);
+          }
+          let onFns = kind.on || {};
+          Object.entries(onFns).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          onFns = opts.on || {};
+          Object.entries(onFns).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.emit("make", this, opts);
+      }
+      show() {
+          this.done = false;
+          this.started = true;
+          this.scene = this.game.app.scenes
+              .create(this.scene_id, this.scene_opts)
+              .start({ level: this });
+          this.scene.once("start", () => {
+              this.emit("show", this, this.scene);
+          });
+          this.scene.once("stop", () => {
+              this._hide();
+          });
+      }
+      _hide() {
+          this.emit("hide", this);
+          this.scene = null;
+      }
+      update(time) {
+          // Update should be handled by plugin - e.g. "turn_based"
+          this.emit("update", this, time);
+      }
+      _tick(dt) {
+          this.emit("tick", this, dt);
+      }
+      fill(tile) {
+          if (typeof tile === "string") {
+              tile = tilesByName[tile].index;
+          }
+          this.tiles.fill(tile);
+      }
+      setTile(x, y, id, opts = {}) {
+          const tile = typeof id === "string" ? tilesByName[id] : tilesByIndex[id];
+          if (!tile) {
+              console.warn("Failed to find tile: " + id);
+              return;
+          }
+          let data = { x, y, tile }; // allows plugins to change the tile
+          // TODO - check priority, etc... in a plugin
+          this.emit("set_tile", data); // TODO - Is this a good idea?  Is this the right way to do it?
+          if (data.tile) {
+              this.tiles[x][y] = data.tile.index;
+              // this.game && this.game.drawAt(x, y);
+              if (tile.on && tile.on.place) {
+                  tile.on.place.call(tile, this, x, y);
+              }
+          }
+      }
+      hasTile(x, y, tile) {
+          if (typeof tile === "string") {
+              tile = tilesByName[tile].index;
+          }
+          return this.tiles.get(x, y) === tile;
+      }
+      getTile(x, y) {
+          const id = this.tiles.get(x, y) || 0;
+          return tilesByIndex[id];
+      }
+      //
+      blocksMove(x, y) {
+          const tile = this.getTile(x, y);
+          return tile.blocksMove || false;
+      }
+      blocksPathing(x, y) {
+          return this.blocksMove(x, y);
+      }
+      blocksDiagonal(x, y) {
+          const tile = this.getTile(x, y);
+          return tile.blocksDiagonal || false;
+      }
+      isHallway(x, y) {
+          return (xy.arcCount(x, y, (i, j) => {
+              return !this.blocksMove(i, j);
+          }) > 1);
+      }
+      isSecretDoor(x, y) {
+          const tile = this.getTile(x, y);
+          return tile.secretDoor || false;
+      }
+      // AnalysisSite
+      setInLoop(x, y) {
+          this.flags[x][y] |= index$1.Flags.IN_LOOP;
+      }
+      clearInLoop(x, y) {
+          this.flags[x][y] &= ~index$1.Flags.IN_LOOP;
+      }
+      isInLoop(x, y) {
+          return ((this.flags[x][y] || 0) & index$1.Flags.IN_LOOP) > 0;
+      }
+      clearChokepoint(x, y) {
+          this.flags[x][y] &= ~index$1.Flags.CHOKEPOINT;
+      }
+      setChokepoint(x, y) {
+          this.flags[x][y] |= index$1.Flags.CHOKEPOINT;
+      }
+      isChokepoint(x, y) {
+          return !!(this.flags[x][y] & index$1.Flags.CHOKEPOINT);
+      }
+      setChokeCount(x, y, count) {
+          this.choke[x][y] = count;
+      }
+      getChokeCount(x, y) {
+          return this.choke[x][y];
+      }
+      setGateSite(x, y) {
+          this.flags[x][y] |= index$1.Flags.GATE_SITE;
+      }
+      clearGateSite(x, y) {
+          this.flags[x][y] &= ~index$1.Flags.GATE_SITE;
+      }
+      isGateSite(x, y) {
+          return !!(this.flags[x][y] & index$1.Flags.GATE_SITE);
+      }
+      isAreaMachine(x, y) {
+          return !!(this.flags[x][y] & index$1.Flags.IN_AREA_MACHINE);
+      }
+      drawAt(buf, x, y) {
+          buf.blackOut(x, y);
+          buf.drawSprite(x, y, this.getTile(x, y));
+          const item = this.itemAt(x, y);
+          item && item.draw(buf);
+          const actor = this.actorAt(x, y);
+          actor && actor.draw(buf);
+          const fx = this.fxAt(x, y);
+          fx && fx.draw(buf);
+      }
+      actorAt(x, y) {
+          return this.actors.find((a) => a.x === x && a.y === y);
+      }
+      addActor(obj) {
+          this.actors.push(obj);
+          obj.emit("add", this, obj);
+          this.scene.needsDraw = true; // need to update sidebar too
+      }
+      removeActor(obj) {
+          utils.arrayDelete(this.actors, obj);
+          obj.emit("remove", this, obj);
+          this.scene.needsDraw = true;
+      }
+      hasActor(x, y) {
+          return this.actors.some((a) => a.x === x && a.y === y);
+      }
+      itemAt(x, y) {
+          return this.items.find((i) => i.x === x && i.y === y);
+      }
+      addItem(obj) {
+          this.items.push(obj);
+          obj.emit("add", this, obj);
+          this.scene.needsDraw = true; // need to update sidebar too
+      }
+      removeItem(obj) {
+          utils.arrayDelete(this.items, obj);
+          obj.emit("remove", this, obj);
+          this.scene.needsDraw = true;
+      }
+      hasItem(x, y) {
+          return this.items.some((i) => i.x === x && i.y === y);
+      }
+      fxAt(x, y) {
+          return this.fxs.find((i) => i.x === x && i.y === y);
+      }
+      addFx(obj) {
+          this.fxs.push(obj);
+          obj.emit("add", this, obj);
+          this.scene.needsDraw = true; // need to update sidebar too
+      }
+      removeFx(obj) {
+          utils.arrayDelete(this.fxs, obj);
+          obj.emit("remove", this, obj);
+          this.scene.needsDraw = true;
+      }
+      hasFx(x, y) {
+          return this.fxs.some((f) => f.x === x && f.y === y);
+      }
+      getFlavor(x, y) {
+          if (!this.hasXY(x, y))
+              return "";
+          const actor = this.actorAt(x, y);
+          if (actor && actor.kind) {
+              return `You see a ${actor.name}.`; // TODO - You see a you ?!?
+          }
+          const item = this.itemAt(x, y);
+          if (item && item.kind) {
+              return `You see a ${item.name}.`;
+          }
+          const tile = this.getTile(x, y);
+          const text = `You see ${tile.id}.`; // TODO - tile.flavor
+          return text;
+      }
+      triggerAction(event, actor) {
+          const tile = this.getTile(actor.x, actor.y);
+          if (tile && tile.on && tile.on[event]) {
+              tile.on[event].call(tile, this, actor);
+          }
+      }
+      diagonalBlocked(fromX, fromY, toX, toY) {
+          if (fromX == toX || fromY == toY)
+              return false;
+          // check if diagonal move is blocked by tiles
+          const horiz = this.getTile(toX, fromY);
+          if (horiz.blocksDiagonal)
+              return true;
+          const vert = this.getTile(fromX, toY);
+          if (vert.blocksDiagonal)
+              return true;
+          return false;
+      }
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
+      }
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
+      }
+      // TODO - test me!!!
+      wait(time, fn) {
+          this.scheduler.push(fn, time);
+      }
+      // TODO - test me!!!
+      repeat(time, fn, ...args) {
+          function repeat_fn() {
+              fn.call(this, time, ...args);
+              this.scheduler.push(repeat_fn.bind(this), time);
+          }
+          this.scheduler.push(repeat_fn.bind(this), time);
+      }
+  }
+  function loadLevel(level, data, tiles) {
+      level.fill("NONE");
+      for (let y = 0; y < data.length; ++y) {
+          const line = data[y];
+          for (let x = 0; x < line.length; ++x) {
+              const ch = line[x];
+              const tile = tiles[ch] || "NONE";
+              level.setTile(x, y, tile);
+          }
+      }
+  }
+  room.install("ENTRANCE", new room.BrogueEntrance());
+  room.install("ROOM", new room.Rectangular());
+  room.install("BIG_ROOM", new room.Rectangular({ width: "10-20", height: "5-10" }));
+  room.install("CROSS", new room.Cross({ width: "8-12", height: "5-7" }));
+  room.install("SYMMETRICAL_CROSS", new room.SymmetricalCross({
+      width: "8-10",
+      height: "5-8",
+  }));
+  room.install("SMALL_ROOM", new room.Rectangular({
+      width: "6-10",
+      height: "4-8",
+  }));
+  room.install("LARGE_ROOM", new room.Rectangular({
+      width: "15-20",
+      height: "10-20",
+  }));
+  room.install("HUGE_ROOM", new room.Rectangular({
+      width: "20-30",
+      height: "20-30",
+  }));
+  room.install("SMALL_CIRCLE", new room.Circular({
+      width: "4-6",
+      height: "4-6",
+  }));
+  room.install("LARGE_CIRCLE", new room.Circular({
+      width: 10,
+      height: 10,
+  }));
+  room.install("BROGUE_DONUT", new room.BrogueDonut({
+      width: 10,
+      height: 10,
+      ringMinWidth: 3,
+      holeMinSize: 3,
+      holeChance: 50,
+  }));
+  room.install("COMPACT_CAVE", new room.Cavern({
+      width: 12,
+      height: 8,
+  }));
+  room.install("LARGE_NS_CAVE", new room.Cavern({
+      width: 12,
+      height: 27,
+  }));
+  room.install("LARGE_EW_CAVE", new room.Cavern({
+      width: 27,
+      height: 8,
+  }));
+  room.install("BROGUE_CAVE", new room.ChoiceRoom({
+      choices: ["COMPACT_CAVE", "LARGE_NS_CAVE", "LARGE_EW_CAVE"],
+  }));
+  room.install("HUGE_CAVE", new room.Cavern({ width: 77, height: 27 }));
+  room.install("CHUNKY", new room.ChunkyRoom({
+      width: 10,
+      height: 10,
+  }));
+  room.install("PROFILE", new room.ChoiceRoom({
+      choices: {
+          ROOM: 10,
+          CROSS: 20,
+          SYMMETRICAL_CROSS: 20,
+          LARGE_ROOM: 5,
+          SMALL_CIRCLE: 10,
+          LARGE_CIRCLE: 5,
+          BROGUE_DONUT: 5,
+          CHUNKY: 10,
       },
-  });
-  install$5({
-      id: "ZOMBIE",
-      name: "Zombie",
-      ch: "z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 6,
-      damage: 8, // dps=4
-      dropChance: 100,
-  });
-  install$5({
-      id: "ARMOR_ZOMBIE",
-      ch: "Z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 25,
-      damage: 10, // dps=5
-      dropChance: 10,
-  });
-  install$5({
-      id: "ARMOR_ZOMBIE_2",
-      ch: "Z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 50,
-      damage: 12, // dps=6
-      dropChance: 10,
-  });
-  install$5({
-      id: "Vindicator",
-      ch: "v",
-      fg: "blue",
-      moveSpeed: 100,
-      health: 11,
-      damage: 9,
-      // chargeSpeed: 75
-      // chargeDistance: 6
-      // attackSpeed: 150
-      dropChance: 10,
-  });
-  install$5({
-      id: "SKELETON",
-      ch: "s",
-      fg: "white",
-      moveSpeed: 125,
-      health: 6,
-      damage: 0,
-      rangedDamage: 3,
-      range: 8,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 100,
-  });
-  install$5({
-      id: "ARMOR_SKELETON",
-      ch: "S",
-      fg: "white",
-      moveSpeed: 125,
-      health: 25,
-      damage: 0,
-      rangedDamage: 4,
-      range: 9,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 10,
-  });
-  install$5({
-      id: "ARMOR_SKELETON_2",
-      ch: "S",
-      fg: "white",
-      moveSpeed: 125,
-      health: 50,
-      damage: 0,
-      rangedDamage: 5,
-      range: 10,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 10,
-  });
-  /*
-  PLAYER - health = 100
-  SWORD - 10-16 (10,10,16 thrust)
-  BOW - 10-25
+  }));
+  room.install("FIRST_ROOM", new room.ChoiceRoom({
+      choices: {
+          ROOM: 5,
+          CROSS: 5,
+          SYMMETRICAL_CROSS: 5,
+          LARGE_ROOM: 5,
+          HUGE_ROOM: 5,
+          LARGE_CIRCLE: 5,
+          BROGUE_DONUT: 5,
+          BROGUE_CAVE: 30, // These are harder to match
+          HUGE_CAVE: 30, // ...
+          ENTRANCE: 5,
+          CHUNKY: 5,
+      },
+  }));
+  function digLevel(level, dig, seed = 12345) {
+      level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
+      const digger = new Digger(dig);
+      digger.seed = seed;
+      digger.create(level.width, level.height, (x, y, v) => {
+          level.setTile(x, y, v);
+      });
+      index$1.analyze(level);
+      level.locations = digger.locations;
+  }
 
-  ZOMBIE - 8 damage, 6 health
-  SKELETON - 3 damage, 6 health
-  VINDICATOR - 9 damage, 11 health
+  const kinds = {};
+  // @ts-ignore
+  globalThis.LevelKinds = kinds;
+  function makeKind(cfg) {
+      const kind = Object.assign({
+          id: "",
+          tick_time: 50, // TODO - Is this a good default?
+          on: {},
+          data: {},
+          scene: "level",
+          scene_opts: {},
+      }, cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("LevelKind must have 'id'.");
+      }
+      if (kind.layout) {
+          const data = kind.layout.data;
+          if (!data || !kind.layout.tiles)
+              throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
+          const h = data.length;
+          const w = data[0].length;
+          if (kind.width != w) {
+              console.log("Changing LevelKind width to match 'layout' dimensions.");
+              kind.width = w;
+          }
+          if (kind.height != h) {
+              console.log("Changing LevelKind height to match 'layout' dimensions.");
+              kind.height = h;
+          }
+      }
+      else {
+          kind.dig = kind.dig || {};
+          // Is the default dig a good idea?
+          kind.dig = utils.mergeDeep(
+          // This is the default dig
+          {
+              rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
+              doors: false, // { chance: 50 },
+              halls: { chance: 50 },
+              loops: { minDistance: 30, maxLength: 5 },
+              lakes: false /* {
+            count: 5,
+            wreathSize: 1,
+            wreathChance: 100,
+            width: 10,
+            height: 10,
+          },
+          bridges: {
+            minDistance: 10,
+            maxLength: 10,
+          }, */,
+              stairs: {
+                  start: "down",
+                  up: true,
+                  upTile: "UP_STAIRS_INACTIVE",
+                  down: true,
+              },
+              goesUp: true,
+          }, 
+          // Whatever you pass in overrides this
+          kind.dig);
+      }
+      return kind;
+  }
+  function install$3(...args) {
+      let id, config;
+      if (args.length == 1) {
+          config = args[0];
+          id = config.id;
+      }
+      else {
+          id = args[0];
+          config = args[1];
+      }
+      const kind = makeKind(config);
+      kind.id = id;
+      kinds[id.toLowerCase()] = kind;
+      return kind;
+  }
+  function getKind(id) {
+      return kinds[id.toLowerCase()] || null;
+  }
 
-  SQUID COAST
-  - Follow the path
-  - Defeat 1 zombie
-  - Defeat a few zombies (3-5)
-  - Pickup arrows
-  - shoot skeleton
-  - follow path
-  - defeat skeleton and raveger
-  - ambush - defeat 3 ravegers
-  - pickup some gear (fireworks arrow, enchantment point)
-  - pull lever to open gate
-  - shoot skeleton to drop bridge
-  - kill a few more things (skeleton, rageger)
-  - roll across gap to get chest
-  - follow path to ending altar
-
-  CREEPER WOODS
-  - drops - food
-  - fishing rod
-  - fireworks arrow
-  - speed potion
-  - tnt
-  - sheep, cows, etc..
-  - free villagers
-  - strength potion
-  - shadow brew
-
-  SPIDER - 5 hp, 3 damage
-    << fires webs
-    << ONLY attack if caught in web
-
-  ARMORED SKELETON BOW - 25 hp, 4 damage
-  ARMORED SKELETON POWER BOW - 50 hp, 4 damage
-
-  ARMORED ZOMBIE DAGGER - 25 hp, 10 damage
-  ARMORED ZOMBIE SWORD - 50 hp, 12 damage
-
-  CREEPER - <10 hp, 36 damage
-
-  VINDICATOR - 11 hp, ? damage
-  ARMORED VINDICATOR AXE -
-  ARMORED VINDICATOR DOUBLE AXE -
-
-  ENCHANTER - <10 hp
-
-  HAWKBRAND (5) = 13-21, CRITICAL HIT CHANCE
-
-
-  NOTES
-  - SUMMONER - 4 damage, 100 HP
-
-  */
+  class LevelFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(game, id, kind, opts) {
+          // Create the Item
+          let out = Option.None();
+          if (!!opts.on && opts.on.create) {
+              out = opts.on.create(game, id, kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.create) {
+                  return p.create(game, id, kind, opts);
+              }
+              return v;
+          }, out);
+          let level = out.unwrapOrElse(() => new Level(game, id, kind));
+          this.apply(level);
+          level._make(kind, opts);
+          return level;
+      }
+      apply(level) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key == "data") {
+                      level.data = utils.mergeDeep(level.data, val);
+                  }
+                  else if (key == "on") {
+                      Object.entries(val).forEach(([k, v]) => {
+                          if (typeof v === "function") {
+                              level.on(k, v);
+                          }
+                      });
+                  }
+                  else if (key == "keymap") ;
+                  else if (typeof val === "function") {
+                      level.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$1 = new LevelFactory();
+  function use$1(plugin) {
+      factory$1.use(plugin);
+  }
+  function make$1(game, id, kind, opts) {
+      if (typeof kind === "string") {
+          const id = kind;
+          kind = getKind(id);
+          if (!kind)
+              throw new Error("Failed to find LevelKind: " + id);
+      }
+      return factory$1.make(game, id, kind, opts);
+  }
 
   const Fl = flag.fl;
   var Flags;
@@ -23040,7 +23459,7 @@ void main() {
   }
 
   const hordes = {};
-  function install$3(id, horde) {
+  function install$2(id, horde) {
       if (typeof horde === "string") {
           horde = { leader: horde };
       }
@@ -23147,32 +23566,752 @@ void main() {
       return matches[index];
   }
 
-  install$3("ZOMBIE", {
+  class Game {
+      hero;
+      app;
+      // scene: GWU.app.Scene;
+      level;
+      levels;
+      _levelObjs;
+      start_level;
+      // depth: number;
+      // scheduler: GWU.scheduler.Scheduler;
+      inputQueue;
+      seed;
+      rng;
+      seeds;
+      messages;
+      events;
+      needInput = false;
+      actors;
+      items;
+      hordes;
+      // TODO - tiles: ...
+      keymap = {};
+      data = {};
+      constructor(app) {
+          this.app = app;
+          // this.scene = null;
+          // this.level = null;
+          // this.depth = 0;
+          // this.scheduler = new GWU.scheduler.Scheduler();
+          this.rng = rng.random; // Can access here or via GWU.rng.random
+          this.seed = 0;
+          this.seeds = {};
+          this.levels = { default: { kind: "DEFAULT" } };
+          this._levelObjs = {};
+          this.start_level = 1;
+          // Exposes types to world
+          this.actors = kinds$2;
+          this.items = kinds$3;
+          this.hordes = hordes;
+          //
+          // TODO - Should be a reference or a copy?
+          this.data = app.data; // GWU.utils.mergeDeep(this.data, app.data);
+          // this.hero = ACTOR.Hero.make("HERO") as Hero;
+          this.inputQueue = new index.Queue();
+          this.messages = new message.Cache({ reverseMultiLine: true });
+          this.events = new index.Events(this);
+      }
+      _create(opts) {
+          // SEED
+          if (typeof opts.seed === "number" && opts.seed > 0) {
+              this.seed = opts.seed;
+          }
+          else {
+              this.seed = this.rng.int(100000);
+          }
+          console.log("GAME, seed=", this.seed);
+          this.rng.seed(this.seed);
+          // LEVELS
+          Object.assign(this.levels, opts.levels || {});
+          if (opts.start_level) {
+              this.start_level = opts.start_level;
+          }
+          // KEYMAP
+          // TODO - move to default plugin
+          this.keymap = Object.assign({
+              a: "attack",
+              f: "fire",
+              g: "pickup",
+              i: (level, e) => {
+                  console.log(">> INVENTORY <<");
+                  // TODO - Set focus to the player so that it shows their info
+                  //      - Send event to level scene?
+                  level.emit("inventory", level.game);
+                  e.stopPropagation();
+              },
+              // z: (level: Level, e) => {
+              //   ACTOR.spawn(game.level!, "zombie", game.hero.x, game.hero.y);
+              //   game.level.needsDraw = true;
+              //   e.stopPropagation();
+              // },
+              " ": "idle",
+              ".": "idle",
+              ">": (level, e) => {
+                  // find stairs
+                  let loc = [-1, -1];
+                  level.tiles.forEach((t, x, y) => {
+                      const tile = tilesByIndex[t];
+                      if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+                          loc[0] = x;
+                          loc[1] = y;
+                      }
+                  });
+                  // set player goal
+                  if (loc[0] >= 0) {
+                      level.game.hero.setGoal(loc[0], loc[1]);
+                  }
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              "<": (level, e) => {
+                  // find stairs
+                  let loc = [-1, -1];
+                  level.tiles.forEach((t, x, y) => {
+                      const tile = tilesByIndex[t];
+                      if (tile.id === "DOWN_STAIRS") {
+                          loc[0] = x;
+                          loc[1] = y;
+                      }
+                  });
+                  // set player goal
+                  if (loc[0] >= 0) {
+                      level.game.hero.setGoal(loc[0], loc[1]);
+                  }
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              dir: (level, e) => {
+                  // @ts-ignore
+                  moveDir(level, level.game.hero, e.dir);
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              Enter: (level, e) => {
+                  const hero = level.game.hero;
+                  if (hero.goalPath && hero.goalPath.length) {
+                      hero.followPath = true;
+                      hero.act(level);
+                  }
+                  level.scene.needsDraw = true;
+                  e.stopPropagation();
+              },
+              // keypress: (level: Level, e) => {
+              //   let action = game.keymap[e.key];
+              //   if (!action) return;
+              //   if (typeof action === "function") {
+              //     return action(level: Level, e);
+              //   }
+              //   let fn = ACTIONS.get(action);
+              //   if (!fn) {
+              //     console.warn(`Failed to find action: ${action} for key: ${e.key}`);
+              //   } else {
+              //     fn(game.level, game.hero);
+              //     game.level.needsDraw = true;
+              //   }
+              // },
+          }, opts.keymap || {});
+          // CREATE HERO
+          // EVENTS - There are no events on GameOpts!!!  Must use plugins
+          // Object.entries(opts).forEach(([key, val]) => {
+          //   if (typeof val === "function") {
+          //     this.on(key, val);
+          //   }
+          // });
+          // Object.entries(opts.on || {}).forEach(([key, val]) => {
+          //   if (typeof val === "function") {
+          //     this.on(key, val);
+          //   }
+          // });
+          // HERO
+          // TODO - move to default plugin
+          let hero_cfg = opts.hero_kind || { kind: "HERO" };
+          if (typeof hero_cfg === "string") {
+              hero_cfg = { kind: hero_cfg };
+          }
+          this.hero = make$2(hero_cfg.kind, hero_cfg);
+      }
+      makeLevel(levelId, opts = {}) {
+          let info = this.levels[levelId] ||
+              this.levels["default"] || { kind: "DEFAULT" };
+          if (typeof info === "string") {
+              info = { kind: info };
+          }
+          const config = utils.mergeDeep(info, opts);
+          const level = make$1(this, levelId, config.kind, config);
+          level.on("show", (level) => {
+              this.level = level;
+          });
+          this._levelObjs[levelId] = level;
+          return level;
+      }
+      getLevel(levelId) {
+          return this._levelObjs[levelId] || this.makeLevel(levelId);
+      }
+      // lose() {
+      //   this.scene!.emit("lose", this);
+      // }
+      // win() {
+      //   this.scene!.emit("win", this);
+      // }
+      //   input(e) {
+      //     this.inputQueue.enqueue(e.clone());
+      //     e.stopPropagation();
+      //   }
+      // keypress(e: GWU.app.Event) {
+      //   this.inputQueue.enqueue(e.clone());
+      //   e.stopPropagation();
+      // }
+      // click(e: GWU.app.Event) {
+      //   this.inputQueue.enqueue(e.clone());
+      //   e.stopPropagation();
+      // }
+      // tick(dt: number = 50) {
+      //   this.level.tick(this, dt);
+      //   this.level.wait(dt, () => this.tick(dt));
+      // }
+      endTurn(actor, time) {
+          if (!actor.hasActed()) {
+              actor.endTurn(this.level, time);
+              this.level.scheduler.push(actor, time);
+              // @ts-ignore
+              if (actor === this.hero) {
+                  this.needInput = false;
+              }
+          }
+          else {
+              console.log("double end turn.!");
+          }
+      }
+      // wait(time: number, fn: GWU.app.CallbackFn) {
+      //   this.level.scheduler.push(fn, time);
+      // }
+      addMessage(msg) {
+          this.messages.add(msg);
+          // TODO - Is this necessary?
+          if (!!this.level && !!this.level.scene) {
+              // this.level.scene.get("MESSAGES")!.draw(this.level.scene.buffer);
+              this.level.scene.needsDraw = true;
+          }
+      }
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
+      }
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
+      }
+  }
+  // export function startLevel(levelId: string | number): Level {
+  //     // this.depth += 1;
+  //     // this.scheduler.clear();
+  //     let level = this._levelObjs[levelId] || this.makeLevel(levelId);
+  //     // let level = LEVEL.levels.find((l) => l.depth === this.depth);
+  //     if (!level) {
+  //       console.error("Failed to start level: " + levelId);
+  //       GWU.app.active.stop();
+  //       return;
+  //     }
+  //     // LEVEL.levels.push(level);
+  //     // } else if (level.width != 60 || level.height != 35) {
+  //     //   throw new Error(
+  //     //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
+  //     //   );
+  //     // }
+  //     this.level = level;
+  //     this.needInput = false;
+  //     // @ts-ignore
+  //     globalThis.LEVEL = level;
+  //     // @ts-ignore
+  //     globalThis.HERO = this.hero;
+  //     const startRes = PLUGINS.trigger(
+  //       "start_level",
+  //       { game: this, level: level, sceneId: "level", startOpts: {} },
+  //       (req: {
+  //         game: Game;
+  //         level: Level;
+  //         sceneId: string;
+  //         startOpts: GWU.app.SceneStartOpts;
+  //       }): Result<{ scene: GWU.app.Scene }> => {
+  //         let { sceneId, startOpts } = req;
+  //         startOpts = startOpts || {};
+  //         startOpts.game = req.game;
+  //         startOpts.level = req.level;
+  //         const scene = GWU.app.active.scenes.start(sceneId, startOpts);
+  //         req.level.show(req.game, scene);
+  //         return Result.Ok({ scene });
+  //       }
+  //     );
+  //     if (startRes.isErr()) {
+  //       console.error("Failed to start level: " + startRes.unwrapErr());
+  //       GWU.app.active.stop();
+  //       return;
+  //     }
+  //   }
+  // export function start(config: GameOpts = {}): Game {
+  //   const game = PLUGINS.make(config);
+  //   const resMake = PLUGINS.trigger("make_game", { config }, (config) => {
+  //     const game = new Game();
+  //     game.create(config);
+  //     return Result.Ok(game);
+  //   });
+  //   resMake.expect("Failed to make Game");
+  //   const game = resMake.unwrap();
+  //   if (!game.hero) {
+  //     console.log("Making default Hero: HERO");
+  //     game.hero = Hero.make("HERO");
+  //   }
+  //   return game;
+  // }
+
+  class GameFactory {
+      plugins = [];
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      make(app, opts = {}) {
+          let game;
+          const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+          if (makePlugin) {
+              game = makePlugin.make(app, opts);
+          }
+          else {
+              game = new Game(app);
+          }
+          this.apply(game);
+          game._create(opts);
+          game.emit("create", game, opts);
+          globalThis.GAME = game;
+          return game;
+      }
+      apply(game) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (typeof val === "function") {
+                      game.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of 'game' events on plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory = new GameFactory();
+  function use(plugin) {
+      factory.use(plugin);
+  }
+  function make(app, opts) {
+      const game = factory.make(app, opts);
+      return game;
+  }
+
+  const plugins = {};
+  const active = [];
+  // @ts-ignore
+  globalThis.PLUGINS = plugins;
+  function install$1(...args) {
+      let plugin;
+      let name;
+      if (args.length == 1) {
+          plugin = args[0];
+          name = plugin.name;
+      }
+      else {
+          name = args[0];
+          plugin = Object.assign({
+              name,
+              plugins: [],
+          }, args[1]);
+          // TODO - Is this necessary?
+          if (plugin.name != name) {
+              plugin.name = name;
+          }
+      }
+      plugins[name.toLowerCase()] = plugin;
+  }
+  function getPlugin(id) {
+      return plugins[id.toLowerCase()] || null;
+  }
+  function startPlugins(app, ...names) {
+      names.forEach((name) => {
+          // if already started, ignore
+          if (!active.find((p) => p.name == name)) {
+              const plugin = getPlugin(name);
+              if (plugin) {
+                  console.log("Starting plugin: " + name);
+                  // start dependencies
+                  if (Array.isArray(plugin.plugins) && plugin.plugins.length) {
+                      startPlugins(app, ...plugin.plugins);
+                  }
+                  // install factory plugins
+                  if (plugin.game) {
+                      use(plugin.game);
+                  }
+                  if (plugin.actor) {
+                      use$3(plugin.actor);
+                  }
+                  if (plugin.hero) {
+                      use$2(plugin.hero);
+                  }
+                  if (plugin.item) {
+                      use$4(plugin.item);
+                  }
+                  if (plugin.level) {
+                      use$1(plugin.level);
+                  }
+                  // Start the plugin
+                  if (plugin.app && plugin.app.start) {
+                      plugin.app.start(app);
+                  }
+                  active.push(plugin);
+              }
+              else {
+                  console.error(`MISSING PLUGIN: ${name}`);
+              }
+          }
+      });
+  }
+
+  // NOTE - There really isn't anything special about items yet.
+  const item = {
+      name: "item",
+      item: {},
+  };
+  install$1(item);
+
+  const turn_based = {
+      name: "turn_based",
+      level: {
+          update(level, dt) {
+              // TODO - Need to support different update loops
+              //      - "turn_based", "real_time", "combo"
+              const game = level.game;
+              // TODO - Move inputQueue to Level
+              while (game.inputQueue.length && game.needInput) {
+                  const e = game.inputQueue.dequeue();
+                  e &&
+                      e.dispatch({
+                          emit: (evt, e) => {
+                              let action = game.keymap[evt];
+                              if (!action)
+                                  return;
+                              if (typeof action === "function") {
+                                  return action(level, e);
+                              }
+                              let fn = get(action);
+                              if (!fn) {
+                                  console.warn(`Failed to find action: ${action} for key: ${evt}`);
+                              }
+                              else {
+                                  // @ts-ignore
+                                  fn(level, game.hero);
+                                  level.scene.needsDraw = true;
+                                  e.stopPropagation(); // We handled it
+                              }
+                          },
+                      });
+              }
+              if (game.needInput)
+                  return;
+              let filter = false;
+              let actor = level.scheduler.pop();
+              const startTime = level.scheduler.time;
+              let elapsed = 0;
+              while (actor) {
+                  if (typeof actor === "function") {
+                      actor(level);
+                      if (elapsed > 16)
+                          return;
+                  }
+                  else if (actor.health <= 0) {
+                      // skip
+                      filter = true;
+                  }
+                  else if (actor === game.hero) {
+                      actor.act(level);
+                      if (filter) {
+                          level.actors = level.actors.filter((a) => a && a.health > 0);
+                      }
+                      level.scene.needsDraw = true;
+                      return;
+                  }
+                  else {
+                      actor.act(level);
+                  }
+                  if (level.scene.timers.length || level.scene.tweens.length) {
+                      return;
+                  }
+                  if (level.scene.paused.update) {
+                      return;
+                  }
+                  actor = level.scheduler.pop();
+                  elapsed = level.scheduler.time - startTime;
+              }
+              // no other actors
+              game.needInput = true;
+              return;
+          },
+      },
+  };
+  install$1(turn_based);
+  const level$1 = {
+      name: "level",
+      level: {
+          tick(level, dt) {
+              if (!level.started)
+                  return;
+              // tick actors
+              level.actors.forEach((a) => {
+                  // TODO - check if alive?
+                  a.tick(this, dt);
+              });
+              // tick tiles
+              level.tiles.forEach((index, x, y) => {
+                  const tile = tilesByIndex[index];
+                  if (tile.on && tile.on.tick) {
+                      tile.on.tick.call(tile, level, x, y, dt);
+                  }
+              });
+          },
+      },
+  };
+  install$1(level$1);
+
+  // NOTE - There really isn't anything special about items yet.
+  const actor = {
+      name: "actor",
+      actor: {},
+  };
+  install$1(actor);
+
+  // NOTE - There really isn't anything special about items yet.
+  const hero = {
+      name: "hero",
+      hero: {},
+      level: {
+          tick(level, dt) {
+              // @ts-ignore
+              if (!level.actors.includes(level.game.hero)) {
+                  level.done = true;
+                  // lose
+                  level.game.emit("lose", level.game, "You died.");
+              }
+          },
+      },
+  };
+  install$1(hero);
+
+  // NOTE - There really isn't anything special about items yet.
+  const game = {
+      name: "game",
+      game: {},
+  };
+  install$1(game);
+
+  // NOTE - There really isn't anything special about items yet.
+  const core = {
+      name: "core",
+      plugins: ["turn_based", "item", "actor", "hero", "game", "level"],
+  };
+  install$1(core);
+
+  install$4({
+      id: "HERO",
+      name: "Hero",
+      ch: "@",
+      fg: "white",
+      bg: -1,
+      moveSpeed: 100,
+      health: 20,
+      ammo: 20,
+      // damage: 10,
+      // attackSpeed: 100,
+      // rangedDamage: 3,
+      // range: 10,
+      // rangedAttackSpeed: 100,
+      slots: {
+          ranged: "SHORTBOW",
+          melee: "CUTLASS",
+          armor: "PLATE_ARMOR",
+      },
+  });
+  install$5({
+      id: "ZOMBIE",
+      name: "Zombie",
+      ch: "z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 6,
+      damage: 8, // dps=4
+      dropChance: 100,
+  });
+  install$5({
+      id: "ARMOR_ZOMBIE",
+      ch: "Z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 25,
+      damage: 10, // dps=5
+      dropChance: 10,
+  });
+  install$5({
+      id: "ARMOR_ZOMBIE_2",
+      ch: "Z",
+      fg: "green",
+      moveSpeed: 200,
+      health: 50,
+      damage: 12, // dps=6
+      dropChance: 10,
+  });
+  install$5({
+      id: "Vindicator",
+      ch: "v",
+      fg: "blue",
+      moveSpeed: 100,
+      health: 11,
+      damage: 9,
+      // chargeSpeed: 75
+      // chargeDistance: 6
+      // attackSpeed: 150
+      dropChance: 10,
+  });
+  install$5({
+      id: "SKELETON",
+      ch: "s",
+      fg: "white",
+      moveSpeed: 125,
+      health: 6,
+      damage: 0,
+      rangedDamage: 3,
+      range: 8,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+      dropChance: 100,
+  });
+  install$5({
+      id: "ARMOR_SKELETON",
+      ch: "S",
+      fg: "white",
+      moveSpeed: 125,
+      health: 25,
+      damage: 0,
+      rangedDamage: 4,
+      range: 9,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+      dropChance: 10,
+  });
+  install$5({
+      id: "ARMOR_SKELETON_2",
+      ch: "S",
+      fg: "white",
+      moveSpeed: 125,
+      health: 50,
+      damage: 0,
+      rangedDamage: 5,
+      range: 10,
+      tooClose: 4,
+      rangedAttackSpeed: 200,
+      // notice: 10
+      dropChance: 10,
+  });
+  /*
+  PLAYER - health = 100
+  SWORD - 10-16 (10,10,16 thrust)
+  BOW - 10-25
+
+  ZOMBIE - 8 damage, 6 health
+  SKELETON - 3 damage, 6 health
+  VINDICATOR - 9 damage, 11 health
+
+  SQUID COAST
+  - Follow the path
+  - Defeat 1 zombie
+  - Defeat a few zombies (3-5)
+  - Pickup arrows
+  - shoot skeleton
+  - follow path
+  - defeat skeleton and raveger
+  - ambush - defeat 3 ravegers
+  - pickup some gear (fireworks arrow, enchantment point)
+  - pull lever to open gate
+  - shoot skeleton to drop bridge
+  - kill a few more things (skeleton, rageger)
+  - roll across gap to get chest
+  - follow path to ending altar
+
+  CREEPER WOODS
+  - drops - food
+  - fishing rod
+  - fireworks arrow
+  - speed potion
+  - tnt
+  - sheep, cows, etc..
+  - free villagers
+  - strength potion
+  - shadow brew
+
+  SPIDER - 5 hp, 3 damage
+    << fires webs
+    << ONLY attack if caught in web
+
+  ARMORED SKELETON BOW - 25 hp, 4 damage
+  ARMORED SKELETON POWER BOW - 50 hp, 4 damage
+
+  ARMORED ZOMBIE DAGGER - 25 hp, 10 damage
+  ARMORED ZOMBIE SWORD - 50 hp, 12 damage
+
+  CREEPER - <10 hp, 36 damage
+
+  VINDICATOR - 11 hp, ? damage
+  ARMORED VINDICATOR AXE -
+  ARMORED VINDICATOR DOUBLE AXE -
+
+  ENCHANTER - <10 hp
+
+  HAWKBRAND (5) = 13-21, CRITICAL HIT CHANCE
+
+
+  NOTES
+  - SUMMONER - 4 damage, 100 HP
+
+  */
+
+  install$2("ZOMBIE", {
       leader: "ZOMBIE",
       members: { ZOMBIE: "2-3" },
       frequency: 10,
   });
-  install$3("ZOMBIE2", {
+  install$2("ZOMBIE2", {
       leader: "ARMOR_ZOMBIE",
       members: { ZOMBIE: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$3("ZOMBIE3", {
+  install$2("ZOMBIE3", {
       leader: "ARMOR_ZOMBIE_2",
       members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
   });
-  install$3("SKELETON", {
+  install$2("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
       frequency: 10,
   });
-  install$3("SKELETON2", {
+  install$2("SKELETON2", {
       leader: "ARMOR_SKELETON",
       members: { SKELETON: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$3("SKELETON3", {
+  install$2("SKELETON3", {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
       frequency: (l) => 2 * l,
@@ -23929,1020 +25068,6 @@ void main() {
   // HARP_CROSSBOW
   // LIGHTNING_HARP_CROSSBOW
 
-  class Level {
-      id = 0;
-      depth = 0;
-      kind;
-      // TODO - Convert to >> messages: { [id: string]: string }
-      welcome = "";
-      proceed = "";
-      tick_time = 50;
-      scheduler;
-      done = false;
-      started = false;
-      // needsDraw = false;
-      data = {};
-      // TODO - move to Tower specific plugin
-      // waves: WaveInfo[] = [];
-      actors = [];
-      items = [];
-      fxs = [];
-      tiles;
-      flags;
-      choke;
-      game;
-      scene_id = "level";
-      scene_opts = {};
-      scene = null;
-      // // TODO - Can we do this without a hero?
-      // hero: Hero;
-      seed;
-      // rng: GWU.rng.Random;
-      locations = {};
-      events;
-      constructor(game, id, kind) {
-          this.id = id;
-          this.game = game;
-          this.kind = kind;
-          const { width, height, seed } = kind;
-          this.events = new index.Events(this);
-          this.tiles = grid.make(width, height);
-          this.flags = grid.make(width, height);
-          this.choke = grid.make(width, height);
-          this.seed = seed || random$2.number(100000);
-          // this.rng = GWU.rng.make(this.seed);
-          this.scheduler = new scheduler.Scheduler();
-          if (kind.scene) {
-              this.scene_id = kind.scene;
-              this.scene_opts = kind.scene_opts;
-          }
-          // TODO - Move to Tower specific plugin
-          this.data.wavesLeft = 0;
-      }
-      get width() {
-          return this.tiles.width;
-      }
-      get height() {
-          return this.tiles.height;
-      }
-      get rng() {
-          return this.game ? this.game.rng : random$2;
-      }
-      hasXY(x, y) {
-          return this.tiles.hasXY(x, y);
-      }
-      create(kind, opts) {
-          if (opts.seed) {
-              this.seed = opts.seed;
-          }
-          this.depth = opts.depth || kind.depth || 1;
-          if (kind.layout) {
-              const { data, tiles } = kind.layout;
-              loadLevel(this, data, tiles);
-          }
-          else if (kind.dig) {
-              digLevel(this, kind.dig, this.seed);
-          }
-          else {
-              throw new Error("Level must have either 'dig' or 'layout'.");
-          }
-          if (kind.welcome) {
-              this.welcome = kind.welcome;
-          }
-          else {
-              this.welcome = "Welcome.";
-          }
-          if (kind.proceed) {
-              this.proceed = kind.proceed;
-          }
-          else {
-              this.proceed = "Proceed.";
-          }
-          // if (kind.waves) {
-          //   this.waves = kind.waves;
-          // } else {
-          //   this.waves = [];
-          //   for (let i = 0; i < this.depth; ++i) {
-          //     this.waves.push({
-          //       delay: 500 + i * 2000,
-          //       power: this.depth * 2 - 1 + this.rng.dice(1, 3),
-          //       horde: { depth: this.depth },
-          //     });
-          //   }
-          // }
-          // if (kind.start) {
-          //   level.startLoc = kind.start;
-          // }
-          // if (kind.finish) {
-          //   level.finishLoc = kind.finish;
-          // }
-          this.tick_time = kind.tick_time || this.tick_time;
-          if (this.tick_time > 0) {
-              this.repeat(this.tick_time, this._tick);
-          }
-          if (opts.scene) {
-              this.scene_id = opts.scene;
-              this.scene_opts = opts.scene_opts || {};
-          }
-          else if (opts.scene_opts) {
-              this.scene_opts = utils.mergeDeep(this.scene_opts, opts.scene_opts);
-          }
-          let onFns = kind.on || {};
-          Object.entries(onFns).forEach(([key, val]) => {
-              if (typeof val === "function") {
-                  this.on(key, val);
-              }
-          });
-          onFns = opts.on || {};
-          Object.entries(onFns).forEach(([key, val]) => {
-              if (typeof val === "function") {
-                  this.on(key, val);
-              }
-          });
-          this.emit("create", this, opts);
-      }
-      show() {
-          this.done = false;
-          this.started = true;
-          this.scene = this.game.app.scenes
-              .create(this.scene_id, this.scene_opts)
-              .start({ level: this });
-          this.scene.once("start", () => {
-              this.emit("show", this, this.scene);
-          });
-          this.scene.once("stop", () => {
-              this.hide();
-          });
-      }
-      hide() {
-          // TODO - Should we remove the emit('stop') and let plugins handle this?
-          this.emit("hide", this);
-          this.scene = null;
-      }
-      update(time) {
-          // TODO - Need to support replacing this with a different update loop
-          //      - For "turn_based", "real_time", "combo"
-          const game = this.game;
-          // TODO - Move inputQueue to Level
-          while (game.inputQueue.length && game.needInput) {
-              const e = game.inputQueue.dequeue();
-              e &&
-                  e.dispatch({
-                      emit: (evt, e) => {
-                          let action = game.keymap[evt];
-                          if (!action)
-                              return;
-                          if (typeof action === "function") {
-                              return action(this, e);
-                          }
-                          let fn = get(action);
-                          if (!fn) {
-                              console.warn(`Failed to find action: ${action} for key: ${evt}`);
-                          }
-                          else {
-                              // @ts-ignore
-                              fn(this, game.hero);
-                              this.scene.needsDraw = true;
-                              e.stopPropagation(); // We handled it
-                          }
-                      },
-                  });
-          }
-          if (game.needInput)
-              return;
-          let filter = false;
-          let actor = this.scheduler.pop();
-          const startTime = this.scheduler.time;
-          let elapsed = 0;
-          while (actor) {
-              if (typeof actor === "function") {
-                  actor(this);
-                  if (elapsed > 16)
-                      return;
-              }
-              else if (actor.health <= 0) {
-                  // skip
-                  filter = true;
-              }
-              else if (actor === game.hero) {
-                  actor.act(this);
-                  if (filter) {
-                      this.actors = this.actors.filter((a) => a && a.health > 0);
-                  }
-                  this.scene.needsDraw = true;
-                  return;
-              }
-              else {
-                  actor.act(this);
-              }
-              if (this.scene.timers.length || this.scene.tweens.length) {
-                  return;
-              }
-              if (this.scene.paused.update) {
-                  return;
-              }
-              actor = this.scheduler.pop();
-              elapsed = this.scheduler.time - startTime;
-          }
-          // no other actors
-          game.needInput = true;
-          return;
-      }
-      _tick(dt) {
-          // this.wait(this.tick_time, this.tick.bind(this));
-          // tick actors
-          this.actors.forEach((a) => {
-              // TODO - check if alive?
-              a.tick(this, dt);
-          });
-          // tick tiles
-          this.tiles.forEach((index, x, y) => {
-              const tile = tilesByIndex[index];
-              if (tile.on && tile.on.tick) {
-                  tile.on.tick.call(tile, this, x, y, dt);
-              }
-          });
-          if (this.done || !this.started)
-              return;
-          // TODO - Should we remove this and let plugins handle it?
-          this.emit("tick", this, dt);
-          // @ts-ignore
-          if (!this.actors.includes(this.game.hero)) {
-              this.done = true;
-              // lose
-              // TODO - Do a real time flash before transitioning the scene
-              this.emit("lose", this, "You died.");
-          }
-      }
-      // keypress(e: GWU.app.Event) {
-      //   this.game.inputQueue.enqueue(e.clone());
-      //   e.stopPropagation();
-      // }
-      // click(e: GWU.app.Event) {
-      //   this.game.inputQueue.enqueue(e.clone());
-      //   e.stopPropagation();
-      // }
-      fill(tile) {
-          if (typeof tile === "string") {
-              tile = tilesByName[tile].index;
-          }
-          this.tiles.fill(tile);
-      }
-      setTile(x, y, id, opts = {}) {
-          const tile = typeof id === "string" ? tilesByName[id] : tilesByIndex[id];
-          if (!tile) {
-              console.warn("Failed to find tile: " + id);
-              return;
-          }
-          // priority, etc...
-          let data = { x, y, tile }; // allows plugins to change the tile
-          this.emit("set_tile", data); // TODO - Is this good?
-          if (data.tile) {
-              this.tiles[x][y] = data.tile.index;
-              // this.game && this.game.drawAt(x, y);
-              if (tile.on && tile.on.place) {
-                  tile.on.place.call(tile, this, x, y);
-              }
-          }
-      }
-      hasTile(x, y, tile) {
-          if (typeof tile === "string") {
-              tile = tilesByName[tile].index;
-          }
-          return this.tiles.get(x, y) === tile;
-      }
-      getTile(x, y) {
-          const id = this.tiles.get(x, y) || 0;
-          return tilesByIndex[id];
-      }
-      //
-      blocksMove(x, y) {
-          const tile = this.getTile(x, y);
-          return tile.blocksMove || false;
-      }
-      blocksPathing(x, y) {
-          return this.blocksMove(x, y);
-      }
-      blocksDiagonal(x, y) {
-          const tile = this.getTile(x, y);
-          return tile.blocksDiagonal || false;
-      }
-      isHallway(x, y) {
-          return (xy.arcCount(x, y, (i, j) => {
-              return !this.blocksMove(i, j);
-          }) > 1);
-      }
-      isSecretDoor(x, y) {
-          const tile = this.getTile(x, y);
-          return tile.secretDoor || false;
-      }
-      // AnalysisSite
-      setInLoop(x, y) {
-          this.flags[x][y] |= index$1.Flags.IN_LOOP;
-      }
-      clearInLoop(x, y) {
-          this.flags[x][y] &= ~index$1.Flags.IN_LOOP;
-      }
-      isInLoop(x, y) {
-          return ((this.flags[x][y] || 0) & index$1.Flags.IN_LOOP) > 0;
-      }
-      clearChokepoint(x, y) {
-          this.flags[x][y] &= ~index$1.Flags.CHOKEPOINT;
-      }
-      setChokepoint(x, y) {
-          this.flags[x][y] |= index$1.Flags.CHOKEPOINT;
-      }
-      isChokepoint(x, y) {
-          return !!(this.flags[x][y] & index$1.Flags.CHOKEPOINT);
-      }
-      setChokeCount(x, y, count) {
-          this.choke[x][y] = count;
-      }
-      getChokeCount(x, y) {
-          return this.choke[x][y];
-      }
-      setGateSite(x, y) {
-          this.flags[x][y] |= index$1.Flags.GATE_SITE;
-      }
-      clearGateSite(x, y) {
-          this.flags[x][y] &= ~index$1.Flags.GATE_SITE;
-      }
-      isGateSite(x, y) {
-          return !!(this.flags[x][y] & index$1.Flags.GATE_SITE);
-      }
-      isAreaMachine(x, y) {
-          return !!(this.flags[x][y] & index$1.Flags.IN_AREA_MACHINE);
-      }
-      drawAt(buf, x, y) {
-          buf.blackOut(x, y);
-          buf.drawSprite(x, y, this.getTile(x, y));
-          const item = this.itemAt(x, y);
-          item && item.draw(buf);
-          const actor = this.actorAt(x, y);
-          actor && actor.draw(buf);
-          const fx = this.fxAt(x, y);
-          fx && fx.draw(buf);
-      }
-      actorAt(x, y) {
-          return this.actors.find((a) => a.x === x && a.y === y);
-      }
-      addActor(obj) {
-          this.actors.push(obj);
-          obj.emit("add", this, obj);
-          this.scene.needsDraw = true; // need to update sidebar too
-      }
-      removeActor(obj) {
-          utils.arrayDelete(this.actors, obj);
-          obj.emit("remove", this, obj);
-          this.scene.needsDraw = true;
-      }
-      hasActor(x, y) {
-          return this.actors.some((a) => a.x === x && a.y === y);
-      }
-      itemAt(x, y) {
-          return this.items.find((i) => i.x === x && i.y === y);
-      }
-      addItem(obj) {
-          this.items.push(obj);
-          obj.emit("add", this, obj);
-          this.scene.needsDraw = true; // need to update sidebar too
-      }
-      removeItem(obj) {
-          utils.arrayDelete(this.items, obj);
-          obj.emit("remove", this, obj);
-          this.scene.needsDraw = true;
-      }
-      hasItem(x, y) {
-          return this.items.some((i) => i.x === x && i.y === y);
-      }
-      fxAt(x, y) {
-          return this.fxs.find((i) => i.x === x && i.y === y);
-      }
-      addFx(obj) {
-          this.fxs.push(obj);
-          obj.emit("add", this, obj);
-          this.scene.needsDraw = true; // need to update sidebar too
-      }
-      removeFx(obj) {
-          utils.arrayDelete(this.fxs, obj);
-          obj.emit("remove", this, obj);
-          this.scene.needsDraw = true;
-      }
-      hasFx(x, y) {
-          return this.fxs.some((f) => f.x === x && f.y === y);
-      }
-      getFlavor(x, y) {
-          if (!this.hasXY(x, y))
-              return "";
-          const actor = this.actorAt(x, y);
-          if (actor && actor.kind) {
-              return `You see a ${actor.kind.id}.`;
-          }
-          const item = this.itemAt(x, y);
-          if (item && item.kind) {
-              return `You see a ${item.kind.id}.`;
-          }
-          const tile = this.getTile(x, y);
-          const text = `You see ${tile.id}.`;
-          return text;
-      }
-      triggerAction(event, actor) {
-          const tile = this.getTile(actor.x, actor.y);
-          if (tile && tile.on && tile.on[event]) {
-              tile.on[event].call(tile, this, actor);
-          }
-      }
-      diagonalBlocked(fromX, fromY, toX, toY) {
-          if (fromX == toX || fromY == toY)
-              return false;
-          // check if diagonal move is blocked by tiles
-          const horiz = this.getTile(toX, fromY);
-          if (horiz.blocksDiagonal)
-              return true;
-          const vert = this.getTile(fromX, toY);
-          if (vert.blocksDiagonal)
-              return true;
-          return false;
-      }
-      on(...args) {
-          if (args.length == 1) {
-              return this.events.on(args[0]);
-          }
-          return this.events.on(args[0], args[1]);
-      }
-      once(event, fn) {
-          return this.events.once(event, fn);
-      }
-      emit(event, ...args) {
-          return this.events.emit(event, ...args);
-      }
-      // TODO - test me!!!
-      wait(time, fn) {
-          this.scheduler.push(fn, time);
-      }
-      // TODO - test me!!!
-      repeat(time, fn, ...args) {
-          function repeat_fn() {
-              fn.call(this, time, ...args);
-              this.scheduler.push(repeat_fn.bind(this), time);
-          }
-          this.scheduler.push(repeat_fn.bind(this), time);
-      }
-  }
-  function loadLevel(level, data, tiles) {
-      level.fill("NONE");
-      for (let y = 0; y < data.length; ++y) {
-          const line = data[y];
-          for (let x = 0; x < line.length; ++x) {
-              const ch = line[x];
-              const tile = tiles[ch] || "NONE";
-              level.setTile(x, y, tile);
-          }
-      }
-  }
-  room.install("ENTRANCE", new room.BrogueEntrance());
-  room.install("ROOM", new room.Rectangular());
-  room.install("BIG_ROOM", new room.Rectangular({ width: "10-20", height: "5-10" }));
-  room.install("CROSS", new room.Cross({ width: "8-12", height: "5-7" }));
-  room.install("SYMMETRICAL_CROSS", new room.SymmetricalCross({
-      width: "8-10",
-      height: "5-8",
-  }));
-  room.install("SMALL_ROOM", new room.Rectangular({
-      width: "6-10",
-      height: "4-8",
-  }));
-  room.install("LARGE_ROOM", new room.Rectangular({
-      width: "15-20",
-      height: "10-20",
-  }));
-  room.install("HUGE_ROOM", new room.Rectangular({
-      width: "20-30",
-      height: "20-30",
-  }));
-  room.install("SMALL_CIRCLE", new room.Circular({
-      width: "4-6",
-      height: "4-6",
-  }));
-  room.install("LARGE_CIRCLE", new room.Circular({
-      width: 10,
-      height: 10,
-  }));
-  room.install("BROGUE_DONUT", new room.BrogueDonut({
-      width: 10,
-      height: 10,
-      ringMinWidth: 3,
-      holeMinSize: 3,
-      holeChance: 50,
-  }));
-  room.install("COMPACT_CAVE", new room.Cavern({
-      width: 12,
-      height: 8,
-  }));
-  room.install("LARGE_NS_CAVE", new room.Cavern({
-      width: 12,
-      height: 27,
-  }));
-  room.install("LARGE_EW_CAVE", new room.Cavern({
-      width: 27,
-      height: 8,
-  }));
-  room.install("BROGUE_CAVE", new room.ChoiceRoom({
-      choices: ["COMPACT_CAVE", "LARGE_NS_CAVE", "LARGE_EW_CAVE"],
-  }));
-  room.install("HUGE_CAVE", new room.Cavern({ width: 77, height: 27 }));
-  room.install("CHUNKY", new room.ChunkyRoom({
-      width: 10,
-      height: 10,
-  }));
-  room.install("PROFILE", new room.ChoiceRoom({
-      choices: {
-          ROOM: 10,
-          CROSS: 20,
-          SYMMETRICAL_CROSS: 20,
-          LARGE_ROOM: 5,
-          SMALL_CIRCLE: 10,
-          LARGE_CIRCLE: 5,
-          BROGUE_DONUT: 5,
-          CHUNKY: 10,
-      },
-  }));
-  room.install("FIRST_ROOM", new room.ChoiceRoom({
-      choices: {
-          ROOM: 5,
-          CROSS: 5,
-          SYMMETRICAL_CROSS: 5,
-          LARGE_ROOM: 5,
-          HUGE_ROOM: 5,
-          LARGE_CIRCLE: 5,
-          BROGUE_DONUT: 5,
-          BROGUE_CAVE: 30, // These are harder to match
-          HUGE_CAVE: 30, // ...
-          ENTRANCE: 5,
-          CHUNKY: 5,
-      },
-  }));
-  function digLevel(level, dig, seed = 12345) {
-      level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
-      const digger = new Digger(dig);
-      digger.seed = seed;
-      digger.create(level.width, level.height, (x, y, v) => {
-          level.setTile(x, y, v);
-      });
-      index$1.analyze(level);
-      level.locations = digger.locations;
-  }
-
-  const kinds = {};
-  // @ts-ignore
-  globalThis.LevelKinds = kinds;
-  function makeKind(cfg) {
-      const kind = Object.assign({
-          id: "",
-          tick_time: 50, // TODO - Is this a good default?
-          on: {},
-          data: {},
-          scene: "level",
-          scene_opts: {},
-      }, cfg);
-      if (!kind.id || kind.id.length === 0) {
-          throw new Error("LevelKind must have 'id'.");
-      }
-      if (kind.layout) {
-          const data = kind.layout.data;
-          if (!data || !kind.layout.tiles)
-              throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
-          const h = data.length;
-          const w = data[0].length;
-          if (kind.width != w) {
-              console.log("Changing LevelKind width to match 'layout' dimensions.");
-              kind.width = w;
-          }
-          if (kind.height != h) {
-              console.log("Changing LevelKind height to match 'layout' dimensions.");
-              kind.height = h;
-          }
-      }
-      else {
-          kind.dig = kind.dig || {};
-          // Is the default dig a good idea?
-          kind.dig = utils.mergeDeep(
-          // This is the default dig
-          {
-              rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
-              doors: false, // { chance: 50 },
-              halls: { chance: 50 },
-              loops: { minDistance: 30, maxLength: 5 },
-              lakes: false /* {
-            count: 5,
-            wreathSize: 1,
-            wreathChance: 100,
-            width: 10,
-            height: 10,
-          },
-          bridges: {
-            minDistance: 10,
-            maxLength: 10,
-          }, */,
-              stairs: {
-                  start: "down",
-                  up: true,
-                  upTile: "UP_STAIRS_INACTIVE",
-                  down: true,
-              },
-              goesUp: true,
-          }, 
-          // Whatever you pass in overrides this
-          kind.dig);
-      }
-      return kind;
-  }
-  function install$2(...args) {
-      let id, config;
-      if (args.length == 1) {
-          config = args[0];
-          id = config.id;
-      }
-      else {
-          id = args[0];
-          config = args[1];
-      }
-      const kind = makeKind(config);
-      kind.id = id;
-      kinds[id.toLowerCase()] = kind;
-      return kind;
-  }
-  function getKind(id) {
-      return kinds[id.toLowerCase()] || null;
-  }
-
-  class LevelFactory {
-      plugins = [];
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      make(game, id, kind, opts) {
-          let level;
-          if (opts.on && opts.on.make) {
-              level = opts.on.make(game, id, kind, opts);
-          }
-          else {
-              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-              if (makePlugin) {
-                  level = makePlugin.make(game, id, kind, opts);
-              }
-              else {
-                  level = new Level(game, id, kind);
-              }
-          }
-          this.apply(level);
-          level.create(kind, opts);
-          return level;
-      }
-      apply(level) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key === "on") {
-                      Object.entries(val).forEach(([k2, v2]) => {
-                          if (typeof v2 === "function") {
-                              level.on(k2, v2);
-                          }
-                          else {
-                              console.warn("Invalid 'on' member in Item plugin: " + k2);
-                          }
-                      });
-                  }
-                  else if (key === "data") {
-                      Object.assign(level.data, val);
-                  }
-                  else if (typeof val === "function") {
-                      level.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$1 = new LevelFactory();
-  function use$1(plugin) {
-      factory$1.use(plugin);
-  }
-  function make$1(game, id, kind, opts) {
-      if (typeof kind === "string") {
-          const id = kind;
-          kind = getKind(id);
-          if (!kind)
-              throw new Error("Failed to find LevelKind: " + id);
-      }
-      return factory$1.make(game, id, kind, opts);
-  }
-
-  class Game {
-      hero;
-      app;
-      // scene: GWU.app.Scene;
-      level;
-      levels;
-      _levelObjs;
-      start_level;
-      // depth: number;
-      // scheduler: GWU.scheduler.Scheduler;
-      inputQueue;
-      seed;
-      rng;
-      seeds;
-      messages;
-      events;
-      needInput = false;
-      actors;
-      items;
-      hordes;
-      // TODO - tiles: ...
-      keymap = {};
-      data = {};
-      constructor(app) {
-          this.app = app;
-          // this.scene = null;
-          // this.level = null;
-          // this.depth = 0;
-          // this.scheduler = new GWU.scheduler.Scheduler();
-          this.rng = rng.random; // Can access here or via GWU.rng.random
-          this.seed = 0;
-          this.seeds = {};
-          this.levels = { default: { kind: "DEFAULT" } };
-          this._levelObjs = {};
-          this.start_level = 1;
-          // Exposes types to world
-          this.actors = kinds$2;
-          this.items = kinds$3;
-          this.hordes = hordes;
-          //
-          // TODO - Should be a reference or a copy?
-          this.data = app.data; // GWU.utils.mergeDeep(this.data, app.data);
-          // this.hero = ACTOR.Hero.make("HERO") as Hero;
-          this.inputQueue = new index.Queue();
-          this.messages = new message.Cache({ reverseMultiLine: true });
-          this.events = new index.Events(this);
-      }
-      _create(opts) {
-          // SEED
-          if (typeof opts.seed === "number" && opts.seed > 0) {
-              this.seed = opts.seed;
-          }
-          else {
-              this.seed = this.rng.int(100000);
-          }
-          console.log("GAME, seed=", this.seed);
-          this.rng.seed(this.seed);
-          // LEVELS
-          Object.assign(this.levels, opts.levels || {});
-          if (opts.start_level) {
-              this.start_level = opts.start_level;
-          }
-          // KEYMAP
-          // TODO - move to default plugin
-          this.keymap = Object.assign({
-              a: "attack",
-              f: "fire",
-              g: "pickup",
-              i: (level, e) => {
-                  console.log(">> INVENTORY <<");
-                  // TODO - Set focus to the player so that it shows their info
-                  //      - Send event to level scene?
-                  level.emit("inventory", level.game);
-                  e.stopPropagation();
-              },
-              // z: (level: Level, e) => {
-              //   ACTOR.spawn(game.level!, "zombie", game.hero.x, game.hero.y);
-              //   game.level.needsDraw = true;
-              //   e.stopPropagation();
-              // },
-              " ": "idle",
-              ".": "idle",
-              ">": (level, e) => {
-                  // find stairs
-                  let loc = [-1, -1];
-                  level.tiles.forEach((t, x, y) => {
-                      const tile = tilesByIndex[t];
-                      if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-                          loc[0] = x;
-                          loc[1] = y;
-                      }
-                  });
-                  // set player goal
-                  if (loc[0] >= 0) {
-                      level.game.hero.setGoal(loc[0], loc[1]);
-                  }
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              "<": (level, e) => {
-                  // find stairs
-                  let loc = [-1, -1];
-                  level.tiles.forEach((t, x, y) => {
-                      const tile = tilesByIndex[t];
-                      if (tile.id === "DOWN_STAIRS") {
-                          loc[0] = x;
-                          loc[1] = y;
-                      }
-                  });
-                  // set player goal
-                  if (loc[0] >= 0) {
-                      level.game.hero.setGoal(loc[0], loc[1]);
-                  }
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              dir: (level, e) => {
-                  // @ts-ignore
-                  moveDir(level, level.game.hero, e.dir);
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              Enter: (level, e) => {
-                  const hero = level.game.hero;
-                  if (hero.goalPath && hero.goalPath.length) {
-                      hero.followPath = true;
-                      hero.act(level);
-                  }
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              // keypress: (level: Level, e) => {
-              //   let action = game.keymap[e.key];
-              //   if (!action) return;
-              //   if (typeof action === "function") {
-              //     return action(level: Level, e);
-              //   }
-              //   let fn = ACTIONS.get(action);
-              //   if (!fn) {
-              //     console.warn(`Failed to find action: ${action} for key: ${e.key}`);
-              //   } else {
-              //     fn(game.level, game.hero);
-              //     game.level.needsDraw = true;
-              //   }
-              // },
-          }, opts.keymap || {});
-          // CREATE HERO
-          // EVENTS - There are no events on GameOpts!!!  Must use plugins
-          // Object.entries(opts).forEach(([key, val]) => {
-          //   if (typeof val === "function") {
-          //     this.on(key, val);
-          //   }
-          // });
-          // Object.entries(opts.on || {}).forEach(([key, val]) => {
-          //   if (typeof val === "function") {
-          //     this.on(key, val);
-          //   }
-          // });
-          // HERO
-          // TODO - move to default plugin
-          let hero_cfg = opts.hero_kind || { kind: "HERO" };
-          if (typeof hero_cfg === "string") {
-              hero_cfg = { kind: hero_cfg };
-          }
-          this.hero = make$2(hero_cfg.kind, hero_cfg);
-      }
-      makeLevel(levelId, opts = {}) {
-          let info = this.levels[levelId] ||
-              this.levels["default"] || { kind: "DEFAULT" };
-          if (typeof info === "string") {
-              info = { kind: info };
-          }
-          const config = utils.mergeDeep(info, opts);
-          const level = make$1(this, levelId, config.kind, config);
-          level.on("show", (level) => {
-              this.level = level;
-          });
-          this._levelObjs[levelId] = level;
-          return level;
-      }
-      getLevel(levelId) {
-          return this._levelObjs[levelId] || this.makeLevel(levelId);
-      }
-      // lose() {
-      //   this.scene!.emit("lose", this);
-      // }
-      // win() {
-      //   this.scene!.emit("win", this);
-      // }
-      //   input(e) {
-      //     this.inputQueue.enqueue(e.clone());
-      //     e.stopPropagation();
-      //   }
-      // keypress(e: GWU.app.Event) {
-      //   this.inputQueue.enqueue(e.clone());
-      //   e.stopPropagation();
-      // }
-      // click(e: GWU.app.Event) {
-      //   this.inputQueue.enqueue(e.clone());
-      //   e.stopPropagation();
-      // }
-      // tick(dt: number = 50) {
-      //   this.level.tick(this, dt);
-      //   this.level.wait(dt, () => this.tick(dt));
-      // }
-      endTurn(actor, time) {
-          if (!actor.hasActed()) {
-              actor.endTurn(this.level, time);
-              this.level.scheduler.push(actor, time);
-              // @ts-ignore
-              if (actor === this.hero) {
-                  this.needInput = false;
-              }
-          }
-          else {
-              console.log("double end turn.!");
-          }
-      }
-      // wait(time: number, fn: GWU.app.CallbackFn) {
-      //   this.level.scheduler.push(fn, time);
-      // }
-      addMessage(msg) {
-          this.messages.add(msg);
-          // TODO - Is this necessary?
-          if (!!this.level && !!this.level.scene) {
-              // this.level.scene.get("MESSAGES")!.draw(this.level.scene.buffer);
-              this.level.scene.needsDraw = true;
-          }
-      }
-      on(...args) {
-          if (args.length == 1) {
-              return this.events.on(args[0]);
-          }
-          return this.events.on(args[0], args[1]);
-      }
-      once(event, fn) {
-          return this.events.once(event, fn);
-      }
-      emit(event, ...args) {
-          return this.events.emit(event, ...args);
-      }
-  }
-  // export function startLevel(levelId: string | number): Level {
-  //     // this.depth += 1;
-  //     // this.scheduler.clear();
-  //     let level = this._levelObjs[levelId] || this.makeLevel(levelId);
-  //     // let level = LEVEL.levels.find((l) => l.depth === this.depth);
-  //     if (!level) {
-  //       console.error("Failed to start level: " + levelId);
-  //       GWU.app.active.stop();
-  //       return;
-  //     }
-  //     // LEVEL.levels.push(level);
-  //     // } else if (level.width != 60 || level.height != 35) {
-  //     //   throw new Error(
-  //     //     `Map for level ${this.level} has wrong dimensions: ${map.width}x${map.height}`
-  //     //   );
-  //     // }
-  //     this.level = level;
-  //     this.needInput = false;
-  //     // @ts-ignore
-  //     globalThis.LEVEL = level;
-  //     // @ts-ignore
-  //     globalThis.HERO = this.hero;
-  //     const startRes = PLUGINS.trigger(
-  //       "start_level",
-  //       { game: this, level: level, sceneId: "level", startOpts: {} },
-  //       (req: {
-  //         game: Game;
-  //         level: Level;
-  //         sceneId: string;
-  //         startOpts: GWU.app.SceneStartOpts;
-  //       }): Result<{ scene: GWU.app.Scene }> => {
-  //         let { sceneId, startOpts } = req;
-  //         startOpts = startOpts || {};
-  //         startOpts.game = req.game;
-  //         startOpts.level = req.level;
-  //         const scene = GWU.app.active.scenes.start(sceneId, startOpts);
-  //         req.level.show(req.game, scene);
-  //         return Result.Ok({ scene });
-  //       }
-  //     );
-  //     if (startRes.isErr()) {
-  //       console.error("Failed to start level: " + startRes.unwrapErr());
-  //       GWU.app.active.stop();
-  //       return;
-  //     }
-  //   }
-  // export function start(config: GameOpts = {}): Game {
-  //   const game = PLUGINS.make(config);
-  //   const resMake = PLUGINS.trigger("make_game", { config }, (config) => {
-  //     const game = new Game();
-  //     game.create(config);
-  //     return Result.Ok(game);
-  //   });
-  //   resMake.expect("Failed to make Game");
-  //   const game = resMake.unwrap();
-  //   if (!game.hero) {
-  //     console.log("Making default Hero: HERO");
-  //     game.hero = Hero.make("HERO");
-  //   }
-  //   return game;
-  // }
-
   const title = {
       create() {
           this.bg = index$9.from("dark_gray");
@@ -25534,113 +25659,6 @@ void main() {
       }
   }
 
-  class GameFactory {
-      plugins = [];
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      make(app, opts = {}) {
-          let game;
-          const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-          if (makePlugin) {
-              game = makePlugin.make(app, opts);
-          }
-          else {
-              game = new Game(app);
-          }
-          this.apply(game);
-          game._create(opts);
-          game.emit("create", game, opts);
-          globalThis.GAME = game;
-          return game;
-      }
-      apply(game) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (typeof val === "function") {
-                      game.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of 'game' events on plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory = new GameFactory();
-  function use(plugin) {
-      factory.use(plugin);
-  }
-  function make(app, opts) {
-      const game = factory.make(app, opts);
-      return game;
-  }
-
-  const plugins = {};
-  const active = [];
-  // @ts-ignore
-  globalThis.PLUGINS = plugins;
-  function install$1(...args) {
-      let plugin;
-      let name;
-      if (args.length == 1) {
-          plugin = args[0];
-          name = plugin.name;
-      }
-      else {
-          plugin = Object.assign({
-              name: args[0],
-              plugins: [],
-          }, args[0]);
-          if (plugin.name != name) {
-              plugin.name = name;
-          }
-      }
-      plugins[name.toLowerCase()] = plugin;
-  }
-  function getPlugin(id) {
-      return plugins[id.toLowerCase()] || null;
-  }
-  function startPlugins(app, ...names) {
-      names.forEach((name) => {
-          // if already started, ignore
-          if (!active.find((p) => p.name == name)) {
-              const plugin = getPlugin(name);
-              if (plugin) {
-                  console.log("Starting plugin: " + name);
-                  // start dependencies
-                  if (plugin.plugins.length) {
-                      startPlugins(app, ...plugin.plugins);
-                  }
-                  // install factory plugins
-                  if (plugin.game) {
-                      use(plugin.game);
-                  }
-                  if (plugin.actor) {
-                      use$3(plugin.actor);
-                  }
-                  if (plugin.hero) {
-                      use$2(plugin.hero);
-                  }
-                  if (plugin.item) {
-                      use$4(plugin.item);
-                  }
-                  if (plugin.level) {
-                      use$1(plugin.level);
-                  }
-                  // Start the plugin
-                  if (plugin.app && plugin.app.start) {
-                      plugin.app.start(app);
-                  }
-                  active.push(plugin);
-              }
-              else {
-                  console.error(`MISSING PLUGIN: ${name}`);
-              }
-          }
-      });
-  }
-
   function startApp(config) {
       const appOpts = utils.mergeDeep({
           name: "Goblinwerks",
@@ -25855,13 +25873,13 @@ void main() {
   */
 
   function start() {
-      install$2({
+      install$3({
           id: "TOWER",
           width: 60,
           height: 35,
           scene: "level",
           on: {
-              create(level, opts) {
+              make(level, opts) {
                   console.log("TOWER LEVEL CREATE");
                   const depth = (level.data.depth = parseInt(level.id.toString()));
                   if (level.kind.data.waves && level.kind.data.waves.length > 0) {
@@ -25983,7 +26001,7 @@ void main() {
       // create the user interface
       const opts = {
           name: "Roguecraft: Tower",
-          plugins: ["potion"],
+          plugins: ["core", "potion"],
           start_level: 1,
           data: { LAST_LEVEL: 10 },
           levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",

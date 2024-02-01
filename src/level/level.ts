@@ -12,41 +12,8 @@ import * as OBJ from "../game/obj";
 import { Game } from "../game/game";
 import { CallbackFn } from "../game/obj";
 import { Hero } from "../hero";
-import { LevelConfig, LevelKind, WaveInfo, getKind } from "./kind";
+import { LevelConfig, LevelKind, LevelMakeOpts, getKind } from "./kind";
 import { factory } from "./factory";
-
-export interface LevelCreateOpts {
-  seed?: number;
-  depth?: number; // TODO - Huh?
-
-  scene?: string;
-  scene_opts?: GWU.app.SceneCreateOpts;
-
-  on?: LevelEvents & OBJ.ObjEvents;
-  data?: { [id: string]: any };
-}
-
-export interface LevelEvents {
-  make?: (
-    game: Game,
-    id: string | number,
-    kind: LevelKind,
-    opts: LevelCreateOpts
-  ) => Level;
-  create?: (level: Level, opts: LevelCreateOpts) => void;
-
-  show?: (level: Level, scene: GWU.app.Scene) => void;
-  hide?: (level: Level) => void;
-
-  update?: (level: Level, dt: number) => void;
-  tick?: (level: Level, dt: number) => void;
-
-  scene_event?: (
-    level: Level,
-    scene: GWU.app.Scene,
-    event: GWU.app.Event
-  ) => void;
-}
 
 export class Level implements GWD.site.AnalysisSite {
   id: string | number = 0;
@@ -60,8 +27,10 @@ export class Level implements GWD.site.AnalysisSite {
   tick_time = 50;
   scheduler: GWU.scheduler.Scheduler;
 
+  // TODO - state: { done, started, ... }
   done = false;
   started = false;
+
   // needsDraw = false;
   data: Record<string, any> = {};
 
@@ -78,7 +47,7 @@ export class Level implements GWD.site.AnalysisSite {
 
   game: Game;
   scene_id: string = "level";
-  scene_opts: GWU.app.SceneCreateOpts = {};
+  scene_opts: GWU.app.SceneStartOpts = {};
   scene: GWU.app.Scene = null;
 
   // // TODO - Can we do this without a hero?
@@ -109,8 +78,8 @@ export class Level implements GWD.site.AnalysisSite {
       this.scene_opts = kind.scene_opts;
     }
 
-    // TODO - Move to Tower specific plugin
-    this.data.wavesLeft = 0;
+    // // TODO - Move to Tower specific plugin
+    // this.data.wavesLeft = 0;
   }
 
   get width() {
@@ -128,7 +97,7 @@ export class Level implements GWD.site.AnalysisSite {
     return this.tiles.hasXY(x, y);
   }
 
-  create(kind: LevelKind, opts: LevelCreateOpts) {
+  _make(kind: LevelKind, opts: LevelMakeOpts) {
     if (opts.seed) {
       this.seed = opts.seed;
     }
@@ -154,26 +123,6 @@ export class Level implements GWD.site.AnalysisSite {
     } else {
       this.proceed = "Proceed.";
     }
-
-    // if (kind.waves) {
-    //   this.waves = kind.waves;
-    // } else {
-    //   this.waves = [];
-    //   for (let i = 0; i < this.depth; ++i) {
-    //     this.waves.push({
-    //       delay: 500 + i * 2000,
-    //       power: this.depth * 2 - 1 + this.rng.dice(1, 3),
-    //       horde: { depth: this.depth },
-    //     });
-    //   }
-    // }
-
-    // if (kind.start) {
-    //   level.startLoc = kind.start;
-    // }
-    // if (kind.finish) {
-    //   level.finishLoc = kind.finish;
-    // }
 
     this.tick_time = kind.tick_time || this.tick_time;
     if (this.tick_time > 0) {
@@ -201,7 +150,7 @@ export class Level implements GWD.site.AnalysisSite {
       }
     });
 
-    this.emit("create", this, opts);
+    this.emit("make", this, opts);
   }
 
   show() {
@@ -214,126 +163,23 @@ export class Level implements GWD.site.AnalysisSite {
       this.emit("show", this, this.scene);
     });
     this.scene.once("stop", () => {
-      this.hide();
+      this._hide();
     });
   }
 
-  hide() {
-    // TODO - Should we remove the emit('stop') and let plugins handle this?
+  _hide() {
     this.emit("hide", this);
     this.scene = null;
   }
 
   update(time: number) {
-    // TODO - Need to support replacing this with a different update loop
-    //      - For "turn_based", "real_time", "combo"
-
-    const game = this.game;
-    // TODO - Move inputQueue to Level
-    while (game.inputQueue.length && game.needInput) {
-      const e = game.inputQueue.dequeue();
-      e &&
-        e.dispatch({
-          emit: (evt, e) => {
-            let action = game.keymap[evt];
-            if (!action) return;
-            if (typeof action === "function") {
-              return action(this, e);
-            }
-            let fn = ACTIONS.get(action);
-            if (!fn) {
-              console.warn(`Failed to find action: ${action} for key: ${evt}`);
-            } else {
-              // @ts-ignore
-              fn(this, game.hero);
-              this.scene.needsDraw = true;
-              e.stopPropagation(); // We handled it
-            }
-          },
-        });
-    }
-
-    if (game.needInput) return;
-
-    let filter = false;
-    let actor = this.scheduler.pop();
-
-    const startTime = this.scheduler.time;
-    let elapsed = 0;
-
-    while (actor) {
-      if (typeof actor === "function") {
-        actor(this);
-        if (elapsed > 16) return;
-      } else if (actor.health <= 0) {
-        // skip
-        filter = true;
-      } else if (actor === game.hero) {
-        actor.act(this);
-        if (filter) {
-          this.actors = this.actors.filter((a) => a && a.health > 0);
-        }
-        this.scene.needsDraw = true;
-        return;
-      } else {
-        actor.act(this);
-      }
-      if (this.scene.timers.length || this.scene.tweens.length) {
-        return;
-      }
-      if (this.scene.paused.update) {
-        return;
-      }
-      actor = this.scheduler.pop();
-      elapsed = this.scheduler.time - startTime;
-    }
-
-    // no other actors
-    game.needInput = true;
-
-    return;
+    // Update should be handled by plugin - e.g. "turn_based"
+    this.emit("update", this, time);
   }
 
   _tick(dt: number) {
-    // this.wait(this.tick_time, this.tick.bind(this));
-
-    // tick actors
-    this.actors.forEach((a) => {
-      // TODO - check if alive?
-      a.tick(this, dt);
-    });
-
-    // tick tiles
-    this.tiles.forEach((index, x, y) => {
-      const tile = TILE.tilesByIndex[index];
-      if (tile.on && tile.on.tick) {
-        tile.on.tick.call(tile, this, x, y, dt);
-      }
-    });
-
-    if (this.done || !this.started) return;
-
-    // TODO - Should we remove this and let plugins handle it?
     this.emit("tick", this, dt);
-
-    // @ts-ignore
-    if (!this.actors.includes(this.game.hero)) {
-      this.done = true;
-      // lose
-      // TODO - Do a real time flash before transitioning the scene
-      this.emit("lose", this, "You died.");
-    }
   }
-
-  // keypress(e: GWU.app.Event) {
-  //   this.game.inputQueue.enqueue(e.clone());
-  //   e.stopPropagation();
-  // }
-
-  // click(e: GWU.app.Event) {
-  //   this.game.inputQueue.enqueue(e.clone());
-  //   e.stopPropagation();
-  // }
 
   fill(tile: number | string) {
     if (typeof tile === "string") {
@@ -351,10 +197,9 @@ export class Level implements GWD.site.AnalysisSite {
       return;
     }
 
-    // priority, etc...
-
     let data = { x, y, tile }; // allows plugins to change the tile
-    this.emit("set_tile", data); // TODO - Is this good?
+    // TODO - check priority, etc... in a plugin
+    this.emit("set_tile", data); // TODO - Is this a good idea?  Is this the right way to do it?
 
     if (data.tile) {
       this.tiles[x][y] = data.tile.index;
@@ -528,16 +373,16 @@ export class Level implements GWD.site.AnalysisSite {
 
     const actor = this.actorAt(x, y);
     if (actor && actor.kind) {
-      return `You see a ${actor.kind.id}.`;
+      return `You see a ${actor.name}.`; // TODO - You see a you ?!?
     }
 
     const item = this.itemAt(x, y);
     if (item && item.kind) {
-      return `You see a ${item.kind.id}.`;
+      return `You see a ${item.name}.`;
     }
 
     const tile = this.getTile(x, y);
-    const text = `You see ${tile.id}.`;
+    const text = `You see ${tile.id}.`; // TODO - tile.flavor
     return text;
   }
 

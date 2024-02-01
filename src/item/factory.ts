@@ -1,34 +1,34 @@
 import * as GWU from "gw-utils";
-import { CallbackFn } from "../game";
+import { CallbackFn, ObjEvents } from "../game";
 import { Level } from "../level";
 import { Item } from "./item";
-import { ItemKind, ItemMakeOpts, getKind, kinds } from "./kind";
+import { ItemEvents, ItemKind, ItemMakeOpts, getKind, kinds } from "./kind";
+
+export interface ItemPlugin extends ItemEvents {
+  on?: ObjEvents; // give core events better type help?
+  data?: Record<string, string>;
+}
 
 export class ItemFactory {
-  plugins: ItemMakeOpts[] = [];
+  plugins: ItemPlugin[] = [];
 
-  use(plugin: ItemMakeOpts) {
+  use(plugin: ItemPlugin) {
     this.plugins.push(plugin);
   }
 
   make(kind: ItemKind, opts: ItemMakeOpts = {}): Item {
     // Create the Item
     let out: GWU.Option<Item> = GWU.Option.None();
-    if (!!opts.create) {
+    if (opts.create) {
       out = opts.create(kind, opts);
-    } else if (!!opts.on && opts.on.create) {
-      out = opts.on.create(kind, opts);
     }
     out = this.plugins.reduce((v, p) => {
-      if (!!v && v.isSome()) return v;
-      if (p.create) {
+      if (v.isNone() && p.create) {
         return p.create(kind, opts);
-      } else if (!!p.on && p.on.create) {
-        return p.on.create(kind, opts);
       }
       return v;
     }, out);
-    let item = out.isSome() ? out.unwrap() : new Item(kind);
+    let item = out.unwrapOrElse(() => new Item(kind));
 
     // Update the item events/data
     this.apply(item);
@@ -43,16 +43,16 @@ export class ItemFactory {
   apply(item: Item) {
     this.plugins.forEach((p) => {
       Object.entries(p).forEach(([key, val]) => {
-        if (key === "on") {
-          Object.entries(val).forEach(([k2, v2]: [string, CallbackFn]) => {
-            if (typeof v2 === "function") {
-              item.on(k2, v2);
-            } else {
-              console.warn("Invalid 'on' member in Item plugin: " + k2);
+        if (key == "data") {
+          item.data = GWU.utils.mergeDeep(item.data, val);
+        } else if (key == "on") {
+          Object.entries(val).forEach(([k, v]: [string, CallbackFn]) => {
+            if (typeof v === "function") {
+              item.on(k, v);
             }
           });
-        } else if (key === "data") {
-          item.data = GWU.utils.mergeDeep(item.data, val);
+        } else if (key == "keymap") {
+          // TODO - Add to level keymap
         } else if (typeof val === "function") {
           item.on(key, val);
         } else {
@@ -65,7 +65,7 @@ export class ItemFactory {
 
 export const factory = new ItemFactory();
 
-export function use(plugin: ItemMakeOpts) {
+export function use(plugin: ItemEvents) {
   factory.use(plugin);
 }
 
