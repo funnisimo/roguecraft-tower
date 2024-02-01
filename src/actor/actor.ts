@@ -18,7 +18,6 @@ import { factory } from "./factory";
 export interface ActorMakeOpts extends ObjMakeOpts, ActorEvents {
   power?: number;
   machineHome?: number;
-  on?: ObjEvents;
 }
 
 export class AttackInfo {
@@ -203,6 +202,7 @@ export class Actor extends Obj {
   }
 
   act(level: Level) {
+    // TODO - move this to plugin
     this.startTurn(level);
     AI.ai(level, this);
     if (!this.hasActed()) {

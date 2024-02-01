@@ -9,24 +9,25 @@ import { HeroEvents, HeroKind, getKind } from "./kind";
 import { factory } from "./factory";
 // import * as PLUGINS from "../game/plugins";
 
-export interface HeroCreateOpts extends ObjMakeOpts, HeroEvents {
+export interface HeroMakeOpts extends ObjMakeOpts, HeroEvents {
   power?: number;
   slots?: { [id: string]: string }; // TODO - Allow more object create options here
-  on?: HeroEvents & ObjEvents;
 }
 
 export class Hero extends ACTOR.Actor {
   // @ts-ignore
   declare kind: HeroKind;
-  mapToMe: GWU.path.DijkstraMap;
-  fov: GWU.grid.NumGrid | null;
 
-  potion: number;
-  potion_max: number;
+  // TODO - Make this part of a plugin
+  mapToMe: GWU.path.DijkstraMap;
+
+  // TODO - Make this part of a plugin
+  fov: GWU.grid.NumGrid | null;
 
   goalPath: GWU.xy.Loc[] | null;
   followPath: boolean;
 
+  // TODO - Make this part of a plugin
   slots: { [id: string]: ITEM.Item | null };
 
   constructor(kind: HeroKind) {
@@ -36,36 +37,34 @@ export class Hero extends ACTOR.Actor {
     this.goalPath = null;
     this.followPath = false;
     this.slots = {};
-    this.potion_max = 40 * 200;
-    this.potion = this.potion_max; // Potion is ready
+    // this.potion_max = 40 * 200;
+    // this.potion = this.potion_max; // Potion is ready
   }
 
   // @ts-ignore
-  _make(opts: HeroCreateOpts) {
+  _make(opts: HeroMakeOpts) {
     // @ts-ignore
     super._make(opts);
 
-    this.on("add", (level: Level) => {
-      this._level = level;
-      this.updateMapToMe();
-      this.updateFov();
-      // level.game!.scene!.needsDraw = true;
-    });
-    this.on("move", () => {
-      this.updateMapToMe();
-      this.updateFov();
-    });
-    this.on("remove", () => {
-      if (this.fov) {
-        GWU.grid.free(this.fov);
-        this.fov = null;
-      }
-      this.clearGoal();
-    });
-    this.on("turn_end", (game: Game, time: number) => {
-      this.potion = Math.min(this.potion + time, this.potion_max);
-    });
-    this.on("damage", () => this.clearGoal());
+    // this.on("add", (level: Level) => {
+    //   this.updateMapToMe();
+    //   this.updateFov();
+    // });
+    // this.on("move", () => {
+    //   this.updateMapToMe();
+    //   this.updateFov();
+    // });
+    // this.on("remove", () => {
+    //   if (this.fov) {
+    //     GWU.grid.free(this.fov);
+    //     this.fov = null;
+    //   }
+    //   this.clearGoal();
+    // });
+    // this.on("turn_end", (game: Game, time: number) => {
+    //   // this.potion = Math.min(this.potion + time, this.potion_max);
+    // });
+    // this.on("damage", () => this.clearGoal());
 
     // Need items in slots....
     Object.entries(this.kind.slots).forEach(([slot, id]) => {
@@ -128,9 +127,9 @@ export class Hero extends ACTOR.Actor {
     return super.rangedAttackSpeed;
   }
 
-  get canUsePotion(): boolean {
-    return this.potion >= this.potion_max;
-  }
+  // get canUsePotion(): boolean {
+  //   return this.potion >= this.potion_max;
+  // }
 
   get comboLen(): number {
     const melee = this.slots.melee;
@@ -143,8 +142,8 @@ export class Hero extends ACTOR.Actor {
   isHero(): this is Hero {
     return true;
   }
-  //
 
+  // TODO - plugin?
   equip(item: ITEM.Item) {
     if (item.slot === null) {
       throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -164,6 +163,7 @@ export class Hero extends ACTOR.Actor {
     this.combo_index = 0;
   }
 
+  // TODO - plugin?
   unequipSlot(slot: string) {
     this.slots[slot] = null;
     this.armor_flags = 0;
@@ -181,6 +181,7 @@ export class Hero extends ACTOR.Actor {
   }
 
   act(level: Level) {
+    // TODO - move this to plugin
     this.startTurn(level);
 
     if (this.goalPath && this.followPath && this.goalPath.length) {

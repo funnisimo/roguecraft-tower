@@ -1,5 +1,6 @@
+import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents } from "../game";
-import { HeroCreateOpts, Hero } from "./hero";
+import { HeroMakeOpts, Hero } from "./hero";
 import { HeroEvents, HeroKind, getKind } from "./kind";
 
 export interface HeroPlugin extends HeroEvents {
@@ -14,24 +15,23 @@ export class HeroFactory {
     this.plugins.push(plugin);
   }
 
-  make(kind: HeroKind, opts: HeroCreateOpts = {}): Hero {
-    let hero: Hero;
-    if (opts.make) {
-      hero = opts.make(kind, opts);
-    } else {
-      const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-      if (makePlugin) {
-        hero = makePlugin.make(kind, opts);
-      } else {
-        hero = new Hero(kind);
-      }
+  make(kind: HeroKind, opts: HeroMakeOpts = {}): Hero {
+    let out: GWU.Option<Hero> = GWU.Option.None();
+    if (opts.create) {
+      out = opts.create(kind, opts);
     }
+    out = this.plugins.reduce((v, p) => {
+      if (v.isNone() && p.create) {
+        return p.create(kind, opts);
+      }
+      return v;
+    }, out);
+    let hero = out.unwrapOrElse(() => new Hero(kind));
 
     this.apply(hero);
 
     hero._make(opts);
-
-    hero.emit("create", hero, opts);
+    hero.emit("make", hero, opts);
 
     return hero;
   }
@@ -67,7 +67,7 @@ export function use(plugin: HeroPlugin) {
 
 export function make(
   kind: HeroKind | string,
-  config: HeroCreateOpts | number = {}
+  config: HeroMakeOpts | number = {}
 ): Hero {
   if (typeof kind === "string") {
     kind = getKind(kind);
@@ -78,10 +78,6 @@ export function make(
   }
   if (typeof config === "number") {
     config = { power: config };
-  }
-
-  if (kind.hero) {
-    throw new Error("ActorKind is Hero: " + kind.id);
   }
 
   return factory.make(kind, config);

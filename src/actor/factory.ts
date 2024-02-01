@@ -6,7 +6,7 @@ import { ActorEvents, ActorKind, getKind } from "./kind";
 import * as FX from "../fx";
 
 export interface ActorPlugin extends ActorEvents {
-  on?: ActorEvents & ObjEvents;
+  on?: ObjEvents;
   data?: { [key: string]: any };
 }
 
@@ -18,23 +18,22 @@ export class ActorFactory {
   }
 
   make(kind: ActorKind, opts: ActorMakeOpts = {}): Actor {
-    let actor: Actor;
-    if (opts.make) {
-      actor = opts.make(kind, opts);
-    } else {
-      const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-      if (makePlugin) {
-        actor = makePlugin.make(kind, opts);
-      } else {
-        actor = new Actor(kind);
-      }
+    let out: GWU.Option<Actor> = GWU.Option.None();
+    if (opts.create) {
+      out = opts.create(kind, opts);
     }
+    out = this.plugins.reduce((v, p) => {
+      if (v.isNone() && p.create) {
+        return p.create(kind, opts);
+      }
+      return v;
+    }, out);
+    let actor = out.unwrapOrElse(() => new Actor(kind));
 
     this.apply(actor);
 
     actor._make(opts);
-
-    actor.emit("create", actor, opts);
+    actor.emit("make", actor, opts);
 
     return actor;
   }

@@ -112,9 +112,9 @@ export function moveTowardHero(
   quiet = false
 ): boolean {
   const game = level.game;
-  const player = game.hero;
+  const hero = game.hero;
 
-  const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+  const dir = hero.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
     return level.hasActor(x, y);
   });
   if (dir) {
@@ -137,11 +137,11 @@ export function moveAwayFromHero(
   quiet = false
 ): boolean {
   const game = level.game;
-  const player = game.hero;
+  const hero = game.hero;
 
   // compute safety map
   const safety = new GWU.path.DijkstraMap(level.width, level.height);
-  safety.copy(player.mapToMe);
+  safety.copy(hero.mapToMe);
   safety.update((v, x, y) => {
     if (v >= GWU.path.BLOCKED) return v;
     v = -1.2 * v;
@@ -150,16 +150,16 @@ export function moveAwayFromHero(
     return Math.round(v);
   });
 
-  safety.setDistance(player.x, player.y, GWU.path.BLOCKED);
+  safety.setDistance(hero.x, hero.y, GWU.path.BLOCKED);
   safety.rescan((x, y) => actor.moveCost(x, y));
-  safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+  safety.addObstacle(hero.x, hero.y, (x, y) => hero.moveCost(x, y), 5);
 
   let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
     return level.hasActor(x, y);
   });
 
   console.log(
-    `- move away (${actor.x},${actor.y}) from player (${player.x},${player.y}) - ${dir}`
+    `- move away (${actor.x},${actor.y}) from player (${hero.x},${hero.y}) - ${dir}`
   );
 
   // if (dir === null) {

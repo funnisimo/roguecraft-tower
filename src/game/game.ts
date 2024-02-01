@@ -30,7 +30,7 @@ export interface GameOpts {
     [id: string]: string | EventFn;
   };
   start_level?: string | number;
-  hero_kind?: string | (HERO.HeroCreateOpts & { kind: string });
+  hero_kind?: string | (HERO.HeroMakeOpts & { kind: string });
   // on?: ObjEvents & GameEvents;
 }
 

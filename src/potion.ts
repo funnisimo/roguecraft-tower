@@ -5,7 +5,7 @@ import * as ACTIONS from "./action";
 import { Actor } from "./actor/actor";
 import { SidebarEntry } from "./widgets/sidebar";
 import { GameOpts, Obj, install } from "./game";
-import { Hero, HeroCreateOpts } from "./hero";
+import { Hero, HeroMakeOpts } from "./hero";
 
 ACTIONS.install("potion", (level: Level, actor: Actor): boolean => {
   if (!actor.isHero) return false;
@@ -43,7 +43,7 @@ install("potion", {
     },
   },
   hero: {
-    create(hero: Hero, opts: HeroCreateOpts) {
+    make(hero: Hero, opts: HeroMakeOpts) {
       hero.data.potion_max = 40 * 100; // 40 moves
       hero.data.potion = hero.data.potion_max;
     },

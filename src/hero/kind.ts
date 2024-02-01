@@ -1,13 +1,16 @@
 import * as GWU from "gw-utils";
 import { CallbackFn, ObjMakeOpts, ObjEvents } from "../game/obj";
-import { Hero, HeroCreateOpts } from "./hero";
+import { Hero, HeroMakeOpts } from "./hero";
 import { Level } from "../level";
 import { Item } from "../item";
 import * as ACTOR from "../actor";
 import { SidebarEntry } from "../widgets";
 
-export type HeroMakeFn = (kind: HeroKind, opts: HeroCreateOpts) => Hero;
-export type HeroCreateFn = (hero: Hero, opts: HeroCreateOpts) => void;
+export type HeroCreateFn = (
+  kind: HeroKind,
+  opts: HeroMakeOpts
+) => GWU.Option<Hero>;
+export type HeroMakeFn = (hero: Hero, opts: HeroMakeOpts) => void;
 export type HeroSpawnFn = (level: Level, hero: Hero) => void;
 export type HeroDestroyFn = (level: Level, hero: Hero) => void;
 
@@ -22,12 +25,12 @@ export type HeroItemFn = (level: Level, hero: Hero, item: Item) => void;
 
 export interface HeroEvents {
   // bump?: (game: Game, hero: Hero, other: Hero) => void;
-  make?: HeroMakeFn;
   create?: HeroCreateFn;
+  make?: HeroMakeFn;
+  destroy?: HeroDestroyFn; // Hero is destroyed (different from death?)
 
   add?: HeroSpawnFn; // Fired when an Hero is placed into the map at creation time
   remove?: HeroSpawnFn;
-  destroy?: HeroDestroyFn; // Hero is destroyed (different from death?)
 
   move?: HeroLocFn;
   death?: (level: Level, hero: Hero) => void; // TODO - use destroy instead?
@@ -46,7 +49,7 @@ export interface HeroEvents {
   use?: HeroItemFn;
 }
 
-export interface HeroKindOpts extends Omit<ACTOR.ActorKindOpts, "on"> {
+export interface HeroKindConfig extends Omit<ACTOR.ActorKindOpts, "on"> {
   on?: HeroEvents & ObjEvents;
   slots?: { [id: string]: string };
 }
@@ -61,7 +64,7 @@ export const kinds: Record<string, HeroKind> = {};
 // @ts-ignore
 globalThis.HeroKinds = kinds;
 
-export function makeKind(cfg: HeroKindOpts) {
+export function makeKind(cfg: HeroKindConfig) {
   let kind: HeroKind;
 
   kind = ACTOR.makeKind(
@@ -79,7 +82,7 @@ export function makeKind(cfg: HeroKindOpts) {
   return kind;
 }
 
-export function install(cfg: HeroKindOpts) {
+export function install(cfg: HeroKindConfig) {
   const kind = makeKind(cfg);
 
   kinds[kind.id.toLowerCase()] = kind;

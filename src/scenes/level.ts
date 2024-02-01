@@ -161,12 +161,6 @@ export const level = {
       const game = level.game;
       game.inputQueue.enqueue(e.clone());
 
-      // if (e.key !== "Enter") {
-      //   game.hero.clearGoal();
-      // }
-      // if (e.key == "Escape") {
-      //   this.emit("lose"); // todo -- remove
-      // }
       e.stopPropagation();
     },
 

@@ -10,7 +10,7 @@ describe("Actor", () => {
       id: "TEST",
     });
 
-    const actor = ACTOR.make(kind, { create: createFn });
+    const actor = ACTOR.make(kind, { make: createFn });
 
     expect(createFn).toHaveBeenCalledWith(actor, {
       create: createFn,
@@ -36,7 +36,7 @@ describe("Actor", () => {
 
     const kind = ACTOR.makeKind({
       id: "TEST",
-      on: { create: createFn },
+      on: { make: createFn },
     });
 
     const actor = ACTOR.make(kind);
@@ -48,7 +48,7 @@ describe("Actor", () => {
     const createFn = jest.fn();
     const maker = new ACTOR.ActorFactory();
 
-    maker.use({ create: createFn });
+    maker.use({ make: createFn });
 
     const kind = ACTOR.makeKind({
       id: "TEST",
@@ -66,15 +66,15 @@ describe("Actor", () => {
     const optsFn = jest.fn();
     const maker = new ACTOR.ActorFactory();
 
-    maker.use({ create: pluginFn });
-    maker.use({ on: { create: pluginFn2 } });
+    maker.use({ make: pluginFn });
+    maker.use({ on: { make: pluginFn2 } });
 
     const kind = ACTOR.makeKind({
       id: "TEST",
-      on: { create: kindFn },
+      on: { make: kindFn },
     });
 
-    const actor = maker.make(kind, { create: optsFn });
+    const actor = maker.make(kind, { make: optsFn });
 
     expect(pluginFn).toHaveBeenCalledWith(actor, { create: optsFn });
     expect(pluginFn2).toHaveBeenCalledWith(actor, { create: optsFn });

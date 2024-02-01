@@ -141,15 +141,7 @@ export class Level implements GWD.site.AnalysisSite {
       }
     });
 
-    // if (kind.layout) {
-    //   const { data, tiles } = kind.layout;
-    //   // loadLevel(this, data, tiles);
-    // } else if (kind.dig) {
-    //   digLevel(this, kind.dig, this.seed);
-    // } else {
-    //   throw new Error("Level must have either 'dig' or 'layout'.");
-    // }
-
+    // TODO - move to factory
     this.emit("make", this, opts);
   }
 

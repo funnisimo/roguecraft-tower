@@ -8760,7 +8760,7 @@ void main() {
       }
   }
   const sprites = {};
-  function make$5(...args) {
+  function make$5$1(...args) {
       let ch = null, fg = -1, bg = -1, opacity;
       if (args.length == 0) {
           return new Sprite(null, -1, -1);
@@ -8823,12 +8823,12 @@ void main() {
               throw new Error('Failed to find sprite: ' + config);
           return sprite;
       }
-      return make$5(config);
+      return make$5$1(config);
   }
   function install$1$2(name, ...args) {
       let sprite;
       // @ts-ignore
-      sprite = make$5(...args);
+      sprite = make$5$1(...args);
       sprite.name = name;
       sprites[name] = sprite;
       return sprite;
@@ -8840,7 +8840,7 @@ void main() {
   	Sprite: Sprite,
   	from: from$1,
   	install: install$1$2,
-  	make: make$5,
+  	make: make$5$1,
   	makeMixer: makeMixer,
   	sprites: sprites
   });
@@ -20387,22 +20387,21 @@ void main() {
           this.ch = cfg.ch || null;
           this.fg = cfg.fg || null;
           this.bg = cfg.bg || null;
-          this._make(cfg);
-          this.emit("create", this, cfg);
-      }
-      static make(cfg) {
-          const fx = new FX(cfg);
-          // fx._create(cfg);
-          return fx;
       }
       draw(buf) {
           buf.drawSprite(this.x, this.y, this);
       }
   }
+  function make$5(cfg) {
+      const fx = new FX(cfg);
+      fx._make(cfg);
+      fx.emit("make", fx, cfg);
+      return fx;
+  }
   function flash(level, x, y, color = "white", ms = 300) {
       const scene = level.scene;
       scene.pause({ update: true });
-      const fx = FX.make({ x, y, bg: color, z: 4 });
+      const fx = make$5({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       scene.needsDraw = true;
@@ -20420,7 +20419,7 @@ void main() {
   function flashGameTime(level, x, y, color = "white", ms = 300) {
       const scene = level.scene;
       const startTime = scene.app.time;
-      const fx = FX.make({ x, y, bg: color, z: 4 });
+      const fx = make$5({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       // let _fail: CallbackFn = GWU.NOOP;
@@ -20472,7 +20471,7 @@ void main() {
       else if (sprite.ch && sprite.ch.length !== 1) {
           throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
       }
-      const fx = FX.make(sprite);
+      const fx = make$5(sprite);
       // console.log("- fire", from, to);
       scene.pause({ update: true });
       const tween$1 = tween
@@ -21002,8 +21001,8 @@ void main() {
   }
   function moveTowardHero(level, actor, quiet = false) {
       const game = level.game;
-      const player = game.hero;
-      const dir = player.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+      const hero = game.hero;
+      const dir = hero.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
           return level.hasActor(x, y);
       });
       if (dir) {
@@ -21020,10 +21019,10 @@ void main() {
   install$6("move_toward_hero", moveTowardHero);
   function moveAwayFromHero(level, actor, quiet = false) {
       const game = level.game;
-      const player = game.hero;
+      const hero = game.hero;
       // compute safety map
       const safety = new index$6.DijkstraMap(level.width, level.height);
-      safety.copy(player.mapToMe);
+      safety.copy(hero.mapToMe);
       safety.update((v, x, y) => {
           if (v >= index$6.BLOCKED)
               return v;
@@ -21034,13 +21033,13 @@ void main() {
               v -= 2;
           return Math.round(v);
       });
-      safety.setDistance(player.x, player.y, index$6.BLOCKED);
+      safety.setDistance(hero.x, hero.y, index$6.BLOCKED);
       safety.rescan((x, y) => actor.moveCost(x, y));
-      safety.addObstacle(player.x, player.y, (x, y) => player.moveCost(x, y), 5);
+      safety.addObstacle(hero.x, hero.y, (x, y) => hero.moveCost(x, y), 5);
       let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
           return level.hasActor(x, y);
       });
-      console.log(`- move away (${actor.x},${actor.y}) from player (${player.x},${player.y}) - ${dir}`);
+      console.log(`- move away (${actor.x},${actor.y}) from player (${hero.x},${hero.y}) - ${dir}`);
       // if (dir === null) {
       //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
       //     return map.hasActor(x, y);
@@ -22025,6 +22024,7 @@ void main() {
           return path;
       }
       act(level) {
+          // TODO - move this to plugin
           this.startTurn(level);
           ai(level, this);
           if (!this.hasActed()) {
@@ -22219,22 +22219,20 @@ void main() {
           this.plugins.push(plugin);
       }
       make(kind, opts = {}) {
-          let actor;
-          if (opts.make) {
-              actor = opts.make(kind, opts);
+          let out = Option.None();
+          if (opts.create) {
+              out = opts.create(kind, opts);
           }
-          else {
-              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-              if (makePlugin) {
-                  actor = makePlugin.make(kind, opts);
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.create) {
+                  return p.create(kind, opts);
               }
-              else {
-                  actor = new Actor(kind);
-              }
-          }
+              return v;
+          }, out);
+          let actor = out.unwrapOrElse(() => new Actor(kind));
           this.apply(actor);
           actor._make(opts);
-          actor.emit("create", actor, opts);
+          actor.emit("make", actor, opts);
           return actor;
       }
       apply(item) {
@@ -22318,12 +22316,13 @@ void main() {
   }
 
   class Hero extends Actor {
+      // TODO - Make this part of a plugin
       mapToMe;
+      // TODO - Make this part of a plugin
       fov;
-      potion;
-      potion_max;
       goalPath;
       followPath;
+      // TODO - Make this part of a plugin
       slots;
       constructor(kind) {
           super(kind);
@@ -22332,34 +22331,32 @@ void main() {
           this.goalPath = null;
           this.followPath = false;
           this.slots = {};
-          this.potion_max = 40 * 200;
-          this.potion = this.potion_max; // Potion is ready
+          // this.potion_max = 40 * 200;
+          // this.potion = this.potion_max; // Potion is ready
       }
       // @ts-ignore
       _make(opts) {
           // @ts-ignore
           super._make(opts);
-          this.on("add", (level) => {
-              this._level = level;
-              this.updateMapToMe();
-              this.updateFov();
-              // level.game!.scene!.needsDraw = true;
-          });
-          this.on("move", () => {
-              this.updateMapToMe();
-              this.updateFov();
-          });
-          this.on("remove", () => {
-              if (this.fov) {
-                  grid.free(this.fov);
-                  this.fov = null;
-              }
-              this.clearGoal();
-          });
-          this.on("turn_end", (game, time) => {
-              this.potion = Math.min(this.potion + time, this.potion_max);
-          });
-          this.on("damage", () => this.clearGoal());
+          // this.on("add", (level: Level) => {
+          //   this.updateMapToMe();
+          //   this.updateFov();
+          // });
+          // this.on("move", () => {
+          //   this.updateMapToMe();
+          //   this.updateFov();
+          // });
+          // this.on("remove", () => {
+          //   if (this.fov) {
+          //     GWU.grid.free(this.fov);
+          //     this.fov = null;
+          //   }
+          //   this.clearGoal();
+          // });
+          // this.on("turn_end", (game: Game, time: number) => {
+          //   // this.potion = Math.min(this.potion + time, this.potion_max);
+          // });
+          // this.on("damage", () => this.clearGoal());
           // Need items in slots....
           Object.entries(this.kind.slots).forEach(([slot, id]) => {
               const item = make$4(id);
@@ -22416,9 +22413,9 @@ void main() {
           }
           return super.rangedAttackSpeed;
       }
-      get canUsePotion() {
-          return this.potion >= this.potion_max;
-      }
+      // get canUsePotion(): boolean {
+      //   return this.potion >= this.potion_max;
+      // }
       get comboLen() {
           const melee = this.slots.melee;
           if (melee) {
@@ -22429,7 +22426,7 @@ void main() {
       isHero() {
           return true;
       }
-      //
+      // TODO - plugin?
       equip(item) {
           if (item.slot === null) {
               throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -22448,6 +22445,7 @@ void main() {
           this.health = Math.round(new_health_max * health_pct);
           this.combo_index = 0;
       }
+      // TODO - plugin?
       unequipSlot(slot) {
           this.slots[slot] = null;
           this.armor_flags = 0;
@@ -22464,6 +22462,7 @@ void main() {
           this.combo_index = 0;
       }
       act(level) {
+          // TODO - move this to plugin
           this.startTurn(level);
           if (this.goalPath && this.followPath && this.goalPath.length) {
               const step = this.goalPath[0];
@@ -22574,22 +22573,20 @@ void main() {
           this.plugins.push(plugin);
       }
       make(kind, opts = {}) {
-          let hero;
-          if (opts.make) {
-              hero = opts.make(kind, opts);
+          let out = Option.None();
+          if (opts.create) {
+              out = opts.create(kind, opts);
           }
-          else {
-              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-              if (makePlugin) {
-                  hero = makePlugin.make(kind, opts);
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.create) {
+                  return p.create(kind, opts);
               }
-              else {
-                  hero = new Hero(kind);
-              }
-          }
+              return v;
+          }, out);
+          let hero = out.unwrapOrElse(() => new Hero(kind));
           this.apply(hero);
           hero._make(opts);
-          hero.emit("create", hero, opts);
+          hero.emit("make", hero, opts);
           return hero;
       }
       apply(hero) {
@@ -22633,9 +22630,6 @@ void main() {
       }
       if (typeof config === "number") {
           config = { power: config };
-      }
-      if (kind.hero) {
-          throw new Error("ActorKind is Hero: " + kind.id);
       }
       return factory$2.make(kind, config);
   }
@@ -22743,14 +22737,7 @@ void main() {
                   this.on(key, val);
               }
           });
-          // if (kind.layout) {
-          //   const { data, tiles } = kind.layout;
-          //   // loadLevel(this, data, tiles);
-          // } else if (kind.dig) {
-          //   digLevel(this, kind.dig, this.seed);
-          // } else {
-          //   throw new Error("Level must have either 'dig' or 'layout'.");
-          // }
+          // TODO - move to factory
           this.emit("make", this, opts);
       }
       show() {
@@ -24188,7 +24175,26 @@ void main() {
   // NOTE - There really isn't anything special about items yet.
   const hero = {
       name: "hero",
-      hero: {},
+      hero: {
+          add(level, hero) {
+              hero.updateMapToMe();
+              hero.updateFov();
+          },
+          move(level, hero, x, y) {
+              hero.updateMapToMe();
+              hero.updateFov();
+          },
+          remove(level, hero) {
+              if (hero.fov) {
+                  grid.free(this.fov);
+                  hero.fov = null;
+              }
+              hero.clearGoal();
+          },
+          // damage(hero: Hero) {
+          //   hero.clearGoal();
+          // },
+      },
       level: {
           tick(level, dt) {
               if (level.done || !level.started)
@@ -25360,12 +25366,6 @@ void main() {
               const level = this.data.level;
               const game = level.game;
               game.inputQueue.enqueue(e.clone());
-              // if (e.key !== "Enter") {
-              //   game.hero.clearGoal();
-              // }
-              // if (e.key == "Escape") {
-              //   this.emit("lose"); // todo -- remove
-              // }
               e.stopPropagation();
           },
           click(e) {
@@ -25825,7 +25825,7 @@ void main() {
           },
       },
       hero: {
-          create(hero, opts) {
+          make(hero, opts) {
               hero.data.potion_max = 40 * 100; // 40 moves
               hero.data.potion = hero.data.potion_max;
           },

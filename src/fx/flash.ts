@@ -14,26 +14,23 @@ export class FX extends Obj {
   fg: GWU.color.ColorBase;
   bg: GWU.color.ColorBase;
 
-  protected constructor(cfg: FXConfig) {
+  constructor(cfg: FXConfig) {
     super();
     this.ch = cfg.ch || null;
     this.fg = cfg.fg || null;
     this.bg = cfg.bg || null;
-
-    this._make(cfg);
-
-    this.emit("create", this, cfg);
-  }
-
-  static make(cfg: FXConfig): FX {
-    const fx = new FX(cfg);
-    // fx._create(cfg);
-    return fx;
   }
 
   draw(buf: GWU.buffer.Buffer) {
     buf.drawSprite(this.x, this.y, this);
   }
+}
+
+export function make(cfg: FXConfig): FX {
+  const fx = new FX(cfg);
+  fx._make(cfg);
+  fx.emit("make", fx, cfg);
+  return fx;
 }
 
 export function flash(
@@ -46,7 +43,7 @@ export function flash(
   const scene = level.scene;
   scene.pause({ update: true });
 
-  const fx = FX.make({ x, y, bg: color, z: 4 });
+  const fx = make({ x, y, bg: color, z: 4 });
   level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
@@ -76,7 +73,7 @@ export function flashGameTime(
 
   const startTime = scene.app.time;
 
-  const fx = FX.make({ x, y, bg: color, z: 4 });
+  const fx = make({ x, y, bg: color, z: 4 });
   level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
