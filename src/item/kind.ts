@@ -1,14 +1,24 @@
 import * as GWU from "gw-utils";
 import { Actor } from "../actor";
 import { Game } from "../game";
-import { Item, ItemCreateOpts } from "./item";
-import { CallbackFn, ObjEvents } from "../game/obj";
+import { Item } from "./item";
+import { CallbackFn, ObjEvents, ObjMakeOpts } from "../game";
 import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
 import { Level } from "../level";
+import { SidebarEntry } from "../widgets";
 
-export type ItemMakeFn = (kind: ItemKind, opts: ItemCreateOpts) => Item;
-export type ItemCreateFn = (item: Item, opts: ItemCreateOpts) => void;
+export interface ItemMakeOpts extends ObjMakeOpts, ItemEvents {
+  power?: number;
+  on?: ItemEvents & { [id: string]: CallbackFn }; // give core events better type help?
+  data?: Record<string, string>;
+}
+
+export type ItemCreateFn = (
+  kind: ItemKind,
+  opts: ItemMakeOpts
+) => GWU.Option<Item>;
+export type ItemMakeFn = (item: Item, opts: ItemMakeOpts) => void;
 export type ItemSpawnFn = (level: Level, item: Item) => void;
 export type ItemDestroyFn = (level: Level, item: Item) => void;
 
@@ -20,14 +30,15 @@ export type ItemLocFn = (
 ) => void;
 
 export type ItemActionFn = (level: Level, item: Item, actor: Actor) => void;
+export type ItemSidebarFn = (item: Item, entry: SidebarEntry) => void;
 
 export interface ItemEvents {
-  // bump?: (game: Game, actor: Item, other: Item) => void;
-  make?: ItemMakeFn;
   create?: ItemCreateFn;
-
-  spawn?: ItemSpawnFn; // Fired when an item is placed into the map at creation time
+  make?: ItemMakeFn;
   destroy?: ItemDestroyFn; // Item is destroyed
+
+  add?: ItemSpawnFn; // Fired when an item is placed into a level
+  remove?: ItemSpawnFn; // Fired when an item is removed from a level (maybe picked up, maybe used, maybe destroyed, ...)
 
   pickup?: ItemActionFn;
   drop?: ItemActionFn;
@@ -36,6 +47,7 @@ export interface ItemEvents {
   unequip?: ItemActionFn;
 
   use?: ItemActionFn;
+  sidebar?: ItemSidebarFn;
 }
 
 export interface KindConfig {

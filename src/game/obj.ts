@@ -3,7 +3,7 @@ import * as GWU from "gw-utils";
 export type CallbackFn = GWU.app.CallbackFn;
 export type ObjEvents = { [key: string]: CallbackFn };
 
-export interface ObjCreateOpts {
+export interface ObjMakeOpts {
   x?: number;
   y?: number;
   z?: number;
@@ -33,7 +33,7 @@ export class Obj {
   //   this.emit("create", opts);
   // }
 
-  _create(cfg: ObjCreateOpts) {
+  _make(cfg: ObjMakeOpts) {
     this.x = cfg.x !== undefined ? cfg.x : this.x;
     this.y = cfg.y !== undefined ? cfg.y : this.y;
     this.z = cfg.z !== undefined ? cfg.z : this.z;

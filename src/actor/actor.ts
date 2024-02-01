@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 
 import * as FX from "../fx/index";
-import { CallbackFn, Obj, ObjCreateOpts, ObjEvents } from "../game/obj";
+import { CallbackFn, Obj, ObjMakeOpts, ObjEvents } from "../game/obj";
 import { Game } from "../game/game";
 import { Level } from "../level/level";
 import { TileInfo } from "../tile";
@@ -15,7 +15,7 @@ import { SidebarEntry } from "../widgets";
 import { Hero } from "../hero/hero";
 import { factory } from "./factory";
 
-export interface ActorCreateOpts extends ObjCreateOpts, ActorEvents {
+export interface ActorCreateOpts extends ObjMakeOpts, ActorEvents {
   power?: number;
   machineHome?: number;
   on?: ActorEvents & ObjEvents;
@@ -62,8 +62,8 @@ export class Actor extends Obj {
     });
   }
 
-  _create(opts: ActorCreateOpts) {
-    super._create(opts);
+  _make(opts: ActorCreateOpts) {
+    super._make(opts);
 
     this.on("add", (level: Level) => {
       level.scheduler.push(this, this.kind.moveSpeed);

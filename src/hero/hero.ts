@@ -3,13 +3,13 @@ import * as GWU from "gw-utils";
 import * as ACTOR from "../actor";
 import * as ACTION from "../action";
 import { Level } from "../level";
-import { Game, ObjCreateOpts, ObjEvents } from "../game";
+import { Game, ObjMakeOpts, ObjEvents } from "../game";
 import * as ITEM from "../item";
 import { HeroEvents, HeroKind, getKind } from "./kind";
 import { factory } from "./factory";
 // import * as PLUGINS from "../game/plugins";
 
-export interface HeroCreateOpts extends ObjCreateOpts, HeroEvents {
+export interface HeroCreateOpts extends ObjMakeOpts, HeroEvents {
   power?: number;
   slots?: { [id: string]: string }; // TODO - Allow more object create options here
   on?: HeroEvents & ObjEvents;
@@ -41,9 +41,9 @@ export class Hero extends ACTOR.Actor {
   }
 
   // @ts-ignore
-  _create(opts: HeroCreateOpts) {
+  _make(opts: HeroCreateOpts) {
     // @ts-ignore
-    super._create(opts);
+    super._make(opts);
 
     this.on("add", (level: Level) => {
       this._level = level;

@@ -1,27 +1,6 @@
 import * as GWU from "gw-utils";
-import { Level } from "../level/level";
-import {
-  ItemActionFn,
-  ItemCreateFn,
-  ItemDestroyFn,
-  ItemEvents,
-  ItemKind,
-  ItemMakeFn,
-  ItemSpawnFn,
-  getKind,
-  kinds,
-} from "./kind";
-import { CallbackFn, Obj, ObjCreateOpts } from "../game/obj";
-import * as FX from "../fx";
-import { Actor } from "../actor";
-import { factory } from "./factory";
-// import * as PLUGINS from "../game/plugins";
-
-export interface ItemCreateOpts extends ObjCreateOpts, ItemEvents {
-  power?: number;
-  on?: ItemEvents & { [id: string]: CallbackFn }; // give core events better type help?
-  data?: Record<string, string>;
-}
+import { ItemKind, ItemMakeOpts } from "./kind";
+import { Obj } from "../game/obj";
 
 export class Item extends Obj {
   _turnTime = 0;
@@ -55,8 +34,8 @@ export class Item extends Obj {
   //   this.emit("create", this, opts);
   // }
 
-  _create(opts: ItemCreateOpts) {
-    super._create(opts);
+  _make(opts: ItemMakeOpts) {
+    super._make(opts);
 
     // install emit handlers for ItemEvents
     Object.entries(opts).forEach(([key, val]) => {

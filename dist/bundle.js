@@ -20351,7 +20351,7 @@ void main() {
       //   this._create(opts);
       //   this.emit("create", opts);
       // }
-      _create(cfg) {
+      _make(cfg) {
           this.x = cfg.x !== undefined ? cfg.x : this.x;
           this.y = cfg.y !== undefined ? cfg.y : this.y;
           this.z = cfg.z !== undefined ? cfg.z : this.z;
@@ -20386,7 +20386,7 @@ void main() {
           this.ch = cfg.ch || null;
           this.fg = cfg.fg || null;
           this.bg = cfg.bg || null;
-          this._create(cfg);
+          this._make(cfg);
           this.emit("create", this, cfg);
       }
       static make(cfg) {
@@ -20682,8 +20682,8 @@ void main() {
       //   this._create(opts);
       //   this.emit("create", this, opts);
       // }
-      _create(opts) {
-          super._create(opts);
+      _make(opts) {
+          super._make(opts);
           // install emit handlers for ItemEvents
           Object.entries(opts).forEach(([key, val]) => {
               if (typeof val === "function") {
@@ -20744,22 +20744,31 @@ void main() {
           this.plugins.push(plugin);
       }
       make(kind, opts = {}) {
-          let item;
-          if (opts.make) {
-              item = opts.make(kind, opts);
+          // Create the Item
+          let out = Option.None();
+          if (!!opts.create) {
+              out = opts.create(kind, opts);
           }
-          else {
-              const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-              if (makePlugin) {
-                  item = makePlugin.make(kind, opts);
-              }
-              else {
-                  item = new Item(kind);
-              }
+          else if (!!opts.on && opts.on.create) {
+              out = opts.on.create(kind, opts);
           }
+          out = this.plugins.reduce((v, p) => {
+              if (!!v && v.isSome())
+                  return v;
+              if (p.create) {
+                  return p.create(kind, opts);
+              }
+              else if (!!p.on && p.on.create) {
+                  return p.on.create(kind, opts);
+              }
+              return v;
+          }, out);
+          let item = out.isSome() ? out.unwrap() : new Item(kind);
+          // Update the item events/data
           this.apply(item);
-          item._create(opts);
-          item.emit("create", item, opts);
+          // finish making the item
+          item._make(opts);
+          item.emit("make", item, opts);
           return item;
       }
       apply(item) {
@@ -20776,7 +20785,7 @@ void main() {
                       });
                   }
                   else if (key === "data") {
-                      Object.assign(item.data, val);
+                      item.data = utils.mergeDeep(item.data, val);
                   }
                   else if (typeof val === "function") {
                       item.on(key, val);
@@ -21906,8 +21915,8 @@ void main() {
               this.on(key, val);
           });
       }
-      _create(opts) {
-          super._create(opts);
+      _make(opts) {
+          super._make(opts);
           this.on("add", (level) => {
               level.scheduler.push(this, this.kind.moveSpeed);
               this._level = level;
@@ -22255,7 +22264,7 @@ void main() {
               }
           }
           this.apply(actor);
-          actor._create(opts);
+          actor._make(opts);
           actor.emit("create", actor, opts);
           return actor;
       }
@@ -22358,9 +22367,9 @@ void main() {
           this.potion = this.potion_max; // Potion is ready
       }
       // @ts-ignore
-      _create(opts) {
+      _make(opts) {
           // @ts-ignore
-          super._create(opts);
+          super._make(opts);
           this.on("add", (level) => {
               this._level = level;
               this.updateMapToMe();
@@ -22610,7 +22619,7 @@ void main() {
               }
           }
           this.apply(hero);
-          hero._create(opts);
+          hero._make(opts);
           hero.emit("create", hero, opts);
           return hero;
       }
@@ -25571,19 +25580,21 @@ void main() {
   const active = [];
   // @ts-ignore
   globalThis.PLUGINS = plugins;
-  // function NOFUNC(
-  //   req: any,
-  //   next: () => GWU.Result<any, string>
-  // ): GWU.Result<any, string> {
-  //   return next();
-  // }
-  function install$1(name, cfg) {
-      const plugin = Object.assign({
-          name,
-          plugins: [],
-      }, cfg);
-      if (plugin.name != name) {
-          plugin.name = name;
+  function install$1(...args) {
+      let plugin;
+      let name;
+      if (args.length == 1) {
+          plugin = args[0];
+          name = plugin.name;
+      }
+      else {
+          plugin = Object.assign({
+              name: args[0],
+              plugins: [],
+          }, args[0]);
+          if (plugin.name != name) {
+              plugin.name = name;
+          }
       }
       plugins[name.toLowerCase()] = plugin;
   }

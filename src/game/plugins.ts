@@ -23,7 +23,7 @@ export interface Plugin extends GameOpts {
   level?: LEVEL.LevelPlugin;
   actor?: ACTOR.ActorPlugin;
   hero?: HERO.HeroPlugin;
-  item?: ITEM.ItemPlugin;
+  item?: ITEM.ItemEvents;
 }
 
 export const plugins: Record<string, Plugin> = {};
@@ -40,17 +40,26 @@ globalThis.PLUGINS = plugins;
 //   return next();
 // }
 
-export function install(name: string, cfg: Omit<Plugin, "name">) {
-  const plugin = Object.assign(
-    {
-      name,
-      plugins: [],
-    },
-    cfg
-  ) as Plugin;
+export function install(plugin: Plugin);
+export function install(name: string, cfg: Omit<Plugin, "name">);
+export function install(...args: any[]) {
+  let plugin: Plugin;
+  let name: string;
+  if (args.length == 1) {
+    plugin = args[0];
+    name = plugin.name;
+  } else {
+    plugin = Object.assign(
+      {
+        name: args[0],
+        plugins: [],
+      },
+      args[0]
+    ) as Plugin;
 
-  if (plugin.name != name) {
-    plugin.name = name;
+    if (plugin.name != name) {
+      plugin.name = name;
+    }
   }
 
   plugins[name.toLowerCase()] = plugin;

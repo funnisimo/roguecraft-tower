@@ -1,39 +1,41 @@
 import * as GWU from "gw-utils";
 import { CallbackFn } from "../game";
 import { Level } from "../level";
-import { ItemCreateOpts, Item } from "./item";
-import { ItemEvents, ItemKind, getKind, kinds } from "./kind";
-
-export interface ItemPlugin extends ItemEvents {
-  on?: { [id: string]: CallbackFn };
-  data?: { [key: string]: any };
-}
+import { Item } from "./item";
+import { ItemKind, ItemMakeOpts, getKind, kinds } from "./kind";
 
 export class ItemFactory {
-  plugins: ItemPlugin[] = [];
+  plugins: ItemMakeOpts[] = [];
 
-  use(plugin: ItemPlugin) {
+  use(plugin: ItemMakeOpts) {
     this.plugins.push(plugin);
   }
 
-  make(kind: ItemKind, opts: ItemCreateOpts = {}): Item {
-    let item: Item;
-    if (opts.make) {
-      item = opts.make(kind, opts);
-    } else {
-      const makePlugin = this.plugins.find((p) => typeof p.make === "function");
-      if (makePlugin) {
-        item = makePlugin.make(kind, opts);
-      } else {
-        item = new Item(kind);
-      }
+  make(kind: ItemKind, opts: ItemMakeOpts = {}): Item {
+    // Create the Item
+    let out: GWU.Option<Item> = GWU.Option.None();
+    if (!!opts.create) {
+      out = opts.create(kind, opts);
+    } else if (!!opts.on && opts.on.create) {
+      out = opts.on.create(kind, opts);
     }
+    out = this.plugins.reduce((v, p) => {
+      if (!!v && v.isSome()) return v;
+      if (p.create) {
+        return p.create(kind, opts);
+      } else if (!!p.on && p.on.create) {
+        return p.on.create(kind, opts);
+      }
+      return v;
+    }, out);
+    let item = out.isSome() ? out.unwrap() : new Item(kind);
 
+    // Update the item events/data
     this.apply(item);
 
-    item._create(opts);
-
-    item.emit("create", item, opts);
+    // finish making the item
+    item._make(opts);
+    item.emit("make", item, opts);
 
     return item;
   }
@@ -50,7 +52,7 @@ export class ItemFactory {
             }
           });
         } else if (key === "data") {
-          Object.assign(item.data, val);
+          item.data = GWU.utils.mergeDeep(item.data, val);
         } else if (typeof val === "function") {
           item.on(key, val);
         } else {
@@ -63,11 +65,11 @@ export class ItemFactory {
 
 export const factory = new ItemFactory();
 
-export function use(plugin: ItemPlugin) {
+export function use(plugin: ItemMakeOpts) {
   factory.use(plugin);
 }
 
-export function make(id: string | ItemKind, opts: ItemCreateOpts = {}): Item {
+export function make(id: string | ItemKind, opts: ItemMakeOpts = {}): Item {
   let kind: ItemKind = typeof id === "string" ? getKind(id) : id;
 
   if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {

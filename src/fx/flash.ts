@@ -1,9 +1,9 @@
 import * as GWU from "gw-utils";
-import { Obj, ObjCreateOpts, CallbackFn } from "../game/obj";
+import { Obj, ObjMakeOpts, CallbackFn } from "../game/obj";
 import { Game } from "../game/game";
 import { Level } from "../level";
 
-export interface FXConfig extends ObjCreateOpts {
+export interface FXConfig extends ObjMakeOpts {
   ch?: string | null;
   fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
@@ -20,7 +20,7 @@ export class FX extends Obj {
     this.fg = cfg.fg || null;
     this.bg = cfg.bg || null;
 
-    this._create(cfg);
+    this._make(cfg);
 
     this.emit("create", this, cfg);
   }

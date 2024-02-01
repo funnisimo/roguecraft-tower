@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import { CallbackFn, ObjCreateOpts, ObjEvents } from "../game/obj";
+import { CallbackFn, ObjMakeOpts, ObjEvents } from "../game/obj";
 import { Hero, HeroCreateOpts } from "./hero";
 import { Level } from "../level";
 import { Item } from "../item";

@@ -32,7 +32,7 @@ export class ActorFactory {
 
     this.apply(actor);
 
-    actor._create(opts);
+    actor._make(opts);
 
     actor.emit("create", actor, opts);
 

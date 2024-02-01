@@ -29,7 +29,7 @@ export class HeroFactory {
 
     this.apply(hero);
 
-    hero._create(opts);
+    hero._make(opts);
 
     hero.emit("create", hero, opts);
 
