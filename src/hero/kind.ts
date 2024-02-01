@@ -1,16 +1,16 @@
 import * as GWU from "gw-utils";
 import { CallbackFn, ObjMakeOpts, ObjEvents } from "../game/obj";
-import { Hero, HeroMakeOpts } from "./hero";
+import { Hero, HeroMakeOpts as HeroCreateOpts } from "./hero";
 import { Level } from "../level";
 import { Item } from "../item";
 import * as ACTOR from "../actor";
 import { SidebarEntry } from "../widgets";
 
-export type HeroCreateFn = (
+export type HeroCtorFn = (
   kind: HeroKind,
-  opts: HeroMakeOpts
+  opts: HeroCreateOpts
 ) => GWU.Option<Hero>;
-export type HeroMakeFn = (hero: Hero, opts: HeroMakeOpts) => void;
+export type HeroCreateFn = (hero: Hero, opts: HeroCreateOpts) => void;
 export type HeroSpawnFn = (level: Level, hero: Hero) => void;
 export type HeroDestroyFn = (level: Level, hero: Hero) => void;
 
@@ -25,8 +25,8 @@ export type HeroItemFn = (level: Level, hero: Hero, item: Item) => void;
 
 export interface HeroEvents {
   // bump?: (game: Game, hero: Hero, other: Hero) => void;
+  ctor?: HeroCtorFn;
   create?: HeroCreateFn;
-  make?: HeroMakeFn;
   destroy?: HeroDestroyFn; // Hero is destroyed (different from death?)
 
   add?: HeroSpawnFn; // Fired when an Hero is placed into the map at creation time

@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents, Game, EventFn } from "../game";
-import { LevelEvents, LevelKind, LevelMakeOpts, getKind } from "./kind";
+import { LevelEvents, LevelKind, LevelCreateOpts, getKind } from "./kind";
 import { Level } from "./level";
 
 export interface LevelPlugin extends LevelEvents {
@@ -16,27 +16,28 @@ export class LevelFactory {
     this.plugins.push(plugin);
   }
 
-  make(
+  create(
     game: Game,
     id: string | number,
     kind: LevelKind,
-    opts: LevelMakeOpts
+    opts: LevelCreateOpts
   ): Level {
     // Create the Item
     let out: GWU.Option<Level> = GWU.Option.None();
-    if (!!opts.on && opts.on.create) {
-      out = opts.on.create(game, id, kind, opts);
+    if (!!opts.on && opts.on.ctor) {
+      out = opts.on.ctor(game, id, kind, opts);
     }
     out = this.plugins.reduce((v, p) => {
-      if (v.isNone() && p.create) {
-        return p.create(game, id, kind, opts);
+      if (v.isNone() && p.ctor) {
+        return p.ctor(game, id, kind, opts);
       }
       return v;
     }, out);
     let level = out.unwrapOrElse(() => new Level(game, id, kind));
 
     this.apply(level);
-    level._make(kind, opts);
+    level._create(kind, opts);
+    level.emit("create", level, opts);
 
     return level;
   }
@@ -70,11 +71,11 @@ export function use(plugin: LevelEvents) {
   factory.use(plugin);
 }
 
-export function make(
+export function create(
   game: Game,
   id: string | number,
   kind: string | LevelKind,
-  opts: LevelMakeOpts
+  opts: LevelCreateOpts
 ): Level {
   if (typeof kind === "string") {
     const id = kind;
@@ -82,5 +83,5 @@ export function make(
     if (!kind) throw new Error("Failed to find LevelKind: " + id);
   }
 
-  return factory.make(game, id, kind, opts);
+  return factory.create(game, id, kind, opts);
 }

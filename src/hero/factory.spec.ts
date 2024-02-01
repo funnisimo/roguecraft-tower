@@ -10,7 +10,7 @@ describe("Hero", () => {
       id: "TEST",
     });
 
-    const hero = HERO.make(kind, { make: createFn });
+    const hero = HERO.create(kind, { create: createFn });
 
     expect(createFn).toHaveBeenCalledWith(hero, {
       create: createFn,
@@ -24,7 +24,7 @@ describe("Hero", () => {
       id: "TEST",
     });
 
-    const hero = HERO.make(kind, { on: { create: createFn } });
+    const hero = HERO.create(kind, { on: { create: createFn } });
 
     expect(createFn).toHaveBeenCalledWith(hero, {
       on: { create: createFn },
@@ -36,10 +36,10 @@ describe("Hero", () => {
 
     const kind = HERO.makeKind({
       id: "TEST",
-      on: { make: createFn },
+      on: { create: createFn },
     });
 
-    const hero = HERO.make(kind);
+    const hero = HERO.create(kind);
 
     expect(createFn).toHaveBeenCalledWith(hero, {});
   });
@@ -48,13 +48,13 @@ describe("Hero", () => {
     const createFn = jest.fn();
     const maker = new HERO.HeroFactory();
 
-    maker.use({ make: createFn });
+    maker.use({ create: createFn });
 
     const kind = HERO.makeKind({
       id: "TEST",
     });
 
-    const hero = maker.make(kind);
+    const hero = maker.create(kind);
 
     expect(createFn).toHaveBeenCalledWith(hero, {});
   });
@@ -66,15 +66,15 @@ describe("Hero", () => {
     const optsFn = jest.fn();
     const maker = new HERO.HeroFactory();
 
-    maker.use({ make: pluginFn });
-    maker.use({ on: { make: pluginFn2 } });
+    maker.use({ create: pluginFn });
+    maker.use({ on: { create: pluginFn2 } });
 
     const kind = HERO.makeKind({
       id: "TEST",
-      on: { make: kindFn },
+      on: { create: kindFn },
     });
 
-    const hero = maker.make(kind, { make: optsFn });
+    const hero = maker.create(kind, { create: optsFn });
 
     expect(pluginFn).toHaveBeenCalledWith(hero, { create: optsFn });
     expect(pluginFn2).toHaveBeenCalledWith(hero, { create: optsFn });
@@ -91,7 +91,7 @@ describe("Hero", () => {
       id: "TEST",
     });
 
-    const hero = maker.make(kind, {});
+    const hero = maker.create(kind, {});
 
     expect(hero.data).toMatchObject({
       apple: 1,

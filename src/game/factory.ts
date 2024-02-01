@@ -8,19 +8,19 @@ export class GameFactory {
     this.plugins.push(plugin);
   }
 
-  make(app: GWU.app.App, opts: GameOpts = {}): Game {
+  create(app: GWU.app.App, opts: GameOpts = {}): Game {
     let game: Game;
-    const makePlugin = this.plugins.find((p) => typeof p.create === "function");
+    const makePlugin = this.plugins.find((p) => typeof p.ctor === "function");
     if (makePlugin) {
-      game = makePlugin.create(app, opts);
+      game = makePlugin.ctor(app, opts);
     } else {
       game = new Game(app);
     }
 
     this.apply(game);
 
-    game._make(opts);
-    game.emit("make", game, opts);
+    game._create(opts);
+    game.emit("create", game, opts);
 
     globalThis.GAME = game;
 
@@ -46,7 +46,7 @@ export function use(plugin: GameEvents) {
   factory.use(plugin);
 }
 
-export function make(app: GWU.app.App, opts: GameOpts): Game {
-  const game = factory.make(app, opts);
+export function create(app: GWU.app.App, opts: GameOpts): Game {
+  const game = factory.create(app, opts);
   return game;
 }

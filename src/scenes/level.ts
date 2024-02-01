@@ -11,7 +11,7 @@ export const level = {
     this.bg = GWU.color.from("dark_gray");
     // const level = this;
 
-    // TODO - Get these sizes and locations dynamically
+    // TODO - Get these sizes and locations dynamically -- allow config in create opts somehow
     const sidebar = WIDGETS.sidebar(this, 60, 35);
     const flavor = WIDGETS.flavor(this, 0, 35);
     const messages = WIDGETS.messages(this, 36);
@@ -124,39 +124,6 @@ export const level = {
   },
 
   on: {
-    // dir(e) {
-    //   GAME.moveDir(this.data, this.data.player, e.dir);
-    // },
-    // a() {
-    //   GAME.attack(this.data, this.data.player);
-    // },
-    // z() {
-    //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
-    // },
-
-    // inventory(this: GWU.app.Scene) {
-    //   const level = this.data.level as Level;
-    //   const game = level.game;
-    //   const hero = game.hero;
-    //   const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
-    //   sidebar.setFocus(hero.x, hero.y);
-    // },
-
-    // win(this: GWU.app.Scene) {
-    //   const game = this.data.game as Game;
-    //   game.messages.confirmAll();
-
-    //   const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
-    //   if (this.data.level.depth === LAST_LEVEL) {
-    //     this.app.scenes.start("win", this.data);
-    //   } else {
-    //     this.app.scenes.start("reward", this.data);
-    //   }
-    // },
-    // lose(this: GWU.app.Scene) {
-    //   this.app.scenes.start("lose", this.data);
-    // },
-
     keypress(this: GWU.app.Scene, e: GWU.app.Event) {
       const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
       sidebar.clearFocus();
@@ -173,12 +140,5 @@ export const level = {
 
       e.stopPropagation();
     },
-
-    // click(this: GWU.app.Scene, e: GWU.app.Event) {
-    //   const level = this.data.level as Level;
-    //   const game = level.game;
-    //   game.inputQueue.enqueue(e.clone());
-    //   e.stopPropagation();
-    // },
   },
 };

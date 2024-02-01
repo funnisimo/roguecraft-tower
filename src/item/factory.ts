@@ -2,7 +2,7 @@ import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents } from "../game";
 import { Level } from "../level";
 import { Item } from "./item";
-import { ItemEvents, ItemKind, ItemMakeOpts, getKind, kinds } from "./kind";
+import { ItemEvents, ItemKind, ItemCreateOpts, getKind, kinds } from "./kind";
 
 export interface ItemPlugin extends ItemEvents {
   on?: ObjEvents; // give core events better type help?
@@ -16,15 +16,15 @@ export class ItemFactory {
     this.plugins.push(plugin);
   }
 
-  make(kind: ItemKind, opts: ItemMakeOpts = {}): Item {
+  create(kind: ItemKind, opts: ItemCreateOpts = {}): Item {
     // Create the Item
     let out: GWU.Option<Item> = GWU.Option.None();
-    if (opts.create) {
-      out = opts.create(kind, opts);
+    if (opts.ctor) {
+      out = opts.ctor(kind, opts);
     }
     out = this.plugins.reduce((v, p) => {
-      if (v.isNone() && p.create) {
-        return p.create(kind, opts);
+      if (v.isNone() && p.ctor) {
+        return p.ctor(kind, opts);
       }
       return v;
     }, out);
@@ -34,8 +34,8 @@ export class ItemFactory {
     this.apply(item);
 
     // finish making the item
-    item._make(opts);
-    item.emit("make", item, opts);
+    item._create(opts);
+    item.emit("create", item, opts);
 
     return item;
   }
@@ -69,14 +69,14 @@ export function use(plugin: ItemEvents) {
   factory.use(plugin);
 }
 
-export function make(id: string | ItemKind, opts: ItemMakeOpts = {}): Item {
+export function make(id: string | ItemKind, opts: ItemCreateOpts = {}): Item {
   let kind: ItemKind = typeof id === "string" ? getKind(id) : id;
 
   if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
     throw new Error("Invalid ItemKind: " + JSON.stringify(id));
   }
 
-  return factory.make(kind, opts);
+  return factory.create(kind, opts);
 }
 
 export type ItemCallback = (item: Item) => void;

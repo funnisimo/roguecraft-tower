@@ -12,7 +12,7 @@ import * as OBJ from "../game/obj";
 import { Game } from "../game/game";
 import { CallbackFn } from "../game/obj";
 import { Hero } from "../hero";
-import { LevelConfig, LevelKind, LevelMakeOpts, getKind } from "./kind";
+import { LevelConfig, LevelKind, LevelCreateOpts, getKind } from "./kind";
 import { factory } from "./factory";
 
 export class Level implements GWD.site.AnalysisSite {
@@ -97,7 +97,7 @@ export class Level implements GWD.site.AnalysisSite {
     return this.tiles.hasXY(x, y);
   }
 
-  _make(kind: LevelKind, opts: LevelMakeOpts) {
+  _create(kind: LevelKind, opts: LevelCreateOpts) {
     if (opts.seed) {
       this.seed = opts.seed;
     }
@@ -140,9 +140,6 @@ export class Level implements GWD.site.AnalysisSite {
         this.on(key, val);
       }
     });
-
-    // TODO - move to factory
-    this.emit("make", this, opts);
   }
 
   show() {

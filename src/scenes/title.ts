@@ -25,7 +25,7 @@ export const title = {
           const full_opts = GWU.utils.mergeDeep(this.app.data.start_opts, {
             seed,
           });
-          const game = GAME.make(this.app, full_opts);
+          const game = GAME.create(this.app, full_opts);
           const level = game.getLevel(game.start_level);
           level.show();
         }
@@ -43,7 +43,7 @@ export const title = {
     this.on("keypress", (e) => {
       // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
       const full_opts = GWU.utils.mergeDeep(this.app.data.start_opts, {});
-      const game = GAME.make(this.app, full_opts);
+      const game = GAME.create(this.app, full_opts);
       const level = game.getLevel(game.start_level);
       level.show();
       e.stopPropagation();

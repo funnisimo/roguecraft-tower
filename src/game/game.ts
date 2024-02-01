@@ -16,8 +16,8 @@ import { CommandFn } from "../command";
 export type EventFn = (level: Level, e: GWU.app.Event) => void;
 
 export interface GameEvents {
-  create?(app: GWU.app.App, opts: GameOpts): Game;
-  make?(game: Game, opts: GameOpts);
+  ctor?(app: GWU.app.App, opts: GameOpts): Game;
+  create?(game: Game, opts: GameOpts);
   // start - use create for things you want at game start time.
   destroy?(game: Game);
 }
@@ -25,7 +25,7 @@ export interface GameEvents {
 export interface GameOpts {
   seed?: number;
   levels?: {
-    [id: string]: string | (LEVEL.LevelMakeOpts & { kind: string });
+    [id: string]: string | (LEVEL.LevelCreateOpts & { kind: string });
   };
   keymap?: {
     [id: string]: string | CommandFn;
@@ -40,7 +40,7 @@ export class Game {
   app: GWU.app.App;
   // scene: GWU.app.Scene;
   level: LEVEL.Level;
-  levels: { [id: string]: LEVEL.LevelMakeOpts & { kind: string } };
+  levels: { [id: string]: LEVEL.LevelCreateOpts & { kind: string } };
   _levelObjs: { [id: string | number]: Level };
   start_level: string | number;
 
@@ -93,7 +93,7 @@ export class Game {
     this.events = new GWU.app.Events(this);
   }
 
-  _make(opts: GameOpts) {
+  _create(opts: GameOpts) {
     // SEED
     if (typeof opts.seed === "number" && opts.seed > 0) {
       this.seed = opts.seed;
@@ -149,12 +149,12 @@ export class Game {
     if (typeof hero_cfg === "string") {
       hero_cfg = { kind: hero_cfg };
     }
-    this.hero = HERO.make(hero_cfg.kind, hero_cfg);
+    this.hero = HERO.create(hero_cfg.kind, hero_cfg);
   }
 
   makeLevel(
     levelId: string | number,
-    opts: LEVEL.LevelMakeOpts & { kind?: string } = {}
+    opts: LEVEL.LevelCreateOpts & { kind?: string } = {}
   ): Level {
     let info = this.levels[levelId] ||
       this.levels["default"] || { kind: "DEFAULT" };
@@ -163,7 +163,7 @@ export class Game {
     }
 
     const config = GWU.utils.mergeDeep(info, opts);
-    const level = LEVEL.make(this, levelId, config.kind, config);
+    const level = LEVEL.create(this, levelId, config.kind, config);
     level.on("show", (level) => {
       this.level = level;
     });

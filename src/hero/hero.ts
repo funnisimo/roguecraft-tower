@@ -42,9 +42,9 @@ export class Hero extends ACTOR.Actor {
   }
 
   // @ts-ignore
-  _make(opts: HeroMakeOpts) {
+  _create(opts: HeroMakeOpts) {
     // @ts-ignore
-    super._make(opts);
+    super._create(opts);
 
     // this.on("add", (level: Level) => {
     //   this.updateMapToMe();

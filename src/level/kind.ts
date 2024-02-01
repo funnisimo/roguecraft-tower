@@ -4,20 +4,20 @@ import { Game, ObjEvents } from "../game";
 import * as HORDE from "../horde";
 import { Level } from "./level";
 
-export interface LevelMakeOpts extends Partial<LevelKindBase> {
+export interface LevelCreateOpts extends Partial<LevelKindBase> {
   [id: string]: any;
 }
 
 export interface LevelEvents {
-  create?: (
+  ctor?: (
     game: Game,
     id: string | number,
     kind: LevelKind,
-    opts: LevelMakeOpts
+    opts: LevelCreateOpts
   ) => GWU.Option<Level>;
-  make?: (level: Level, opts: LevelMakeOpts) => void;
+  create?: (level: Level, opts: LevelCreateOpts) => void;
 
-  // TODO - start & stop
+  // TODO - start & stop?
   show?: (level: Level, scene: GWU.app.Scene) => void;
   hide?: (level: Level) => void;
 

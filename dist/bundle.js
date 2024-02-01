@@ -8760,7 +8760,7 @@ void main() {
       }
   }
   const sprites = {};
-  function make$5$1(...args) {
+  function make$5(...args) {
       let ch = null, fg = -1, bg = -1, opacity;
       if (args.length == 0) {
           return new Sprite(null, -1, -1);
@@ -8823,12 +8823,12 @@ void main() {
               throw new Error('Failed to find sprite: ' + config);
           return sprite;
       }
-      return make$5$1(config);
+      return make$5(config);
   }
   function install$1$2(name, ...args) {
       let sprite;
       // @ts-ignore
-      sprite = make$5$1(...args);
+      sprite = make$5(...args);
       sprite.name = name;
       sprites[name] = sprite;
       return sprite;
@@ -8840,7 +8840,7 @@ void main() {
   	Sprite: Sprite,
   	from: from$1,
   	install: install$1$2,
-  	make: make$5$1,
+  	make: make$5,
   	makeMixer: makeMixer,
   	sprites: sprites
   });
@@ -9093,7 +9093,7 @@ void main() {
       const blob = new Blob(opts);
       return blob.carve(grid.width, grid.height, (x, y) => (grid[x][y] = 1));
   }
-  function make$4$1(opts = {}) {
+  function make$4(opts = {}) {
       return new Blob(opts);
   }
 
@@ -9101,7 +9101,7 @@ void main() {
   	__proto__: null,
   	Blob: Blob,
   	fillBlob: fillBlob,
-  	make: make$4$1
+  	make: make$4
   });
 
   // const LIGHT_SMOOTHING_THRESHOLD = 150;       // light components higher than this magnitude will be toned down a little
@@ -9195,7 +9195,7 @@ void main() {
   function isShadowLight(light, threshold = 40) {
       return intensity(light) <= threshold;
   }
-  function make$3$1(...args) {
+  function make$3(...args) {
       if (args.length == 1) {
           const config = args[0];
           if (typeof config === 'string') {
@@ -9235,15 +9235,15 @@ void main() {
       }
       if (arg && arg.paint)
           return arg;
-      return make$3$1(arg);
+      return make$3(arg);
   }
   function install$a(id, ...args) {
       let source;
       if (args.length == 1) {
-          source = make$3$1(args[0]);
+          source = make$3(args[0]);
       }
       else {
-          source = make$3$1(args[0], args[1], args[2], args[3]);
+          source = make$3(args[0], args[1], args[2], args[3]);
       }
       lights[id] = source;
       source.id = id;
@@ -9548,7 +9548,7 @@ void main() {
   	isDarkLight: isDarkLight,
   	isShadowLight: isShadowLight,
   	lights: lights,
-  	make: make$3$1
+  	make: make$3
   });
 
   // import * as IO from './io';
@@ -9933,10 +9933,10 @@ void main() {
           return madeChange;
       }
   }
-  function make$2$1(src, duration = 1000) {
+  function make$2(src, duration = 1000) {
       return new Tween(src).duration(duration);
   }
-  const move = make$2$1;
+  const move = make$2;
   function linear(pct) {
       return clamp(pct, 0, 1);
   }
@@ -9956,7 +9956,7 @@ void main() {
   	Tween: Tween,
   	interpolate: interpolate,
   	linear: linear,
-  	make: make$2$1,
+  	make: make$2,
   	move: move
   });
 
@@ -10591,7 +10591,6 @@ void main() {
           this.tweens.clear();
       }
       start(opts = {}) {
-          this.app.scenes.stop(); // stop all running scenes
           this.app.scenes._start(this, opts); // start me
           return this;
       }
@@ -10652,6 +10651,7 @@ void main() {
           if (e.defaultPrevented || e.propagationStopped)
               return;
           if (e.type === KEYPRESS) {
+              // TODO - check a flag that enables auto tabs
               let w = this.focused;
               if (w && (w.hidden || w.disabled)) {
                   this.nextTabStop();
@@ -10661,12 +10661,12 @@ void main() {
               if (w && !e.defaultPrevented) {
                   if (e.key === 'Tab') {
                       if (this.nextTabStop()) {
-                          e.stopPropagation(); // handled
+                          e.stopPropagation(); // should we do this?
                       }
                   }
                   else if (e.key === 'TAB') {
                       if (this.prevTabStop()) {
-                          e.stopPropagation(); // handled
+                          e.stopPropagation(); // should we do this?
                       }
                   }
               }
@@ -10739,7 +10739,7 @@ void main() {
           return this.fadeTo(widget, 0, ms);
       }
       fadeTo(widget, opacity, ms) {
-          const tween$1 = make$2$1({ pct: widget.style('opacity') })
+          const tween$1 = make$2({ pct: widget.style('opacity') })
               .to({ pct: opacity })
               .duration(ms)
               .onUpdate((info) => {
@@ -10784,7 +10784,7 @@ void main() {
           return this.slide(widget, widget.bounds, dest, ms);
       }
       slide(widget, from, to, ms) {
-          const tween$1 = make$2$1({ x: x(from), y: y(from) })
+          const tween$1 = make$2({ x: x(from), y: y(from) })
               .to({ x: x(to), y: y(to) })
               .duration(ms)
               .onUpdate((info) => {
@@ -11020,11 +11020,12 @@ void main() {
       // }
       start(id, opts) {
           let scene = this.get(id) || this.create(id, {});
-          scene.start(opts);
+          this._start(scene, opts);
           return scene;
       }
       _start(scene, opts = {}) {
           this._app.io.clear();
+          this.stop(); // stop all running scenes
           if (this.isBusy) {
               this._pending.push({ action: '_start', scene, data: opts });
           }
@@ -20358,7 +20359,7 @@ void main() {
       //   this._create(opts);
       //   this.emit("create", opts);
       // }
-      _make(cfg) {
+      _create(cfg) {
           this.x = cfg.x !== undefined ? cfg.x : this.x;
           this.y = cfg.y !== undefined ? cfg.y : this.y;
           this.z = cfg.z !== undefined ? cfg.z : this.z;
@@ -20398,16 +20399,16 @@ void main() {
           buf.drawSprite(this.x, this.y, this);
       }
   }
-  function make$5(cfg) {
+  function create$3(cfg) {
       const fx = new FX(cfg);
-      fx._make(cfg);
-      fx.emit("make", fx, cfg);
+      fx._create(cfg);
+      fx.emit("create", fx, cfg);
       return fx;
   }
   function flash(level, x, y, color = "white", ms = 300) {
       const scene = level.scene;
       scene.pause({ update: true });
-      const fx = make$5({ x, y, bg: color, z: 4 });
+      const fx = create$3({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       scene.needsDraw = true;
@@ -20425,7 +20426,7 @@ void main() {
   function flashGameTime(level, x, y, color = "white", ms = 300) {
       const scene = level.scene;
       const startTime = scene.app.time;
-      const fx = make$5({ x, y, bg: color, z: 4 });
+      const fx = create$3({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       // let _fail: CallbackFn = GWU.NOOP;
@@ -20477,7 +20478,7 @@ void main() {
       else if (sprite.ch && sprite.ch.length !== 1) {
           throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
       }
-      const fx = make$5(sprite);
+      const fx = create$3(sprite);
       // console.log("- fire", from, to);
       scene.pause({ update: true });
       const tween$1 = tween
@@ -20688,8 +20689,8 @@ void main() {
       //   this._create(opts);
       //   this.emit("create", this, opts);
       // }
-      _make(opts) {
-          super._make(opts);
+      _create(opts) {
+          super._create(opts);
           // install emit handlers for ItemEvents
           Object.entries(opts).forEach(([key, val]) => {
               if (typeof val === "function") {
@@ -20749,15 +20750,15 @@ void main() {
       use(plugin) {
           this.plugins.push(plugin);
       }
-      make(kind, opts = {}) {
+      create(kind, opts = {}) {
           // Create the Item
           let out = Option.None();
-          if (opts.create) {
-              out = opts.create(kind, opts);
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
           }
           out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.create) {
-                  return p.create(kind, opts);
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
               }
               return v;
           }, out);
@@ -20765,8 +20766,8 @@ void main() {
           // Update the item events/data
           this.apply(item);
           // finish making the item
-          item._make(opts);
-          item.emit("make", item, opts);
+          item._create(opts);
+          item.emit("create", item, opts);
           return item;
       }
       apply(item) {
@@ -20797,12 +20798,12 @@ void main() {
   function use$4(plugin) {
       factory$4.use(plugin);
   }
-  function make$4(id, opts = {}) {
+  function make$1(id, opts = {}) {
       let kind = typeof id === "string" ? getKind$3(id) : id;
       if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
           throw new Error("Invalid ItemKind: " + JSON.stringify(id));
       }
-      return factory$4.make(kind, opts);
+      return factory$4.create(kind, opts);
   }
   function place(level, x, y, id = null) {
       let newbie;
@@ -20810,7 +20811,7 @@ void main() {
           newbie = random$1(level); // TODO - default match?
       }
       else if (typeof id === "string") {
-          newbie = make$4(id);
+          newbie = make$1(id);
       }
       else {
           newbie = id;
@@ -20870,7 +20871,7 @@ void main() {
       if (index < 0)
           return null;
       const kind = allKinds[index];
-      const item = make$4(kind);
+      const item = make$1(kind);
       return item;
   }
 
@@ -21911,8 +21912,8 @@ void main() {
               this.on(key, val);
           });
       }
-      _make(opts) {
-          super._make(opts);
+      _create(opts) {
+          super._create(opts);
           Object.entries(opts).forEach(([key, val]) => {
               // 'on' section handled by super._make
               if (typeof val === "function") {
@@ -22224,21 +22225,21 @@ void main() {
       use(plugin) {
           this.plugins.push(plugin);
       }
-      make(kind, opts = {}) {
+      create(kind, opts = {}) {
           let out = Option.None();
-          if (opts.create) {
-              out = opts.create(kind, opts);
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
           }
           out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.create) {
-                  return p.create(kind, opts);
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
               }
               return v;
           }, out);
           let actor = out.unwrapOrElse(() => new Actor(kind));
           this.apply(actor);
-          actor._make(opts);
-          actor.emit("make", actor, opts);
+          actor._create(opts);
+          actor.emit("create", actor, opts);
           return actor;
       }
       apply(item) {
@@ -22271,7 +22272,7 @@ void main() {
   function use$3(plugin) {
       factory$3.use(plugin);
   }
-  function make$3(kind, config = {}) {
+  function create$2(kind, config = {}) {
       if (typeof kind === "string") {
           kind = getKind$2(kind);
           if (!kind)
@@ -22283,7 +22284,7 @@ void main() {
       if (kind.hero) {
           throw new Error("ActorKind is Hero: " + kind.id);
       }
-      return factory$3.make(kind, config);
+      return factory$3.create(kind, config);
   }
   function randomSpawnLocFor(level, actor) {
       let x;
@@ -22302,7 +22303,7 @@ void main() {
   }
   function spawn(level, id, // Should this be | ActorKind instead of | Actor?
   x, y) {
-      const newbie = typeof id === "string" ? make$3(id) : id;
+      const newbie = typeof id === "string" ? create$2(id) : id;
       if (x === undefined || y === undefined) {
           const loc = randomSpawnLocFor(level);
           if (loc.isNone()) {
@@ -22341,9 +22342,9 @@ void main() {
           // this.potion = this.potion_max; // Potion is ready
       }
       // @ts-ignore
-      _make(opts) {
+      _create(opts) {
           // @ts-ignore
-          super._make(opts);
+          super._create(opts);
           // this.on("add", (level: Level) => {
           //   this.updateMapToMe();
           //   this.updateFov();
@@ -22365,7 +22366,7 @@ void main() {
           // this.on("damage", () => this.clearGoal());
           // Need items in slots....
           Object.entries(this.kind.slots).forEach(([slot, id]) => {
-              const item = make$4(id);
+              const item = make$1(id);
               if (item === null) {
                   console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
               }
@@ -22578,21 +22579,21 @@ void main() {
       use(plugin) {
           this.plugins.push(plugin);
       }
-      make(kind, opts = {}) {
+      create(kind, opts = {}) {
           let out = Option.None();
-          if (opts.create) {
-              out = opts.create(kind, opts);
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
           }
           out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.create) {
-                  return p.create(kind, opts);
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
               }
               return v;
           }, out);
           let hero = out.unwrapOrElse(() => new Hero(kind));
           this.apply(hero);
-          hero._make(opts);
-          hero.emit("make", hero, opts);
+          hero._create(opts);
+          hero.emit("create", hero, opts);
           return hero;
       }
       apply(hero) {
@@ -22625,7 +22626,7 @@ void main() {
   function use$2(plugin) {
       factory$2.use(plugin);
   }
-  function make$2(kind, config = {}) {
+  function create$1(kind, config = {}) {
       if (typeof kind === "string") {
           kind = getKind$1(kind);
           if (!kind)
@@ -22637,7 +22638,7 @@ void main() {
       if (typeof config === "number") {
           config = { power: config };
       }
-      return factory$2.make(kind, config);
+      return factory$2.create(kind, config);
   }
 
   class Level {
@@ -22703,7 +22704,7 @@ void main() {
       hasXY(x, y) {
           return this.tiles.hasXY(x, y);
       }
-      _make(kind, opts) {
+      _create(kind, opts) {
           if (opts.seed) {
               this.seed = opts.seed;
           }
@@ -22743,8 +22744,6 @@ void main() {
                   this.on(key, val);
               }
           });
-          // TODO - move to factory
-          this.emit("make", this, opts);
       }
       show() {
           this.done = false;
@@ -23151,21 +23150,22 @@ void main() {
       use(plugin) {
           this.plugins.push(plugin);
       }
-      make(game, id, kind, opts) {
+      create(game, id, kind, opts) {
           // Create the Item
           let out = Option.None();
-          if (!!opts.on && opts.on.create) {
-              out = opts.on.create(game, id, kind, opts);
+          if (!!opts.on && opts.on.ctor) {
+              out = opts.on.ctor(game, id, kind, opts);
           }
           out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.create) {
-                  return p.create(game, id, kind, opts);
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(game, id, kind, opts);
               }
               return v;
           }, out);
           let level = out.unwrapOrElse(() => new Level(game, id, kind));
           this.apply(level);
-          level._make(kind, opts);
+          level._create(kind, opts);
+          level.emit("create", this, opts);
           return level;
       }
       apply(level) {
@@ -23196,14 +23196,14 @@ void main() {
   function use$1(plugin) {
       factory$1.use(plugin);
   }
-  function make$1(game, id, kind, opts) {
+  function make(game, id, kind, opts) {
       if (typeof kind === "string") {
           const id = kind;
           kind = getKind(id);
           if (!kind)
               throw new Error("Failed to find LevelKind: " + id);
       }
-      return factory$1.make(game, id, kind, opts);
+      return factory$1.create(game, id, kind, opts);
   }
 
   const Fl = flag.fl;
@@ -23298,7 +23298,7 @@ void main() {
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
-          const leader = make$3(leaderKind, {
+          const leader = create$2(leaderKind, {
               machineHome: opts.machine,
               power: opts.power,
           });
@@ -23357,7 +23357,7 @@ void main() {
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
-          const member = make$3(kind, {
+          const member = create$2(kind, {
               machineHome: opts.machine,
               power: opts.power,
           });
@@ -23565,7 +23565,7 @@ void main() {
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
       }
-      _make(opts) {
+      _create(opts) {
           // SEED
           if (typeof opts.seed === "number" && opts.seed > 0) {
               this.seed = opts.seed;
@@ -23613,7 +23613,7 @@ void main() {
           if (typeof hero_cfg === "string") {
               hero_cfg = { kind: hero_cfg };
           }
-          this.hero = make$2(hero_cfg.kind, hero_cfg);
+          this.hero = create$1(hero_cfg.kind, hero_cfg);
       }
       makeLevel(levelId, opts = {}) {
           let info = this.levels[levelId] ||
@@ -23622,7 +23622,7 @@ void main() {
               info = { kind: info };
           }
           const config = utils.mergeDeep(info, opts);
-          const level = make$1(this, levelId, config.kind, config);
+          const level = make(this, levelId, config.kind, config);
           level.on("show", (level) => {
               this.level = level;
           });
@@ -23758,18 +23758,18 @@ void main() {
       use(plugin) {
           this.plugins.push(plugin);
       }
-      make(app, opts = {}) {
+      create(app, opts = {}) {
           let game;
-          const makePlugin = this.plugins.find((p) => typeof p.create === "function");
+          const makePlugin = this.plugins.find((p) => typeof p.ctor === "function");
           if (makePlugin) {
-              game = makePlugin.create(app, opts);
+              game = makePlugin.ctor(app, opts);
           }
           else {
               game = new Game(app);
           }
           this.apply(game);
-          game._make(opts);
-          game.emit("make", game, opts);
+          game._create(opts);
+          game.emit("create", game, opts);
           globalThis.GAME = game;
           return game;
       }
@@ -23790,8 +23790,8 @@ void main() {
   function use(plugin) {
       factory.use(plugin);
   }
-  function make(app, opts) {
-      const game = factory.make(app, opts);
+  function create(app, opts) {
+      const game = factory.create(app, opts);
       return game;
   }
 
@@ -24068,7 +24068,7 @@ void main() {
       name: "layout_level",
       level: {
           // TODO - move size logic to plugin.makeKind()
-          create(game, id, kind, opts) {
+          ctor(game, id, kind, opts) {
               if (kind.layout || opts.layout) {
                   const opts_layout = opts.layout || {};
                   const kind_layout = kind.layout || {};
@@ -24092,7 +24092,7 @@ void main() {
               }
               return Option.None();
           },
-          make(level, opts) {
+          create(level, opts) {
               const opts_layout = opts.layout || {};
               const kind_layout = level.kind.layout || {};
               const data = opts_layout.data || kind_layout.data;
@@ -24122,7 +24122,7 @@ void main() {
   const dig_level = {
       name: "dig_level",
       level: {
-          make(level, opts) {
+          create(level, opts) {
               if (opts.dig === false)
                   return;
               if (opts.dig === undefined) {
@@ -25216,7 +25216,7 @@ void main() {
                       const full_opts = utils.mergeDeep(this.app.data.start_opts, {
                           seed,
                       });
-                      const game = make(this.app, full_opts);
+                      const game = create(this.app, full_opts);
                       const level = game.getLevel(game.start_level);
                       level.show();
                   }
@@ -25232,7 +25232,7 @@ void main() {
           this.on("keypress", (e) => {
               // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
               const full_opts = utils.mergeDeep(this.app.data.start_opts, {});
-              const game = make(this.app, full_opts);
+              const game = create(this.app, full_opts);
               const level = game.getLevel(game.start_level);
               level.show();
               e.stopPropagation();
@@ -25244,7 +25244,7 @@ void main() {
       create(opts) {
           this.bg = index$9.from("dark_gray");
           // const level = this;
-          // TODO - Get these sizes and locations dynamically
+          // TODO - Get these sizes and locations dynamically -- allow config in create opts somehow
           const sidebar$1 = sidebar(this, 60, 35);
           const flavor$1 = flavor(this, 0, 35);
           const messages$1 = messages(this, 36);
@@ -25351,35 +25351,6 @@ void main() {
           this.data.level.update(dt);
       },
       on: {
-          // dir(e) {
-          //   GAME.moveDir(this.data, this.data.player, e.dir);
-          // },
-          // a() {
-          //   GAME.attack(this.data, this.data.player);
-          // },
-          // z() {
-          //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
-          // },
-          // inventory(this: GWU.app.Scene) {
-          //   const level = this.data.level as Level;
-          //   const game = level.game;
-          //   const hero = game.hero;
-          //   const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
-          //   sidebar.setFocus(hero.x, hero.y);
-          // },
-          // win(this: GWU.app.Scene) {
-          //   const game = this.data.game as Game;
-          //   game.messages.confirmAll();
-          //   const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
-          //   if (this.data.level.depth === LAST_LEVEL) {
-          //     this.app.scenes.start("win", this.data);
-          //   } else {
-          //     this.app.scenes.start("reward", this.data);
-          //   }
-          // },
-          // lose(this: GWU.app.Scene) {
-          //   this.app.scenes.start("lose", this.data);
-          // },
           keypress(e) {
               const sidebar = this.get("SIDEBAR");
               sidebar.clearFocus();
@@ -25394,12 +25365,6 @@ void main() {
               }
               e.stopPropagation();
           },
-          // click(this: GWU.app.Scene, e: GWU.app.Event) {
-          //   const level = this.data.level as Level;
-          //   const game = level.game;
-          //   game.inputQueue.enqueue(e.clone());
-          //   e.stopPropagation();
-          // },
       },
   };
 
@@ -25846,12 +25811,12 @@ void main() {
   });
   install$2("potion", {
       game: {
-          make(game) {
+          create(game) {
               game.keymap["p"] = "potion";
           },
       },
       hero: {
-          make(hero, opts) {
+          create(hero, opts) {
               hero.data.potion_max = 40 * 100; // 40 moves
               hero.data.potion = hero.data.potion_max;
           },
@@ -26011,7 +25976,7 @@ void main() {
           scene: "level",
           dig: true,
           on: {
-              make(level, opts) {
+              create(level, opts) {
                   console.log("TOWER LEVEL CREATE");
                   const depth = (level.data.depth = parseInt(level.id.toString()));
                   if (level.kind.data.waves && level.kind.data.waves.length > 0) {
@@ -26109,6 +26074,7 @@ void main() {
                   }
               },
               lose(level, reason) {
+                  // TODO - Move to gameopts?
                   const game = level.game;
                   game.app.scenes.start("lose", {
                       depth: level.data.depth,
@@ -26138,7 +26104,7 @@ void main() {
           data: { LAST_LEVEL: 10 },
           levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",
           game: {
-              make(game, opts) {
+              create(game, opts) {
                   for (let i = 1; i <= game.data.LAST_LEVEL; ++i) {
                       const levelSeed = game.rng.number(100000);
                       game.seeds[i] = levelSeed;

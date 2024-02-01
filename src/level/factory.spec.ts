@@ -3,6 +3,7 @@ import "jest-extended";
 import "../tile";
 import * as LEVEL from ".";
 import { Game } from "../game";
+import * as PLUGINS from "../plugins";
 
 describe("Level", () => {
   test("make w/ opts.on.create", () => {
@@ -28,12 +29,15 @@ describe("Level", () => {
       },
     });
 
+    const factory = new LEVEL.LevelFactory();
+    factory.use(PLUGINS.dig_level.level);
+
     // TODO - Figure out how to set 'start' location in opts so that the stairs match
     const opts = {
       on: { create: createFn },
       seed: 12345,
     };
-    const level = LEVEL.make(game, 1, kind, opts);
+    const level = factory.create(game, 1, kind, opts);
 
     expect(createFn).toHaveBeenCalledWith(level, opts);
     expect(level.locations).toMatchObject({
@@ -54,14 +58,18 @@ describe("Level", () => {
       id: "TEST",
       width: 30,
       height: 20,
-      on: { make: createFn },
+      dig: true,
+      on: { create: createFn },
     });
+
+    const factory = new LEVEL.LevelFactory();
+    factory.use(PLUGINS.dig_level.level);
 
     // TODO - Figure out how to set 'start' location in opts so that the stairs match
     const opts = {
       seed: 12345,
     };
-    const level = LEVEL.make(game, 1, kind, opts);
+    const level = factory.create(game, 1, kind, opts);
 
     expect(createFn).toHaveBeenCalledWith(level, opts);
     expect(level.locations).toMatchObject({

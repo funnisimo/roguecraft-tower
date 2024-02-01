@@ -12,7 +12,7 @@ import "./potion";
 import "./enchants";
 import * as GAME from "./game";
 import * as FX from "./fx";
-import { install as installLevel, Level, LevelMakeOpts } from "./level";
+import { install as installLevel, Level, LevelCreateOpts } from "./level";
 import * as ACTOR from "./actor";
 import * as HORDE from "./horde";
 
@@ -30,7 +30,7 @@ function start() {
     scene: "level",
     dig: true,
     on: {
-      make(level: Level, opts: LevelMakeOpts) {
+      create(level: Level, opts: LevelCreateOpts) {
         console.log("TOWER LEVEL CREATE");
         const depth = (level.data.depth = parseInt(level.id.toString()));
 
@@ -134,6 +134,7 @@ function start() {
         }
       },
       lose(level: Level, reason: string) {
+        // TODO - Move to gameopts?
         const game = level.game;
         game.app.scenes.start("lose", {
           depth: level.data.depth,
@@ -166,7 +167,7 @@ function start() {
     data: { LAST_LEVEL: 10 },
     levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",
     game: {
-      make(game: GAME.Game, opts: GAME.GameOpts) {
+      create(game: GAME.Game, opts: GAME.GameOpts) {
         for (let i = 1; i <= game.data.LAST_LEVEL; ++i) {
           const levelSeed = game.rng.number(100000);
           game.seeds[i] = levelSeed;

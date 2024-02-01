@@ -1,6 +1,6 @@
 import * as GWU from "gw-utils";
 import { Game } from "../game/game";
-import { FX, flash, make } from "./flash";
+import { FX, flash, create } from "./flash";
 import { CallbackFn } from "../game/obj";
 import { Level } from "../level";
 
@@ -43,7 +43,7 @@ export function projectile(
     );
   }
 
-  const fx = make(sprite);
+  const fx = create(sprite);
 
   // console.log("- fire", from, to);
 

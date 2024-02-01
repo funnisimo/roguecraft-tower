@@ -4,68 +4,68 @@ import * as ITEM from ".";
 
 describe("Item", () => {
   test("make w/ opts.create", () => {
-    const makeFn = jest.fn();
+    const createFn = jest.fn();
 
     const kind = ITEM.makeKind({
       id: "TEST",
     });
 
-    const item = ITEM.make(kind, { make: makeFn });
+    const item = ITEM.make(kind, { create: createFn });
 
-    expect(makeFn).toHaveBeenCalledWith(item, { make: makeFn });
+    expect(createFn).toHaveBeenCalledWith(item, { create: createFn });
   });
 
   test("make w/ opts.on.create", () => {
-    const makeFn = jest.fn();
+    const createFn = jest.fn();
 
     const kind = ITEM.makeKind({
       id: "TEST",
     });
 
-    const item = ITEM.make(kind, { on: { make: makeFn } });
+    const item = ITEM.make(kind, { on: { create: createFn } });
 
-    expect(makeFn).toHaveBeenCalledWith(item, { on: { make: makeFn } });
+    expect(createFn).toHaveBeenCalledWith(item, { on: { create: createFn } });
   });
 
   test("make w/ kind.on.create", () => {
-    const makeFn = jest.fn();
+    const createFn = jest.fn();
 
     const kind = ITEM.makeKind({
       id: "TEST",
-      on: { make: makeFn },
+      on: { create: createFn },
     });
 
     const item = ITEM.make(kind);
 
-    expect(makeFn).toHaveBeenCalledWith(item, {});
+    expect(createFn).toHaveBeenCalledWith(item, {});
   });
 
   test("make w/ kind.on.create", () => {
-    const makeFn = jest.fn();
+    const createFn = jest.fn();
 
     const kind = ITEM.makeKind({
       id: "TEST",
-      on: { make: makeFn },
+      on: { create: createFn },
     });
 
     const item = ITEM.make(kind);
 
-    expect(makeFn).toHaveBeenCalledWith(item, {});
+    expect(createFn).toHaveBeenCalledWith(item, {});
   });
 
   test("make w/ plugin.create", () => {
-    const makeFn = jest.fn();
+    const createFn = jest.fn();
     const maker = new ITEM.ItemFactory();
 
-    maker.use({ make: makeFn });
+    maker.use({ create: createFn });
 
     const kind = ITEM.makeKind({
       id: "TEST",
     });
 
-    const item = maker.make(kind);
+    const item = maker.create(kind);
 
-    expect(makeFn).toHaveBeenCalledWith(item, {});
+    expect(createFn).toHaveBeenCalledWith(item, {});
   });
 
   test("make w/ 2 plugins & kind & opts", () => {
@@ -75,27 +75,27 @@ describe("Item", () => {
     const optsFn = jest.fn();
     const maker = new ITEM.ItemFactory();
 
-    maker.use({ make: pluginFn });
-    maker.use({ on: { make: pluginFn2 } });
+    maker.use({ create: pluginFn });
+    maker.use({ on: { create: pluginFn2 } });
 
     const kind = ITEM.makeKind({
       id: "TEST",
-      on: { make: kindFn },
+      on: { create: kindFn },
     });
 
-    const item = maker.make(kind, { make: optsFn });
+    const item = maker.create(kind, { create: optsFn });
 
-    expect(pluginFn).toHaveBeenCalledWith(item, { make: optsFn });
-    expect(pluginFn2).toHaveBeenCalledWith(item, { make: optsFn });
-    expect(kindFn).toHaveBeenCalledWith(item, { make: optsFn });
-    expect(optsFn).toHaveBeenCalledWith(item, { make: optsFn });
+    expect(pluginFn).toHaveBeenCalledWith(item, { create: optsFn });
+    expect(pluginFn2).toHaveBeenCalledWith(item, { create: optsFn });
+    expect(kindFn).toHaveBeenCalledWith(item, { create: optsFn });
+    expect(optsFn).toHaveBeenCalledWith(item, { create: optsFn });
   });
 
   test("set data", () => {
     const maker = new ITEM.ItemFactory();
 
     maker.use({
-      make(item) {
+      create(item) {
         item.data = GWU.utils.mergeDeep(item.data, {
           apple: 1,
           banana: "two",
@@ -108,7 +108,7 @@ describe("Item", () => {
       id: "TEST",
     });
 
-    const item = maker.make(kind, {});
+    const item = maker.create(kind, {});
 
     expect(item.data).toMatchObject({
       apple: 1,

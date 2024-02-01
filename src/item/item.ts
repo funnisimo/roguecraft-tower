@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import { ItemKind, ItemMakeOpts } from "./kind";
+import { ItemKind, ItemCreateOpts } from "./kind";
 import { Obj } from "../game/obj";
 
 export class Item extends Obj {
@@ -34,8 +34,8 @@ export class Item extends Obj {
   //   this.emit("create", this, opts);
   // }
 
-  _make(opts: ItemMakeOpts) {
-    super._make(opts);
+  _create(opts: ItemCreateOpts) {
+    super._create(opts);
 
     // install emit handlers for ItemEvents
     Object.entries(opts).forEach(([key, val]) => {

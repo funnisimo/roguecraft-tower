@@ -33,7 +33,7 @@ export class Obj {
   //   this.emit("create", opts);
   // }
 
-  _make(cfg: ObjMakeOpts) {
+  _create(cfg: ObjMakeOpts) {
     this.x = cfg.x !== undefined ? cfg.x : this.x;
     this.y = cfg.y !== undefined ? cfg.y : this.y;
     this.z = cfg.z !== undefined ? cfg.z : this.z;

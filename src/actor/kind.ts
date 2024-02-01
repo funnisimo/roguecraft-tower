@@ -1,15 +1,15 @@
 import * as GWU from "gw-utils";
 import { CallbackFn, ObjMakeOpts, ObjEvents } from "../game/obj";
-import { Actor, ActorMakeOpts } from "./actor";
+import { Actor, ActorMakeOpts as ActorCreateOpts } from "./actor";
 import { Level } from "../level";
 import { Item } from "../item";
 import { SidebarEntry } from "../widgets";
 
-export type ActorCreateFn = (
+export type ActorCtorFn = (
   kind: ActorKind,
-  opts: ActorMakeOpts
+  opts: ActorCreateOpts
 ) => GWU.Option<Actor>;
-export type ActorMakeFn = (actor: Actor, opts: ActorMakeOpts) => void;
+export type ActorCreateFn = (actor: Actor, opts: ActorCreateOpts) => void;
 export type ActorSpawnFn = (level: Level, actor: Actor) => void;
 export type ActorDestroyFn = (level: Level, actor: Actor) => void;
 
@@ -24,8 +24,8 @@ export type ActorItemFn = (level: Level, actor: Actor, item: Item) => void;
 
 export interface ActorEvents {
   // bump?: (game: Game, actor: Actor, other: Actor) => void;
+  ctor?: ActorCtorFn;
   create?: ActorCreateFn;
-  make?: ActorMakeFn;
   destroy?: ActorDestroyFn; // Actor is destroyed (different from death?)
 
   add?: ActorSpawnFn; // Fired when an Actor is placed into the map at creation time

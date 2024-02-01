@@ -38,12 +38,12 @@ ACTIONS.install("potion", (level: Level, actor: Actor): boolean => {
 
 install("potion", {
   game: {
-    make(game: Game) {
+    create(game: Game) {
       game.keymap["p"] = "potion";
     },
   },
   hero: {
-    make(hero: Hero, opts: HeroMakeOpts) {
+    create(hero: Hero, opts: HeroMakeOpts) {
       hero.data.potion_max = 40 * 100; // 40 moves
       hero.data.potion = hero.data.potion_max;
     },

@@ -1,7 +1,7 @@
 import * as GWD from "gw-dig";
 import * as GWU from "gw-utils";
 import * as PLUGINS from "../game/plugins";
-import { Level, LevelKind, LevelMakeOpts } from "../level";
+import { Level, LevelKind, LevelCreateOpts } from "../level";
 import * as ACTIONS from "../action";
 import * as TILE from "../tile";
 import { Game } from "../game";
@@ -148,7 +148,7 @@ declare module "../level" {
     dig?: boolean | GWD.DiggerOptions;
   }
 
-  interface LevelMakeOpts {
+  interface LevelCreateOpts {
     layout?: Partial<LayoutData>;
     dig?: boolean | GWD.DiggerOptions;
   }
@@ -158,11 +158,11 @@ export const layout_level: PLUGINS.Plugin = {
   name: "layout_level",
   level: {
     // TODO - move size logic to plugin.makeKind()
-    create(
+    ctor(
       game: Game,
       id: string | number,
       kind: LevelKind,
-      opts: LevelMakeOpts
+      opts: LevelCreateOpts
     ) {
       if (kind.layout || opts.layout) {
         const opts_layout: Partial<LayoutData> = opts.layout || {};
@@ -191,7 +191,7 @@ export const layout_level: PLUGINS.Plugin = {
       }
       return GWU.Option.None();
     },
-    make(level: Level, opts: LevelMakeOpts) {
+    create(level: Level, opts: LevelCreateOpts) {
       const opts_layout: Partial<LayoutData> = opts.layout || {};
       const kind_layout: Partial<LayoutData> = level.kind.layout || {};
 
@@ -231,7 +231,7 @@ export function loadLevel(
 export const dig_level: PLUGINS.Plugin = {
   name: "dig_level",
   level: {
-    make(level: Level, opts: LevelMakeOpts) {
+    create(level: Level, opts: LevelCreateOpts) {
       if (opts.dig === false) return;
 
       if (opts.dig === undefined) {

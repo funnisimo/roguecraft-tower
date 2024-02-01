@@ -138,7 +138,7 @@ export class Horde {
       throw new Error("Failed to find leader kind = " + this.leader);
     }
 
-    const leader = ACTOR.make(leaderKind, {
+    const leader = ACTOR.create(leaderKind, {
       machineHome: opts.machine,
       power: opts.power,
     });
@@ -230,7 +230,7 @@ export class Horde {
       throw new Error("Failed to find member kind = " + kindId);
     }
 
-    const member = ACTOR.make(kind, {
+    const member = ACTOR.create(kind, {
       machineHome: opts.machine,
       power: opts.power,
     });

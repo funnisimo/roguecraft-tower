@@ -61,8 +61,8 @@ export class Actor extends Obj {
     });
   }
 
-  _make(opts: ActorMakeOpts) {
-    super._make(opts);
+  _create(opts: ActorMakeOpts) {
+    super._create(opts);
 
     Object.entries(opts).forEach(([key, val]) => {
       // 'on' section handled by super._make

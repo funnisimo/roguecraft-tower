@@ -17,14 +17,14 @@ export class ActorFactory {
     this.plugins.push(plugin);
   }
 
-  make(kind: ActorKind, opts: ActorMakeOpts = {}): Actor {
+  create(kind: ActorKind, opts: ActorMakeOpts = {}): Actor {
     let out: GWU.Option<Actor> = GWU.Option.None();
-    if (opts.create) {
-      out = opts.create(kind, opts);
+    if (opts.ctor) {
+      out = opts.ctor(kind, opts);
     }
     out = this.plugins.reduce((v, p) => {
-      if (v.isNone() && p.create) {
-        return p.create(kind, opts);
+      if (v.isNone() && p.ctor) {
+        return p.ctor(kind, opts);
       }
       return v;
     }, out);
@@ -32,8 +32,8 @@ export class ActorFactory {
 
     this.apply(actor);
 
-    actor._make(opts);
-    actor.emit("make", actor, opts);
+    actor._create(opts);
+    actor.emit("create", actor, opts);
 
     return actor;
   }
@@ -67,7 +67,7 @@ export function use(plugin: ActorPlugin) {
   factory.use(plugin);
 }
 
-export function make(
+export function create(
   kind: ActorKind | string,
   config: ActorMakeOpts | number = {}
 ): Actor {
@@ -83,7 +83,7 @@ export function make(
     throw new Error("ActorKind is Hero: " + kind.id);
   }
 
-  return factory.make(kind, config);
+  return factory.create(kind, config);
 }
 
 export type ActorCallback = (actor: Actor) => void;
@@ -119,7 +119,7 @@ export function flash_spawn(
   y?: number,
   ms = 300
 ): ThenActor {
-  const newbie = typeof id === "string" ? make(id) : id;
+  const newbie = typeof id === "string" ? create(id) : id;
 
   // TODO - assert game && scene exist
 
@@ -162,7 +162,7 @@ export function spawn(
   x?: number,
   y?: number
 ): Actor {
-  const newbie = typeof id === "string" ? make(id) : id;
+  const newbie = typeof id === "string" ? create(id) : id;
 
   if (x === undefined || y === undefined) {
     const loc = randomSpawnLocFor(level, newbie);

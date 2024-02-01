@@ -10,7 +10,7 @@ describe("Actor", () => {
       id: "TEST",
     });
 
-    const actor = ACTOR.make(kind, { make: createFn });
+    const actor = ACTOR.create(kind, { create: createFn });
 
     expect(createFn).toHaveBeenCalledWith(actor, {
       create: createFn,
@@ -24,7 +24,7 @@ describe("Actor", () => {
       id: "TEST",
     });
 
-    const actor = ACTOR.make(kind, { on: { create: createFn } });
+    const actor = ACTOR.create(kind, { on: { create: createFn } });
 
     expect(createFn).toHaveBeenCalledWith(actor, {
       on: { create: createFn },
@@ -36,10 +36,10 @@ describe("Actor", () => {
 
     const kind = ACTOR.makeKind({
       id: "TEST",
-      on: { make: createFn },
+      on: { create: createFn },
     });
 
-    const actor = ACTOR.make(kind);
+    const actor = ACTOR.create(kind);
 
     expect(createFn).toHaveBeenCalledWith(actor, {});
   });
@@ -48,13 +48,13 @@ describe("Actor", () => {
     const createFn = jest.fn();
     const maker = new ACTOR.ActorFactory();
 
-    maker.use({ make: createFn });
+    maker.use({ create: createFn });
 
     const kind = ACTOR.makeKind({
       id: "TEST",
     });
 
-    const actor = maker.make(kind);
+    const actor = maker.create(kind);
 
     expect(createFn).toHaveBeenCalledWith(actor, {});
   });
@@ -66,15 +66,15 @@ describe("Actor", () => {
     const optsFn = jest.fn();
     const maker = new ACTOR.ActorFactory();
 
-    maker.use({ make: pluginFn });
-    maker.use({ on: { make: pluginFn2 } });
+    maker.use({ create: pluginFn });
+    maker.use({ on: { create: pluginFn2 } });
 
     const kind = ACTOR.makeKind({
       id: "TEST",
-      on: { make: kindFn },
+      on: { create: kindFn },
     });
 
-    const actor = maker.make(kind, { make: optsFn });
+    const actor = maker.create(kind, { create: optsFn });
 
     expect(pluginFn).toHaveBeenCalledWith(actor, { create: optsFn });
     expect(pluginFn2).toHaveBeenCalledWith(actor, { create: optsFn });
@@ -91,7 +91,7 @@ describe("Actor", () => {
       id: "TEST",
     });
 
-    const actor = maker.make(kind, {});
+    const actor = maker.create(kind, {});
 
     expect(actor.data).toMatchObject({
       apple: 1,

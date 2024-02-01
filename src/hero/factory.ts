@@ -15,14 +15,14 @@ export class HeroFactory {
     this.plugins.push(plugin);
   }
 
-  make(kind: HeroKind, opts: HeroMakeOpts = {}): Hero {
+  create(kind: HeroKind, opts: HeroMakeOpts = {}): Hero {
     let out: GWU.Option<Hero> = GWU.Option.None();
-    if (opts.create) {
-      out = opts.create(kind, opts);
+    if (opts.ctor) {
+      out = opts.ctor(kind, opts);
     }
     out = this.plugins.reduce((v, p) => {
-      if (v.isNone() && p.create) {
-        return p.create(kind, opts);
+      if (v.isNone() && p.ctor) {
+        return p.ctor(kind, opts);
       }
       return v;
     }, out);
@@ -30,8 +30,8 @@ export class HeroFactory {
 
     this.apply(hero);
 
-    hero._make(opts);
-    hero.emit("make", hero, opts);
+    hero._create(opts);
+    hero.emit("create", hero, opts);
 
     return hero;
   }
@@ -65,7 +65,7 @@ export function use(plugin: HeroPlugin) {
   factory.use(plugin);
 }
 
-export function make(
+export function create(
   kind: HeroKind | string,
   config: HeroMakeOpts | number = {}
 ): Hero {
@@ -80,5 +80,5 @@ export function make(
     config = { power: config };
   }
 
-  return factory.make(kind, config);
+  return factory.create(kind, config);
 }

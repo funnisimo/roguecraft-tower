@@ -7,17 +7,17 @@ import { EffectConfig } from "../effect";
 import { Level } from "../level";
 import { SidebarEntry } from "../widgets";
 
-export interface ItemMakeOpts extends ObjMakeOpts, ItemEvents {
+export interface ItemCreateOpts extends ObjMakeOpts, ItemEvents {
   power?: number;
   on?: ObjEvents; // give core events better type help?
   data?: Record<string, string>;
 }
 
-export type ItemCreateFn = (
+export type ItemCtorFn = (
   kind: ItemKind,
-  opts: ItemMakeOpts
+  opts: ItemCreateOpts
 ) => GWU.Option<Item>;
-export type ItemMakeFn = (item: Item, opts: ItemMakeOpts) => void;
+export type ItemCreateFn = (item: Item, opts: ItemCreateOpts) => void;
 export type ItemSpawnFn = (level: Level, item: Item) => void;
 export type ItemDestroyFn = (level: Level, item: Item) => void;
 
@@ -32,8 +32,8 @@ export type ItemActionFn = (level: Level, item: Item, actor: Actor) => void;
 export type ItemSidebarFn = (item: Item, entry: SidebarEntry) => void;
 
 export interface ItemEvents {
+  ctor?: ItemCtorFn;
   create?: ItemCreateFn;
-  make?: ItemMakeFn;
   destroy?: ItemDestroyFn; // Item is destroyed
 
   add?: ItemSpawnFn; // Fired when an item is placed into a level

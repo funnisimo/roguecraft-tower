@@ -26,10 +26,10 @@ export class FX extends Obj {
   }
 }
 
-export function make(cfg: FXConfig): FX {
+export function create(cfg: FXConfig): FX {
   const fx = new FX(cfg);
-  fx._make(cfg);
-  fx.emit("make", fx, cfg);
+  fx._create(cfg);
+  fx.emit("create", fx, cfg);
   return fx;
 }
 
@@ -43,7 +43,7 @@ export function flash(
   const scene = level.scene;
   scene.pause({ update: true });
 
-  const fx = make({ x, y, bg: color, z: 4 });
+  const fx = create({ x, y, bg: color, z: 4 });
   level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
@@ -73,7 +73,7 @@ export function flashGameTime(
 
   const startTime = scene.app.time;
 
-  const fx = make({ x, y, bg: color, z: 4 });
+  const fx = create({ x, y, bg: color, z: 4 });
   level.addFx(fx);
 
   let _success: CallbackFn = GWU.NOOP;
