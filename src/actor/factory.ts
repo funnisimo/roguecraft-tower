@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents } from "../game";
 import { Level } from "../level";
-import { ActorCreateOpts, Actor } from "./actor";
+import { ActorMakeOpts, Actor } from "./actor";
 import { ActorEvents, ActorKind, getKind } from "./kind";
 import * as FX from "../fx";
 
@@ -17,7 +17,7 @@ export class ActorFactory {
     this.plugins.push(plugin);
   }
 
-  make(kind: ActorKind, opts: ActorCreateOpts = {}): Actor {
+  make(kind: ActorKind, opts: ActorMakeOpts = {}): Actor {
     let actor: Actor;
     if (opts.make) {
       actor = opts.make(kind, opts);
@@ -70,7 +70,7 @@ export function use(plugin: ActorPlugin) {
 
 export function make(
   kind: ActorKind | string,
-  config: ActorCreateOpts | number = {}
+  config: ActorMakeOpts | number = {}
 ): Actor {
   if (typeof kind === "string") {
     kind = getKind(kind);

@@ -5,6 +5,52 @@ import { Level, LevelKind, LevelMakeOpts } from "../level";
 import * as ACTIONS from "../action";
 import * as TILE from "../tile";
 import { Game } from "../game";
+import { Actor } from "../actor";
+import { Hero } from "../hero";
+
+export const level: PLUGINS.Plugin = {
+  name: "level",
+  actor: {
+    add(level: Level, actor: Actor) {
+      level.scheduler.push(actor, actor.kind.moveSpeed);
+      actor._level = level;
+    },
+    remove(level: Level, actor: Actor) {
+      level.scheduler.remove(actor);
+      actor._level = null;
+    },
+  },
+  hero: {
+    add(level: Level, actor: Hero) {
+      level.scheduler.push(actor, actor.kind.moveSpeed);
+      actor._level = level;
+    },
+    remove(level: Level, actor: Hero) {
+      level.scheduler.remove(actor);
+      actor._level = null;
+    },
+  },
+  level: {
+    tick(level: Level, dt: number) {
+      if (!level.started) return;
+
+      // tick actors
+      level.actors.forEach((a) => {
+        // TODO - check if alive?
+        a.tick(this, dt);
+      });
+
+      // tick tiles
+      level.tiles.forEach((index, x, y) => {
+        const tile = TILE.tilesByIndex[index];
+        if (tile.on && tile.on.tick) {
+          tile.on.tick.call(tile, level, x, y, dt);
+        }
+      });
+    },
+  },
+};
+PLUGINS.install(level);
 
 export const turn_based: PLUGINS.Plugin = {
   name: "turn_based",
@@ -83,30 +129,6 @@ export const turn_based: PLUGINS.Plugin = {
   },
 };
 PLUGINS.install(turn_based);
-
-export const level: PLUGINS.Plugin = {
-  name: "level",
-  level: {
-    tick(level: Level, dt: number) {
-      if (!level.started) return;
-
-      // tick actors
-      level.actors.forEach((a) => {
-        // TODO - check if alive?
-        a.tick(this, dt);
-      });
-
-      // tick tiles
-      level.tiles.forEach((index, x, y) => {
-        const tile = TILE.tilesByIndex[index];
-        if (tile.on && tile.on.tick) {
-          tile.on.tick.call(tile, level, x, y, dt);
-        }
-      });
-    },
-  },
-};
-PLUGINS.install(level);
 
 export interface LayoutData {
   data: string[];

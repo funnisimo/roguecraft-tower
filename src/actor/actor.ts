@@ -15,10 +15,10 @@ import { SidebarEntry } from "../widgets";
 import { Hero } from "../hero/hero";
 import { factory } from "./factory";
 
-export interface ActorCreateOpts extends ObjMakeOpts, ActorEvents {
+export interface ActorMakeOpts extends ObjMakeOpts, ActorEvents {
   power?: number;
   machineHome?: number;
-  on?: ActorEvents & ObjEvents;
+  on?: ObjEvents;
 }
 
 export class AttackInfo {
@@ -62,36 +62,11 @@ export class Actor extends Obj {
     });
   }
 
-  _make(opts: ActorCreateOpts) {
+  _make(opts: ActorMakeOpts) {
     super._make(opts);
 
-    this.on("add", (level: Level) => {
-      level.scheduler.push(this, this.kind.moveSpeed);
-      this._level = level;
-    });
-    this.on("destroy", (level: Level) => {
-      // console.group("ACTOR REMOVE", this);
-      // console.group("before");
-      // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-      // console.groupEnd();
-      level.scheduler.remove(this);
-      this._level = null;
-      // console.group("after");
-      // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-      // console.groupEnd();
-      // console.groupEnd();
-    });
-    this.on("death", () => {
-      if (
-        this.kind.dropChance &&
-        this._level!.rng.chance(this.kind.dropChance)
-      ) {
-        placeRandom(this._level!, this.x, this.y, this.kind.dropMatch);
-      }
-    });
-
-    // install emit handlers for ItemEvents
     Object.entries(opts).forEach(([key, val]) => {
+      // 'on' section handled by super._make
       if (typeof val === "function") {
         this.on(key, val);
       }

@@ -21908,30 +21908,8 @@ void main() {
       }
       _make(opts) {
           super._make(opts);
-          this.on("add", (level) => {
-              level.scheduler.push(this, this.kind.moveSpeed);
-              this._level = level;
-          });
-          this.on("destroy", (level) => {
-              // console.group("ACTOR REMOVE", this);
-              // console.group("before");
-              // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-              // console.groupEnd();
-              level.scheduler.remove(this);
-              this._level = null;
-              // console.group("after");
-              // GWU.list.forEach(game.scheduler.next, (i) => console.log(i.item));
-              // console.groupEnd();
-              // console.groupEnd();
-          });
-          this.on("death", () => {
-              if (this.kind.dropChance &&
-                  this._level.rng.chance(this.kind.dropChance)) {
-                  placeRandom(this._level, this.x, this.y, this.kind.dropMatch);
-              }
-          });
-          // install emit handlers for ItemEvents
           Object.entries(opts).forEach(([key, val]) => {
+              // 'on' section handled by super._make
               if (typeof val === "function") {
                   this.on(key, val);
               }
@@ -23967,6 +23945,48 @@ void main() {
   };
   install$1(item);
 
+  const level$1 = {
+      name: "level",
+      actor: {
+          add(level, actor) {
+              level.scheduler.push(actor, actor.kind.moveSpeed);
+              actor._level = level;
+          },
+          remove(level, actor) {
+              level.scheduler.remove(actor);
+              actor._level = null;
+          },
+      },
+      hero: {
+          add(level, actor) {
+              level.scheduler.push(actor, actor.kind.moveSpeed);
+              actor._level = level;
+          },
+          remove(level, actor) {
+              level.scheduler.remove(actor);
+              actor._level = null;
+          },
+      },
+      level: {
+          tick(level, dt) {
+              if (!level.started)
+                  return;
+              // tick actors
+              level.actors.forEach((a) => {
+                  // TODO - check if alive?
+                  a.tick(this, dt);
+              });
+              // tick tiles
+              level.tiles.forEach((index, x, y) => {
+                  const tile = tilesByIndex[index];
+                  if (tile.on && tile.on.tick) {
+                      tile.on.tick.call(tile, level, x, y, dt);
+                  }
+              });
+          },
+      },
+  };
+  install$1(level$1);
   const turn_based = {
       name: "turn_based",
       level: {
@@ -24042,28 +24062,6 @@ void main() {
       },
   };
   install$1(turn_based);
-  const level$1 = {
-      name: "level",
-      level: {
-          tick(level, dt) {
-              if (!level.started)
-                  return;
-              // tick actors
-              level.actors.forEach((a) => {
-                  // TODO - check if alive?
-                  a.tick(this, dt);
-              });
-              // tick tiles
-              level.tiles.forEach((index, x, y) => {
-                  const tile = tilesByIndex[index];
-                  if (tile.on && tile.on.tick) {
-                      tile.on.tick.call(tile, level, x, y, dt);
-                  }
-              });
-          },
-      },
-  };
-  install$1(level$1);
   const layout_level = {
       name: "layout_level",
       level: {
@@ -24176,7 +24174,14 @@ void main() {
   // NOTE - There really isn't anything special about items yet.
   const actor = {
       name: "actor",
-      actor: {},
+      actor: {
+          death(level, actor) {
+              if (this.kind.dropChance &&
+                  this._level.rng.chance(this.kind.dropChance)) {
+                  placeRandom(this._level, this.x, this.y, this.kind.dropMatch);
+              }
+          },
+      },
   };
   install$1(actor);
 
