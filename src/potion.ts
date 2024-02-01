@@ -38,7 +38,7 @@ ACTIONS.install("potion", (level: Level, actor: Actor): boolean => {
 
 install("potion", {
   game: {
-    create(game: Game) {
+    make(game: Game) {
       game.keymap["p"] = "potion";
     },
   },

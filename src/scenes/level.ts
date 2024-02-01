@@ -102,10 +102,15 @@ export const level = {
       const game = level.game;
       if (!level.started) return;
 
-      // TODO - This should follow the enqueue path..
-      game.hero.setGoal(e.x, e.y);
-      game.hero.followPath = true;
-      game.hero.act(level);
+      if (game.hero.followPath) {
+        game.hero.setGoal(e.x, e.y);
+        game.hero.followPath = false;
+      } else {
+        // TODO - This should follow the enqueue path..
+        game.hero.setGoal(e.x, e.y);
+        game.hero.followPath = true;
+        game.hero.act(level);
+      }
     });
   },
 
@@ -129,13 +134,13 @@ export const level = {
     //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
     // },
 
-    inventory(this: GWU.app.Scene) {
-      const level = this.data.level as Level;
-      const game = level.game;
-      const hero = game.hero;
-      const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
-      sidebar.setFocus(hero.x, hero.y);
-    },
+    // inventory(this: GWU.app.Scene) {
+    //   const level = this.data.level as Level;
+    //   const game = level.game;
+    //   const hero = game.hero;
+    //   const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
+    //   sidebar.setFocus(hero.x, hero.y);
+    // },
 
     // win(this: GWU.app.Scene) {
     //   const game = this.data.game as Game;
@@ -159,16 +164,21 @@ export const level = {
 
       const level = this.data.level as Level;
       const game = level.game;
-      game.inputQueue.enqueue(e.clone());
+
+      if (game.hero.followPath) {
+        game.hero.followPath = false;
+      } else {
+        game.inputQueue.enqueue(e.clone());
+      }
 
       e.stopPropagation();
     },
 
-    click(this: GWU.app.Scene, e: GWU.app.Event) {
-      const level = this.data.level as Level;
-      const game = level.game;
-      game.inputQueue.enqueue(e.clone());
-      e.stopPropagation();
-    },
+    // click(this: GWU.app.Scene, e: GWU.app.Event) {
+    //   const level = this.data.level as Level;
+    //   const game = level.game;
+    //   game.inputQueue.enqueue(e.clone());
+    //   e.stopPropagation();
+    // },
   },
 };

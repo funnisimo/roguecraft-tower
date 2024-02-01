@@ -1482,12 +1482,12 @@
    * _.get(object, 'a.b.c', 'default');
    * // => 'default'
    */
-  function get$1(object, path, defaultValue) {
+  function get$2(object, path, defaultValue) {
     var result = object == null ? undefined : baseGet(object, path);
     return result === undefined ? defaultValue : result;
   }
 
-  var get_1 = get$1;
+  var get_1 = get$2;
 
   var get$1$1 = /*@__PURE__*/getDefaultExportFromCjs(get_1);
 
@@ -9237,7 +9237,7 @@ void main() {
           return arg;
       return make$3$1(arg);
   }
-  function install$9(id, ...args) {
+  function install$a(id, ...args) {
       let source;
       if (args.length == 1) {
           source = make$3$1(args[0]);
@@ -9252,7 +9252,7 @@ void main() {
   function installAll(config) {
       const entries = Object.entries(config);
       entries.forEach(([name, info]) => {
-          install$9(name, info);
+          install$a(name, info);
       });
   }
   // // TODO - Move?
@@ -9542,7 +9542,7 @@ void main() {
   	Light: Light,
   	LightSystem: LightSystem,
   	from: from$5,
-  	install: install$9,
+  	install: install$a,
   	installAll: installAll,
   	intensity: intensity,
   	isDarkLight: isDarkLight,
@@ -10658,12 +10658,16 @@ void main() {
                   w = this.focused;
               }
               w && w.keypress(e);
-              if (!e.defaultPrevented) {
+              if (w && !e.defaultPrevented) {
                   if (e.key === 'Tab') {
-                      this.nextTabStop();
+                      if (this.nextTabStop()) {
+                          e.stopPropagation(); // handled
+                      }
                   }
                   else if (e.key === 'TAB') {
-                      this.prevTabStop();
+                      if (this.prevTabStop()) {
+                          e.stopPropagation(); // handled
+                      }
                   }
               }
           }
@@ -10898,6 +10902,7 @@ void main() {
               want && want.focus(reverse);
           }
       }
+      /** Returns true if the focus changed */
       nextTabStop() {
           if (!this.focused) {
               this.setFocusWidget(this.all.find((w) => !!w.prop('tabStop') && !w.disabled && !w.hidden) || null);
@@ -10911,6 +10916,7 @@ void main() {
           this.setFocusWidget(null);
           return false;
       }
+      /** Returns true if the focus changed */
       prevTabStop() {
           if (!this.focused) {
               this.setFocusWidget(this.all.find((w) => !!w.prop('tabStop') && !w.disabled && !w.hidden) || null);
@@ -20249,13 +20255,13 @@ void main() {
   // }
   const tilesByIndex = [];
   const tilesByName = {};
-  function install$8(cfg) {
+  function install$9(cfg) {
       const info = index$1.installTile(cfg);
       tilesByIndex[info.index] = info;
       tilesByName[info.id] = info;
   }
-  install$8({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-  install$8({
+  install$9({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
+  install$9({
       id: "WALL",
       ch: "#",
       fg: 0x333,
@@ -20264,7 +20270,7 @@ void main() {
       blocksVision: true,
       blocksDiagonal: true,
   });
-  install$8({
+  install$9({
       id: "CORPSE",
       ch: "&",
       fg: 0x666,
@@ -20285,7 +20291,7 @@ void main() {
           },
       },
   });
-  install$8({
+  install$9({
       id: "DOWN_STAIRS",
       ch: "<",
       fg: "gray",
@@ -20295,7 +20301,7 @@ void main() {
           },
       },
   });
-  install$8({
+  install$9({
       id: "UP_STAIRS",
       ch: ">",
       fg: "orange",
@@ -20306,7 +20312,7 @@ void main() {
           },
       },
   });
-  install$8({
+  install$9({
       id: "UP_STAIRS_INACTIVE",
       ch: ">",
       fg: "gray",
@@ -20317,7 +20323,7 @@ void main() {
           },
       },
   });
-  install$8({
+  install$9({
       id: "IMPREGNABLE",
       ch: "#",
       fg: 0x222,
@@ -20331,7 +20337,7 @@ void main() {
       tilesByIndex[i] = t;
       if (tilesByName[t.id])
           return;
-      install$8(t);
+      install$9(t);
   });
 
   class Obj {
@@ -20646,7 +20652,7 @@ void main() {
       }
       return kind;
   }
-  function install$7(cfg) {
+  function install$8(cfg) {
       const kind = makeKind$3(cfg);
       kinds$3[kind.id.toLowerCase()] = kind;
   }
@@ -20923,10 +20929,10 @@ void main() {
   }
 
   const actionsByName = {};
-  function install$6(name, fn) {
+  function install$7(name, fn) {
       actionsByName[name] = fn;
   }
-  function get(name) {
+  function get$1(name) {
       return actionsByName[name] || null;
   }
   function idle(level, actor) {
@@ -20934,12 +20940,12 @@ void main() {
       level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }
-  install$6("idle", idle);
+  install$7("idle", idle);
   function moveRandom(level, actor, quiet = false) {
       const dir = level.rng.item(xy.DIRS);
       return moveDir(level, actor, dir, quiet);
   }
-  install$6("move_random", moveRandom);
+  install$7("move_random", moveRandom);
   function moveDir(level, actor, dir, quiet = false) {
       const game = level.game;
       const newX = actor.x + dir[0];
@@ -21016,7 +21022,7 @@ void main() {
       }
       return false;
   }
-  install$6("move_toward_hero", moveTowardHero);
+  install$7("move_toward_hero", moveTowardHero);
   function moveAwayFromHero(level, actor, quiet = false) {
       const game = level.game;
       const hero = game.hero;
@@ -21061,7 +21067,7 @@ void main() {
       }
       return false;
   }
-  install$6("move_away_from_hero", moveAwayFromHero);
+  install$7("move_away_from_hero", moveAwayFromHero);
   function attack(level, actor, target = null) {
       const game = level.game;
       if (target) {
@@ -21120,7 +21126,7 @@ void main() {
       game.endTurn(actor, attackInfo.time);
       return true;
   }
-  install$6("attack", attack);
+  install$7("attack", attack);
   function fire(level, actor, target = null) {
       const game = level.game;
       const hero = game.hero;
@@ -21227,7 +21233,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  install$6("fire", fire);
+  install$7("fire", fire);
   function fireAtHero(level, actor) {
       const game = level.game;
       const hero = game.hero;
@@ -21253,7 +21259,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  install$6("fire_at_hero", fireAtHero);
+  install$7("fire_at_hero", fireAtHero);
   function climb(level, actor) {
       const game = level.game;
       const tile = game.level.getTile(actor.x, actor.y);
@@ -21265,7 +21271,7 @@ void main() {
           return idle(level, actor);
       }
   }
-  install$6("climb", climb);
+  install$7("climb", climb);
   function pickup(level, actor) {
       const game = level.game;
       const item = level.itemAt(actor.x, actor.y);
@@ -21276,7 +21282,7 @@ void main() {
       game.addMessage("Nothing to pickup.");
       return idle(level, actor);
   }
-  install$6("pickup", pickup);
+  install$7("pickup", pickup);
   // export function potion(game: Game, hero: Hero): boolean {
   //   if (!hero.canUsePotion) {
   //     game.addMessage("Not ready.");
@@ -22034,7 +22040,7 @@ void main() {
       bump(level, actor) {
           const actions = this.kind.bump;
           for (let action of actions) {
-              const fn = get(action);
+              const fn = get$1(action);
               if (fn && fn(level, actor, this)) {
                   return true;
               }
@@ -22135,7 +22141,7 @@ void main() {
       }
       return kind;
   }
-  function install$5(cfg) {
+  function install$6(cfg) {
       const kind = makeKind$2(cfg);
       kinds$2[kind.id.toLowerCase()] = kind;
   }
@@ -22559,7 +22565,7 @@ void main() {
       }
       return kind;
   }
-  function install$4(cfg) {
+  function install$5(cfg) {
       const kind = makeKind$1(cfg);
       kinds$1[kind.id.toLowerCase()] = kind;
   }
@@ -23121,7 +23127,7 @@ void main() {
       // }
       return kind;
   }
-  function install$3(...args) {
+  function install$4(...args) {
       let id, config;
       if (args.length == 1) {
           config = args[0];
@@ -23405,7 +23411,7 @@ void main() {
   }
 
   const hordes = {};
-  function install$2(id, horde) {
+  function install$3(id, horde) {
       if (typeof horde === "string") {
           horde = { leader: horde };
       }
@@ -23559,7 +23565,7 @@ void main() {
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
       }
-      _create(opts) {
+      _make(opts) {
           // SEED
           if (typeof opts.seed === "number" && opts.seed > 0) {
               this.seed = opts.seed;
@@ -23570,7 +23576,7 @@ void main() {
           console.log("GAME, seed=", this.seed);
           this.rng.seed(this.seed);
           // LEVELS
-          Object.assign(this.levels, opts.levels || {});
+          this.levels = utils.mergeDeep(this.levels, opts.levels || {});
           if (opts.start_level) {
               this.start_level = opts.start_level;
           }
@@ -23580,83 +23586,14 @@ void main() {
               a: "attack",
               f: "fire",
               g: "pickup",
-              i: (level, e) => {
-                  console.log(">> INVENTORY <<");
-                  // TODO - Set focus to the player so that it shows their info
-                  //      - Send event to level scene?
-                  level.emit("inventory", level.game);
-                  e.stopPropagation();
-              },
-              // z: (level: Level, e) => {
-              //   ACTOR.spawn(game.level!, "zombie", game.hero.x, game.hero.y);
-              //   game.level.needsDraw = true;
-              //   e.stopPropagation();
-              // },
+              i: "show_inventory",
+              // "z": "spawn_zombie",
               " ": "idle",
               ".": "idle",
-              ">": (level, e) => {
-                  // find stairs
-                  let loc = [-1, -1];
-                  level.tiles.forEach((t, x, y) => {
-                      const tile = tilesByIndex[t];
-                      if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-                          loc[0] = x;
-                          loc[1] = y;
-                      }
-                  });
-                  // set player goal
-                  if (loc[0] >= 0) {
-                      level.game.hero.setGoal(loc[0], loc[1]);
-                  }
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              "<": (level, e) => {
-                  // find stairs
-                  let loc = [-1, -1];
-                  level.tiles.forEach((t, x, y) => {
-                      const tile = tilesByIndex[t];
-                      if (tile.id === "DOWN_STAIRS") {
-                          loc[0] = x;
-                          loc[1] = y;
-                      }
-                  });
-                  // set player goal
-                  if (loc[0] >= 0) {
-                      level.game.hero.setGoal(loc[0], loc[1]);
-                  }
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              dir: (level, e) => {
-                  // @ts-ignore
-                  moveDir(level, level.game.hero, e.dir);
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              Enter: (level, e) => {
-                  const hero = level.game.hero;
-                  if (hero.goalPath && hero.goalPath.length) {
-                      hero.followPath = true;
-                      hero.act(level);
-                  }
-                  level.scene.needsDraw = true;
-                  e.stopPropagation();
-              },
-              // keypress: (level: Level, e) => {
-              //   let action = game.keymap[e.key];
-              //   if (!action) return;
-              //   if (typeof action === "function") {
-              //     return action(level: Level, e);
-              //   }
-              //   let fn = ACTIONS.get(action);
-              //   if (!fn) {
-              //     console.warn(`Failed to find action: ${action} for key: ${e.key}`);
-              //   } else {
-              //     fn(game.level, game.hero);
-              //     game.level.needsDraw = true;
-              //   }
-              // },
+              ">": "find_up_stairs",
+              "<": "find_down_stairs",
+              dir: "move_dir",
+              Enter: "follow_path",
           }, opts.keymap || {});
           // CREATE HERO
           // EVENTS - There are no events on GameOpts!!!  Must use plugins
@@ -23823,16 +23760,16 @@ void main() {
       }
       make(app, opts = {}) {
           let game;
-          const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+          const makePlugin = this.plugins.find((p) => typeof p.create === "function");
           if (makePlugin) {
-              game = makePlugin.make(app, opts);
+              game = makePlugin.create(app, opts);
           }
           else {
               game = new Game(app);
           }
           this.apply(game);
-          game._create(opts);
-          game.emit("create", game, opts);
+          game._make(opts);
+          game.emit("make", game, opts);
           globalThis.GAME = game;
           return game;
       }
@@ -23862,7 +23799,7 @@ void main() {
   const active = [];
   // @ts-ignore
   globalThis.PLUGINS = plugins;
-  function install$1(...args) {
+  function install$2(...args) {
       let plugin;
       let name;
       if (args.length == 1) {
@@ -23930,7 +23867,78 @@ void main() {
       name: "item",
       item: {},
   };
-  install$1(item);
+  install$2(item);
+
+  const commandsByName = {};
+  function install$1(name, fn) {
+      commandsByName[name] = fn;
+  }
+  function get(name) {
+      return commandsByName[name] || null;
+  }
+  install$1("show_inventory", (scene, e) => {
+      console.log(">> INVENTORY <<");
+      e.stopPropagation();
+  });
+  install$1("find_up_stairs", (scene, e) => {
+      // find stairs
+      let loc = [-1, -1];
+      const level = scene.data.level;
+      level.tiles.forEach((t, x, y) => {
+          const tile = tilesByIndex[t];
+          if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+              loc[0] = x;
+              loc[1] = y;
+          }
+      });
+      // set player goal
+      if (loc[0] >= 0) {
+          level.game.hero.setGoal(loc[0], loc[1]);
+      }
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$1("find_down_stairs", (scene, e) => {
+      // find stairs
+      let loc = [-1, -1];
+      const level = scene.data.level;
+      level.tiles.forEach((t, x, y) => {
+          const tile = tilesByIndex[t];
+          if (tile.id === "DOWN_STAIRS") {
+              loc[0] = x;
+              loc[1] = y;
+          }
+      });
+      // set player goal
+      if (loc[0] >= 0) {
+          level.game.hero.setGoal(loc[0], loc[1]);
+      }
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$1("move_dir", (scene, e) => {
+      const level = scene.data.level;
+      // @ts-ignore
+      moveDir(level, level.game.hero, e.dir);
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$1("follow_path", (scene, e) => {
+      const level = scene.data.level;
+      const hero = level.game.hero;
+      if (hero.goalPath && hero.goalPath.length) {
+          hero.followPath = true;
+          hero.act(level);
+      }
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$1("spawn_zombie", (scene, e) => {
+      const level = scene.data.level;
+      const game = level.game;
+      spawn(level, "zombie", game.hero.x, game.hero.y);
+      e.stopPropagation();
+  });
 
   const level$1 = {
       name: "level",
@@ -23973,7 +23981,7 @@ void main() {
           },
       },
   };
-  install$1(level$1);
+  install$2(level$1);
   const turn_based = {
       name: "turn_based",
       level: {
@@ -23987,21 +23995,28 @@ void main() {
                   e &&
                       e.dispatch({
                           emit: (evt, e) => {
-                              let action = game.keymap[evt];
-                              if (!action)
+                              let command = game.keymap[evt];
+                              if (!command)
                                   return;
-                              if (typeof action === "function") {
-                                  return action(level, e);
+                              if (typeof command === "function") {
+                                  return command(level.scene, e);
                               }
-                              let fn = get(action);
-                              if (!fn) {
-                                  console.warn(`Failed to find action: ${action} for key: ${evt}`);
-                              }
-                              else {
+                              // TODO - handle '@action, '=command', or 'either'
+                              let fn = get$1(command);
+                              if (fn) {
                                   // @ts-ignore
                                   fn(level, game.hero);
                                   level.scene.needsDraw = true;
                                   e.stopPropagation(); // We handled it
+                              }
+                              else {
+                                  let fn = get(command);
+                                  if (fn) {
+                                      fn(level.scene, e);
+                                  }
+                                  else {
+                                      console.warn(`Failed to find action or command: ${command} for key: ${evt}`);
+                                  }
                               }
                           },
                       });
@@ -24048,7 +24063,7 @@ void main() {
           },
       },
   };
-  install$1(turn_based);
+  install$2(turn_based);
   const layout_level = {
       name: "layout_level",
       level: {
@@ -24092,7 +24107,7 @@ void main() {
           },
       },
   };
-  install$1(layout_level);
+  install$2(layout_level);
   function loadLevel(level, data, tiles) {
       level.fill("NONE");
       for (let y = 0; y < data.length; ++y) {
@@ -24146,7 +24161,7 @@ void main() {
           },
       },
   };
-  install$1(dig_level);
+  install$2(dig_level);
   function digLevel(level, dig, seed = 12345) {
       level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
       const digger = new Digger(dig);
@@ -24170,7 +24185,7 @@ void main() {
           },
       },
   };
-  install$1(actor);
+  install$2(actor);
 
   // NOTE - There really isn't anything special about items yet.
   const hero = {
@@ -24208,14 +24223,14 @@ void main() {
           },
       },
   };
-  install$1(hero);
+  install$2(hero);
 
   // NOTE - There really isn't anything special about items yet.
   const game = {
       name: "game",
       game: {},
   };
-  install$1(game);
+  install$2(game);
 
   // NOTE - There really isn't anything special about items yet.
   const core = {
@@ -24231,9 +24246,9 @@ void main() {
           "dig_level",
       ],
   };
-  install$1(core);
+  install$2(core);
 
-  install$4({
+  install$5({
       id: "HERO",
       name: "Hero",
       ch: "@",
@@ -24253,7 +24268,7 @@ void main() {
           armor: "PLATE_ARMOR",
       },
   });
-  install$5({
+  install$6({
       id: "ZOMBIE",
       name: "Zombie",
       ch: "z",
@@ -24263,7 +24278,7 @@ void main() {
       damage: 8, // dps=4
       dropChance: 100,
   });
-  install$5({
+  install$6({
       id: "ARMOR_ZOMBIE",
       ch: "Z",
       fg: "green",
@@ -24272,7 +24287,7 @@ void main() {
       damage: 10, // dps=5
       dropChance: 10,
   });
-  install$5({
+  install$6({
       id: "ARMOR_ZOMBIE_2",
       ch: "Z",
       fg: "green",
@@ -24281,7 +24296,7 @@ void main() {
       damage: 12, // dps=6
       dropChance: 10,
   });
-  install$5({
+  install$6({
       id: "Vindicator",
       ch: "v",
       fg: "blue",
@@ -24293,7 +24308,7 @@ void main() {
       // attackSpeed: 150
       dropChance: 10,
   });
-  install$5({
+  install$6({
       id: "SKELETON",
       ch: "s",
       fg: "white",
@@ -24307,7 +24322,7 @@ void main() {
       // notice: 10
       dropChance: 100,
   });
-  install$5({
+  install$6({
       id: "ARMOR_SKELETON",
       ch: "S",
       fg: "white",
@@ -24321,7 +24336,7 @@ void main() {
       // notice: 10
       dropChance: 10,
   });
-  install$5({
+  install$6({
       id: "ARMOR_SKELETON_2",
       ch: "S",
       fg: "white",
@@ -24397,38 +24412,38 @@ void main() {
 
   */
 
-  install$2("ZOMBIE", {
+  install$3("ZOMBIE", {
       leader: "ZOMBIE",
       members: { ZOMBIE: "2-3" },
       frequency: 10,
   });
-  install$2("ZOMBIE2", {
+  install$3("ZOMBIE2", {
       leader: "ARMOR_ZOMBIE",
       members: { ZOMBIE: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$2("ZOMBIE3", {
+  install$3("ZOMBIE3", {
       leader: "ARMOR_ZOMBIE_2",
       members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
   });
-  install$2("SKELETON", {
+  install$3("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
       frequency: 10,
   });
-  install$2("SKELETON2", {
+  install$3("SKELETON2", {
       leader: "ARMOR_SKELETON",
       members: { SKELETON: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$2("SKELETON3", {
+  install$3("SKELETON3", {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
       frequency: (l) => 2 * l,
   });
 
-  install$7({
+  install$8({
       id: "HEALTH_POTION",
       ch: "!",
       fg: "pink",
@@ -24445,7 +24460,7 @@ void main() {
       },
       tags: "", // Not a drop because it is innate
   });
-  install$7({
+  install$8({
       id: "ARROWS",
       ch: "|",
       fg: "yellow",
@@ -24464,7 +24479,7 @@ void main() {
       },
       tags: "drop",
   });
-  install$7({
+  install$8({
       id: "APPLE",
       ch: "&",
       fg: "yellow",
@@ -24480,7 +24495,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "BREAD",
       ch: "&",
       fg: "yellow",
@@ -24496,7 +24511,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "PORK",
       ch: "&",
       fg: "yellow",
@@ -24512,7 +24527,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "SALMON",
       ch: "&",
       fg: "yellow",
@@ -24528,7 +24543,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "BERRIES",
       ch: "&",
       fg: "yellow",
@@ -24544,7 +24559,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "MELON",
       ch: "&",
       fg: "yellow",
@@ -24560,7 +24575,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "FRUIT",
       ch: "&",
       fg: "yellow",
@@ -24576,7 +24591,7 @@ void main() {
       },
       tags: "drop, food",
   });
-  install$7({
+  install$8({
       id: "FISH",
       ch: "&",
       fg: "yellow",
@@ -24596,7 +24611,7 @@ void main() {
   //////////////////////////////////////////////////////
   // MELEE
   //////////////////////////////////////////////////////
-  install$7({
+  install$8({
       id: "DAGGERS",
       ch: "/",
       fg: "yellow",
@@ -24612,7 +24627,7 @@ void main() {
   // SHEER_DAGGERS
   // VOID_BLADES
   // BEGINNING_AND_END
-  install$7({
+  install$8({
       id: "KNIFE",
       ch: "/",
       fg: "yellow",
@@ -24626,7 +24641,7 @@ void main() {
   // TEMPEST_KNIFE
   // CHILL_KNIFE
   // RESOLUTE_KNIFE
-  install$7({
+  install$8({
       id: "SWORD",
       ch: "/",
       fg: "yellow",
@@ -24640,7 +24655,7 @@ void main() {
   // DIAMOND_SWORD
   // HAWKBRAND
   // SINISTER_SWORD
-  install$7({
+  install$8({
       id: "CUTLASS",
       ch: "/",
       fg: "yellow",
@@ -24653,7 +24668,7 @@ void main() {
   });
   // CORAL_BLADE
   // SPONGE_STRIKER
-  install$7({
+  install$8({
       id: "AXE",
       ch: "/",
       fg: "yellow",
@@ -24666,7 +24681,7 @@ void main() {
   });
   // HIGHLAND_AXE
   // FIREBRAND_AXE
-  install$7({
+  install$8({
       id: "DOUBLE_AXE",
       ch: "/",
       fg: "yellow",
@@ -24679,7 +24694,7 @@ void main() {
   });
   // CURSED_AXE
   // WHIRLWIND
-  install$7({
+  install$8({
       id: "BACKSTABBER",
       ch: "/",
       fg: "yellow",
@@ -24691,7 +24706,7 @@ void main() {
       tags: "melee",
   });
   // SWIFT_STRIKER
-  install$7({
+  install$8({
       id: "BATTLESTAFF",
       ch: "/",
       fg: "yellow",
@@ -24704,7 +24719,7 @@ void main() {
   });
   // BATTLESTAFF_OF_TERROR
   // GROWING_STAFF
-  install$7({
+  install$8({
       id: "BONE_CLUB",
       ch: "/",
       fg: "yellow",
@@ -24716,7 +24731,7 @@ void main() {
       tags: "melee",
   });
   // BONE_CUDGEL
-  install$7({
+  install$8({
       id: "CLAYMORE",
       ch: "/",
       fg: "yellow",
@@ -24735,7 +24750,7 @@ void main() {
   // FROST_SLAYER
   // DANCERS_SWORD
   // NAMELESS_BLADE
-  install$7({
+  install$8({
       id: "GLAIVE",
       ch: "/",
       fg: "yellow",
@@ -24748,7 +24763,7 @@ void main() {
   });
   // GRAVE_BANE
   // VENOM_GLAIVE
-  install$7({
+  install$8({
       id: "GREAT_HAMMER",
       ch: "/",
       fg: "yellow",
@@ -24761,7 +24776,7 @@ void main() {
   });
   // HAMMER_OF_GRAVITY
   // STORMLANDER
-  install$7({
+  install$8({
       id: "MACE",
       ch: "/",
       fg: "yellow",
@@ -24774,7 +24789,7 @@ void main() {
   });
   // FLAIL
   // SUNS_GRACE
-  install$7({
+  install$8({
       id: "PICKAXE",
       ch: "/",
       fg: "yellow",
@@ -24786,7 +24801,7 @@ void main() {
       tags: "melee",
   });
   // DIAMOND_PICKAXE
-  install$7({
+  install$8({
       id: "SICKLES",
       ch: "/",
       fg: "yellow",
@@ -24802,7 +24817,7 @@ void main() {
   // SOUL_KNIFE
   // ETERNAL_KNIFE
   // TRUTHSEEKER
-  install$7({
+  install$8({
       id: "WHIP",
       ch: "/",
       fg: "yellow",
@@ -24814,7 +24829,7 @@ void main() {
       tags: "melee",
   });
   // VINE_WHIP
-  install$7({
+  install$8({
       id: "GAUNTLETS",
       ch: "/",
       fg: "yellow",
@@ -24828,7 +24843,7 @@ void main() {
   // FIGHTERS_BINDINGS
   // MAULERS
   // SOUL_FISTS
-  install$7({
+  install$8({
       id: "SCYTHE",
       ch: "/",
       fg: "yellow",
@@ -24842,7 +24857,7 @@ void main() {
   // SOUL_SCYTHE
   // FROST_SCYTHE
   // JAILORS_SCYTHE
-  install$7({
+  install$8({
       id: "KATANA",
       ch: "/",
       fg: "yellow",
@@ -24855,7 +24870,7 @@ void main() {
   });
   // DARK_KATANA
   // MASTERS_KATANA
-  install$7({
+  install$8({
       id: "SPEAR",
       ch: "/",
       fg: "yellow",
@@ -24868,7 +24883,7 @@ void main() {
   });
   // FORTUNE_SPEAR
   // WHISPERING_SPEAR
-  install$7({
+  install$8({
       id: "RAPIER",
       ch: "/",
       fg: "yellow",
@@ -24882,7 +24897,7 @@ void main() {
   // BEE_STINGER
   // FREEZING_FOIL
 
-  install$7({
+  install$8({
       id: "SCALE_MAIL",
       name: "Scale Mail",
       ch: "]",
@@ -24895,7 +24910,7 @@ void main() {
           melee_damage: 30,
       },
   });
-  install$7({
+  install$8({
       id: "MERCENARY_ARMOR",
       name: "Mercenary Armor",
       ch: "]",
@@ -24908,7 +24923,7 @@ void main() {
           weapon_damage_aura: 20,
       },
   });
-  install$7({
+  install$8({
       id: "GUARDS_ARMOR",
       name: "Guards Armor",
       ch: "]",
@@ -24921,7 +24936,7 @@ void main() {
           arrows: 10,
       },
   });
-  install$7({
+  install$8({
       id: "HUNTERS_ARMOR",
       name: "Hunters Armor",
       ch: "]",
@@ -24934,7 +24949,7 @@ void main() {
           arrows: 10,
       },
   });
-  install$7({
+  install$8({
       id: "ARCHERS_ARMOR",
       name: "Archers Armor",
       ch: "]",
@@ -24948,7 +24963,7 @@ void main() {
           move_speed_aura: 15,
       },
   });
-  install$7({
+  install$8({
       id: "REINFORCED_MAIL",
       name: "Reinforced Mail",
       ch: "]",
@@ -24962,7 +24977,7 @@ void main() {
           roll_cooldown: 100,
       },
   });
-  install$7({
+  install$8({
       id: "STALWART_ARMOR",
       name: "Stalwart Armor",
       ch: "]",
@@ -24977,7 +24992,7 @@ void main() {
           potion_boosts_defense: [90, 5 * 200],
       },
   });
-  install$7({
+  install$8({
       id: "PLATE_ARMOR",
       name: "Plate Armor",
       ch: "]",
@@ -24991,7 +25006,7 @@ void main() {
           roll_cooldown: 100,
       },
   });
-  install$7({
+  install$8({
       id: "FULL_METAL_ARMOR",
       name: "Full Metal Armor",
       ch: "]",
@@ -25006,7 +25021,7 @@ void main() {
           melee_damage: 30,
       },
   });
-  install$7({
+  install$8({
       id: "CHAMPIONS_ARMOR",
       name: "Champions Armor",
       ch: "]",
@@ -25020,7 +25035,7 @@ void main() {
           mobs_target_you: 50, // 50%?
       },
   });
-  install$7({
+  install$8({
       id: "HEROS_ARMOR",
       name: "Heros Armor",
       ch: "]",
@@ -25039,7 +25054,7 @@ void main() {
   //////////////////////////////////////////////////////
   // RANGED
   //////////////////////////////////////////////////////
-  install$7({
+  install$8({
       id: "BOW",
       ch: "}",
       fg: "yellow",
@@ -25051,7 +25066,7 @@ void main() {
   });
   // BONE_BOW
   // TWIN_BOW
-  install$7({
+  install$8({
       id: "HUNTING_BOW",
       ch: "}",
       fg: "yellow",
@@ -25064,7 +25079,7 @@ void main() {
   // ANCIENT_BOW
   // HUNTERS_PROMISE
   // MASTERS_BOW
-  install$7({
+  install$8({
       id: "LONGBOW",
       ch: "}",
       fg: "yellow",
@@ -25076,7 +25091,7 @@ void main() {
   });
   // GUARDIAN_BOW
   // RED_SNAKE
-  install$7({
+  install$8({
       id: "POWER_BOW",
       ch: "}",
       fg: "yellow",
@@ -25088,7 +25103,7 @@ void main() {
   });
   // ELITE_POWER_BOW
   // SABREWING
-  install$7({
+  install$8({
       id: "SHORTBOW",
       ch: "}",
       fg: "yellow",
@@ -25103,7 +25118,7 @@ void main() {
   // PURPLE_STORM
   // SNOW_BOW
   // WINTERS_TOUCH
-  install$7({
+  install$8({
       id: "TRICKBOW",
       ch: "}",
       fg: "yellow",
@@ -25115,7 +25130,7 @@ void main() {
   });
   // GREEN_MENACE
   // PINK_SCOUNDREL
-  install$7({
+  install$8({
       id: "CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -25130,7 +25145,7 @@ void main() {
   // EXPLODING_CROSSBOW
   // FIREBOLT_THROWER
   // IMPLODING_CROSSBOW
-  install$7({
+  install$8({
       id: "DUAL_CROSSBOWS",
       ch: "}",
       fg: "yellow",
@@ -25142,7 +25157,7 @@ void main() {
   });
   // BABY_CROSSBOWS
   // SPELLBOUND_CROSSBOWS
-  install$7({
+  install$8({
       id: "HEAVY_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -25154,7 +25169,7 @@ void main() {
   });
   // DOOM_CROSSBOW
   // SLAYER_CROSSBOW
-  install$7({
+  install$8({
       id: "RAPID_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -25166,7 +25181,7 @@ void main() {
   });
   // AUTO_CROSSBOW
   // BUTTERFLY_CROSSBOW
-  install$7({
+  install$8({
       id: "SCATTER_CROSSBOW",
       ch: "}",
       fg: "yellow",
@@ -25316,10 +25331,16 @@ void main() {
               const game = level.game;
               if (!level.started)
                   return;
-              // TODO - This should follow the enqueue path..
-              game.hero.setGoal(e.x, e.y);
-              game.hero.followPath = true;
-              game.hero.act(level);
+              if (game.hero.followPath) {
+                  game.hero.setGoal(e.x, e.y);
+                  game.hero.followPath = false;
+              }
+              else {
+                  // TODO - This should follow the enqueue path..
+                  game.hero.setGoal(e.x, e.y);
+                  game.hero.followPath = true;
+                  game.hero.act(level);
+              }
           });
       },
       start(opts) {
@@ -25339,13 +25360,13 @@ void main() {
           // z() {
           //   ACTOR.spawn(this.data, "zombie", this.data.player.x, this.data.player.y);
           // },
-          inventory() {
-              const level = this.data.level;
-              const game = level.game;
-              const hero = game.hero;
-              const sidebar = this.get("SIDEBAR");
-              sidebar.setFocus(hero.x, hero.y);
-          },
+          // inventory(this: GWU.app.Scene) {
+          //   const level = this.data.level as Level;
+          //   const game = level.game;
+          //   const hero = game.hero;
+          //   const sidebar = this.get("SIDEBAR")! as WIDGETS.Sidebar;
+          //   sidebar.setFocus(hero.x, hero.y);
+          // },
           // win(this: GWU.app.Scene) {
           //   const game = this.data.game as Game;
           //   game.messages.confirmAll();
@@ -25365,15 +25386,20 @@ void main() {
               // this.data.level.clearPath();
               const level = this.data.level;
               const game = level.game;
-              game.inputQueue.enqueue(e.clone());
+              if (game.hero.followPath) {
+                  game.hero.followPath = false;
+              }
+              else {
+                  game.inputQueue.enqueue(e.clone());
+              }
               e.stopPropagation();
           },
-          click(e) {
-              const level = this.data.level;
-              const game = level.game;
-              game.inputQueue.enqueue(e.clone());
-              e.stopPropagation();
-          },
+          // click(this: GWU.app.Scene, e: GWU.app.Event) {
+          //   const level = this.data.level as Level;
+          //   const game = level.game;
+          //   game.inputQueue.enqueue(e.clone());
+          //   e.stopPropagation();
+          // },
       },
   };
 
@@ -25794,7 +25820,7 @@ void main() {
       return app;
   }
 
-  install$6("potion", (level, actor) => {
+  install$7("potion", (level, actor) => {
       if (!actor.isHero)
           return false;
       if (actor.data.potion < actor.data.potion_max) {
@@ -25818,9 +25844,9 @@ void main() {
       level.game.endTurn(actor, actor.moveSpeed);
       return true;
   });
-  install$1("potion", {
+  install$2("potion", {
       game: {
-          create(game) {
+          make(game) {
               game.keymap["p"] = "potion";
           },
       },
@@ -25978,7 +26004,7 @@ void main() {
   */
 
   function start() {
-      install$3({
+      install$4({
           id: "TOWER",
           width: 60,
           height: 35,
@@ -26112,7 +26138,7 @@ void main() {
           data: { LAST_LEVEL: 10 },
           levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",
           game: {
-              create(game, opts) {
+              make(game, opts) {
                   for (let i = 1; i <= game.data.LAST_LEVEL; ++i) {
                       const levelSeed = game.rng.number(100000);
                       game.seeds[i] = levelSeed;

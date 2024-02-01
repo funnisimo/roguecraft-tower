@@ -166,7 +166,7 @@ function start() {
     data: { LAST_LEVEL: 10 },
     levels: { default: "TOWER" }, // TODO - Allow setting default without an object - e.g: levels: "TOWER",
     game: {
-      create(game: GAME.Game, opts: GAME.GameOpts) {
+      make(game: GAME.Game, opts: GAME.GameOpts) {
         for (let i = 1; i <= game.data.LAST_LEVEL; ++i) {
           const levelSeed = game.rng.number(100000);
           game.seeds[i] = levelSeed;

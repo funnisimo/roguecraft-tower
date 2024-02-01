@@ -11,12 +11,13 @@ import * as HORDE from "../horde";
 import { Level } from "../level";
 import { factory } from "./factory";
 import { CallbackFn } from "./obj";
+import { CommandFn } from "../command";
 
 export type EventFn = (level: Level, e: GWU.app.Event) => void;
 
 export interface GameEvents {
-  make?(app: GWU.app.App, opts: GameOpts): Game;
-  create?(game: Game, opts: GameOpts);
+  create?(app: GWU.app.App, opts: GameOpts): Game;
+  make?(game: Game, opts: GameOpts);
   // start - use create for things you want at game start time.
   destroy?(game: Game);
 }
@@ -27,7 +28,7 @@ export interface GameOpts {
     [id: string]: string | (LEVEL.LevelMakeOpts & { kind: string });
   };
   keymap?: {
-    [id: string]: string | EventFn;
+    [id: string]: string | CommandFn;
   };
   start_level?: string | number;
   hero_kind?: string | (HERO.HeroMakeOpts & { kind: string });
@@ -58,7 +59,7 @@ export class Game {
   hordes: Record<string, HORDE.Horde>;
   // TODO - tiles: ...
 
-  keymap: Record<string, string | EventFn> = {};
+  keymap: Record<string, string | CommandFn> = {};
   data: { [id: string]: any } = {};
 
   constructor(app: GWU.app.App) {
@@ -92,7 +93,7 @@ export class Game {
     this.events = new GWU.app.Events(this);
   }
 
-  _create(opts: GameOpts) {
+  _make(opts: GameOpts) {
     // SEED
     if (typeof opts.seed === "number" && opts.seed > 0) {
       this.seed = opts.seed;
@@ -104,7 +105,7 @@ export class Game {
     this.rng.seed(this.seed);
 
     // LEVELS
-    Object.assign(this.levels, opts.levels || {});
+    this.levels = GWU.utils.mergeDeep(this.levels, opts.levels || {});
     if (opts.start_level) {
       this.start_level = opts.start_level;
     }
@@ -116,86 +117,14 @@ export class Game {
         a: "attack",
         f: "fire",
         g: "pickup",
-        i: (level: Level, e: GWU.app.Event) => {
-          console.log(">> INVENTORY <<");
-          // TODO - Set focus to the player so that it shows their info
-          //      - Send event to level scene?
-          level.emit("inventory", level.game);
-          e.stopPropagation();
-        },
-        // z: (level: Level, e) => {
-        //   ACTOR.spawn(game.level!, "zombie", game.hero.x, game.hero.y);
-        //   game.level.needsDraw = true;
-        //   e.stopPropagation();
-        // },
+        i: "show_inventory",
+        // "z": "spawn_zombie",
         " ": "idle",
         ".": "idle",
-        ">": (level: Level, e: GWU.app.Event) => {
-          // find stairs
-          let loc: GWU.xy.Loc = [-1, -1];
-          level.tiles.forEach((t, x, y) => {
-            const tile = TILE.tilesByIndex[t];
-            if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-              loc[0] = x;
-              loc[1] = y;
-            }
-          });
-          // set player goal
-          if (loc[0] >= 0) {
-            level.game.hero.setGoal(loc[0], loc[1]);
-          }
-          level.scene.needsDraw = true;
-          e.stopPropagation();
-        },
-        "<": (level: Level, e: GWU.app.Event) => {
-          // find stairs
-          let loc: GWU.xy.Loc = [-1, -1];
-          level.tiles.forEach((t, x, y) => {
-            const tile = TILE.tilesByIndex[t];
-            if (tile.id === "DOWN_STAIRS") {
-              loc[0] = x;
-              loc[1] = y;
-            }
-          });
-          // set player goal
-          if (loc[0] >= 0) {
-            level.game.hero.setGoal(loc[0], loc[1]);
-          }
-          level.scene.needsDraw = true;
-          e.stopPropagation();
-        },
-        dir: (level: Level, e: GWU.app.Event) => {
-          // @ts-ignore
-          ACTIONS.moveDir(level, level.game.hero, e.dir);
-          level.scene.needsDraw = true;
-          e.stopPropagation();
-        },
-        Enter: (level: Level, e: GWU.app.Event) => {
-          const hero = level.game.hero;
-          if (hero.goalPath && hero.goalPath.length) {
-            hero.followPath = true;
-            hero.act(level);
-          } else {
-            // pickup?
-          }
-          level.scene.needsDraw = true;
-          e.stopPropagation();
-        },
-        // keypress: (level: Level, e) => {
-        //   let action = game.keymap[e.key];
-        //   if (!action) return;
-        //   if (typeof action === "function") {
-        //     return action(level: Level, e);
-        //   }
-
-        //   let fn = ACTIONS.get(action);
-        //   if (!fn) {
-        //     console.warn(`Failed to find action: ${action} for key: ${e.key}`);
-        //   } else {
-        //     fn(game.level, game.hero);
-        //     game.level.needsDraw = true;
-        //   }
-        // },
+        ">": "find_up_stairs",
+        "<": "find_down_stairs",
+        dir: "move_dir",
+        Enter: "follow_path",
       },
       opts.keymap || {}
     );

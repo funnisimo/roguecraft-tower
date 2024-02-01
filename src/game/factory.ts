@@ -10,18 +10,17 @@ export class GameFactory {
 
   make(app: GWU.app.App, opts: GameOpts = {}): Game {
     let game: Game;
-    const makePlugin = this.plugins.find((p) => typeof p.make === "function");
+    const makePlugin = this.plugins.find((p) => typeof p.create === "function");
     if (makePlugin) {
-      game = makePlugin.make(app, opts);
+      game = makePlugin.create(app, opts);
     } else {
       game = new Game(app);
     }
 
     this.apply(game);
 
-    game._create(opts);
-
-    game.emit("create", game, opts);
+    game._make(opts);
+    game.emit("make", game, opts);
 
     globalThis.GAME = game;
 
