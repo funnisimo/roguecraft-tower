@@ -28,6 +28,7 @@ function start() {
     width: 60,
     height: 35,
     scene: "level",
+    dig: true,
     on: {
       make(level: Level, opts: LevelMakeOpts) {
         console.log("TOWER LEVEL CREATE");

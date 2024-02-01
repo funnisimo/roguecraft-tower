@@ -64,7 +64,7 @@ export class Level implements GWD.site.AnalysisSite {
     this.kind = kind;
     const { width, height, seed } = kind;
     this.events = new GWU.app.Events(this);
-    this.tiles = GWU.grid.make(width, height);
+    this.tiles = GWU.grid.make(width, height, TILE.tilesByName["FLOOR"].index);
     this.flags = GWU.grid.make(width, height);
     this.choke = GWU.grid.make(width, height);
 
@@ -103,15 +103,6 @@ export class Level implements GWD.site.AnalysisSite {
     }
     this.depth = opts.depth || kind.depth || 1;
 
-    if (kind.layout) {
-      const { data, tiles } = kind.layout;
-      loadLevel(this, data, tiles);
-    } else if (kind.dig) {
-      digLevel(this, kind.dig, this.seed);
-    } else {
-      throw new Error("Level must have either 'dig' or 'layout'.");
-    }
-
     if (kind.welcome) {
       this.welcome = kind.welcome;
     } else {
@@ -149,6 +140,15 @@ export class Level implements GWD.site.AnalysisSite {
         this.on(key, val);
       }
     });
+
+    // if (kind.layout) {
+    //   const { data, tiles } = kind.layout;
+    //   // loadLevel(this, data, tiles);
+    // } else if (kind.dig) {
+    //   digLevel(this, kind.dig, this.seed);
+    // } else {
+    //   throw new Error("Level must have either 'dig' or 'layout'.");
+    // }
 
     this.emit("make", this, opts);
   }
@@ -219,7 +219,8 @@ export class Level implements GWD.site.AnalysisSite {
   }
 
   getTile(x: number, y: number): TILE.TileInfo {
-    const id = this.tiles.get(x, y) || 0;
+    const id = this.tiles.get(x, y);
+    if (id === undefined) return TILE.tilesByName["IMPREGNABLE"];
     return TILE.tilesByIndex[id];
   }
 
@@ -441,22 +442,6 @@ export class Level implements GWD.site.AnalysisSite {
   }
 }
 
-function loadLevel(
-  level: Level,
-  data: string[],
-  tiles: Record<string, string>
-) {
-  level.fill("NONE");
-  for (let y = 0; y < data.length; ++y) {
-    const line = data[y];
-    for (let x = 0; x < line.length; ++x) {
-      const ch = line[x];
-      const tile = tiles[ch] || "NONE";
-      level.setTile(x, y, tile);
-    }
-  }
-}
-
 GWD.room.install("ENTRANCE", new GWD.room.BrogueEntrance());
 GWD.room.install("ROOM", new GWD.room.Rectangular());
 
@@ -587,16 +572,3 @@ GWD.room.install(
     },
   })
 );
-
-function digLevel(level: Level, dig: GWD.DiggerOptions, seed = 12345) {
-  const firstRoom = level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
-  const digger = new GWD.Digger(dig);
-  digger.seed = seed;
-  digger.create(level.width, level.height, (x, y, v) => {
-    level.setTile(x, y, v);
-  });
-
-  GWD.site.analyze(level);
-
-  level.locations = digger.locations;
-}

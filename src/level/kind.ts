@@ -4,7 +4,9 @@ import { Game, ObjEvents } from "../game";
 import * as HORDE from "../horde";
 import { Level } from "./level";
 
-export type LevelMakeOpts = Partial<LevelKind>;
+export interface LevelMakeOpts extends Partial<LevelKindBase> {
+  [id: string]: any;
+}
 
 export interface LevelEvents {
   create?: (
@@ -29,7 +31,7 @@ export interface LevelEvents {
   ) => void;
 }
 
-export interface LevelKind {
+export interface LevelKindBase {
   id: string;
   width: number;
   height: number;
@@ -42,13 +44,16 @@ export interface LevelKind {
   scene: string;
   scene_opts: GWU.app.SceneStartOpts;
 
-  dig?: GWD.DiggerOptions;
-  layout?: { data: string[]; tiles: { [id: string]: string } };
+  // dig?: GWD.DiggerOptions;
+  // layout?: { data: string[]; tiles: { [id: string]: string } };
 
   on: ObjEvents & LevelEvents;
   data: { [id: string]: any };
   locations: { [id: string]: GWU.xy.Loc };
 }
+
+// This makes it easier to extend the interface with custom fields
+export interface LevelKind extends LevelKindBase {}
 
 export type LevelConfig = Partial<LevelKind> & {
   id: string;
@@ -78,55 +83,57 @@ export function makeKind(cfg: LevelConfig): LevelKind {
     throw new Error("LevelKind must have 'id'.");
   }
 
-  if (kind.layout) {
-    const data = kind.layout.data;
-    if (!data || !kind.layout.tiles)
-      throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
+  // TODO - plugins need to be able to adjust kinds
 
-    const h = data.length;
-    const w = data[0].length;
-    if (kind.width != w) {
-      console.log("Changing LevelKind width to match 'layout' dimensions.");
-      kind.width = w;
-    }
-    if (kind.height != h) {
-      console.log("Changing LevelKind height to match 'layout' dimensions.");
-      kind.height = h;
-    }
-  } else {
-    kind.dig = kind.dig || {};
+  // if (kind.layout) {
+  //   const data = kind.layout.data;
+  //   if (!data || !kind.layout.tiles)
+  //     throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
 
-    // Is the default dig a good idea?
-    kind.dig = GWU.utils.mergeDeep(
-      // This is the default dig
-      {
-        rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
-        doors: false, // { chance: 50 },
-        halls: { chance: 50 },
-        loops: { minDistance: 30, maxLength: 5 },
-        lakes: false /* {
-      count: 5,
-      wreathSize: 1,
-      wreathChance: 100,
-      width: 10,
-      height: 10,
-    },
-    bridges: {
-      minDistance: 10,
-      maxLength: 10,
-    }, */,
-        stairs: {
-          start: "down",
-          up: true,
-          upTile: "UP_STAIRS_INACTIVE",
-          down: true,
-        },
-        goesUp: true,
-      },
-      // Whatever you pass in overrides this
-      kind.dig
-    );
-  }
+  //   const h = data.length;
+  //   const w = data[0].length;
+  //   if (kind.width != w) {
+  //     console.log("Changing LevelKind width to match 'layout' dimensions.");
+  //     kind.width = w;
+  //   }
+  //   if (kind.height != h) {
+  //     console.log("Changing LevelKind height to match 'layout' dimensions.");
+  //     kind.height = h;
+  //   }
+  // } else {
+  //   kind.dig = kind.dig || {};
+
+  //   // Is the default dig a good idea?
+  //   kind.dig = GWU.utils.mergeDeep(
+  //     // This is the default dig
+  //     {
+  //       rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
+  //       doors: false, // { chance: 50 },
+  //       halls: { chance: 50 },
+  //       loops: { minDistance: 30, maxLength: 5 },
+  //       lakes: false /* {
+  //     count: 5,
+  //     wreathSize: 1,
+  //     wreathChance: 100,
+  //     width: 10,
+  //     height: 10,
+  //   },
+  //   bridges: {
+  //     minDistance: 10,
+  //     maxLength: 10,
+  //   }, */,
+  //       stairs: {
+  //         start: "down",
+  //         up: true,
+  //         upTile: "UP_STAIRS_INACTIVE",
+  //         down: true,
+  //       },
+  //       goesUp: true,
+  //     },
+  //     // Whatever you pass in overrides this
+  //     kind.dig
+  //   );
+  // }
 
   return kind;
 }

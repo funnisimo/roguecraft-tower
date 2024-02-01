@@ -1,7 +1,10 @@
+import * as GWD from "gw-dig";
+import * as GWU from "gw-utils";
 import * as PLUGINS from "../game/plugins";
-import { Level } from "../level";
+import { Level, LevelKind, LevelMakeOpts } from "../level";
 import * as ACTIONS from "../action";
 import * as TILE from "../tile";
+import { Game } from "../game";
 
 export const turn_based: PLUGINS.Plugin = {
   name: "turn_based",
@@ -104,3 +107,158 @@ export const level: PLUGINS.Plugin = {
   },
 };
 PLUGINS.install(level);
+
+export interface LayoutData {
+  data: string[];
+  tiles: { [id: string]: string };
+}
+
+declare module "../level" {
+  interface LevelKind {
+    layout?: LayoutData;
+    dig?: boolean | GWD.DiggerOptions;
+  }
+
+  interface LevelMakeOpts {
+    layout?: Partial<LayoutData>;
+    dig?: boolean | GWD.DiggerOptions;
+  }
+}
+
+export const layout_level: PLUGINS.Plugin = {
+  name: "layout_level",
+  level: {
+    // TODO - move size logic to plugin.makeKind()
+    create(
+      game: Game,
+      id: string | number,
+      kind: LevelKind,
+      opts: LevelMakeOpts
+    ) {
+      if (kind.layout || opts.layout) {
+        const opts_layout: Partial<LayoutData> = opts.layout || {};
+        const kind_layout: Partial<LayoutData> = kind.layout || {};
+
+        const data = opts_layout.data || kind_layout.data;
+        if (!data) return GWU.Option.None();
+
+        if (!Array.isArray(data) || !Array.isArray(data[0])) {
+          console.warn("Invalid level layout");
+          return GWU.Option.None();
+        }
+
+        const h = data.length;
+        const w = data[0].length;
+        if (kind.width != w) {
+          console.log("Changing LevelKind width to match 'layout' dimensions.");
+          kind.width = w;
+        }
+        if (kind.height != h) {
+          console.log(
+            "Changing LevelKind height to match 'layout' dimensions."
+          );
+          kind.height = h;
+        }
+      }
+      return GWU.Option.None();
+    },
+    make(level: Level, opts: LevelMakeOpts) {
+      const opts_layout: Partial<LayoutData> = opts.layout || {};
+      const kind_layout: Partial<LayoutData> = level.kind.layout || {};
+
+      const data = opts_layout.data || kind_layout.data;
+      if (!data) return;
+      if (!Array.isArray(data) || !Array.isArray(data[0])) {
+        console.warn("Invalid level layout");
+        return;
+      }
+
+      const tiles = GWU.utils.mergeDeep(
+        kind_layout.tiles || {},
+        opts_layout.tiles || {}
+      );
+      loadLevel(this, data, tiles);
+    },
+  },
+};
+PLUGINS.install(layout_level);
+
+export function loadLevel(
+  level: Level,
+  data: string[],
+  tiles: Record<string, string>
+) {
+  level.fill("NONE");
+  for (let y = 0; y < data.length; ++y) {
+    const line = data[y];
+    for (let x = 0; x < line.length; ++x) {
+      const ch = line[x];
+      const tile = tiles[ch] || "NONE";
+      level.setTile(x, y, tile);
+    }
+  }
+}
+
+export const dig_level: PLUGINS.Plugin = {
+  name: "dig_level",
+  level: {
+    make(level: Level, opts: LevelMakeOpts) {
+      if (opts.dig === false) return;
+
+      if (opts.dig === undefined) {
+        if (!level.kind.dig) {
+          return;
+        }
+      }
+
+      const opts_dig = typeof opts.dig !== "object" ? {} : opts.dig;
+      const kind_dig = typeof level.kind.dig !== "object" ? {} : level.kind.dig;
+
+      const kind_config = GWU.utils.mergeDeep(
+        {
+          rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
+          doors: false, // { chance: 50 },
+          halls: { chance: 50 },
+          loops: { minDistance: 30, maxLength: 5 },
+          lakes: false /* {
+              count: 5,
+              wreathSize: 1,
+              wreathChance: 100,
+              width: 10,
+              height: 10,
+            },
+            bridges: {
+              minDistance: 10,
+              maxLength: 10,
+            }, */,
+          stairs: {
+            start: "down",
+            up: true,
+            upTile: "UP_STAIRS_INACTIVE", // TODO - This is not right for a default!!!
+            down: true,
+          },
+          goesUp: true,
+        },
+        kind_dig || {}
+      );
+
+      const dig_config = GWU.utils.mergeDeep(kind_config, opts_dig);
+
+      digLevel(level, dig_config, level.seed);
+    },
+  },
+};
+PLUGINS.install(dig_level);
+
+function digLevel(level: Level, dig: GWD.DiggerOptions, seed = 12345) {
+  const firstRoom = level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
+  const digger = new GWD.Digger(dig);
+  digger.seed = seed;
+  digger.create(level.width, level.height, (x, y, v) => {
+    level.setTile(x, y, v);
+  });
+
+  GWD.site.analyze(level);
+
+  level.locations = digger.locations;
+}

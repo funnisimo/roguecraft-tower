@@ -7,6 +7,8 @@ export const hero: PLUGINS.Plugin = {
   hero: {},
   level: {
     tick(level: Level, dt: number) {
+      if (level.done || !level.started) return;
+
       // @ts-ignore
       if (!level.actors.includes(level.game.hero)) {
         level.done = true;

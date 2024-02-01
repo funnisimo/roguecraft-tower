@@ -20327,7 +20327,8 @@ void main() {
       blocksVision: true,
       blocksDiagonal: true,
   });
-  index$1.allTiles.forEach((t) => {
+  index$1.allTiles.forEach((t, i) => {
+      tilesByIndex[i] = t;
       if (tilesByName[t.id])
           return;
       install$8(t);
@@ -22699,7 +22700,7 @@ void main() {
           this.kind = kind;
           const { width, height, seed } = kind;
           this.events = new index.Events(this);
-          this.tiles = grid.make(width, height);
+          this.tiles = grid.make(width, height, tilesByName["FLOOR"].index);
           this.flags = grid.make(width, height);
           this.choke = grid.make(width, height);
           this.seed = seed || random$2.number(100000);
@@ -22729,16 +22730,6 @@ void main() {
               this.seed = opts.seed;
           }
           this.depth = opts.depth || kind.depth || 1;
-          if (kind.layout) {
-              const { data, tiles } = kind.layout;
-              loadLevel(this, data, tiles);
-          }
-          else if (kind.dig) {
-              digLevel(this, kind.dig, this.seed);
-          }
-          else {
-              throw new Error("Level must have either 'dig' or 'layout'.");
-          }
           if (kind.welcome) {
               this.welcome = kind.welcome;
           }
@@ -22774,6 +22765,14 @@ void main() {
                   this.on(key, val);
               }
           });
+          // if (kind.layout) {
+          //   const { data, tiles } = kind.layout;
+          //   // loadLevel(this, data, tiles);
+          // } else if (kind.dig) {
+          //   digLevel(this, kind.dig, this.seed);
+          // } else {
+          //   throw new Error("Level must have either 'dig' or 'layout'.");
+          // }
           this.emit("make", this, opts);
       }
       show() {
@@ -22830,7 +22829,9 @@ void main() {
           return this.tiles.get(x, y) === tile;
       }
       getTile(x, y) {
-          const id = this.tiles.get(x, y) || 0;
+          const id = this.tiles.get(x, y);
+          if (id === undefined)
+              return tilesByName["IMPREGNABLE"];
           return tilesByIndex[id];
       }
       //
@@ -23007,17 +23008,6 @@ void main() {
           this.scheduler.push(repeat_fn.bind(this), time);
       }
   }
-  function loadLevel(level, data, tiles) {
-      level.fill("NONE");
-      for (let y = 0; y < data.length; ++y) {
-          const line = data[y];
-          for (let x = 0; x < line.length; ++x) {
-              const ch = line[x];
-              const tile = tiles[ch] || "NONE";
-              level.setTile(x, y, tile);
-          }
-      }
-  }
   room.install("ENTRANCE", new room.BrogueEntrance());
   room.install("ROOM", new room.Rectangular());
   room.install("BIG_ROOM", new room.Rectangular({ width: "10-20", height: "5-10" }));
@@ -23100,16 +23090,6 @@ void main() {
           CHUNKY: 5,
       },
   }));
-  function digLevel(level, dig, seed = 12345) {
-      level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
-      const digger = new Digger(dig);
-      digger.seed = seed;
-      digger.create(level.width, level.height, (x, y, v) => {
-          level.setTile(x, y, v);
-      });
-      index$1.analyze(level);
-      level.locations = digger.locations;
-  }
 
   const kinds = {};
   // @ts-ignore
@@ -23126,53 +23106,54 @@ void main() {
       if (!kind.id || kind.id.length === 0) {
           throw new Error("LevelKind must have 'id'.");
       }
-      if (kind.layout) {
-          const data = kind.layout.data;
-          if (!data || !kind.layout.tiles)
-              throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
-          const h = data.length;
-          const w = data[0].length;
-          if (kind.width != w) {
-              console.log("Changing LevelKind width to match 'layout' dimensions.");
-              kind.width = w;
-          }
-          if (kind.height != h) {
-              console.log("Changing LevelKind height to match 'layout' dimensions.");
-              kind.height = h;
-          }
-      }
-      else {
-          kind.dig = kind.dig || {};
-          // Is the default dig a good idea?
-          kind.dig = utils.mergeDeep(
-          // This is the default dig
-          {
-              rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
-              doors: false, // { chance: 50 },
-              halls: { chance: 50 },
-              loops: { minDistance: 30, maxLength: 5 },
-              lakes: false /* {
-            count: 5,
-            wreathSize: 1,
-            wreathChance: 100,
-            width: 10,
-            height: 10,
-          },
-          bridges: {
-            minDistance: 10,
-            maxLength: 10,
-          }, */,
-              stairs: {
-                  start: "down",
-                  up: true,
-                  upTile: "UP_STAIRS_INACTIVE",
-                  down: true,
-              },
-              goesUp: true,
-          }, 
-          // Whatever you pass in overrides this
-          kind.dig);
-      }
+      // TODO - plugins need to be able to adjust kinds
+      // if (kind.layout) {
+      //   const data = kind.layout.data;
+      //   if (!data || !kind.layout.tiles)
+      //     throw new Error("LevelKind 'layout' field must have 'data' and 'tiles'.");
+      //   const h = data.length;
+      //   const w = data[0].length;
+      //   if (kind.width != w) {
+      //     console.log("Changing LevelKind width to match 'layout' dimensions.");
+      //     kind.width = w;
+      //   }
+      //   if (kind.height != h) {
+      //     console.log("Changing LevelKind height to match 'layout' dimensions.");
+      //     kind.height = h;
+      //   }
+      // } else {
+      //   kind.dig = kind.dig || {};
+      //   // Is the default dig a good idea?
+      //   kind.dig = GWU.utils.mergeDeep(
+      //     // This is the default dig
+      //     {
+      //       rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
+      //       doors: false, // { chance: 50 },
+      //       halls: { chance: 50 },
+      //       loops: { minDistance: 30, maxLength: 5 },
+      //       lakes: false /* {
+      //     count: 5,
+      //     wreathSize: 1,
+      //     wreathChance: 100,
+      //     width: 10,
+      //     height: 10,
+      //   },
+      //   bridges: {
+      //     minDistance: 10,
+      //     maxLength: 10,
+      //   }, */,
+      //       stairs: {
+      //         start: "down",
+      //         up: true,
+      //         upTile: "UP_STAIRS_INACTIVE",
+      //         down: true,
+      //       },
+      //       goesUp: true,
+      //     },
+      //     // Whatever you pass in overrides this
+      //     kind.dig
+      //   );
+      // }
       return kind;
   }
   function install$3(...args) {
@@ -24083,6 +24064,114 @@ void main() {
       },
   };
   install$1(level$1);
+  const layout_level = {
+      name: "layout_level",
+      level: {
+          // TODO - move size logic to plugin.makeKind()
+          create(game, id, kind, opts) {
+              if (kind.layout || opts.layout) {
+                  const opts_layout = opts.layout || {};
+                  const kind_layout = kind.layout || {};
+                  const data = opts_layout.data || kind_layout.data;
+                  if (!data)
+                      return Option.None();
+                  if (!Array.isArray(data) || !Array.isArray(data[0])) {
+                      console.warn("Invalid level layout");
+                      return Option.None();
+                  }
+                  const h = data.length;
+                  const w = data[0].length;
+                  if (kind.width != w) {
+                      console.log("Changing LevelKind width to match 'layout' dimensions.");
+                      kind.width = w;
+                  }
+                  if (kind.height != h) {
+                      console.log("Changing LevelKind height to match 'layout' dimensions.");
+                      kind.height = h;
+                  }
+              }
+              return Option.None();
+          },
+          make(level, opts) {
+              const opts_layout = opts.layout || {};
+              const kind_layout = level.kind.layout || {};
+              const data = opts_layout.data || kind_layout.data;
+              if (!data)
+                  return;
+              if (!Array.isArray(data) || !Array.isArray(data[0])) {
+                  console.warn("Invalid level layout");
+                  return;
+              }
+              const tiles = utils.mergeDeep(kind_layout.tiles || {}, opts_layout.tiles || {});
+              loadLevel(this, data, tiles);
+          },
+      },
+  };
+  install$1(layout_level);
+  function loadLevel(level, data, tiles) {
+      level.fill("NONE");
+      for (let y = 0; y < data.length; ++y) {
+          const line = data[y];
+          for (let x = 0; x < line.length; ++x) {
+              const ch = line[x];
+              const tile = tiles[ch] || "NONE";
+              level.setTile(x, y, tile);
+          }
+      }
+  }
+  const dig_level = {
+      name: "dig_level",
+      level: {
+          make(level, opts) {
+              if (opts.dig === false)
+                  return;
+              if (opts.dig === undefined) {
+                  if (!level.kind.dig) {
+                      return;
+                  }
+              }
+              const opts_dig = typeof opts.dig !== "object" ? {} : opts.dig;
+              const kind_dig = typeof level.kind.dig !== "object" ? {} : level.kind.dig;
+              const kind_config = utils.mergeDeep({
+                  rooms: { count: 20, first: "FIRST_ROOM", digger: "PROFILE" },
+                  doors: false, // { chance: 50 },
+                  halls: { chance: 50 },
+                  loops: { minDistance: 30, maxLength: 5 },
+                  lakes: false /* {
+                      count: 5,
+                      wreathSize: 1,
+                      wreathChance: 100,
+                      width: 10,
+                      height: 10,
+                    },
+                    bridges: {
+                      minDistance: 10,
+                      maxLength: 10,
+                    }, */,
+                  stairs: {
+                      start: "down",
+                      up: true,
+                      upTile: "UP_STAIRS_INACTIVE", // TODO - This is not right for a default!!!
+                      down: true,
+                  },
+                  goesUp: true,
+              }, kind_dig || {});
+              const dig_config = utils.mergeDeep(kind_config, opts_dig);
+              digLevel(level, dig_config, level.seed);
+          },
+      },
+  };
+  install$1(dig_level);
+  function digLevel(level, dig, seed = 12345) {
+      level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
+      const digger = new Digger(dig);
+      digger.seed = seed;
+      digger.create(level.width, level.height, (x, y, v) => {
+          level.setTile(x, y, v);
+      });
+      index$1.analyze(level);
+      level.locations = digger.locations;
+  }
 
   // NOTE - There really isn't anything special about items yet.
   const actor = {
@@ -24097,6 +24186,8 @@ void main() {
       hero: {},
       level: {
           tick(level, dt) {
+              if (level.done || !level.started)
+                  return;
               // @ts-ignore
               if (!level.actors.includes(level.game.hero)) {
                   level.done = true;
@@ -24118,7 +24209,16 @@ void main() {
   // NOTE - There really isn't anything special about items yet.
   const core = {
       name: "core",
-      plugins: ["turn_based", "item", "actor", "hero", "game", "level"],
+      plugins: [
+          "turn_based",
+          "item",
+          "actor",
+          "hero",
+          "game",
+          "level",
+          "layout_level",
+          "dig_level",
+      ],
   };
   install$1(core);
 
@@ -25878,6 +25978,7 @@ void main() {
           width: 60,
           height: 35,
           scene: "level",
+          dig: true,
           on: {
               make(level, opts) {
                   console.log("TOWER LEVEL CREATE");

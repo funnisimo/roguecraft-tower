@@ -134,7 +134,8 @@ install({
   blocksDiagonal: true,
 });
 
-GWD.site.allTiles.forEach((t) => {
+GWD.site.allTiles.forEach((t, i) => {
+  tilesByIndex[i] = t;
   if (tilesByName[t.id]) return;
   install(t);
 });
