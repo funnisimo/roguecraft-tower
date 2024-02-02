@@ -22641,6 +22641,77 @@ void main() {
       return factory$2.create(kind, config);
   }
 
+  const commandsByName = {};
+  function install$4(name, fn) {
+      commandsByName[name] = fn;
+  }
+  function get(name) {
+      return commandsByName[name] || null;
+  }
+  install$4("show_inventory", (scene, e) => {
+      console.log(">> INVENTORY <<");
+      e.stopPropagation();
+  });
+  install$4("find_up_stairs", (scene, e) => {
+      // find stairs
+      let loc = [-1, -1];
+      const level = scene.data.level;
+      level.tiles.forEach((t, x, y) => {
+          const tile = tilesByIndex[t];
+          if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+              loc[0] = x;
+              loc[1] = y;
+          }
+      });
+      // set player goal
+      if (loc[0] >= 0) {
+          level.game.hero.setGoal(loc[0], loc[1]);
+      }
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$4("find_down_stairs", (scene, e) => {
+      // find stairs
+      let loc = [-1, -1];
+      const level = scene.data.level;
+      level.tiles.forEach((t, x, y) => {
+          const tile = tilesByIndex[t];
+          if (tile.id === "DOWN_STAIRS") {
+              loc[0] = x;
+              loc[1] = y;
+          }
+      });
+      // set player goal
+      if (loc[0] >= 0) {
+          level.game.hero.setGoal(loc[0], loc[1]);
+      }
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$4("move_dir", (scene, e) => {
+      const level = scene.data.level;
+      // @ts-ignore
+      moveDir(level, level.game.hero, e.dir);
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$4("follow_path", (scene, e) => {
+      const level = scene.data.level;
+      const hero = level.game.hero;
+      if (hero.goalPath && hero.goalPath.length) {
+          hero.followPath = true;
+          hero.act(level);
+      }
+      scene.needsDraw = true;
+      e.stopPropagation();
+  });
+  install$4("spawn_zombie", (scene, e) => {
+      const level = scene.data.level;
+      const game = level.game;
+      spawn(level, "zombie", game.hero.x, game.hero.y);
+      e.stopPropagation();
+  });
+
   class Level {
       id = 0;
       depth = 0;
@@ -22675,6 +22746,7 @@ void main() {
       events;
       inputQueue;
       needInput = false;
+      keymap = {};
       constructor(game, id, kind) {
           this.id = id;
           this.game = game;
@@ -22735,6 +22807,13 @@ void main() {
           else if (opts.scene_opts) {
               this.scene_opts = utils.mergeDeep(this.scene_opts, opts.scene_opts);
           }
+          // combine keymap options
+          if (kind.keymap) {
+              this.keymap = utils.mergeDeep(this.keymap, kind.keymap);
+          }
+          if (opts.keymap) {
+              this.keymap = utils.mergeDeep(this.keymap, opts.keymap);
+          }
           let onFns = kind.on || {};
           Object.entries(onFns).forEach(([key, val]) => {
               if (typeof val === "function") {
@@ -22768,6 +22847,66 @@ void main() {
       update(time) {
           // Update should be handled by plugin - e.g. "turn_based"
           this.emit("update", this, time);
+      }
+      dispatch(e) {
+          let level = this;
+          let game = this.game;
+          e.dispatch({
+              emit: (evt, e) => {
+                  let command = level.keymap[evt];
+                  if (!command)
+                      return;
+                  if (typeof command === "function") {
+                      return command(level.scene, e);
+                  }
+                  // TODO - handle '@action, '=command', or 'either'
+                  let fn = get$1(command);
+                  if (fn) {
+                      // @ts-ignore
+                      fn(level, game.hero);
+                      level.scene.needsDraw = true;
+                      e.stopPropagation(); // We handled it
+                  }
+                  else {
+                      let fn = get(command);
+                      if (fn) {
+                          fn(level.scene, e);
+                      }
+                      else {
+                          console.warn(`Failed to find action or command: ${command} for key: ${evt}`);
+                      }
+                  }
+              },
+          });
+          if (e.propagationStopped)
+              return;
+          e.dispatch({
+              emit: (evt, e) => {
+                  let command = game.keymap[evt];
+                  if (!command)
+                      return;
+                  if (typeof command === "function") {
+                      return command(level.scene, e);
+                  }
+                  // TODO - handle '@action, '=command', or 'either'
+                  let fn = get$1(command);
+                  if (fn) {
+                      // @ts-ignore
+                      fn(level, game.hero);
+                      level.scene.needsDraw = true;
+                      e.stopPropagation(); // We handled it
+                  }
+                  else {
+                      let fn = get(command);
+                      if (fn) {
+                          fn(level.scene, e);
+                      }
+                      else {
+                          console.warn(`Failed to find action or command: ${command} for key: ${evt}`);
+                      }
+                  }
+              },
+          });
       }
       _tick(dt) {
           this.emit("tick", this, dt);
@@ -23075,6 +23214,7 @@ void main() {
           data: {},
           scene: "level",
           scene_opts: {},
+          keymap: {},
       }, cfg);
       if (!kind.id || kind.id.length === 0) {
           throw new Error("LevelKind must have 'id'.");
@@ -23129,7 +23269,7 @@ void main() {
       // }
       return kind;
   }
-  function install$4(...args) {
+  function install$3(...args) {
       let id, config;
       if (args.length == 1) {
           config = args[0];
@@ -23184,7 +23324,9 @@ void main() {
                           }
                       });
                   }
-                  else if (key == "keymap") ;
+                  else if (key == "keymap") {
+                      level.keymap = utils.mergeDeep(level.keymap, val);
+                  }
                   else if (typeof val === "function") {
                       level.on(key, val);
                   }
@@ -23414,7 +23556,7 @@ void main() {
   }
 
   const hordes = {};
-  function install$3(id, horde) {
+  function install$2(id, horde) {
       if (typeof horde === "string") {
           horde = { leader: horde };
       }
@@ -23589,7 +23731,7 @@ void main() {
               a: "attack",
               f: "fire",
               g: "pickup",
-              i: "show_inventory",
+              // i: "show_inventory",
               // "z": "spawn_zombie",
               " ": "idle",
               ".": "idle",
@@ -23802,7 +23944,7 @@ void main() {
   const active = [];
   // @ts-ignore
   globalThis.PLUGINS = plugins;
-  function install$2(...args) {
+  function install$1(...args) {
       let plugin;
       let name;
       if (args.length == 1) {
@@ -23870,78 +24012,7 @@ void main() {
       name: "item",
       item: {},
   };
-  install$2(item);
-
-  const commandsByName = {};
-  function install$1(name, fn) {
-      commandsByName[name] = fn;
-  }
-  function get(name) {
-      return commandsByName[name] || null;
-  }
-  install$1("show_inventory", (scene, e) => {
-      console.log(">> INVENTORY <<");
-      e.stopPropagation();
-  });
-  install$1("find_up_stairs", (scene, e) => {
-      // find stairs
-      let loc = [-1, -1];
-      const level = scene.data.level;
-      level.tiles.forEach((t, x, y) => {
-          const tile = tilesByIndex[t];
-          if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-              loc[0] = x;
-              loc[1] = y;
-          }
-      });
-      // set player goal
-      if (loc[0] >= 0) {
-          level.game.hero.setGoal(loc[0], loc[1]);
-      }
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$1("find_down_stairs", (scene, e) => {
-      // find stairs
-      let loc = [-1, -1];
-      const level = scene.data.level;
-      level.tiles.forEach((t, x, y) => {
-          const tile = tilesByIndex[t];
-          if (tile.id === "DOWN_STAIRS") {
-              loc[0] = x;
-              loc[1] = y;
-          }
-      });
-      // set player goal
-      if (loc[0] >= 0) {
-          level.game.hero.setGoal(loc[0], loc[1]);
-      }
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$1("move_dir", (scene, e) => {
-      const level = scene.data.level;
-      // @ts-ignore
-      moveDir(level, level.game.hero, e.dir);
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$1("follow_path", (scene, e) => {
-      const level = scene.data.level;
-      const hero = level.game.hero;
-      if (hero.goalPath && hero.goalPath.length) {
-          hero.followPath = true;
-          hero.act(level);
-      }
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$1("spawn_zombie", (scene, e) => {
-      const level = scene.data.level;
-      const game = level.game;
-      spawn(level, "zombie", game.hero.x, game.hero.y);
-      e.stopPropagation();
-  });
+  install$1(item);
 
   const level$1 = {
       name: "level",
@@ -23984,7 +24055,7 @@ void main() {
           },
       },
   };
-  install$2(level$1);
+  install$1(level$1);
   const turn_based = {
       name: "turn_based",
       level: {
@@ -24000,34 +24071,7 @@ void main() {
               // TODO - Move inputQueue to Level
               while (level.inputQueue.length && level.needInput) {
                   const e = level.inputQueue.dequeue();
-                  e &&
-                      e.dispatch({
-                          emit: (evt, e) => {
-                              let command = game.keymap[evt];
-                              if (!command)
-                                  return;
-                              if (typeof command === "function") {
-                                  return command(level.scene, e);
-                              }
-                              // TODO - handle '@action, '=command', or 'either'
-                              let fn = get$1(command);
-                              if (fn) {
-                                  // @ts-ignore
-                                  fn(level, game.hero);
-                                  level.scene.needsDraw = true;
-                                  e.stopPropagation(); // We handled it
-                              }
-                              else {
-                                  let fn = get(command);
-                                  if (fn) {
-                                      fn(level.scene, e);
-                                  }
-                                  else {
-                                      console.warn(`Failed to find action or command: ${command} for key: ${evt}`);
-                                  }
-                              }
-                          },
-                      });
+                  e && level.dispatch(e);
               }
               if (level.needInput)
                   return;
@@ -24071,7 +24115,7 @@ void main() {
           },
       },
   };
-  install$2(turn_based);
+  install$1(turn_based);
   const layout_level = {
       name: "layout_level",
       level: {
@@ -24115,7 +24159,7 @@ void main() {
           },
       },
   };
-  install$2(layout_level);
+  install$1(layout_level);
   function loadLevel(level, data, tiles) {
       level.fill("NONE");
       for (let y = 0; y < data.length; ++y) {
@@ -24169,7 +24213,7 @@ void main() {
           },
       },
   };
-  install$2(dig_level);
+  install$1(dig_level);
   function digLevel(level, dig, seed = 12345) {
       level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
       const digger = new Digger(dig);
@@ -24193,7 +24237,7 @@ void main() {
           },
       },
   };
-  install$2(actor);
+  install$1(actor);
 
   // NOTE - There really isn't anything special about items yet.
   const hero = {
@@ -24231,14 +24275,14 @@ void main() {
           },
       },
   };
-  install$2(hero);
+  install$1(hero);
 
   // NOTE - There really isn't anything special about items yet.
   const game = {
       name: "game",
       game: {},
   };
-  install$2(game);
+  install$1(game);
 
   // NOTE - There really isn't anything special about items yet.
   const core = {
@@ -24254,7 +24298,7 @@ void main() {
           "dig_level",
       ],
   };
-  install$2(core);
+  install$1(core);
 
   install$5({
       id: "HERO",
@@ -24420,32 +24464,32 @@ void main() {
 
   */
 
-  install$3("ZOMBIE", {
+  install$2("ZOMBIE", {
       leader: "ZOMBIE",
       members: { ZOMBIE: "2-3" },
       frequency: 10,
   });
-  install$3("ZOMBIE2", {
+  install$2("ZOMBIE2", {
       leader: "ARMOR_ZOMBIE",
       members: { ZOMBIE: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$3("ZOMBIE3", {
+  install$2("ZOMBIE3", {
       leader: "ARMOR_ZOMBIE_2",
       members: { ARMOR_ZOMBIE: "0-2", ZOMBIE: "1-3" },
       frequency: (l) => 2 * l,
   });
-  install$3("SKELETON", {
+  install$2("SKELETON", {
       leader: "SKELETON",
       members: { SKELETON: "2-3" },
       frequency: 10,
   });
-  install$3("SKELETON2", {
+  install$2("SKELETON2", {
       leader: "ARMOR_SKELETON",
       members: { SKELETON: "1-3" },
       frequency: (l) => l + 5,
   });
-  install$3("SKELETON3", {
+  install$2("SKELETON3", {
       leader: "ARMOR_SKELETON_2",
       members: { SKELETON: "1-3", ARMOR_SKELETON: "0-2" },
       frequency: (l) => 2 * l,
@@ -25817,7 +25861,7 @@ void main() {
       level.game.endTurn(actor, actor.moveSpeed);
       return true;
   });
-  install$2("potion", {
+  install$1("potion", {
       game: {
           create(game) {
               game.keymap["p"] = "potion";
@@ -25977,12 +26021,13 @@ void main() {
   */
 
   function start() {
-      install$4({
+      install$3({
           id: "TOWER",
           width: 60,
           height: 35,
           scene: "level",
           dig: true,
+          keymap: { i: "show_inventory" },
           on: {
               create(level, opts) {
                   console.log("TOWER LEVEL CREATE");

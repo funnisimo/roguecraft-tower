@@ -18,7 +18,7 @@ export type EventFn = (level: Level, e: GWU.app.Event) => void;
 export interface GameEvents {
   ctor?(app: GWU.app.App, opts: GameOpts): Game;
   create?(game: Game, opts: GameOpts);
-  // start - use create for things you want at game start time.
+  // start? - use create for things you want at game start time.
   destroy?(game: Game);
 }
 
@@ -117,7 +117,7 @@ export class Game {
         a: "attack",
         f: "fire",
         g: "pickup",
-        i: "show_inventory",
+        // i: "show_inventory",
         // "z": "spawn_zombie",
         " ": "idle",
         ".": "idle",

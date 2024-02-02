@@ -3,6 +3,7 @@ import * as GWD from "gw-dig";
 import { Game, ObjEvents } from "../game";
 import * as HORDE from "../horde";
 import { Level } from "./level";
+import { CommandFn } from "../command";
 
 export interface LevelCreateOpts extends Partial<LevelKindBase> {
   [id: string]: any;
@@ -49,6 +50,8 @@ export interface LevelKindBase {
 
   on: ObjEvents & LevelEvents;
   data: { [id: string]: any };
+  keymap?: { [id: string]: string | CommandFn };
+
   locations: { [id: string]: GWU.xy.Loc };
 }
 
@@ -75,6 +78,7 @@ export function makeKind(cfg: LevelConfig): LevelKind {
       data: {},
       scene: "level",
       scene_opts: {},
+      keymap: {},
     },
     cfg
   ) as LevelKind;

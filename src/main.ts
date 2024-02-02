@@ -29,6 +29,7 @@ function start() {
     height: 35,
     scene: "level",
     dig: true,
+    keymap: { i: "show_inventory" },
     on: {
       create(level: Level, opts: LevelCreateOpts) {
         console.log("TOWER LEVEL CREATE");

@@ -69,33 +69,7 @@ export const turn_based: PLUGINS.Plugin = {
       // TODO - Move inputQueue to Level
       while (level.inputQueue.length && level.needInput) {
         const e = level.inputQueue.dequeue();
-        e &&
-          e.dispatch({
-            emit: (evt, e) => {
-              let command = game.keymap[evt];
-              if (!command) return;
-              if (typeof command === "function") {
-                return command(level.scene, e);
-              }
-              // TODO - handle '@action, '=command', or 'either'
-              let fn = ACTIONS.get(command);
-              if (fn) {
-                // @ts-ignore
-                fn(level, game.hero);
-                level.scene.needsDraw = true;
-                e.stopPropagation(); // We handled it
-              } else {
-                let fn = COMMANDS.get(command);
-                if (fn) {
-                  fn(level.scene, e);
-                } else {
-                  console.warn(
-                    `Failed to find action or command: ${command} for key: ${evt}`
-                  );
-                }
-              }
-            },
-          });
+        e && level.dispatch(e);
       }
 
       if (level.needInput) return;

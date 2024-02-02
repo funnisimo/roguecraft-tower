@@ -14,6 +14,7 @@ import { CallbackFn } from "../game/obj";
 import { Hero } from "../hero";
 import { LevelConfig, LevelKind, LevelCreateOpts, getKind } from "./kind";
 import { factory } from "./factory";
+import * as COMMANDS from "../command";
 
 export class Level implements GWD.site.AnalysisSite {
   id: string | number = 0;
@@ -60,6 +61,7 @@ export class Level implements GWD.site.AnalysisSite {
 
   inputQueue: GWU.app.Queue;
   needInput = false;
+  keymap: Record<string, string | COMMANDS.CommandFn> = {};
 
   constructor(game: Game, id: string | number, kind: LevelKind) {
     this.id = id;
@@ -131,6 +133,14 @@ export class Level implements GWD.site.AnalysisSite {
       this.scene_opts = GWU.utils.mergeDeep(this.scene_opts, opts.scene_opts);
     }
 
+    // combine keymap options
+    if (kind.keymap) {
+      this.keymap = GWU.utils.mergeDeep(this.keymap, kind.keymap);
+    }
+    if (opts.keymap) {
+      this.keymap = GWU.utils.mergeDeep(this.keymap, opts.keymap);
+    }
+
     let onFns = kind.on || {};
     Object.entries(onFns).forEach(([key, val]: [string, CallbackFn]) => {
       if (typeof val === "function") {
@@ -168,6 +178,67 @@ export class Level implements GWD.site.AnalysisSite {
   update(time: number) {
     // Update should be handled by plugin - e.g. "turn_based"
     this.emit("update", this, time);
+  }
+
+  dispatch(e: GWU.app.Event) {
+    let level = this;
+    let game = this.game;
+
+    e.dispatch({
+      emit: (evt, e) => {
+        let command = level.keymap[evt];
+        if (!command) return;
+        if (typeof command === "function") {
+          return command(level.scene, e);
+        }
+        // TODO - handle '@action, '=command', or 'either'
+        let fn = ACTIONS.get(command);
+        if (fn) {
+          // @ts-ignore
+          fn(level, game.hero);
+          level.scene.needsDraw = true;
+          e.stopPropagation(); // We handled it
+        } else {
+          let fn = COMMANDS.get(command);
+          if (fn) {
+            fn(level.scene, e);
+          } else {
+            console.warn(
+              `Failed to find action or command: ${command} for key: ${evt}`
+            );
+          }
+        }
+      },
+    });
+
+    if (e.propagationStopped) return;
+
+    e.dispatch({
+      emit: (evt, e) => {
+        let command = game.keymap[evt];
+        if (!command) return;
+        if (typeof command === "function") {
+          return command(level.scene, e);
+        }
+        // TODO - handle '@action, '=command', or 'either'
+        let fn = ACTIONS.get(command);
+        if (fn) {
+          // @ts-ignore
+          fn(level, game.hero);
+          level.scene.needsDraw = true;
+          e.stopPropagation(); // We handled it
+        } else {
+          let fn = COMMANDS.get(command);
+          if (fn) {
+            fn(level.scene, e);
+          } else {
+            console.warn(
+              `Failed to find action or command: ${command} for key: ${evt}`
+            );
+          }
+        }
+      },
+    });
   }
 
   _tick(dt: number) {

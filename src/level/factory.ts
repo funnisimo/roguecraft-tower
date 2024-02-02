@@ -2,11 +2,12 @@ import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents, Game, EventFn } from "../game";
 import { LevelEvents, LevelKind, LevelCreateOpts, getKind } from "./kind";
 import { Level } from "./level";
+import { CommandFn } from "../command";
 
 export interface LevelPlugin extends LevelEvents {
   on?: ObjEvents;
   data?: { [id: string]: any };
-  keymap?: { [id: string]: string | EventFn };
+  keymap?: { [id: string]: string | CommandFn };
 }
 
 export class LevelFactory {
@@ -54,7 +55,7 @@ export class LevelFactory {
             }
           });
         } else if (key == "keymap") {
-          // TODO - Add to level keymap
+          level.keymap = GWU.utils.mergeDeep(level.keymap, val);
         } else if (typeof val === "function") {
           level.on(key, val);
         } else {
