@@ -57,6 +57,7 @@ export class Game {
   actors: Record<string, ACTOR.ActorKind>;
   items: Record<string, ITEM.ItemKind>;
   hordes: Record<string, HORDE.Horde>;
+  tiles: GWD.site.TileFactory;
   // TODO - tiles: ...
 
   keymap: Record<string, string | CommandFn> = {};
@@ -80,6 +81,7 @@ export class Game {
     this.actors = ACTOR.kinds;
     this.items = ITEM.kinds;
     this.hordes = HORDE.hordes;
+    this.tiles = GWD.site.tileFactory;
     //
 
     // TODO - Should be a reference or a copy?

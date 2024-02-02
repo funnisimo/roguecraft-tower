@@ -8,7 +8,7 @@
     "dist": "dist"
   },
   "scripts": {
-    "copy": "cp ../gw-utils/dist/gw-utils.* dist && cp ../gw-dig/dist/gw-dig.* dist",
+    "copy:do-not-use": "cp ../gw-utils/dist/gw-utils.* dist && cp ../gw-dig/dist/gw-dig.* dist",
     "build": "rollup -c",
     "test": "jest",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
@@ -31,6 +31,7 @@
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-typescript": "^11.1.6",
+    "@rslike/std": "^2.1.2",
     "@types/jest": "^29.5.11",
     "@types/lodash": "^4.14.202",
     "@types/node": "^20.11.5",

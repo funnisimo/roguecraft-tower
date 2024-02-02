@@ -69,7 +69,11 @@ export class Level implements GWD.site.AnalysisSite {
     this.kind = kind;
     const { width, height, seed } = kind;
     this.events = new GWU.app.Events(this);
-    this.tiles = GWU.grid.make(width, height, TILE.tilesByName["FLOOR"].index);
+    this.tiles = GWU.grid.make(
+      width,
+      height,
+      TILE.getTileByName("FLOOR")!.index
+    );
     this.flags = GWU.grid.make(width, height);
     this.choke = GWU.grid.make(width, height);
 
@@ -247,14 +251,14 @@ export class Level implements GWD.site.AnalysisSite {
 
   fill(tile: number | string) {
     if (typeof tile === "string") {
-      tile = TILE.tilesByName[tile].index;
+      tile = TILE.getTileByName(tile)!.index;
     }
     this.tiles.fill(tile);
   }
 
   setTile(x: number, y: number, id: number | string, opts = {}) {
     const tile =
-      typeof id === "string" ? TILE.tilesByName[id] : TILE.tilesByIndex[id];
+      typeof id === "string" ? TILE.getTileByName[id] : TILE.getTile(id);
 
     if (!tile) {
       console.warn("Failed to find tile: " + id);
@@ -277,15 +281,15 @@ export class Level implements GWD.site.AnalysisSite {
 
   hasTile(x: number, y: number, tile: number | string) {
     if (typeof tile === "string") {
-      tile = TILE.tilesByName[tile].index;
+      tile = TILE.getTileByName(tile)!.index;
     }
     return this.tiles.get(x, y) === tile;
   }
 
   getTile(x: number, y: number): TILE.TileInfo {
     const id = this.tiles.get(x, y);
-    if (id === undefined) return TILE.tilesByName["IMPREGNABLE"];
-    return TILE.tilesByIndex[id];
+    if (id === undefined) return TILE.getTileByName["IMPREGNABLE"];
+    return TILE.getTile(id);
   }
 
   //

@@ -43,7 +43,7 @@ export const level: PLUGINS.Plugin = {
 
       // tick tiles
       level.tiles.forEach((index, x, y) => {
-        const tile = TILE.tilesByIndex[index];
+        const tile = TILE.getTile(index);
         if (tile.on && tile.on.tick) {
           tile.on.tick.call(tile, level, x, y, dt);
         }
@@ -258,9 +258,9 @@ export const dig_level: PLUGINS.Plugin = {
 };
 PLUGINS.install(dig_level);
 
-function digLevel(level: Level, dig: GWD.DiggerOptions, seed = 12345) {
+function digLevel(level: Level, config: GWD.DiggerOptions, seed = 12345) {
   const firstRoom = level.depth < 2 ? "ENTRANCE" : "FIRST_ROOM";
-  const digger = new GWD.Digger(dig);
+  const digger = new GWD.Digger(config);
   digger.seed = seed;
   digger.create(level.width, level.height, (x, y, v) => {
     level.setTile(x, y, v);

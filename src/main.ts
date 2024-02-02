@@ -120,7 +120,7 @@ function start() {
         if (level.proceed) {
           level.game.addMessage(level.proceed);
         }
-        const inactiveStairs = TILE.tilesByName["UP_STAIRS_INACTIVE"].index;
+        const inactiveStairs = TILE.getTileByName("UP_STAIRS_INACTIVE")!.index;
         level.tiles.forEach((index, x, y) => {
           if (index === inactiveStairs) {
             FX.flash(level, x, y, "yellow").then(() => {

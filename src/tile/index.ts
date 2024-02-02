@@ -46,17 +46,23 @@ export interface TileInfo
   extends Omit<TileOptions, "priority" | "tags">,
     GWD.site.TileInfo {}
 
-// export interface TileInfo extends TileConfig {
-//   index: number;
-// }
-
-export const tilesByIndex: TileInfo[] = [];
-export const tilesByName: Record<string, TileInfo> = {};
+// export const tilesByIndex: TileInfo[] = [];
+// export const tilesByName: Record<string, TileInfo> = {};
 
 export function install(cfg: TileConfig) {
+  console.log("INSTALL TILE - " + cfg.id);
+
   const info = GWD.site.installTile(cfg);
-  tilesByIndex[info.index] = info;
-  tilesByName[info.id] = info;
+  // tilesByIndex[info.index] = info;
+  // tilesByName[info.id] = info;
+}
+
+export function getTile(index: number): TileInfo | null {
+  return GWD.site.getTile(index);
+}
+
+export function getTileByName(name: string): TileInfo | null {
+  return GWD.site.getTile(name);
 }
 
 install({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
@@ -76,7 +82,7 @@ install({
   bg: 0x222,
   priority: 15,
   on: {
-    place(game, x, y) {
+    place(level, x, y) {
       // game.wait(1000, () => {
       //   if (game.map.hasTile(x, y, ids.CORPSE)) {
       //     game.setTile(x, y, ids.FLOOR);
@@ -134,8 +140,8 @@ install({
   blocksDiagonal: true,
 });
 
-GWD.site.allTiles.forEach((t, i) => {
-  tilesByIndex[i] = t;
-  if (tilesByName[t.id]) return;
-  install(t);
-});
+// GWD.site.allTiles.forEach((t, i) => {
+//   tilesByIndex[i] = t;
+//   if (tilesByName[t.id]) return;
+//   install(t);
+// });

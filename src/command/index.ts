@@ -25,7 +25,7 @@ install("find_up_stairs", (scene: GWU.app.Scene, e: GWU.app.Event) => {
   let loc: GWU.xy.Loc = [-1, -1];
   const level = scene.data.level as Level;
   level.tiles.forEach((t, x, y) => {
-    const tile = TILE.tilesByIndex[t];
+    const tile = TILE.getTile(t)!;
     if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
       loc[0] = x;
       loc[1] = y;
@@ -44,7 +44,7 @@ install("find_down_stairs", (scene: GWU.app.Scene, e: GWU.app.Event) => {
   let loc: GWU.xy.Loc = [-1, -1];
   const level = scene.data.level as Level;
   level.tiles.forEach((t, x, y) => {
-    const tile = TILE.tilesByIndex[t];
+    const tile = TILE.getTile(t)!;
     if (tile.id === "DOWN_STAIRS") {
       loc[0] = x;
       loc[1] = y;
