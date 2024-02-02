@@ -206,7 +206,7 @@ export class Hero extends ACTOR.Actor {
     }
     this.clearGoal();
 
-    level.game.needInput = true;
+    level.needInput = true;
     console.log("Hero - await input", level.scheduler.time);
   }
 

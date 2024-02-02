@@ -14553,7 +14553,7 @@ void main() {
   // //     return layer;
   // // };
 
-  function make$1$2(opts) {
+  function make$1$1(opts) {
       const w = new Widget(opts);
       if (opts.with) {
           Object.entries(opts.with).forEach(([name, fn]) => {
@@ -14590,7 +14590,7 @@ void main() {
   	alignChildren: alignChildren,
   	dialog: dialog,
   	drawBorder: drawBorder,
-  	make: make$1$2,
+  	make: make$1$1,
   	spaceChildren: spaceChildren,
   	toPadArray: toPadArray,
   	wrapChildren: wrapChildren
@@ -16298,7 +16298,7 @@ void main() {
   installType('feature', feature);
   installType('effect', feature);
   installType('id', feature);
-  function make$1$1(id, config) {
+  function make$1(id, config) {
       if (!id)
           return FALSE;
       if (typeof id === 'string') {
@@ -16322,7 +16322,7 @@ void main() {
       let steps;
       if (Array.isArray(id)) {
           steps = id
-              .map((config) => make$1$1(config))
+              .map((config) => make$1(config))
               .filter((a) => a !== null);
       }
       else if (typeof id === 'function') {
@@ -16330,7 +16330,7 @@ void main() {
       }
       else {
           steps = Object.entries(id)
-              .map(([key, config]) => make$1$1(key, config))
+              .map(([key, config]) => make$1(key, config))
               .filter((a) => a !== null);
       }
       if (steps.length === 1) {
@@ -16345,7 +16345,7 @@ void main() {
           return [];
       if (Array.isArray(cfg)) {
           return cfg
-              .map((c) => make$1$1(c))
+              .map((c) => make$1(c))
               .filter((fn) => fn !== null);
       }
       if (typeof cfg === 'string') {
@@ -16361,7 +16361,7 @@ void main() {
       else if (typeof cfg === 'function') {
           return [cfg];
       }
-      const steps = Object.entries(cfg).map(([key, config]) => make$1$1(key, config));
+      const steps = Object.entries(cfg).map(([key, config]) => make$1(key, config));
       return steps.filter((s) => s !== null);
   }
 
@@ -16800,7 +16800,7 @@ void main() {
       info.frequency = frequency.make(config.frequency);
       info.flags = 0;
       info.requiredTile = config.requiredTile || null;
-      info.feature = config.feature ? make$1$1(config.feature) : null;
+      info.feature = config.feature ? make$1(config.feature) : null;
       info.blueprint = config.blueprint || null;
       hordes$1.push(info);
       return info;
@@ -20399,7 +20399,7 @@ void main() {
           buf.drawSprite(this.x, this.y, this);
       }
   }
-  function create$3(cfg) {
+  function create$4(cfg) {
       const fx = new FX(cfg);
       fx._create(cfg);
       fx.emit("create", fx, cfg);
@@ -20408,7 +20408,7 @@ void main() {
   function flash(level, x, y, color = "white", ms = 300) {
       const scene = level.scene;
       scene.pause({ update: true });
-      const fx = create$3({ x, y, bg: color, z: 4 });
+      const fx = create$4({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       scene.needsDraw = true;
@@ -20426,7 +20426,7 @@ void main() {
   function flashGameTime(level, x, y, color = "white", ms = 300) {
       const scene = level.scene;
       const startTime = scene.app.time;
-      const fx = create$3({ x, y, bg: color, z: 4 });
+      const fx = create$4({ x, y, bg: color, z: 4 });
       level.addFx(fx);
       let _success = NOOP;
       // let _fail: CallbackFn = GWU.NOOP;
@@ -20478,7 +20478,7 @@ void main() {
       else if (sprite.ch && sprite.ch.length !== 1) {
           throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
       }
-      const fx = create$3(sprite);
+      const fx = create$4(sprite);
       // console.log("- fire", from, to);
       scene.pause({ update: true });
       const tween$1 = tween
@@ -20798,7 +20798,7 @@ void main() {
   function use$4(plugin) {
       factory$4.use(plugin);
   }
-  function make$1(id, opts = {}) {
+  function make(id, opts = {}) {
       let kind = typeof id === "string" ? getKind$3(id) : id;
       if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
           throw new Error("Invalid ItemKind: " + JSON.stringify(id));
@@ -20811,7 +20811,7 @@ void main() {
           newbie = random$1(level); // TODO - default match?
       }
       else if (typeof id === "string") {
-          newbie = make$1(id);
+          newbie = make(id);
       }
       else {
           newbie = id;
@@ -20871,7 +20871,7 @@ void main() {
       if (index < 0)
           return null;
       const kind = allKinds[index];
-      const item = make$1(kind);
+      const item = make(kind);
       return item;
   }
 
@@ -22272,7 +22272,7 @@ void main() {
   function use$3(plugin) {
       factory$3.use(plugin);
   }
-  function create$2(kind, config = {}) {
+  function create$3(kind, config = {}) {
       if (typeof kind === "string") {
           kind = getKind$2(kind);
           if (!kind)
@@ -22303,7 +22303,7 @@ void main() {
   }
   function spawn(level, id, // Should this be | ActorKind instead of | Actor?
   x, y) {
-      const newbie = typeof id === "string" ? create$2(id) : id;
+      const newbie = typeof id === "string" ? create$3(id) : id;
       if (x === undefined || y === undefined) {
           const loc = randomSpawnLocFor(level);
           if (loc.isNone()) {
@@ -22366,7 +22366,7 @@ void main() {
           // this.on("damage", () => this.clearGoal());
           // Need items in slots....
           Object.entries(this.kind.slots).forEach(([slot, id]) => {
-              const item = make$1(id);
+              const item = make(id);
               if (item === null) {
                   console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
               }
@@ -22494,7 +22494,7 @@ void main() {
               }
           }
           this.clearGoal();
-          level.game.needInput = true;
+          level.needInput = true;
           console.log("Hero - await input", level.scheduler.time);
       }
       setGoal(x, y) {
@@ -22626,7 +22626,7 @@ void main() {
   function use$2(plugin) {
       factory$2.use(plugin);
   }
-  function create$1(kind, config = {}) {
+  function create$2(kind, config = {}) {
       if (typeof kind === "string") {
           kind = getKind$1(kind);
           if (!kind)
@@ -22673,6 +22673,8 @@ void main() {
       // rng: GWU.rng.Random;
       locations = {};
       events;
+      inputQueue;
+      needInput = false;
       constructor(game, id, kind) {
           this.id = id;
           this.game = game;
@@ -22685,6 +22687,7 @@ void main() {
           this.seed = seed || random$2.number(100000);
           // this.rng = GWU.rng.make(this.seed);
           this.scheduler = new scheduler.Scheduler();
+          this.inputQueue = new index.Queue();
           if (kind.scene) {
               this.scene_id = kind.scene;
               this.scene_opts = kind.scene_opts;
@@ -23165,7 +23168,7 @@ void main() {
           let level = out.unwrapOrElse(() => new Level(game, id, kind));
           this.apply(level);
           level._create(kind, opts);
-          level.emit("create", this, opts);
+          level.emit("create", level, opts);
           return level;
       }
       apply(level) {
@@ -23196,7 +23199,7 @@ void main() {
   function use$1(plugin) {
       factory$1.use(plugin);
   }
-  function make(game, id, kind, opts) {
+  function create$1(game, id, kind, opts) {
       if (typeof kind === "string") {
           const id = kind;
           kind = getKind(id);
@@ -23298,7 +23301,7 @@ void main() {
           if (!leaderKind) {
               throw new Error("Failed to find leader kind = " + this.leader);
           }
-          const leader = create$2(leaderKind, {
+          const leader = create$3(leaderKind, {
               machineHome: opts.machine,
               power: opts.power,
           });
@@ -23357,7 +23360,7 @@ void main() {
           if (!kind) {
               throw new Error("Failed to find member kind = " + kindId);
           }
-          const member = create$2(kind, {
+          const member = create$3(kind, {
               machineHome: opts.machine,
               power: opts.power,
           });
@@ -23528,13 +23531,13 @@ void main() {
       start_level;
       // depth: number;
       // scheduler: GWU.scheduler.Scheduler;
-      inputQueue;
+      // inputQueue: GWU.app.Queue;
       seed;
       rng;
       seeds;
       messages;
       events;
-      needInput = false;
+      // needInput = false;
       actors;
       items;
       hordes;
@@ -23561,7 +23564,7 @@ void main() {
           // TODO - Should be a reference or a copy?
           this.data = app.data; // GWU.utils.mergeDeep(this.data, app.data);
           // this.hero = ACTOR.Hero.make("HERO") as Hero;
-          this.inputQueue = new index.Queue();
+          // this.inputQueue = new GWU.app.Queue();
           this.messages = new message.Cache({ reverseMultiLine: true });
           this.events = new index.Events(this);
       }
@@ -23613,7 +23616,7 @@ void main() {
           if (typeof hero_cfg === "string") {
               hero_cfg = { kind: hero_cfg };
           }
-          this.hero = create$1(hero_cfg.kind, hero_cfg);
+          this.hero = create$2(hero_cfg.kind, hero_cfg);
       }
       makeLevel(levelId, opts = {}) {
           let info = this.levels[levelId] ||
@@ -23622,7 +23625,7 @@ void main() {
               info = { kind: info };
           }
           const config = utils.mergeDeep(info, opts);
-          const level = make(this, levelId, config.kind, config);
+          const level = create$1(this, levelId, config.kind, config);
           level.on("show", (level) => {
               this.level = level;
           });
@@ -23660,7 +23663,7 @@ void main() {
               this.level.scheduler.push(actor, time);
               // @ts-ignore
               if (actor === this.hero) {
-                  this.needInput = false;
+                  this.level.needInput = false;
               }
           }
           else {
@@ -23985,13 +23988,18 @@ void main() {
   const turn_based = {
       name: "turn_based",
       level: {
+          show(level, scene) {
+              level.inputQueue.clear();
+              // level.needInput = true;
+              // Add hero?
+          },
           update(level, dt) {
               // TODO - Need to support different update loops
               //      - "turn_based", "real_time", "combo"
               const game = level.game;
               // TODO - Move inputQueue to Level
-              while (game.inputQueue.length && game.needInput) {
-                  const e = game.inputQueue.dequeue();
+              while (level.inputQueue.length && level.needInput) {
+                  const e = level.inputQueue.dequeue();
                   e &&
                       e.dispatch({
                           emit: (evt, e) => {
@@ -24021,7 +24029,7 @@ void main() {
                           },
                       });
               }
-              if (game.needInput)
+              if (level.needInput)
                   return;
               let filter = false;
               let actor = level.scheduler.pop();
@@ -24058,7 +24066,7 @@ void main() {
                   elapsed = level.scheduler.time - startTime;
               }
               // no other actors
-              game.needInput = true;
+              level.needInput = true;
               return;
           },
       },
@@ -25361,7 +25369,7 @@ void main() {
                   game.hero.followPath = false;
               }
               else {
-                  game.inputQueue.enqueue(e.clone());
+                  level.inputQueue.enqueue(e.clone());
               }
               e.stopPropagation();
           },
@@ -26040,6 +26048,10 @@ void main() {
                   if (level.welcome) {
                       level.game.addMessage(level.welcome);
                   }
+              },
+              hide(level) {
+                  // @ts-ignore
+                  level.removeActor(level.game.hero);
               },
               tick(level, dt) {
                   // Do we have work left to do on the level?

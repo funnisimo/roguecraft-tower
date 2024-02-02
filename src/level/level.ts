@@ -58,6 +58,9 @@ export class Level implements GWD.site.AnalysisSite {
   locations: Record<string, GWU.xy.Loc> = {};
   events: GWU.app.Events;
 
+  inputQueue: GWU.app.Queue;
+  needInput = false;
+
   constructor(game: Game, id: string | number, kind: LevelKind) {
     this.id = id;
     this.game = game;
@@ -72,6 +75,7 @@ export class Level implements GWD.site.AnalysisSite {
     // this.rng = GWU.rng.make(this.seed);
 
     this.scheduler = new GWU.scheduler.Scheduler();
+    this.inputQueue = new GWU.app.Queue();
 
     if (kind.scene) {
       this.scene_id = kind.scene;

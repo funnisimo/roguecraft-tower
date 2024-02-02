@@ -135,7 +135,7 @@ export const level = {
       if (game.hero.followPath) {
         game.hero.followPath = false;
       } else {
-        game.inputQueue.enqueue(e.clone());
+        level.inputQueue.enqueue(e.clone());
       }
 
       e.stopPropagation();

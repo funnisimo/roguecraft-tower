@@ -46,13 +46,13 @@ export class Game {
 
   // depth: number;
   // scheduler: GWU.scheduler.Scheduler;
-  inputQueue: GWU.app.Queue;
+  // inputQueue: GWU.app.Queue;
   seed: number;
   rng: GWU.rng.Random;
   seeds: { [key: string | number]: number };
   messages: GWU.message.Cache;
   events: GWU.app.Events;
-  needInput = false;
+  // needInput = false;
 
   actors: Record<string, ACTOR.ActorKind>;
   items: Record<string, ITEM.ItemKind>;
@@ -87,7 +87,7 @@ export class Game {
 
     // this.hero = ACTOR.Hero.make("HERO") as Hero;
 
-    this.inputQueue = new GWU.app.Queue();
+    // this.inputQueue = new GWU.app.Queue();
 
     this.messages = new GWU.message.Cache({ reverseMultiLine: true });
     this.events = new GWU.app.Events(this);
@@ -210,7 +210,7 @@ export class Game {
       this.level.scheduler.push(actor, time);
       // @ts-ignore
       if (actor === this.hero) {
-        this.needInput = false;
+        this.level.needInput = false;
       }
     } else {
       console.log("double end turn.!");

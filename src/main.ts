@@ -104,6 +104,10 @@ function start() {
           level.game.addMessage(level.welcome);
         }
       },
+      hide(level) {
+        // @ts-ignore
+        level.removeActor(level.game.hero);
+      },
       tick(level: Level, dt: number) {
         // Do we have work left to do on the level?
         if (level.done || !level.started) return;

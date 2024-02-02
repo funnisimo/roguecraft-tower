@@ -56,14 +56,19 @@ PLUGINS.install(level);
 export const turn_based: PLUGINS.Plugin = {
   name: "turn_based",
   level: {
+    show(level, scene) {
+      level.inputQueue.clear();
+      // level.needInput = true;
+      // Add hero?
+    },
     update(level: Level, dt: number) {
       // TODO - Need to support different update loops
       //      - "turn_based", "real_time", "combo"
 
       const game = level.game;
       // TODO - Move inputQueue to Level
-      while (game.inputQueue.length && game.needInput) {
-        const e = game.inputQueue.dequeue();
+      while (level.inputQueue.length && level.needInput) {
+        const e = level.inputQueue.dequeue();
         e &&
           e.dispatch({
             emit: (evt, e) => {
@@ -93,7 +98,7 @@ export const turn_based: PLUGINS.Plugin = {
           });
       }
 
-      if (game.needInput) return;
+      if (level.needInput) return;
 
       let filter = false;
       let actor = level.scheduler.pop();
@@ -129,7 +134,7 @@ export const turn_based: PLUGINS.Plugin = {
       }
 
       // no other actors
-      game.needInput = true;
+      level.needInput = true;
 
       return;
     },
