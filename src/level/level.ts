@@ -270,7 +270,7 @@ export class Level implements GWD.site.AnalysisSite {
     this.emit("set_tile", data); // TODO - Is this a good idea?  Is this the right way to do it?
 
     if (data.tile) {
-      this.tiles[x][y] = data.tile.index;
+      this.tiles.set(x, y, data.tile.index);
 
       // this.game && this.game.drawAt(x, y);
       if (tile.on && tile.on.place) {
@@ -324,43 +324,43 @@ export class Level implements GWD.site.AnalysisSite {
   // AnalysisSite
 
   setInLoop(x: number, y: number): void {
-    this.flags[x][y] |= GWD.site.Flags.IN_LOOP;
+    this.flags._data[x][y] |= GWD.site.Flags.IN_LOOP;
   }
   clearInLoop(x: number, y: number): void {
-    this.flags[x][y] &= ~GWD.site.Flags.IN_LOOP;
+    this.flags._data[x][y] &= ~GWD.site.Flags.IN_LOOP;
   }
   isInLoop(x: number, y: number): boolean {
-    return ((this.flags[x][y] || 0) & GWD.site.Flags.IN_LOOP) > 0;
+    return ((this.flags.get(x, y) || 0) & GWD.site.Flags.IN_LOOP) > 0;
   }
 
   clearChokepoint(x: number, y: number): void {
-    this.flags[x][y] &= ~GWD.site.Flags.CHOKEPOINT;
+    this.flags._data[x][y] &= ~GWD.site.Flags.CHOKEPOINT;
   }
   setChokepoint(x: number, y: number): void {
-    this.flags[x][y] |= GWD.site.Flags.CHOKEPOINT;
+    this.flags._data[x][y] |= GWD.site.Flags.CHOKEPOINT;
   }
   isChokepoint(x: number, y: number): boolean {
-    return !!(this.flags[x][y] & GWD.site.Flags.CHOKEPOINT);
+    return !!(this.flags.get(x, y)! & GWD.site.Flags.CHOKEPOINT);
   }
 
   setChokeCount(x: number, y: number, count: number): void {
-    this.choke[x][y] = count;
+    this.choke.set(x, y, count);
   }
   getChokeCount(x: number, y: number): number {
-    return this.choke[x][y];
+    return this.choke.get(x, y) || 0;
   }
 
   setGateSite(x: number, y: number): void {
-    this.flags[x][y] |= GWD.site.Flags.GATE_SITE;
+    this.flags._data[x][y] |= GWD.site.Flags.GATE_SITE;
   }
   clearGateSite(x: number, y: number): void {
-    this.flags[x][y] &= ~GWD.site.Flags.GATE_SITE;
+    this.flags._data[x][y] &= ~GWD.site.Flags.GATE_SITE;
   }
   isGateSite(x: number, y: number): boolean {
-    return !!(this.flags[x][y] & GWD.site.Flags.GATE_SITE);
+    return !!(this.flags.get(x, y)! & GWD.site.Flags.GATE_SITE);
   }
   isAreaMachine(x: number, y: number): boolean {
-    return !!(this.flags[x][y] & GWD.site.Flags.IN_AREA_MACHINE);
+    return !!(this.flags.get(x, y)! & GWD.site.Flags.IN_AREA_MACHINE);
   }
 
   drawAt(buf: GWU.buffer.Buffer, x: number, y: number) {
