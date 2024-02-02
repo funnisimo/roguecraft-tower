@@ -2,19 +2,51 @@ import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents } from "../game";
 import { Level } from "../level";
 import { ActorMakeOpts, Actor } from "./actor";
-import { ActorEvents, ActorKind, getKind } from "./kind";
+import { ActorEvents, ActorKind, ActorKindOpts, makeKind } from "./kind";
 import * as FX from "../fx";
 
 export interface ActorPlugin extends ActorEvents {
+  createKind?: (kind: ActorKind, opts: ActorKindOpts) => void;
   on?: ObjEvents;
   data?: { [key: string]: any };
+  kinds?: { [id: string]: ActorKindOpts };
 }
 
 export class ActorFactory {
   plugins: ActorPlugin[] = [];
+  kinds: Record<string, ActorKind> = {};
 
   use(plugin: ActorPlugin) {
     this.plugins.push(plugin);
+  }
+
+  installKind(opts: ActorKindOpts): ActorKind;
+  installKind(id: string, opts: ActorKindOpts): ActorKind;
+  installKind(...args: any[]): ActorKind {
+    let id: string;
+    let opts: ActorKindOpts;
+    if (args.length == 1) {
+      opts = args[0];
+      id = args[0].id;
+    } else {
+      id = args[0];
+      opts = args[1];
+    }
+
+    const kind = makeKind(opts);
+
+    this.plugins.forEach((p) => {
+      if (p.createKind) {
+        p.createKind(kind, opts);
+      }
+    });
+
+    this.kinds[id.toLowerCase()] = kind;
+    return kind;
+  }
+
+  getKind(id: string): ActorKind | null {
+    return this.kinds[id.toLowerCase()] || null;
   }
 
   create(kind: ActorKind, opts: ActorMakeOpts = {}): Actor {
@@ -51,6 +83,8 @@ export class ActorFactory {
           });
         } else if (key === "data") {
           Object.assign(item.data, val);
+        } else if (key === "kinds") {
+          // skip
         } else if (typeof val === "function") {
           item.on(key, val);
         } else {
@@ -72,7 +106,7 @@ export function create(
   config: ActorMakeOpts | number = {}
 ): Actor {
   if (typeof kind === "string") {
-    kind = getKind(kind);
+    kind = factory.getKind(kind);
     if (!kind) throw new Error("Failed to find kind.");
   }
   if (typeof config === "number") {

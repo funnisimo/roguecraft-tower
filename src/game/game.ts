@@ -54,8 +54,8 @@ export class Game {
   events: GWU.app.Events;
   // needInput = false;
 
-  actors: Record<string, ACTOR.ActorKind>;
-  items: Record<string, ITEM.ItemKind>;
+  actors: ACTOR.ActorFactory;
+  items: ITEM.ItemFactory;
   hordes: Record<string, HORDE.Horde>;
   tiles: GWD.site.TileFactory;
   // TODO - tiles: ...
@@ -78,8 +78,8 @@ export class Game {
     this.start_level = 1;
 
     // Exposes types to world
-    this.actors = ACTOR.kinds;
-    this.items = ITEM.kinds;
+    this.actors = ACTOR.factory;
+    this.items = ITEM.factory;
     this.hordes = HORDE.hordes;
     this.tiles = GWD.site.tileFactory;
     //

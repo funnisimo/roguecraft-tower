@@ -4,6 +4,7 @@ import { Game, ObjEvents } from "../game";
 import * as HORDE from "../horde";
 import { Level } from "./level";
 import { CommandFn } from "../command";
+import { factory } from "./factory";
 
 export interface LevelCreateOpts extends Partial<LevelKindBase> {
   [id: string]: any;
@@ -64,10 +65,10 @@ export type LevelConfig = Partial<LevelKind> & {
   height: number;
 };
 
-export const kinds: Record<string, LevelKind> = {};
+// export const kinds: Record<string, LevelKind> = {};
 
-// @ts-ignore
-globalThis.LevelKinds = kinds;
+// // @ts-ignore
+// globalThis.LevelKinds = kinds;
 
 export function makeKind(cfg: LevelConfig): LevelKind {
   const kind = Object.assign(
@@ -145,22 +146,12 @@ export function makeKind(cfg: LevelConfig): LevelKind {
 export function install(cfg: LevelConfig): LevelKind;
 export function install(id: string, cfg: Omit<LevelConfig, "id">): LevelKind;
 export function install(...args: any[]): LevelKind {
-  let id: string, config: LevelConfig;
   if (args.length == 1) {
-    config = args[0];
-    id = config.id;
-  } else {
-    id = args[0];
-    config = args[1];
+    return factory.installKind(args[0]);
   }
-  const kind = makeKind(config);
-  kind.id = id;
-
-  kinds[id.toLowerCase()] = kind;
-
-  return kind;
+  return factory.installKind(args[0], args[1]);
 }
 
 export function getKind(id: string): LevelKind | null {
-  return kinds[id.toLowerCase()] || null;
+  return factory.getKind(id);
 }

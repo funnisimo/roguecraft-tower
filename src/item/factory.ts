@@ -2,18 +2,59 @@ import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents } from "../game";
 import { Level } from "../level";
 import { Item } from "./item";
-import { ItemEvents, ItemKind, ItemCreateOpts, getKind, kinds } from "./kind";
+import {
+  ItemEvents,
+  ItemKind,
+  ItemCreateOpts,
+  getKind,
+  ItemKindConfig,
+  makeKind,
+} from "./kind";
+
+export type ItemKindConfigSet = { [id: string]: ItemKindConfig };
 
 export interface ItemPlugin extends ItemEvents {
+  createKind?: (kind: ItemKind, opts: ItemKindConfig) => void;
   on?: ObjEvents; // give core events better type help?
   data?: Record<string, string>;
+  kinds?: ItemKindConfigSet | ItemKindConfigSet[];
 }
 
 export class ItemFactory {
   plugins: ItemPlugin[] = [];
+  kinds: Record<string, ItemKind> = {};
 
   use(plugin: ItemPlugin) {
     this.plugins.push(plugin);
+  }
+
+  installKind(opts: ItemKindConfig): ItemKind;
+  installKind(id: string, opts: ItemKindConfig): ItemKind;
+  installKind(...args: any[]): ItemKind {
+    let id: string;
+    let opts: ItemKindConfig;
+    if (args.length == 1) {
+      opts = args[0];
+      id = args[0].id;
+    } else {
+      id = args[0];
+      opts = args[1];
+    }
+
+    const kind = makeKind(opts);
+
+    this.plugins.forEach((p) => {
+      if (p.createKind) {
+        p.createKind(kind, opts);
+      }
+    });
+
+    this.kinds[id.toLowerCase()] = kind;
+    return kind;
+  }
+
+  getKind(id: string): ItemKind | null {
+    return this.kinds[id.toLowerCase()] || null;
   }
 
   create(kind: ItemKind, opts: ItemCreateOpts = {}): Item {
@@ -51,8 +92,8 @@ export class ItemFactory {
               item.on(k, v);
             }
           });
-        } else if (key == "keymap") {
-          // TODO - Add to level keymap
+        } else if (key === "kinds") {
+          // skip
         } else if (typeof val === "function") {
           item.on(key, val);
         } else {
@@ -70,7 +111,7 @@ export function use(plugin: ItemEvents) {
 }
 
 export function make(id: string | ItemKind, opts: ItemCreateOpts = {}): Item {
-  let kind: ItemKind = typeof id === "string" ? getKind(id) : id;
+  let kind: ItemKind = typeof id === "string" ? factory.getKind(id) : id;
 
   if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
     throw new Error("Invalid ItemKind: " + JSON.stringify(id));
@@ -141,7 +182,7 @@ export function random(
   match: string[] | string | null = null
 ): Item | null {
   // pick random kind
-  let allKinds = Object.values(kinds);
+  let allKinds = Object.values(factory.kinds);
   let matches: string[];
   if (match === null) {
     matches = [];

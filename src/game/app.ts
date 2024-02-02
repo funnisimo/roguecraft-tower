@@ -39,7 +39,9 @@ export function startApp(config: StartAppOpts): GWU.app.App {
   app.data.start_opts = config;
 
   // Start Plugins...
-  startPlugins(app, ...config.plugins);
+  startPlugins(app, config);
+
+  // Install kinds
 
   return app;
 }

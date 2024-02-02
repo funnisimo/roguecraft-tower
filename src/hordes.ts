@@ -1,5 +1,5 @@
 import { install } from "./horde/make";
-import "./actors";
+import "./actor_kinds";
 
 install("ZOMBIE", {
   leader: "ZOMBIE",

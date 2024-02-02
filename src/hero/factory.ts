@@ -1,18 +1,56 @@
 import * as GWU from "gw-utils";
 import { CallbackFn, ObjEvents } from "../game";
 import { HeroMakeOpts, Hero } from "./hero";
-import { HeroEvents, HeroKind, getKind } from "./kind";
+import {
+  HeroEvents,
+  HeroKind,
+  HeroKindConfig,
+  getKind,
+  makeKind,
+} from "./kind";
 
 export interface HeroPlugin extends HeroEvents {
+  createKind?: (kind: HeroKind, opts: HeroKindConfig) => void;
   on?: HeroEvents & ObjEvents;
   data?: { [key: string]: any };
+  kinds?: Record<string, HeroKindConfig>;
 }
 
 export class HeroFactory {
   plugins: HeroPlugin[] = [];
+  kinds: Record<string, HeroKind> = {};
 
   use(plugin: HeroPlugin) {
     this.plugins.push(plugin);
+  }
+
+  installKind(opts: HeroKindConfig): HeroKind;
+  installKind(id: string, opts: HeroKindConfig): HeroKind;
+  installKind(...args: any[]): HeroKind {
+    let id: string;
+    let opts: HeroKindConfig;
+    if (args.length == 1) {
+      opts = args[0];
+      id = args[0].id;
+    } else {
+      id = args[0];
+      opts = args[1];
+    }
+
+    const kind = makeKind(opts);
+
+    this.plugins.forEach((p) => {
+      if (p.createKind) {
+        p.createKind(kind, opts);
+      }
+    });
+
+    this.kinds[id.toLowerCase()] = kind;
+    return kind;
+  }
+
+  getKind(id: string): HeroKind | null {
+    return this.kinds[id.toLowerCase()] || null;
   }
 
   create(kind: HeroKind, opts: HeroMakeOpts = {}): Hero {
@@ -49,6 +87,8 @@ export class HeroFactory {
           });
         } else if (key === "data") {
           Object.assign(hero.data, val);
+        } else if (key === "kinds") {
+          // Skip
         } else if (typeof val === "function") {
           hero.on(key, val);
         } else {

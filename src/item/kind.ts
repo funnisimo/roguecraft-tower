@@ -6,6 +6,7 @@ import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
 import { Level } from "../level";
 import { SidebarEntry } from "../widgets";
+import { factory } from "./factory";
 
 export interface ItemCreateOpts extends ObjMakeOpts, ItemEvents {
   power?: number;
@@ -49,7 +50,7 @@ export interface ItemEvents {
   sidebar?: ItemSidebarFn;
 }
 
-export interface KindConfig {
+export interface ItemKindConfig {
   id: string;
   name?: string;
 
@@ -120,12 +121,7 @@ export interface ItemKind {
   //   rangedAttackSpeed: number;
 }
 
-export const kinds: Record<string, ItemKind> = {};
-
-// @ts-ignore
-globalThis.ItemKinds = kinds;
-
-export function makeKind(cfg: KindConfig): ItemKind {
+export function makeKind(cfg: ItemKindConfig): ItemKind {
   const kind = Object.assign(
     {
       name: "",
@@ -194,12 +190,10 @@ export function makeKind(cfg: KindConfig): ItemKind {
   return kind;
 }
 
-export function install(cfg: KindConfig) {
-  const kind = makeKind(cfg);
-
-  kinds[kind.id.toLowerCase()] = kind;
+export function install(cfg: ItemKindConfig) {
+  factory.installKind(cfg);
 }
 
 export function getKind(id: string): ItemKind | null {
-  return kinds[id.toLowerCase()] || null;
+  return factory.getKind(id);
 }

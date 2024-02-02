@@ -16140,13 +16140,2376 @@ void main() {
     xy: xy
   });
 
+  class Obj {
+      x;
+      y;
+      z;
+      events;
+      // spawn: boolean;
+      constructor() {
+          this.x = -1;
+          this.y = -1;
+          this.z = 0;
+          this.events = new index.Events(this);
+          // this.spawn = false;
+          // Object.assign(this, cfg);
+      }
+      // create(opts: ObjCreateOpts) {
+      //   this._create(opts);
+      //   this.emit("create", opts);
+      // }
+      _create(cfg) {
+          this.x = cfg.x !== undefined ? cfg.x : this.x;
+          this.y = cfg.y !== undefined ? cfg.y : this.y;
+          this.z = cfg.z !== undefined ? cfg.z : this.z;
+          const onFns = cfg.on || {};
+          Object.entries(onFns).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+      }
+      draw(buf) { }
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
+      }
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
+      }
+  }
+
+  class FX extends Obj {
+      ch;
+      fg;
+      bg;
+      constructor(cfg) {
+          super();
+          this.ch = cfg.ch || null;
+          this.fg = cfg.fg || null;
+          this.bg = cfg.bg || null;
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this);
+      }
+  }
+  function create$4(cfg) {
+      const fx = new FX(cfg);
+      fx._create(cfg);
+      fx.emit("create", fx, cfg);
+      return fx;
+  }
+  function flash(level, x, y, color = "white", ms = 300) {
+      const scene = level.scene;
+      scene.pause({ update: true });
+      const fx = create$4({ x, y, bg: color, z: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      scene.needsDraw = true;
+      scene.wait(ms, () => {
+          level.removeFx(fx);
+          scene.resume({ update: true });
+          _success();
+      });
+      return {
+          then(success) {
+              _success = success || NOOP;
+          },
+      };
+  }
+  function flashGameTime(level, x, y, color = "white", ms = 300) {
+      const scene = level.scene;
+      const startTime = scene.app.time;
+      const fx = create$4({ x, y, bg: color, z: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      // let _fail: CallbackFn = GWU.NOOP;
+      level.wait(ms, () => {
+          const nowTime = scene.app.time;
+          const timeLeft = ms - (nowTime - startTime);
+          if (timeLeft > 0) {
+              scene.pause({ update: true });
+              scene.wait(timeLeft, () => {
+                  level.removeFx(fx);
+                  scene.resume({ update: true });
+                  _success();
+              });
+          }
+          else {
+              level.removeFx(fx);
+              _success();
+          }
+      });
+      return {
+          then(fn) {
+              _success = fn || NOOP;
+          },
+      };
+  }
+
+  function projectile(level, from, to, sprite, ms) {
+      level.game;
+      const scene = level.scene;
+      from = xy.asXY(from);
+      to = xy.asXY(to);
+      let _success = NOOP;
+      if (sprite.ch && sprite.ch.length == 4) {
+          const dir = xy.dirFromTo(from, to);
+          let index = 0;
+          if (dir[0] && dir[1]) {
+              index = 2;
+              if (dir[0] != dir[1]) {
+                  // remember up is -y
+                  index = 3;
+              }
+          }
+          else if (dir[0]) {
+              index = 1;
+          }
+          const ch = sprite.ch[index];
+          sprite = index$4.make(ch, sprite.fg, sprite.bg);
+      }
+      else if (sprite.ch && sprite.ch.length !== 1) {
+          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
+      }
+      const fx = create$4(sprite);
+      // console.log("- fire", from, to);
+      scene.pause({ update: true });
+      const tween$1 = tween
+          .make(fx)
+          .from(from)
+          .to(to, ["x", "y"])
+          .duration(ms)
+          .onStart((_vals) => {
+          level.addFx(fx);
+      })
+          .onUpdate((vals) => {
+          if (level.blocksMove(vals.x, vals.y)) {
+              tween$1.stop(false);
+          }
+          // console.log("- >> ", vals);
+          scene.needsDraw = true;
+      })
+          .onFinish((vals, isSuccess) => {
+          level.removeFx(fx);
+          scene.resume({ update: true });
+          _success(vals, isSuccess);
+      })
+          .start(scene.tweens);
+      return {
+          then(success) {
+              _success = success || NOOP;
+          },
+      };
+  }
+
+  const fl = flag.fl;
+  var ARMOR_FLAGS;
+  (function (ARMOR_FLAGS) {
+      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
+      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
+      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
+      // add ?? MOBS_AVOID_YOU_MORE ??
+      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
+      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
+      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
+      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
+  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
+  // @ts-ignore
+  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
+  var MELEE_FLAGS;
+  (function (MELEE_FLAGS) {
+      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
+      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
+      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
+      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
+      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
+      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
+      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
+      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
+      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
+      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
+      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
+      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
+      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
+      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
+      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
+      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
+      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
+      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
+      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
+      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
+      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
+      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
+      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
+      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
+      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
+      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
+      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
+      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
+      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
+      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
+  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
+  // @ts-ignore
+  globalThis.MELEE_FLAGS = MELEE_FLAGS;
+  var RANGED_FLAGS;
+  (function (RANGED_FLAGS) {
+      // "GROWING", // Not going to use
+      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
+      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
+      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
+      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
+      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
+      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
+      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
+      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
+      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
+      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
+      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
+      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
+      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
+      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
+      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
+      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
+      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
+  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
+  // @ts-ignore
+  globalThis.RANGED_FLAGS = RANGED_FLAGS;
+
+  class Item extends Obj {
+      _turnTime = 0;
+      kind;
+      data;
+      _power;
+      _damage;
+      _comboDamage;
+      _defense;
+      constructor(kind) {
+          super();
+          this.kind = kind;
+          if (!this.kind)
+              throw new Error("Must have kind.");
+          this.data = {};
+          this._damage = this.kind.damage;
+          this._comboDamage = this.kind.combo_damage;
+          this._defense = this.kind.defense;
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+          this.power = 1; // cause calculations to fire
+      }
+      // create(opts: ItemCreateOpts) {
+      //   this._create(opts);
+      //   this.emit("create", this, opts);
+      // }
+      _create(opts) {
+          super._create(opts);
+          // install emit handlers for ItemEvents
+          Object.entries(opts).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.power = opts.power || this.power;
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      get name() {
+          return this.kind.name;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          val = val || 1;
+          this._power = val;
+          // Value = POWER * BASE * Math.pow(1.025,POWER)
+          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
+          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
+      }
+      get damage() {
+          return this._damage;
+      }
+      get comboDamage() {
+          return this._comboDamage;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get speed() {
+          return this.kind.speed;
+      }
+      get comboSpeed() {
+          return this.kind.combo_speed;
+      }
+      get combo() {
+          return this.kind.combo;
+      }
+      get defense() {
+          return this._defense;
+      }
+      get slot() {
+          return this.kind.slot;
+      }
+      get charge() {
+          return this.kind.charge;
+      }
+  }
+
+  class ItemFactory {
+      plugins = [];
+      kinds = {};
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind$3(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
+      }
+      create(kind, opts = {}) {
+          // Create the Item
+          let out = Option.None();
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
+              }
+              return v;
+          }, out);
+          let item = out.unwrapOrElse(() => new Item(kind));
+          // Update the item events/data
+          this.apply(item);
+          // finish making the item
+          item._create(opts);
+          item.emit("create", item, opts);
+          return item;
+      }
+      apply(item) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key == "data") {
+                      item.data = utils.mergeDeep(item.data, val);
+                  }
+                  else if (key == "on") {
+                      Object.entries(val).forEach(([k, v]) => {
+                          if (typeof v === "function") {
+                              item.on(k, v);
+                          }
+                      });
+                  }
+                  else if (key === "kinds") ;
+                  else if (typeof val === "function") {
+                      item.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$4 = new ItemFactory();
+  function use$4(plugin) {
+      factory$4.use(plugin);
+  }
+  function make(id, opts = {}) {
+      let kind = typeof id === "string" ? factory$4.getKind(id) : id;
+      if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
+          throw new Error("Invalid ItemKind: " + JSON.stringify(id));
+      }
+      return factory$4.create(kind, opts);
+  }
+  function place(level, x, y, id = null) {
+      let newbie;
+      if (id === null) {
+          newbie = random$1(level); // TODO - default match?
+      }
+      else if (typeof id === "string") {
+          newbie = make(id);
+      }
+      else {
+          newbie = id;
+      }
+      if (!newbie)
+          return null;
+      newbie.kind.fg;
+      const game = level.game;
+      // const scene = level.scene;
+      // const level = level.level;
+      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
+          return !level.blocksMove(i, j) && !level.hasItem(i, j);
+      });
+      if (!locs || locs.length == 0)
+          return null;
+      const loc = game.rng.item(locs);
+      newbie.x = loc[0];
+      newbie.y = loc[1];
+      // level.events.emit("spawn_item", level, newbie);
+      level.addItem(newbie);
+      return newbie;
+  }
+  function placeRandom(level, x, y, match = null) {
+      let item = random$1(level, match);
+      if (!item) {
+          return null;
+      }
+      return place(level, x, y, item);
+  }
+  function random$1(level, match = null) {
+      // pick random kind
+      let allKinds = Object.values(factory$4.kinds);
+      let matches;
+      if (match === null) {
+          matches = [];
+      }
+      else if (typeof match == "string") {
+          matches = match.split(/[|,]/).map((v) => v.trim());
+      }
+      else {
+          matches = match.map((v) => v.trim());
+      }
+      if (matches.length > 0) {
+          allKinds = allKinds.filter((kind) => {
+              return matches.every((m) => {
+                  if (m[0] == "!") {
+                      return !kind.tags.includes(m.substring(1));
+                  }
+                  else {
+                      return kind.tags.includes(m);
+                  }
+              });
+          });
+      }
+      const chances = allKinds.map((k) => k.frequency(level.depth));
+      const index = level.rng.weighted(chances);
+      if (index < 0)
+          return null;
+      const kind = allKinds[index];
+      const item = make(kind);
+      return item;
+  }
+
+  function makeKind$3(cfg) {
+      const kind = Object.assign({
+          name: "",
+          ch: "!",
+          fg: "white",
+          //   bump: ["attack"],
+          on: {},
+          frequency: 10,
+          speed: 100,
+          damage: 0,
+          combo: 0,
+          combo_speed: 0,
+          combo_damage: 0,
+          range: 0,
+          charge: 0,
+          defense: 0,
+          slot: null,
+          tags: [],
+          armor_flags: 0,
+          melee_flags: 0,
+          ranged_flags: 0,
+          effects: {},
+      }, cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("ItemKind must have 'id'.");
+      }
+      if (kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+      }
+      if (typeof cfg.tags == "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      if (typeof cfg.armor_flags !== "number") {
+          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+      }
+      if (typeof cfg.melee_flags !== "number") {
+          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
+      }
+      if (typeof cfg.ranged_flags !== "number") {
+          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
+      }
+      //   if (typeof cfg.bump === "string") {
+      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      //   }
+      kind.frequency = frequency.make(kind.frequency);
+      if (kind.slot === null) {
+          if (kind.range > 0) {
+              kind.slot = "ranged";
+          }
+          else if (kind.damage > 0) {
+              kind.slot = "melee";
+          }
+          else if (kind.defense > 0) {
+              kind.slot = "armor";
+          }
+      }
+      return kind;
+  }
+  function install$9(cfg) {
+      factory$4.installKind(cfg);
+  }
+
+  // @returns boolean - indicates whether or not the target dies
+  function damage(level, target, damage) {
+      const game = level.game;
+      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
+      const armor_flags = target.armor_flags;
+      let amount = (damage.amount = damage.amount || 0);
+      damage.msg = damage.msg || `${target.name} is damaged`;
+      damage.color = damage.color || "red";
+      if (!damage.isRanged) {
+          damage.isRanged = false;
+      }
+      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
+          if (game.rng.chance(30)) {
+              game.messages.addCombat(damage.msg + "#{orange [X]}");
+              flash(level, target.x, target.y, "orange", 150);
+              damage.amount = 0;
+              return false;
+          }
+      }
+      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
+          damage.amount = Math.round(damage.amount * 0.65);
+      }
+      target.emit("damage", damage);
+      if (damage.amount <= 0) {
+          return false;
+      }
+      target.health -= damage.amount || 0;
+      if (damage.amount < amount) {
+          damage.color = "orange";
+      }
+      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
+      flash(level, target.x, target.y, damage.color, 150);
+      if (target.health <= 0) {
+          // do all of these move to event handlers?
+          game.messages.addCombat(`${target.name} dies`);
+          // TODO - This should be above the floor (FIXTURE)
+          // that way when it decays the floor returns as normal
+          // and corpses can be custom to the creature that died
+          // no matter what the floor is
+          level.setTile(target.x, target.y, "CORPSE");
+          target.emit("death", level, target);
+          level.removeActor(target);
+          return true;
+      }
+      return false;
+  }
+
+  function heal(level, target, heal) {
+      if (heal.amount <= 0)
+          return;
+      heal.amount = Math.min(heal.amount, target.health_max - target.health);
+      target.health += heal.amount;
+  }
+
+  const actionsByName = {};
+  function install$8(name, fn) {
+      actionsByName[name] = fn;
+  }
+  function get$1(name) {
+      return actionsByName[name] || null;
+  }
+  function idle(level, actor) {
+      console.log("- idle", actor.name, actor.x, actor.y);
+      level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+      return true;
+  }
+  install$8("idle", idle);
+  function moveRandom(level, actor, quiet = false) {
+      const dir = level.rng.item(xy.DIRS);
+      return moveDir(level, actor, dir, quiet);
+  }
+  install$8("move_random", moveRandom);
+  function moveDir(level, actor, dir, quiet = false) {
+      const game = level.game;
+      const newX = actor.x + dir[0];
+      const newY = actor.y + dir[1];
+      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
+          if (!quiet) {
+              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
+              game.addMessage(`Blocked by a ${tile.id}.`);
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return true;
+          }
+          else {
+              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      const other = level.actorAt(newX, newY);
+      if (other) {
+          if (other.kind && other.bump(level, actor)) {
+              return true;
+          }
+          if (actor.hasActed())
+              return true;
+          if (!quiet) {
+              game.addMessage(`You bump into a ${other.name}.`);
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return true;
+          }
+          else {
+              console.log("- nothing!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      if (level.blocksMove(newX, newY)) {
+          if (!quiet) {
+              game.addMessage("You bump into a wall.");
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return false;
+          }
+          else {
+              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      actor.x;
+      actor.y;
+      actor.x = newX;
+      actor.y = newY;
+      // game.drawAt(oldX, oldY);
+      // game.drawAt(newX, newY);
+      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
+      actor.emit("move", level, actor, newX, newY);
+      level.triggerAction("enter", actor);
+      game.endTurn(actor, speed);
+      return true;
+  }
+  function moveTowardHero(level, actor, quiet = false) {
+      const game = level.game;
+      const hero = game.hero;
+      const dir = hero.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+          return level.hasActor(x, y);
+      });
+      if (dir) {
+          if (moveDir(level, actor, dir, true)) {
+              return true; // success
+          }
+          if (!quiet) {
+              flash(level, actor.x, actor.y, "orange", 150);
+          }
+          return idle(level, actor);
+      }
+      return false;
+  }
+  install$8("move_toward_hero", moveTowardHero);
+  function moveAwayFromHero(level, actor, quiet = false) {
+      const game = level.game;
+      const hero = game.hero;
+      // compute safety map
+      const safety = new index$6.DijkstraMap(level.width, level.height);
+      safety.copy(hero.mapToMe);
+      safety.update((v, x, y) => {
+          if (v >= index$6.BLOCKED)
+              return v;
+          v = -1.2 * v;
+          if (level.isInLoop(x, y))
+              v -= 2;
+          if (level.isGateSite(x, y))
+              v -= 2;
+          return Math.round(v);
+      });
+      safety.setDistance(hero.x, hero.y, index$6.BLOCKED);
+      safety.rescan((x, y) => actor.moveCost(x, y));
+      safety.addObstacle(hero.x, hero.y, (x, y) => hero.moveCost(x, y), 5);
+      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+          return level.hasActor(x, y);
+      });
+      console.log(`- move away (${actor.x},${actor.y}) from player (${hero.x},${hero.y}) - ${dir}`);
+      // if (dir === null) {
+      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+      //     return map.hasActor(x, y);
+      //   });
+      // }
+      if (dir) {
+          const spread = xy.dirSpread(dir);
+          for (let d of spread) {
+              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
+              if (moveDir(level, actor, d, true)) {
+                  console.log("- success");
+                  return true; // success
+              }
+          }
+          if (!quiet) {
+              flash(level, actor.x, actor.y, "orange", 150);
+          }
+          return idle(level, actor);
+      }
+      return false;
+  }
+  install$8("move_away_from_hero", moveAwayFromHero);
+  function attack(level, actor, target = null) {
+      const game = level.game;
+      if (target) {
+          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
+              return false;
+          }
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game.level.actors.filter((a) => a !== actor &&
+              actor.health > 0 &&
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
+              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              flash(level, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              level.scene.app.scenes
+                  .run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(level, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+                  }
+                  else {
+                      attack(level, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      // @ts-ignore
+      const actorIsPlayer = actor === game.hero;
+      // @ts-ignore
+      const otherIsPlayer = target === game.hero;
+      if (!actorIsPlayer && !otherIsPlayer) {
+          return idle(level, actor); // no attacking
+      }
+      const attackInfo = actor.getMeleeAttack();
+      if (!attackInfo) {
+          game.addMessage("Cannot attack.");
+          flash(level, actor.x, actor.y, "orange", 150);
+          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      }
+      // we have an actor and a target
+      damage(level, target, {
+          amount: attackInfo.damage,
+          msg: `${actor.name} attacks ${target.name}`,
+      });
+      game.endTurn(actor, attackInfo.time);
+      return true;
+  }
+  install$8("attack", attack);
+  function fire(level, actor, target = null) {
+      const game = level.game;
+      const hero = game.hero;
+      if (!actor.range) {
+          game.addMessage("Nothing to fire.");
+          return false;
+      }
+      if (!actor.ammo) {
+          game.addMessage("No ammo.");
+          return false;
+      }
+      if (target) {
+          if (xy.distanceFromTo(actor, target) > actor.range)
+              return false;
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game
+              .level.actors.filter((a) => {
+              if (a === actor)
+                  return false;
+              if (actor.health <= 0)
+                  return false;
+              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
+              if (dist > actor.range) {
+                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
+                  return false;
+              }
+              console.log("checking fov...");
+              // HACK - for actor.canSee(a)
+              if (!hero.isInFov(actor)) {
+                  console.log("actor not visible");
+                  return false;
+              }
+              if (!hero.isInFov(a)) {
+                  console.log("target not visible");
+                  return false;
+              }
+              // end hack
+              console.log("ok - ", a.name);
+              return true;
+          })
+              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              // flash tiles you can fire into
+              const fov = new index$7.FOV({
+                  isBlocked(x, y) {
+                      // TODO - This should be more about visible than move
+                      return actor.moveCost(x, y) >= index$6.BLOCKED;
+                  },
+                  hasXY(x, y) {
+                      return level.hasXY(x, y);
+                  },
+              });
+              // TODO - FOV highlights cells we can't fire into...
+              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
+                  flash(level, x, y, "dark_teal", 125);
+              });
+              // FX.flash(game, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              level.scene.app.scenes
+                  .run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(level, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
+                  }
+                  else {
+                      fire(level, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      // @ts-ignore
+      const actorIsHero = actor === game.hero;
+      // @ts-ignore
+      const otherIsHero = target === game.hero;
+      if (!actorIsHero && !otherIsHero) {
+          return idle(level, actor); // no attacking
+      }
+      // we have an actor and a target
+      // Does this move to an event handler?  'damage', { amount: #, type: string }
+      actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
+      projectile(level, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(level, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              damage(level, target, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${target.name}`,
+              });
+          }
+      });
+      game.endTurn(actor, actor.rangedAttackSpeed);
+      return true;
+  }
+  install$8("fire", fire);
+  function fireAtHero(level, actor) {
+      const game = level.game;
+      const hero = game.hero;
+      // if player can't see actor then actor can't see player!
+      if (!hero.isInFov(actor.x, actor.y))
+          return false;
+      if (!actor.ammo)
+          return false;
+      actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
+      projectile(level, actor, hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(level, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              // @ts-ignore
+              damage(level, hero, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${hero.name}`,
+              });
+          }
+      });
+      game.endTurn(actor, actor.rangedAttackSpeed);
+      return true;
+  }
+  install$8("fire_at_hero", fireAtHero);
+  function climb(level, actor) {
+      const game = level.game;
+      const tile = game.level.getTile(actor.x, actor.y);
+      if (tile.on && tile.on.climb) {
+          tile.on.climb.call(tile, game, actor);
+          return actor.hasActed();
+      }
+      else {
+          return idle(level, actor);
+      }
+  }
+  install$8("climb", climb);
+  function pickup(level, actor) {
+      const game = level.game;
+      const item = level.itemAt(actor.x, actor.y);
+      if (item) {
+          item.emit("pickup", level, item, actor);
+          return true;
+      }
+      game.addMessage("Nothing to pickup.");
+      return idle(level, actor);
+  }
+  install$8("pickup", pickup);
+  // export function potion(game: Game, hero: Hero): boolean {
+  //   if (!hero.canUsePotion) {
+  //     game.addMessage("Not ready.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   if (hero.health >= hero.health_max) {
+  //     game.addMessage("You do not need to drink a potion.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   const heal = Math.floor(hero.health_max * 0.75);
+  //   hero.health = Math.min(hero.health + heal, hero.health_max);
+  //   hero.potion = 0; // Needs to recharge
+  //   game.addMessage("You feel much better.");
+  //   game.endTurn(hero, hero.moveSpeed);
+  //   return true;
+  // }
+
+  function ai(level, actor) {
+      const game = level.game;
+      const hero = game.hero;
+      const noticeDistance = actor.kind.notice || 10;
+      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
+      const canSeeHero = hero.isInFov(actor);
+      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
+      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
+      // TODO - Noticed prior to hero going out of range/view should skip this
+      // Do this with a flag/mode/state/time value?
+      if (distToHero > noticeDistance || !canSeeHero) {
+          // wander to goal?  [wanderChance]
+          // step randomly [idleMoveChance]
+          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
+          // random chance? [randomMoveChance]
+          if (game.rng.chance(20)) {
+              if (moveRandom(level, actor, true))
+                  return;
+          }
+          return idle(level, actor);
+      }
+      if (distToHero <= actor.kind.tooClose) {
+          // should there be a random chance on this?
+          if (moveAwayFromHero(level, actor))
+              return;
+      }
+      // shoot at player?
+      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
+          if (fireAtHero(level, actor))
+              return;
+      }
+      if (distToHero < 2) {
+          // can attack diagonal
+          if (actor.canMeleeAttack) {
+              // @ts-ignore
+              if (attack(level, actor, hero))
+                  return;
+          }
+          if (distToHero == 1) {
+              // Hmmm...
+              return idle(level, actor);
+          }
+      }
+      // If we don't have a min distance from hero then move closer (to get to melee range)
+      if (!actor.kind.tooClose) {
+          if (moveTowardHero(level, actor))
+              return;
+      }
+      return idle(level, actor);
+  }
+
+  function messages(scene, y) {
+      const widget = index$1$1.make({
+          id: "MESSAGES",
+          tag: "msg",
+          x: 0,
+          y: y,
+          width: scene.width,
+          height: scene.height - y,
+          scene,
+          bg: "darkest_gray",
+          fg: "white",
+          draw(buf) {
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              const fg = index$9.from(this._used.fg);
+              const fgc = fg.alpha(50);
+              const scene = this.scene;
+              const level = scene.data.level;
+              const game = level.game;
+              if (game && game.messages) {
+                  game.messages.forEach((msg, confirmed, i) => {
+                      if (i < this.bounds.height) {
+                          const color = confirmed ? fgc : fg;
+                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
+                      }
+                  });
+              }
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  let Map$1 = class Map extends index.Widget {
+      _focus = [-1, -1];
+      constructor(opts) {
+          super(opts);
+          this.on("draw", this._draw);
+          this.on("mousemove", this._setFocus);
+          this.on("mouseleave", this._clearFocus);
+          this.on("keypress", this._clearFocus);
+      }
+      _draw(buf) {
+          const scene = this.scene;
+          const level = scene.data.level;
+          const game = level.game;
+          const player = game.hero;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
+          level.tiles.forEach((index, x, y) => {
+              if (this.bounds.contains(x, y)) {
+                  buf.blackOut(x, y);
+                  level.drawAt(buf, x, y);
+                  if (!player.fov || !player.fov.get(x, y)) {
+                      buf.get(x, y).mix("black", 25, 25);
+                  }
+              }
+          });
+          if (player.goalPath) {
+              player.goalPath.forEach(([x, y]) => {
+                  buf.get(x, y).mix("green", 0, 25).separate();
+              });
+          }
+      }
+      _setFocus(e) {
+          this._focus[0] = e.x;
+          this._focus[1] = e.y;
+          this.needsDraw = true;
+          // e.stopPropagation();
+      }
+      _clearFocus() {
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+      }
+  };
+  function map(scene, width, height) {
+      const widget = new Map$1({
+          id: "MAP",
+          tag: "map",
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          scene,
+          bg: index$9.BLACK,
+      });
+      return widget;
+  }
+
+  class SidebarEntry {
+      // TODO - icon: GWU.sprite.SpriteData | null;
+      name;
+      nameColor;
+      progressbars;
+      statuses;
+      constructor(name, color) {
+          // TODO: this.icon = null;
+          this.name = name;
+          this.nameColor = color === undefined ? "white" : color;
+          this.progressbars = [];
+          this.statuses = [];
+      }
+      add_progress(text, color, val, max) {
+          this.progressbars.push({
+              text,
+              color,
+              val,
+              max,
+          });
+          return this;
+      }
+      add_status(text, color) {
+          this.statuses.push({ text, color });
+          return this;
+      }
+  }
+  class Sidebar extends index.Widget {
+      _focus = [-1, -1];
+      entries = [];
+      constructor(opts) {
+          super(opts);
+      }
+      setFocus(x, y) {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = x;
+          this._focus[1] = y;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.emit("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      clearFocus() {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.emit("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
+      //   buf.drawText(x, y, "Hero");
+      //   this.drawHealth(buf, x, y + 1, 28, player);
+      //   this.drawPotion(buf, x, y + 2, 28, player);
+      //   let lines = 3; // Hero + health + potion
+      //   player.statuses.forEach((status) => {
+      //     if (status) {
+      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+      //     }
+      //   });
+      //   return lines;
+      // }
+      drawActor(buf, x, y, actor) {
+          //   buf.drawText(x, y, actor.name, actor.kind.fg);
+          //   this.drawHealth(buf, x, y + 1, 28, actor);
+          //   let lines = 2; // name + health
+          //   actor.statuses.forEach((status) => {
+          //     if (status) {
+          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+          //     }
+          //   });
+          //   return lines;
+          let entry = actor.getSidebarEntry();
+          return this.drawEntry(buf, x, y, entry);
+      }
+      drawEntry(buf, x, y, entry) {
+          buf.drawText(x, y, entry.name, entry.nameColor);
+          let lines = 1;
+          entry.progressbars.forEach((p) => {
+              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
+              lines += 1;
+          });
+          entry.statuses.forEach((s) => {
+              buf.drawText(x, y + lines, s.text, s.color);
+              lines += 1;
+          });
+          return lines;
+      }
+      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
+          const pct = val / max;
+          const full = Math.floor(w * pct);
+          const partialPct = Math.floor(100 * (w * pct - full));
+          buf.fillRect(x, y, full, 1, null, null, bg);
+          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
+          if (text && text.length) {
+              buf.drawText(x, y, text, fg, null, w, "center");
+          }
+      }
+      // drawHealth(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   actor: Actor
+      // ) {
+      //   const pct = actor.health / actor.health_max;
+      //   const bg = GWU.color.colors.green.mix(
+      //     GWU.color.colors.red,
+      //     100 * (1 - pct)
+      //   );
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     bg,
+      //     actor.health,
+      //     actor.health_max,
+      //     "HEALTH"
+      //   );
+      // }
+      // drawPotion(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   player: Hero
+      // ) {
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     GWU.color.colors.blue,
+      //     player.potion,
+      //     player.potion_max,
+      //     "Potion"
+      //   );
+      // }
+      _draw(buf) {
+          const scene = this.scene;
+          const level = scene.data.level;
+          const game = level.game;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+          const x = this.bounds.x + 1;
+          let y = this.bounds.y;
+          buf.setClip(this.bounds);
+          // buf.drawText(x);
+          y += buf.drawText(x, y, scene.app.name, "green");
+          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
+          y += buf.drawText(x, y, "Level: " + level.data.depth, "pink");
+          y += 1;
+          let px = game.hero.x;
+          let py = game.hero.y;
+          // if (this._focus[0] != -1) {
+          //   px = this._focus[0];
+          //   py = this._focus[1];
+          // }
+          this.entries = level.actors.filter(
+          // @ts-ignore
+          (a) => a && a !== game.hero && a.health > 0);
+          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
+              xy.distanceBetween(b.x, b.y, px, py));
+          let focused = this.entries.find((a) => xy.equals(a, this._focus));
+          // @ts-ignore
+          let used = this.drawActor(buf, x, y, game.hero);
+          game.hero.data.sideY = y;
+          game.hero.data.sideH = used;
+          if (xy.equals(game.hero, this._focus)) {
+              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              // @ts-ignore
+              focused = game.hero;
+          }
+          else if (focused) {
+              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+          }
+          y += used + 1;
+          this.entries.forEach((a) => {
+              const used = this.drawActor(buf, x, y, a);
+              if (a === focused) {
+                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              }
+              else if (focused) {
+                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+              }
+              a.data.sideY = y;
+              a.data.sideH = used;
+              y += used + 1;
+          });
+          y += 1;
+          // y += buf.drawText(x, y, "Press Escape to lose.");
+          buf.clearClip();
+      }
+      _mousemove(e) {
+          super._mousemove(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          this._focus.slice();
+          this.clearFocus();
+          const level = this.scene.data.level;
+          const game = level.game;
+          const hero = game.hero;
+          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
+              this.setFocus(hero.x, hero.y);
+          }
+          else {
+              this.entries.forEach((a) => {
+                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
+                      this.setFocus(a.x, a.y);
+                  }
+              });
+          }
+          // if (!GWU.xy.equals(wasFocus, this._focus)) {
+          //   this.emit("focus", this._focus);
+          //   this.needsDraw = true;
+          // }
+          e.stopPropagation();
+      }
+      _click(e) {
+          super._click(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          if (this._focus[0] > -1) {
+              this.emit("choose", this._focus);
+          }
+      }
+  }
+  function sidebar(scene, x, height) {
+      const widget = new Sidebar({
+          id: "SIDEBAR",
+          tag: "sidebar",
+          x: x,
+          y: 0,
+          width: scene.width - x,
+          height: height,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  function flavor(scene, x, y) {
+      const widget = index$1$1.make({
+          id: "FLAVOR",
+          tag: "flavor",
+          x: x,
+          y: y,
+          width: scene.width - x,
+          height: 1,
+          scene,
+          bg: index$9.from("darker_gray"),
+          fg: index$9.from("purple"),
+          draw(buf) {
+              const scene = this.scene;
+              const level = scene.data.level;
+              level.game;
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  class Details extends index$1$1.Dialog {
+      _text;
+      constructor(opts) {
+          opts.border = opts.border ?? "ascii";
+          super(opts);
+          this._text = new index$1$1.Text({
+              id: "INFO",
+              text: "details...",
+              x: this.bounds.x + 1,
+              y: this.bounds.y + 1,
+          });
+          this.addChild(this._text);
+          this.hidden = true;
+      }
+      showActor(actor) {
+          let text = actor.name + " [" + actor.power + "]\n";
+          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
+          text += "Moves : " + actor.moveSpeed + "\n";
+          if (actor.damage > 0) {
+              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          if (actor.range > 0) {
+              text +=
+                  "Ranged: " +
+                      actor.rangedDamage +
+                      " / " +
+                      actor.rangedAttackSpeed +
+                      " @ " +
+                      actor.range +
+                      " (" +
+                      actor.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+      showHero(player) {
+          let text = player.name + "\n";
+          const armor = player.slots.armor;
+          if (armor) {
+              text += "Health: " + player.health + " / " + player.health_max + "\n";
+              text += "#{teal}";
+              text += "  " + armor.name + " [" + armor.power + "]\n";
+              if (armor.kind.armor_flags != 0) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+                      text += "  {-35% Damage Received}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+                      text += "  {30% Negate Hits}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+                      text += "  {-40% Artifact Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
+                      text += "  {+10 Arrows Per Bundle}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+                      text += "  {100% Longer Roll Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+                      text += "  {+30% Melee Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+                      text += "  {Mobs Target You More}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+                      text += "  {+15% Move Speed Aura}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+                      text += "  {-40% Potion Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+                      text += "  {Potion Boosts Defense}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                      text += "  {Potion Heals Nearby Allies}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+                      text += "  {+30% Ranged Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+                      text += "  {+20% Weapon Damage Aura}\n";
+                  }
+              }
+              text += "#{}";
+          }
+          else {
+              text += "Health: " + player.health + "/" + player.health_max + "\n";
+          }
+          text += "Moves : " + player.moveSpeed + "\n";
+          const melee = player.slots.melee;
+          if (melee) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+              text += "#{teal}";
+              text += `  ${melee.name} [${melee.power}]\n`;
+              text += "#{}";
+          }
+          else if (player.damage > 0) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          const ranged = player.slots.ranged;
+          if (ranged) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      " / " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+              text += "#{teal}";
+              text += "  " + ranged.name + " [" + ranged.power + "]\n";
+          }
+          else if (player.range > 0) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      "  " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+  }
+  function details(scene, width, height) {
+      const widget = new Details({
+          id: "DETAILS",
+          tag: "details",
+          x: 2,
+          y: 2,
+          width: width - 4,
+          height: height - 4,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  class AttackInfo {
+      damage;
+      time;
+      constructor(damage, time) {
+          this.damage = damage;
+          this.time = time;
+      }
+  }
+  class Actor extends Obj {
+      _turnTime = 0;
+      _level = null;
+      kind;
+      data = {};
+      health = 0;
+      health_max = 0;
+      ammo = 0;
+      _power = 1;
+      armor_flags = 0;
+      statuses = [];
+      combo_index = 0;
+      leader = null;
+      constructor(kind) {
+          super();
+          this.kind = kind;
+          if (!this.kind)
+              throw new Error("Missing ActorKind!");
+          this.z = 1;
+          this.health_max = this.kind.health || 10;
+          this.health = this.health_max;
+          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
+          const onFns = kind.on || {};
+          Object.entries(onFns).forEach(([key, val]) => {
+              this.on(key, val);
+          });
+      }
+      _create(opts) {
+          super._create(opts);
+          Object.entries(opts).forEach(([key, val]) => {
+              // 'on' section handled by super._make
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.power = opts.power || 1;
+          // machineHome
+      }
+      // attributes
+      get name() {
+          return this.kind.name;
+      }
+      get damage() {
+          // TODO - combo damage
+          return Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+      }
+      get attackSpeed() {
+          // TODO - combo speed
+          return this.kind.attackSpeed;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get rangedDamage() {
+          return Math.round(this.kind.rangedDamage * (1 + (this._power - 1) / 2));
+      }
+      get rangedAttackSpeed() {
+          return this.kind.rangedAttackSpeed;
+      }
+      get moveSpeed() {
+          return this.kind.moveSpeed;
+      }
+      get comboLen() {
+          return this.kind.combo;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          this._power = val;
+          this.health = Math.round(this.kind.health * (1 + (this._power - 1) / 2));
+          this.health_max = this.health;
+      }
+      isHero() {
+          return false;
+      }
+      //
+      getMeleeAttack() {
+          const attack = new AttackInfo(this.damage, this.attackSpeed);
+          this.combo_index += 1;
+          this.combo_index = this.combo_index % this.comboLen;
+          return attack;
+      }
+      hasArmorFlag(flag) {
+          return (this.armor_flags & flag) > 0;
+      }
+      // TODO - Should this be a method instead of a property?
+      get canMeleeAttack() {
+          return this.damage > 0 && this.attackSpeed > 0;
+      }
+      addStatus(status) {
+          const current = this.statuses.findIndex((current) => current && current.merge(status));
+          if (current >= 0) {
+              return;
+          }
+          const empty = this.statuses.findIndex((s) => !s);
+          if (empty >= 0) {
+              this.statuses[empty] = status;
+          }
+          else {
+              this.statuses.push(status);
+          }
+      }
+      remove_status(status) {
+          const index = this.statuses.indexOf(status);
+          if (index >= 0) {
+              this.statuses[index] = null;
+          }
+      }
+      startTurn(level) {
+          this._turnTime = 0;
+          this.emit("turn_start", level, this);
+      }
+      endTurn(level, time) {
+          this._turnTime = time;
+          this.emit("turn_end", level, this, time);
+      }
+      hasActed() {
+          return this._turnTime > 0;
+      }
+      draw(buf) {
+          if (this.health <= 0)
+              return;
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      avoidsTile(tile) {
+          return tile.blocksMove || false;
+      }
+      moveCost(x, y) {
+          const level = this._level;
+          if (!level)
+              return index$6.OBSTRUCTION;
+          if (!level.hasXY(x, y))
+              return index$6.OBSTRUCTION;
+          if (level.blocksDiagonal(x, y))
+              return index$6.OBSTRUCTION;
+          if (level.blocksMove(x, y))
+              return index$6.BLOCKED;
+          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
+          return index$6.OK;
+      }
+      pathTo(loc) {
+          const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
+          return path;
+      }
+      act(level) {
+          // TODO - move this to plugin
+          this.startTurn(level);
+          ai(level, this);
+          if (!this.hasActed()) {
+              console.log("No actor AI action.");
+          }
+      }
+      bump(level, actor) {
+          const actions = this.kind.bump;
+          for (let action of actions) {
+              const fn = get$1(action);
+              if (fn && fn(level, actor, this)) {
+                  return true;
+              }
+          }
+          return false; // did nothing
+      }
+      tick(level, time) {
+          this.emit("tick", level, this, time);
+          Object.values(this.statuses).forEach((status, i) => {
+              if (status) {
+                  if (!status.tick(this, level, time)) {
+                      this.statuses[i] = null;
+                  }
+              }
+          });
+      }
+      getSidebarEntry() {
+          const entry = new SidebarEntry(this.name, this.kind.fg);
+          entry.add_progress("Health", "green", this.health, this.health_max);
+          this.statuses.forEach((s) => {
+              s && s.update_sidebar(this, entry);
+          });
+          this.emit("sidebar", this, entry); // Allow plugins to update sidebar
+          return entry;
+      }
+  }
+
+  class ActorFactory {
+      plugins = [];
+      kinds = {};
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind$2(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
+      }
+      create(kind, opts = {}) {
+          let out = Option.None();
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
+              }
+              return v;
+          }, out);
+          let actor = out.unwrapOrElse(() => new Actor(kind));
+          this.apply(actor);
+          actor._create(opts);
+          actor.emit("create", actor, opts);
+          return actor;
+      }
+      apply(item) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              item.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(item.data, val);
+                  }
+                  else if (key === "kinds") ;
+                  else if (typeof val === "function") {
+                      item.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$3 = new ActorFactory();
+  function use$3(plugin) {
+      factory$3.use(plugin);
+  }
+  function create$3(kind, config = {}) {
+      if (typeof kind === "string") {
+          kind = factory$3.getKind(kind);
+          if (!kind)
+              throw new Error("Failed to find kind.");
+      }
+      if (typeof config === "number") {
+          config = { power: config };
+      }
+      if (kind.hero) {
+          throw new Error("ActorKind is Hero: " + kind.id);
+      }
+      return factory$3.create(kind, config);
+  }
+  function randomSpawnLocFor(level, actor) {
+      let x;
+      let y;
+      let tries = level.width * level.height;
+      do {
+          --tries;
+          x = level.rng.number(level.width);
+          y = level.rng.number(level.height);
+          // TODO - also not in a currently visible location
+      } while ((tries && !level.hasTile(x, y, "FLOOR")) || level.actorAt(x, y));
+      if (!tries) {
+          return Option.None();
+      }
+      return Option.Some({ x, y });
+  }
+  function spawn(level, id, // Should this be | ActorKind instead of | Actor?
+  x, y) {
+      const newbie = typeof id === "string" ? create$3(id) : id;
+      if (x === undefined || y === undefined) {
+          const loc = randomSpawnLocFor(level);
+          if (loc.isNone()) {
+              console.error("Failed to find spawn location for : " + newbie.name);
+              return;
+          }
+          const xy = loc.unwrap();
+          newbie.x = xy.x;
+          newbie.y = xy.y;
+      }
+      else {
+          newbie.x = x;
+          newbie.y = y;
+      }
+      level.addActor(newbie);
+      return newbie;
+  }
+
+  function makeKind$2(cfg) {
+      const kind = Object.assign({
+          name: "",
+          hero: false,
+          health: 10,
+          notice: 10,
+          moveSpeed: 100,
+          ch: "!",
+          fg: "white",
+          bump: ["attack"],
+          on: {},
+          damage: 0,
+          attackSpeed: 0,
+          combo: 0,
+          comboDamage: 0,
+          comboSpeed: 0,
+          range: 0,
+          rangedDamage: 0,
+          rangedAttackSpeed: 0,
+          ammo: 0,
+          tooClose: 0,
+          dropChance: 0,
+          dropMatch: [],
+          slots: new Map(),
+      }, cfg);
+      if (kind.name == "") {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
+      }
+      if (typeof cfg.bump === "string") {
+          kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      }
+      if (typeof cfg.dropMatch === "string") {
+          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
+      }
+      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
+          kind.dropMatch.push("drop"); // Default drops
+      }
+      if (kind.attackSpeed == 0 && kind.damage > 0) {
+          kind.attackSpeed = kind.moveSpeed;
+      }
+      if (kind.comboDamage == 0) {
+          kind.combo = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.combo < 2) {
+          kind.comboDamage = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.comboSpeed == 0) {
+          kind.comboSpeed = kind.attackSpeed;
+      }
+      if (kind.ammo == 0 && kind.range > 0) {
+          kind.ammo = 10; // You get 10 shots by default
+      }
+      // TODO: Create drop language
+      //      - 50 (drop default treasure 50% of time)
+      //      - ARROWS (always drop arrows)
+      //      - ARROWS@35 (35% drop arrows)
+      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
+      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
+      //      - #TREASURE@50% (50% drop from the TREASURE tag)
+      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
+      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
+      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
+      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
+      if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
+          kind.dropChance = 100;
+      }
+      return kind;
+  }
+  function install$7(cfg) {
+      factory$3.installKind(cfg);
+  }
+  function getKind$2(id) {
+      return factory$3.getKind(id);
+  }
+
+  class Status {
+      start(actor, level) { }
+      tick(actor, level, time) {
+          return false; // no longer active
+      }
+      stop(actor, level) { }
+      merge(status) {
+          return false;
+      }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying the health bar
+      //      - Allow set text { set_status("Regen") }
+      update_sidebar(actor, entry) { }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying other parts
+      //      - Allow set text { set_status("Regen") }
+      draw_details() { }
+  }
+  class RegenData {
+      amount;
+      time;
+      elapsed;
+      constructor(amount, time) {
+          this.amount = amount;
+          this.time = time;
+          this.elapsed = 0;
+      }
+      get isActive() {
+          return this.amount > 0.0 && this.elapsed < this.time;
+      }
+      tick(time) {
+          let used = Math.floor((this.amount * this.elapsed) / this.time);
+          this.elapsed = Math.min(this.time, this.elapsed + time);
+          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
+          return new_used - used;
+      }
+  }
+  class RegenStatus extends Status {
+      data;
+      constructor(amount, time) {
+          super();
+          this.data = [new RegenData(amount, time)];
+      }
+      tick(actor, level, time) {
+          let still_active = false;
+          this.data.forEach((d) => {
+              if (d.isActive) {
+                  still_active = true;
+                  const amount = d.tick(time);
+                  if (amount > 0) {
+                      heal(level, actor, { amount });
+                  }
+              }
+          });
+          return still_active;
+      }
+      merge(status) {
+          if (status instanceof RegenStatus) {
+              // do merge
+              this.data = this.data.concat(status.data);
+              status.data = [];
+              return true;
+          }
+          return false;
+      }
+      update_sidebar(actor, entry) {
+          entry.add_status("{Regen}", "green");
+      }
+  }
+
+  class Hero extends Actor {
+      // TODO - Make this part of a plugin
+      mapToMe;
+      // TODO - Make this part of a plugin
+      fov;
+      goalPath;
+      followPath;
+      // TODO - Make this part of a plugin
+      slots;
+      constructor(kind) {
+          super(kind);
+          this.mapToMe = new index$6.DijkstraMap();
+          this.fov = null;
+          this.goalPath = null;
+          this.followPath = false;
+          this.slots = {};
+          // this.potion_max = 40 * 200;
+          // this.potion = this.potion_max; // Potion is ready
+      }
+      // @ts-ignore
+      _create(opts) {
+          // @ts-ignore
+          super._create(opts);
+          // this.on("add", (level: Level) => {
+          //   this.updateMapToMe();
+          //   this.updateFov();
+          // });
+          // this.on("move", () => {
+          //   this.updateMapToMe();
+          //   this.updateFov();
+          // });
+          // this.on("remove", () => {
+          //   if (this.fov) {
+          //     GWU.grid.free(this.fov);
+          //     this.fov = null;
+          //   }
+          //   this.clearGoal();
+          // });
+          // this.on("turn_end", (game: Game, time: number) => {
+          //   // this.potion = Math.min(this.potion + time, this.potion_max);
+          // });
+          // this.on("damage", () => this.clearGoal());
+          // Need items in slots....
+          Object.entries(this.kind.slots).forEach(([slot, id]) => {
+              const item = make(id);
+              if (item === null) {
+                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
+              }
+              else {
+                  this.equip(item);
+                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
+              }
+          });
+      }
+      // attributes
+      get damage() {
+          const melee = this.slots.melee;
+          if (melee) {
+              // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboDamage;
+              }
+              return melee.damage;
+          }
+          return super.damage;
+      }
+      get attackSpeed() {
+          const melee = this.slots.melee;
+          if (melee) {
+              // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboSpeed;
+              }
+              return melee.speed;
+          }
+          return super.attackSpeed;
+      }
+      get range() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.range;
+          }
+          return super.range;
+      }
+      get rangedDamage() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.damage;
+          }
+          return super.rangedDamage;
+      }
+      get rangedAttackSpeed() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.speed;
+          }
+          return super.rangedAttackSpeed;
+      }
+      // get canUsePotion(): boolean {
+      //   return this.potion >= this.potion_max;
+      // }
+      get comboLen() {
+          const melee = this.slots.melee;
+          if (melee) {
+              return melee.combo;
+          }
+          return this.kind.combo;
+      }
+      isHero() {
+          return true;
+      }
+      // TODO - plugin?
+      equip(item) {
+          if (item.slot === null) {
+              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
+          }
+          this.slots[item.slot] = item;
+          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.armor_flags |= i.kind.armor_flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
+      }
+      // TODO - plugin?
+      unequipSlot(slot) {
+          this.slots[slot] = null;
+          this.armor_flags = 0;
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.armor_flags |= i.kind.armor_flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
+      }
+      act(level) {
+          // TODO - move this to plugin
+          this.startTurn(level);
+          if (this.goalPath && this.followPath && this.goalPath.length) {
+              const step = this.goalPath[0];
+              if (step) {
+                  if (level.hasActor(step[0], step[1])) {
+                      level.game.addMessage("You are blocked.");
+                  }
+                  else {
+                      const dir = xy.dirFromTo(this, step);
+                      // @ts-ignore
+                      if (moveDir(level, this, dir, true)) {
+                          if (xy.equals(this, step)) {
+                              this.goalPath.shift(); // we moved there, so remove that step
+                          }
+                          else {
+                              this.clearGoal();
+                          }
+                          return;
+                      }
+                      level.game.addMessage("You lost track of path.");
+                  }
+              }
+          }
+          this.clearGoal();
+          level.needInput = true;
+          console.log("Hero - await input", level.scheduler.time);
+      }
+      setGoal(x, y) {
+          if (!this._level || this.followPath)
+              return;
+          const level = this._level;
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
+              if (level.hasActor(i, j))
+                  return index$6.AVOIDED;
+              return this.moveCost(i, j);
+          });
+          if (this.goalPath &&
+              this.goalPath.length &&
+              xy.equals(this.goalPath[0], this)) {
+              this.goalPath.shift(); // remove the spot we are standing on
+          }
+      }
+      clearGoal() {
+          this.followPath = false;
+          this.goalPath = null;
+      }
+      updateMapToMe() {
+          const level = this._level;
+          if (!level)
+              return;
+          this.mapToMe.reset(level.width, level.height);
+          this.mapToMe.setGoal(this.x, this.y);
+          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
+      }
+      updateFov() {
+          const level = this._level;
+          if (!level)
+              return;
+          if (!this.fov ||
+              this.fov.width !== level.width ||
+              this.fov.height !== level.height) {
+              this.fov && grid.free(this.fov);
+              this.fov = grid.alloc(level.width, level.height);
+          }
+          index$7.calculate(this.fov, (x, y) => {
+              return this.moveCost(x, y) >= index$6.BLOCKED;
+          }, this.x, this.y, 100);
+      }
+      isInFov(...args) {
+          if (!this.fov)
+              return false;
+          if (args.length == 2) {
+              const [x, y] = args;
+              return this.fov.get(x, y) > 0;
+          }
+          else {
+              const pos = args[0];
+              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
+          }
+      }
+  }
+
+  class HeroFactory {
+      plugins = [];
+      kinds = {};
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind$1(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
+      }
+      create(kind, opts = {}) {
+          let out = Option.None();
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
+              }
+              return v;
+          }, out);
+          let hero = out.unwrapOrElse(() => new Hero(kind));
+          this.apply(hero);
+          hero._create(opts);
+          hero.emit("create", hero, opts);
+          return hero;
+      }
+      apply(hero) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              hero.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(hero.data, val);
+                  }
+                  else if (key === "kinds") ;
+                  else if (typeof val === "function") {
+                      hero.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$2 = new HeroFactory();
+  function use$2(plugin) {
+      factory$2.use(plugin);
+  }
+  function create$2(kind, config = {}) {
+      if (typeof kind === "string") {
+          kind = getKind$1(kind);
+          if (!kind)
+              throw new Error("Failed to find kind.");
+      }
+      if (config === undefined) {
+          config = {};
+      }
+      if (typeof config === "number") {
+          config = { power: config };
+      }
+      return factory$2.create(kind, config);
+  }
+
+  function makeKind$1(cfg) {
+      let kind;
+      kind = makeKind$2(cfg);
+      kind = Object.assign(kind, {
+          slots: {},
+      });
+      if (cfg.slots) {
+          kind.slots = cfg.slots;
+      }
+      return kind;
+  }
+  function install$6(cfg) {
+      factory$2.installKind(cfg);
+  }
+  function getKind$1(id) {
+      return factory$2.getKind(id);
+  }
+
   class TileFactory {
       constructor(withDefaults = true) {
+          this.plugins = [];
           this.tileIds = {};
           this.allTiles = [];
           if (withDefaults) {
               installDefaults(this);
           }
+      }
+      use(plugin) {
+          this.plugins.push(plugin);
       }
       getTile(name) {
           let id;
@@ -16176,7 +18539,7 @@ void main() {
           const info = this.getTile(name);
           return (!!info && info.blocksMove) || false;
       }
-      installTile(id, opts = {}) {
+      install(id, opts = {}) {
           if (typeof id !== 'string') {
               opts = id;
               id = id.id;
@@ -16232,6 +18595,8 @@ void main() {
                   info.blocksPathing = true;
               }
           }
+          // Do any custom tile setup
+          this.apply(info, opts);
           if (this.tileIds[id]) {
               info.index = this.tileIds[id];
               this.allTiles[info.index] = info;
@@ -16242,15 +18607,22 @@ void main() {
           }
           return info;
       }
+      apply(tile, config) {
+          this.plugins.forEach((p) => {
+              if (p.createTile) {
+                  p.createTile(tile, config);
+              }
+          });
+      }
   }
   // export const tileIds: Record<string, number> = {};
   // export const allTiles: TileInfo[] = [];
   const tileFactory = new TileFactory(true);
   function installTile(...args) {
       if (args.length == 1) {
-          return tileFactory.installTile(args[0]);
+          return tileFactory.install(args[0]);
       }
-      return tileFactory.installTile(args[0], args[1]);
+      return tileFactory.install(args[0], args[1]);
   }
   function getTile$1(name) {
       return tileFactory.getTile(name);
@@ -16262,47 +18634,47 @@ void main() {
       return tileFactory.blocksMove(name);
   }
   function installDefaults(factory) {
-      factory.tileIds['NOTHING'] = factory.tileIds['NULL'] = factory.installTile('NONE', {
+      factory.tileIds['NOTHING'] = factory.tileIds['NULL'] = factory.install('NONE', {
           priority: 0,
           ch: '',
       }).index;
-      factory.installTile('FLOOR', { priority: 10, ch: '.' });
-      factory.installTile('WALL', {
+      factory.install('FLOOR', { priority: 10, ch: '.' });
+      factory.install('WALL', {
           blocksMove: true,
           blocksVision: true,
           priority: 50,
           ch: '#',
       });
-      factory.installTile('DOOR', {
+      factory.install('DOOR', {
           blocksVision: true,
           door: true,
           priority: 60,
           ch: '+',
       });
-      factory.installTile('SECRET_DOOR', {
+      factory.install('SECRET_DOOR', {
           blocksMove: true,
           secretDoor: true,
           priority: 70,
           ch: '%',
       });
-      factory.installTile('UP_STAIRS', {
+      factory.install('UP_STAIRS', {
           stairs: true,
           priority: 80,
           ch: '>',
       });
-      factory.installTile('DOWN_STAIRS', {
+      factory.install('DOWN_STAIRS', {
           stairs: true,
           priority: 80,
           ch: '<',
       });
-      factory.tileIds['DEEP'] = factory.installTile('LAKE', {
+      factory.tileIds['DEEP'] = factory.install('LAKE', {
           priority: 40,
           liquid: true,
           ch: '~',
       }).index;
-      factory.installTile('SHALLOW', { priority: 30, ch: '`' });
-      factory.installTile('BRIDGE', { priority: 45, ch: '=' }); // layers help here
-      factory.installTile('IMPREGNABLE', {
+      factory.install('SHALLOW', { priority: 30, ch: '`' });
+      factory.install('BRIDGE', { priority: 45, ch: '=' }); // layers help here
+      factory.install('IMPREGNABLE', {
           priority: 200,
           ch: '%',
           impregnable: true,
@@ -20294,7 +22666,7 @@ void main() {
 
   // export const tilesByIndex: TileInfo[] = [];
   // export const tilesByName: Record<string, TileInfo> = {};
-  function install$9(cfg) {
+  function install$5(cfg) {
       console.log("INSTALL TILE - " + cfg.id);
       index$1.installTile(cfg);
       // tilesByIndex[info.index] = info;
@@ -20306,8 +22678,8 @@ void main() {
   function getTileByName(name) {
       return index$1.getTile(name);
   }
-  install$9({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-  install$9({
+  install$5({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
+  install$5({
       id: "WALL",
       ch: "#",
       fg: 0x333,
@@ -20316,14 +22688,14 @@ void main() {
       blocksVision: true,
       blocksDiagonal: true,
   });
-  install$9({
+  install$5({
       id: "CORPSE",
       ch: "&",
       fg: 0x666,
       bg: 0x222,
       priority: 15,
       on: {
-          place(game, x, y) {
+          place(level, x, y) {
               // game.wait(1000, () => {
               //   if (game.map.hasTile(x, y, ids.CORPSE)) {
               //     game.setTile(x, y, ids.FLOOR);
@@ -20337,7 +22709,7 @@ void main() {
           },
       },
   });
-  install$9({
+  install$5({
       id: "DOWN_STAIRS",
       ch: "<",
       fg: "gray",
@@ -20347,7 +22719,7 @@ void main() {
           },
       },
   });
-  install$9({
+  install$5({
       id: "UP_STAIRS",
       ch: ">",
       fg: "orange",
@@ -20358,7 +22730,7 @@ void main() {
           },
       },
   });
-  install$9({
+  install$5({
       id: "UP_STAIRS_INACTIVE",
       ch: ">",
       fg: "gray",
@@ -20369,7 +22741,7 @@ void main() {
           },
       },
   });
-  install$9({
+  install$5({
       id: "IMPREGNABLE",
       ch: "#",
       fg: 0x222,
@@ -20384,2306 +22756,6 @@ void main() {
   //   if (tilesByName[t.id]) return;
   //   install(t);
   // });
-
-  class Obj {
-      x;
-      y;
-      z;
-      events;
-      // spawn: boolean;
-      constructor() {
-          this.x = -1;
-          this.y = -1;
-          this.z = 0;
-          this.events = new index.Events(this);
-          // this.spawn = false;
-          // Object.assign(this, cfg);
-      }
-      // create(opts: ObjCreateOpts) {
-      //   this._create(opts);
-      //   this.emit("create", opts);
-      // }
-      _create(cfg) {
-          this.x = cfg.x !== undefined ? cfg.x : this.x;
-          this.y = cfg.y !== undefined ? cfg.y : this.y;
-          this.z = cfg.z !== undefined ? cfg.z : this.z;
-          const onFns = cfg.on || {};
-          Object.entries(onFns).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-      }
-      draw(buf) { }
-      on(...args) {
-          if (args.length == 1) {
-              return this.events.on(args[0]);
-          }
-          return this.events.on(args[0], args[1]);
-      }
-      once(event, fn) {
-          return this.events.once(event, fn);
-      }
-      emit(event, ...args) {
-          return this.events.emit(event, ...args);
-      }
-  }
-
-  class FX extends Obj {
-      ch;
-      fg;
-      bg;
-      constructor(cfg) {
-          super();
-          this.ch = cfg.ch || null;
-          this.fg = cfg.fg || null;
-          this.bg = cfg.bg || null;
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this);
-      }
-  }
-  function create$4(cfg) {
-      const fx = new FX(cfg);
-      fx._create(cfg);
-      fx.emit("create", fx, cfg);
-      return fx;
-  }
-  function flash(level, x, y, color = "white", ms = 300) {
-      const scene = level.scene;
-      scene.pause({ update: true });
-      const fx = create$4({ x, y, bg: color, z: 4 });
-      level.addFx(fx);
-      let _success = NOOP;
-      scene.needsDraw = true;
-      scene.wait(ms, () => {
-          level.removeFx(fx);
-          scene.resume({ update: true });
-          _success();
-      });
-      return {
-          then(success) {
-              _success = success || NOOP;
-          },
-      };
-  }
-  function flashGameTime(level, x, y, color = "white", ms = 300) {
-      const scene = level.scene;
-      const startTime = scene.app.time;
-      const fx = create$4({ x, y, bg: color, z: 4 });
-      level.addFx(fx);
-      let _success = NOOP;
-      // let _fail: CallbackFn = GWU.NOOP;
-      level.wait(ms, () => {
-          const nowTime = scene.app.time;
-          const timeLeft = ms - (nowTime - startTime);
-          if (timeLeft > 0) {
-              scene.pause({ update: true });
-              scene.wait(timeLeft, () => {
-                  level.removeFx(fx);
-                  scene.resume({ update: true });
-                  _success();
-              });
-          }
-          else {
-              level.removeFx(fx);
-              _success();
-          }
-      });
-      return {
-          then(fn) {
-              _success = fn || NOOP;
-          },
-      };
-  }
-
-  function projectile(level, from, to, sprite, ms) {
-      level.game;
-      const scene = level.scene;
-      from = xy.asXY(from);
-      to = xy.asXY(to);
-      let _success = NOOP;
-      if (sprite.ch && sprite.ch.length == 4) {
-          const dir = xy.dirFromTo(from, to);
-          let index = 0;
-          if (dir[0] && dir[1]) {
-              index = 2;
-              if (dir[0] != dir[1]) {
-                  // remember up is -y
-                  index = 3;
-              }
-          }
-          else if (dir[0]) {
-              index = 1;
-          }
-          const ch = sprite.ch[index];
-          sprite = index$4.make(ch, sprite.fg, sprite.bg);
-      }
-      else if (sprite.ch && sprite.ch.length !== 1) {
-          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
-      }
-      const fx = create$4(sprite);
-      // console.log("- fire", from, to);
-      scene.pause({ update: true });
-      const tween$1 = tween
-          .make(fx)
-          .from(from)
-          .to(to, ["x", "y"])
-          .duration(ms)
-          .onStart((_vals) => {
-          level.addFx(fx);
-      })
-          .onUpdate((vals) => {
-          if (level.blocksMove(vals.x, vals.y)) {
-              tween$1.stop(false);
-          }
-          // console.log("- >> ", vals);
-          scene.needsDraw = true;
-      })
-          .onFinish((vals, isSuccess) => {
-          level.removeFx(fx);
-          scene.resume({ update: true });
-          _success(vals, isSuccess);
-      })
-          .start(scene.tweens);
-      return {
-          then(success) {
-              _success = success || NOOP;
-          },
-      };
-  }
-
-  const fl = flag.fl;
-  var ARMOR_FLAGS;
-  (function (ARMOR_FLAGS) {
-      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
-      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
-      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
-      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
-      // add ?? MOBS_AVOID_YOU_MORE ??
-      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
-      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
-      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
-      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
-  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
-  // @ts-ignore
-  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
-  var MELEE_FLAGS;
-  (function (MELEE_FLAGS) {
-      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
-      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
-      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
-      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
-      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
-      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
-      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
-      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
-      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
-      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
-      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
-      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
-      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
-      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
-      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
-      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
-      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
-      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
-      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
-      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
-      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
-      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
-      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
-      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
-      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
-      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
-      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
-      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
-      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
-      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
-  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
-  // @ts-ignore
-  globalThis.MELEE_FLAGS = MELEE_FLAGS;
-  var RANGED_FLAGS;
-  (function (RANGED_FLAGS) {
-      // "GROWING", // Not going to use
-      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
-      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
-      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
-      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
-      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
-      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
-      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
-      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
-      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
-      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
-      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
-      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
-      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
-      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
-      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
-      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
-      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
-  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
-  // @ts-ignore
-  globalThis.RANGED_FLAGS = RANGED_FLAGS;
-
-  const kinds$3 = {};
-  // @ts-ignore
-  globalThis.ItemKinds = kinds$3;
-  function makeKind$3(cfg) {
-      const kind = Object.assign({
-          name: "",
-          ch: "!",
-          fg: "white",
-          //   bump: ["attack"],
-          on: {},
-          frequency: 10,
-          speed: 100,
-          damage: 0,
-          combo: 0,
-          combo_speed: 0,
-          combo_damage: 0,
-          range: 0,
-          charge: 0,
-          defense: 0,
-          slot: null,
-          tags: [],
-          armor_flags: 0,
-          melee_flags: 0,
-          ranged_flags: 0,
-          effects: {},
-      }, cfg);
-      if (!kind.id || kind.id.length === 0) {
-          throw new Error("ItemKind must have 'id'.");
-      }
-      if (kind.name.length == 0) {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
-      }
-      if (typeof cfg.tags == "string") {
-          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
-      }
-      if (typeof cfg.armor_flags !== "number") {
-          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
-      }
-      if (typeof cfg.melee_flags !== "number") {
-          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
-      }
-      if (typeof cfg.ranged_flags !== "number") {
-          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
-      }
-      //   if (typeof cfg.bump === "string") {
-      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      //   }
-      kind.frequency = frequency.make(kind.frequency);
-      if (kind.slot === null) {
-          if (kind.range > 0) {
-              kind.slot = "ranged";
-          }
-          else if (kind.damage > 0) {
-              kind.slot = "melee";
-          }
-          else if (kind.defense > 0) {
-              kind.slot = "armor";
-          }
-      }
-      return kind;
-  }
-  function install$8(cfg) {
-      const kind = makeKind$3(cfg);
-      kinds$3[kind.id.toLowerCase()] = kind;
-  }
-  function getKind$3(id) {
-      return kinds$3[id.toLowerCase()] || null;
-  }
-
-  class Item extends Obj {
-      _turnTime = 0;
-      kind;
-      data;
-      _power;
-      _damage;
-      _comboDamage;
-      _defense;
-      constructor(kind) {
-          super();
-          this.kind = kind;
-          if (!this.kind)
-              throw new Error("Must have kind.");
-          this.data = {};
-          this._damage = this.kind.damage;
-          this._comboDamage = this.kind.combo_damage;
-          this._defense = this.kind.defense;
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-          this.power = 1; // cause calculations to fire
-      }
-      // create(opts: ItemCreateOpts) {
-      //   this._create(opts);
-      //   this.emit("create", this, opts);
-      // }
-      _create(opts) {
-          super._create(opts);
-          // install emit handlers for ItemEvents
-          Object.entries(opts).forEach(([key, val]) => {
-              if (typeof val === "function") {
-                  this.on(key, val);
-              }
-          });
-          this.power = opts.power || this.power;
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      get name() {
-          return this.kind.name;
-      }
-      get power() {
-          return this._power;
-      }
-      set power(val) {
-          val = val || 1;
-          this._power = val;
-          // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
-          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
-          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
-      }
-      get damage() {
-          return this._damage;
-      }
-      get comboDamage() {
-          return this._comboDamage;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get speed() {
-          return this.kind.speed;
-      }
-      get comboSpeed() {
-          return this.kind.combo_speed;
-      }
-      get combo() {
-          return this.kind.combo;
-      }
-      get defense() {
-          return this._defense;
-      }
-      get slot() {
-          return this.kind.slot;
-      }
-      get charge() {
-          return this.kind.charge;
-      }
-  }
-
-  class ItemFactory {
-      plugins = [];
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      create(kind, opts = {}) {
-          // Create the Item
-          let out = Option.None();
-          if (opts.ctor) {
-              out = opts.ctor(kind, opts);
-          }
-          out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.ctor) {
-                  return p.ctor(kind, opts);
-              }
-              return v;
-          }, out);
-          let item = out.unwrapOrElse(() => new Item(kind));
-          // Update the item events/data
-          this.apply(item);
-          // finish making the item
-          item._create(opts);
-          item.emit("create", item, opts);
-          return item;
-      }
-      apply(item) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key == "data") {
-                      item.data = utils.mergeDeep(item.data, val);
-                  }
-                  else if (key == "on") {
-                      Object.entries(val).forEach(([k, v]) => {
-                          if (typeof v === "function") {
-                              item.on(k, v);
-                          }
-                      });
-                  }
-                  else if (key == "keymap") ;
-                  else if (typeof val === "function") {
-                      item.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$4 = new ItemFactory();
-  function use$4(plugin) {
-      factory$4.use(plugin);
-  }
-  function make(id, opts = {}) {
-      let kind = typeof id === "string" ? getKind$3(id) : id;
-      if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
-          throw new Error("Invalid ItemKind: " + JSON.stringify(id));
-      }
-      return factory$4.create(kind, opts);
-  }
-  function place(level, x, y, id = null) {
-      let newbie;
-      if (id === null) {
-          newbie = random$1(level); // TODO - default match?
-      }
-      else if (typeof id === "string") {
-          newbie = make(id);
-      }
-      else {
-          newbie = id;
-      }
-      if (!newbie)
-          return null;
-      newbie.kind.fg;
-      const game = level.game;
-      // const scene = level.scene;
-      // const level = level.level;
-      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
-          return !level.blocksMove(i, j) && !level.hasItem(i, j);
-      });
-      if (!locs || locs.length == 0)
-          return null;
-      const loc = game.rng.item(locs);
-      newbie.x = loc[0];
-      newbie.y = loc[1];
-      // level.events.emit("spawn_item", level, newbie);
-      level.addItem(newbie);
-      return newbie;
-  }
-  function placeRandom(level, x, y, match = null) {
-      let item = random$1(level, match);
-      if (!item) {
-          return null;
-      }
-      return place(level, x, y, item);
-  }
-  function random$1(level, match = null) {
-      // pick random kind
-      let allKinds = Object.values(kinds$3);
-      let matches;
-      if (match === null) {
-          matches = [];
-      }
-      else if (typeof match == "string") {
-          matches = match.split(/[|,]/).map((v) => v.trim());
-      }
-      else {
-          matches = match.map((v) => v.trim());
-      }
-      if (matches.length > 0) {
-          allKinds = allKinds.filter((kind) => {
-              return matches.every((m) => {
-                  if (m[0] == "!") {
-                      return !kind.tags.includes(m.substring(1));
-                  }
-                  else {
-                      return kind.tags.includes(m);
-                  }
-              });
-          });
-      }
-      const chances = allKinds.map((k) => k.frequency(level.depth));
-      const index = level.rng.weighted(chances);
-      if (index < 0)
-          return null;
-      const kind = allKinds[index];
-      const item = make(kind);
-      return item;
-  }
-
-  // @returns boolean - indicates whether or not the target dies
-  function damage(level, target, damage) {
-      const game = level.game;
-      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
-      const armor_flags = target.armor_flags;
-      let amount = (damage.amount = damage.amount || 0);
-      damage.msg = damage.msg || `${target.name} is damaged`;
-      damage.color = damage.color || "red";
-      if (!damage.isRanged) {
-          damage.isRanged = false;
-      }
-      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
-          if (game.rng.chance(30)) {
-              game.messages.addCombat(damage.msg + "#{orange [X]}");
-              flash(level, target.x, target.y, "orange", 150);
-              damage.amount = 0;
-              return false;
-          }
-      }
-      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
-          damage.amount = Math.round(damage.amount * 0.65);
-      }
-      target.emit("damage", damage);
-      if (damage.amount <= 0) {
-          return false;
-      }
-      target.health -= damage.amount || 0;
-      if (damage.amount < amount) {
-          damage.color = "orange";
-      }
-      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
-      flash(level, target.x, target.y, damage.color, 150);
-      if (target.health <= 0) {
-          // do all of these move to event handlers?
-          game.messages.addCombat(`${target.name} dies`);
-          // TODO - This should be above the floor (FIXTURE)
-          // that way when it decays the floor returns as normal
-          // and corpses can be custom to the creature that died
-          // no matter what the floor is
-          level.setTile(target.x, target.y, "CORPSE");
-          target.emit("death", level, target);
-          level.removeActor(target);
-          return true;
-      }
-      return false;
-  }
-
-  function heal(level, target, heal) {
-      if (heal.amount <= 0)
-          return;
-      heal.amount = Math.min(heal.amount, target.health_max - target.health);
-      target.health += heal.amount;
-  }
-
-  const actionsByName = {};
-  function install$7(name, fn) {
-      actionsByName[name] = fn;
-  }
-  function get$1(name) {
-      return actionsByName[name] || null;
-  }
-  function idle(level, actor) {
-      console.log("- idle", actor.name, actor.x, actor.y);
-      level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
-      return true;
-  }
-  install$7("idle", idle);
-  function moveRandom(level, actor, quiet = false) {
-      const dir = level.rng.item(xy.DIRS);
-      return moveDir(level, actor, dir, quiet);
-  }
-  install$7("move_random", moveRandom);
-  function moveDir(level, actor, dir, quiet = false) {
-      const game = level.game;
-      const newX = actor.x + dir[0];
-      const newY = actor.y + dir[1];
-      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
-          if (!quiet) {
-              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
-              game.addMessage(`Blocked by a ${tile.id}.`);
-              flash(level, newX, newY, "orange", 150);
-              idle(level, actor);
-              return true;
-          }
-          else {
-              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      const other = level.actorAt(newX, newY);
-      if (other) {
-          if (other.kind && other.bump(level, actor)) {
-              return true;
-          }
-          if (actor.hasActed())
-              return true;
-          if (!quiet) {
-              game.addMessage(`You bump into a ${other.name}.`);
-              flash(level, newX, newY, "orange", 150);
-              idle(level, actor);
-              return true;
-          }
-          else {
-              console.log("- nothing!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      if (level.blocksMove(newX, newY)) {
-          if (!quiet) {
-              game.addMessage("You bump into a wall.");
-              flash(level, newX, newY, "orange", 150);
-              idle(level, actor);
-              return false;
-          }
-          else {
-              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      actor.x;
-      actor.y;
-      actor.x = newX;
-      actor.y = newY;
-      // game.drawAt(oldX, oldY);
-      // game.drawAt(newX, newY);
-      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
-      actor.emit("move", level, actor, newX, newY);
-      level.triggerAction("enter", actor);
-      game.endTurn(actor, speed);
-      return true;
-  }
-  function moveTowardHero(level, actor, quiet = false) {
-      const game = level.game;
-      const hero = game.hero;
-      const dir = hero.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
-          return level.hasActor(x, y);
-      });
-      if (dir) {
-          if (moveDir(level, actor, dir, true)) {
-              return true; // success
-          }
-          if (!quiet) {
-              flash(level, actor.x, actor.y, "orange", 150);
-          }
-          return idle(level, actor);
-      }
-      return false;
-  }
-  install$7("move_toward_hero", moveTowardHero);
-  function moveAwayFromHero(level, actor, quiet = false) {
-      const game = level.game;
-      const hero = game.hero;
-      // compute safety map
-      const safety = new index$6.DijkstraMap(level.width, level.height);
-      safety.copy(hero.mapToMe);
-      safety.update((v, x, y) => {
-          if (v >= index$6.BLOCKED)
-              return v;
-          v = -1.2 * v;
-          if (level.isInLoop(x, y))
-              v -= 2;
-          if (level.isGateSite(x, y))
-              v -= 2;
-          return Math.round(v);
-      });
-      safety.setDistance(hero.x, hero.y, index$6.BLOCKED);
-      safety.rescan((x, y) => actor.moveCost(x, y));
-      safety.addObstacle(hero.x, hero.y, (x, y) => hero.moveCost(x, y), 5);
-      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-          return level.hasActor(x, y);
-      });
-      console.log(`- move away (${actor.x},${actor.y}) from player (${hero.x},${hero.y}) - ${dir}`);
-      // if (dir === null) {
-      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-      //     return map.hasActor(x, y);
-      //   });
-      // }
-      if (dir) {
-          const spread = xy.dirSpread(dir);
-          for (let d of spread) {
-              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
-              if (moveDir(level, actor, d, true)) {
-                  console.log("- success");
-                  return true; // success
-              }
-          }
-          if (!quiet) {
-              flash(level, actor.x, actor.y, "orange", 150);
-          }
-          return idle(level, actor);
-      }
-      return false;
-  }
-  install$7("move_away_from_hero", moveAwayFromHero);
-  function attack(level, actor, target = null) {
-      const game = level.game;
-      if (target) {
-          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
-              return false;
-          }
-      }
-      else {
-          // todo - long reach melee -- spear, etc...
-          const targets = game.level.actors.filter((a) => a !== actor &&
-              actor.health > 0 &&
-              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
-              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
-          if (targets.length == 0) {
-              game.addMessage("no targets.");
-              flash(level, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-              return true; // did something
-          }
-          else if (targets.length > 1) {
-              level.scene.app.scenes
-                  .run("target", { game, actor, targets })
-                  .once("stop", (result) => {
-                  if (!result) {
-                      flash(level, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-                  }
-                  else {
-                      attack(level, actor, result);
-                  }
-              });
-              return true; // didSomething
-          }
-          else {
-              target = targets[0];
-          }
-      }
-      // @ts-ignore
-      const actorIsPlayer = actor === game.hero;
-      // @ts-ignore
-      const otherIsPlayer = target === game.hero;
-      if (!actorIsPlayer && !otherIsPlayer) {
-          return idle(level, actor); // no attacking
-      }
-      const attackInfo = actor.getMeleeAttack();
-      if (!attackInfo) {
-          game.addMessage("Cannot attack.");
-          flash(level, actor.x, actor.y, "orange", 150);
-          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-      }
-      // we have an actor and a target
-      damage(level, target, {
-          amount: attackInfo.damage,
-          msg: `${actor.name} attacks ${target.name}`,
-      });
-      game.endTurn(actor, attackInfo.time);
-      return true;
-  }
-  install$7("attack", attack);
-  function fire(level, actor, target = null) {
-      const game = level.game;
-      const hero = game.hero;
-      if (!actor.range) {
-          game.addMessage("Nothing to fire.");
-          return false;
-      }
-      if (!actor.ammo) {
-          game.addMessage("No ammo.");
-          return false;
-      }
-      if (target) {
-          if (xy.distanceFromTo(actor, target) > actor.range)
-              return false;
-      }
-      else {
-          // todo - long reach melee -- spear, etc...
-          const targets = game
-              .level.actors.filter((a) => {
-              if (a === actor)
-                  return false;
-              if (actor.health <= 0)
-                  return false;
-              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
-              if (dist > actor.range) {
-                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
-                  return false;
-              }
-              console.log("checking fov...");
-              // HACK - for actor.canSee(a)
-              if (!hero.isInFov(actor)) {
-                  console.log("actor not visible");
-                  return false;
-              }
-              if (!hero.isInFov(a)) {
-                  console.log("target not visible");
-                  return false;
-              }
-              // end hack
-              console.log("ok - ", a.name);
-              return true;
-          })
-              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
-          if (targets.length == 0) {
-              game.addMessage("no targets.");
-              // flash tiles you can fire into
-              const fov = new index$7.FOV({
-                  isBlocked(x, y) {
-                      // TODO - This should be more about visible than move
-                      return actor.moveCost(x, y) >= index$6.BLOCKED;
-                  },
-                  hasXY(x, y) {
-                      return level.hasXY(x, y);
-                  },
-              });
-              // TODO - FOV highlights cells we can't fire into...
-              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
-                  flash(level, x, y, "dark_teal", 125);
-              });
-              // FX.flash(game, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
-              return true; // did something
-          }
-          else if (targets.length > 1) {
-              level.scene.app.scenes
-                  .run("target", { game, actor, targets })
-                  .once("stop", (result) => {
-                  if (!result) {
-                      flash(level, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
-                  }
-                  else {
-                      fire(level, actor, result);
-                  }
-              });
-              return true; // didSomething
-          }
-          else {
-              target = targets[0];
-          }
-      }
-      // @ts-ignore
-      const actorIsHero = actor === game.hero;
-      // @ts-ignore
-      const otherIsHero = target === game.hero;
-      if (!actorIsHero && !otherIsHero) {
-          return idle(level, actor); // no attacking
-      }
-      // we have an actor and a target
-      // Does this move to an event handler?  'damage', { amount: #, type: string }
-      actor.ammo -= 1;
-      // TODO - get next attack details (and increment counter in actor)
-      projectile(level, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
-          if (!ok) {
-              flash(level, xy.x, xy.y, "orange", 150);
-          }
-          else {
-              damage(level, target, {
-                  amount: actor.rangedDamage,
-                  msg: `${actor.name} shoots ${target.name}`,
-              });
-          }
-      });
-      game.endTurn(actor, actor.rangedAttackSpeed);
-      return true;
-  }
-  install$7("fire", fire);
-  function fireAtHero(level, actor) {
-      const game = level.game;
-      const hero = game.hero;
-      // if player can't see actor then actor can't see player!
-      if (!hero.isInFov(actor.x, actor.y))
-          return false;
-      if (!actor.ammo)
-          return false;
-      actor.ammo -= 1;
-      // TODO - get next attack details (and increment counter in actor)
-      projectile(level, actor, hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
-          if (!ok) {
-              flash(level, xy.x, xy.y, "orange", 150);
-          }
-          else {
-              // @ts-ignore
-              damage(level, hero, {
-                  amount: actor.rangedDamage,
-                  msg: `${actor.name} shoots ${hero.name}`,
-              });
-          }
-      });
-      game.endTurn(actor, actor.rangedAttackSpeed);
-      return true;
-  }
-  install$7("fire_at_hero", fireAtHero);
-  function climb(level, actor) {
-      const game = level.game;
-      const tile = game.level.getTile(actor.x, actor.y);
-      if (tile.on && tile.on.climb) {
-          tile.on.climb.call(tile, game, actor);
-          return actor.hasActed();
-      }
-      else {
-          return idle(level, actor);
-      }
-  }
-  install$7("climb", climb);
-  function pickup(level, actor) {
-      const game = level.game;
-      const item = level.itemAt(actor.x, actor.y);
-      if (item) {
-          item.emit("pickup", level, item, actor);
-          return true;
-      }
-      game.addMessage("Nothing to pickup.");
-      return idle(level, actor);
-  }
-  install$7("pickup", pickup);
-  // export function potion(game: Game, hero: Hero): boolean {
-  //   if (!hero.canUsePotion) {
-  //     game.addMessage("Not ready.");
-  //     // TODO - spend time? idle?
-  //     return false;
-  //   }
-  //   if (hero.health >= hero.health_max) {
-  //     game.addMessage("You do not need to drink a potion.");
-  //     // TODO - spend time? idle?
-  //     return false;
-  //   }
-  //   const heal = Math.floor(hero.health_max * 0.75);
-  //   hero.health = Math.min(hero.health + heal, hero.health_max);
-  //   hero.potion = 0; // Needs to recharge
-  //   game.addMessage("You feel much better.");
-  //   game.endTurn(hero, hero.moveSpeed);
-  //   return true;
-  // }
-
-  function ai(level, actor) {
-      const game = level.game;
-      const hero = game.hero;
-      const noticeDistance = actor.kind.notice || 10;
-      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
-      const canSeeHero = hero.isInFov(actor);
-      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
-      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
-      // TODO - Noticed prior to hero going out of range/view should skip this
-      // Do this with a flag/mode/state/time value?
-      if (distToHero > noticeDistance || !canSeeHero) {
-          // wander to goal?  [wanderChance]
-          // step randomly [idleMoveChance]
-          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
-          // random chance? [randomMoveChance]
-          if (game.rng.chance(20)) {
-              if (moveRandom(level, actor, true))
-                  return;
-          }
-          return idle(level, actor);
-      }
-      if (distToHero <= actor.kind.tooClose) {
-          // should there be a random chance on this?
-          if (moveAwayFromHero(level, actor))
-              return;
-      }
-      // shoot at player?
-      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
-          if (fireAtHero(level, actor))
-              return;
-      }
-      if (distToHero < 2) {
-          // can attack diagonal
-          if (actor.canMeleeAttack) {
-              // @ts-ignore
-              if (attack(level, actor, hero))
-                  return;
-          }
-          if (distToHero == 1) {
-              // Hmmm...
-              return idle(level, actor);
-          }
-      }
-      // If we don't have a min distance from hero then move closer (to get to melee range)
-      if (!actor.kind.tooClose) {
-          if (moveTowardHero(level, actor))
-              return;
-      }
-      return idle(level, actor);
-  }
-
-  function messages(scene, y) {
-      const widget = index$1$1.make({
-          id: "MESSAGES",
-          tag: "msg",
-          x: 0,
-          y: y,
-          width: scene.width,
-          height: scene.height - y,
-          scene,
-          bg: "darkest_gray",
-          fg: "white",
-          draw(buf) {
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              const fg = index$9.from(this._used.fg);
-              const fgc = fg.alpha(50);
-              const scene = this.scene;
-              const level = scene.data.level;
-              const game = level.game;
-              if (game && game.messages) {
-                  game.messages.forEach((msg, confirmed, i) => {
-                      if (i < this.bounds.height) {
-                          const color = confirmed ? fgc : fg;
-                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
-                      }
-                  });
-              }
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  let Map$1 = class Map extends index.Widget {
-      _focus = [-1, -1];
-      constructor(opts) {
-          super(opts);
-          this.on("draw", this._draw);
-          this.on("mousemove", this._setFocus);
-          this.on("mouseleave", this._clearFocus);
-          this.on("keypress", this._clearFocus);
-      }
-      _draw(buf) {
-          const scene = this.scene;
-          const level = scene.data.level;
-          const game = level.game;
-          const player = game.hero;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
-          level.tiles.forEach((index, x, y) => {
-              if (this.bounds.contains(x, y)) {
-                  buf.blackOut(x, y);
-                  level.drawAt(buf, x, y);
-                  if (!player.fov || !player.fov.get(x, y)) {
-                      buf.get(x, y).mix("black", 25, 25);
-                  }
-              }
-          });
-          if (player.goalPath) {
-              player.goalPath.forEach(([x, y]) => {
-                  buf.get(x, y).mix("green", 0, 25).separate();
-              });
-          }
-      }
-      _setFocus(e) {
-          this._focus[0] = e.x;
-          this._focus[1] = e.y;
-          this.needsDraw = true;
-          // e.stopPropagation();
-      }
-      _clearFocus() {
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-      }
-  };
-  function map(scene, width, height) {
-      const widget = new Map$1({
-          id: "MAP",
-          tag: "map",
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-          scene,
-          bg: index$9.BLACK,
-      });
-      return widget;
-  }
-
-  class SidebarEntry {
-      // TODO - icon: GWU.sprite.SpriteData | null;
-      name;
-      nameColor;
-      progressbars;
-      statuses;
-      constructor(name, color) {
-          // TODO: this.icon = null;
-          this.name = name;
-          this.nameColor = color === undefined ? "white" : color;
-          this.progressbars = [];
-          this.statuses = [];
-      }
-      add_progress(text, color, val, max) {
-          this.progressbars.push({
-              text,
-              color,
-              val,
-              max,
-          });
-          return this;
-      }
-      add_status(text, color) {
-          this.statuses.push({ text, color });
-          return this;
-      }
-  }
-  class Sidebar extends index.Widget {
-      _focus = [-1, -1];
-      entries = [];
-      constructor(opts) {
-          super(opts);
-      }
-      setFocus(x, y) {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = x;
-          this._focus[1] = y;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.emit("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      clearFocus() {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.emit("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
-      //   buf.drawText(x, y, "Hero");
-      //   this.drawHealth(buf, x, y + 1, 28, player);
-      //   this.drawPotion(buf, x, y + 2, 28, player);
-      //   let lines = 3; // Hero + health + potion
-      //   player.statuses.forEach((status) => {
-      //     if (status) {
-      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
-      //     }
-      //   });
-      //   return lines;
-      // }
-      drawActor(buf, x, y, actor) {
-          //   buf.drawText(x, y, actor.name, actor.kind.fg);
-          //   this.drawHealth(buf, x, y + 1, 28, actor);
-          //   let lines = 2; // name + health
-          //   actor.statuses.forEach((status) => {
-          //     if (status) {
-          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
-          //     }
-          //   });
-          //   return lines;
-          let entry = actor.getSidebarEntry();
-          return this.drawEntry(buf, x, y, entry);
-      }
-      drawEntry(buf, x, y, entry) {
-          buf.drawText(x, y, entry.name, entry.nameColor);
-          let lines = 1;
-          entry.progressbars.forEach((p) => {
-              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
-              lines += 1;
-          });
-          entry.statuses.forEach((s) => {
-              buf.drawText(x, y + lines, s.text, s.color);
-              lines += 1;
-          });
-          return lines;
-      }
-      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
-          const pct = val / max;
-          const full = Math.floor(w * pct);
-          const partialPct = Math.floor(100 * (w * pct - full));
-          buf.fillRect(x, y, full, 1, null, null, bg);
-          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
-          if (text && text.length) {
-              buf.drawText(x, y, text, fg, null, w, "center");
-          }
-      }
-      // drawHealth(
-      //   buf: GWU.buffer.Buffer,
-      //   x: number,
-      //   y: number,
-      //   w: number,
-      //   actor: Actor
-      // ) {
-      //   const pct = actor.health / actor.health_max;
-      //   const bg = GWU.color.colors.green.mix(
-      //     GWU.color.colors.red,
-      //     100 * (1 - pct)
-      //   );
-      //   this.drawProgress(
-      //     buf,
-      //     x,
-      //     y,
-      //     w,
-      //     "white",
-      //     bg,
-      //     actor.health,
-      //     actor.health_max,
-      //     "HEALTH"
-      //   );
-      // }
-      // drawPotion(
-      //   buf: GWU.buffer.Buffer,
-      //   x: number,
-      //   y: number,
-      //   w: number,
-      //   player: Hero
-      // ) {
-      //   this.drawProgress(
-      //     buf,
-      //     x,
-      //     y,
-      //     w,
-      //     "white",
-      //     GWU.color.colors.blue,
-      //     player.potion,
-      //     player.potion_max,
-      //     "Potion"
-      //   );
-      // }
-      _draw(buf) {
-          const scene = this.scene;
-          const level = scene.data.level;
-          const game = level.game;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-          const x = this.bounds.x + 1;
-          let y = this.bounds.y;
-          buf.setClip(this.bounds);
-          // buf.drawText(x);
-          y += buf.drawText(x, y, scene.app.name, "green");
-          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-          y += buf.drawText(x, y, "Level: " + level.data.depth, "pink");
-          y += 1;
-          let px = game.hero.x;
-          let py = game.hero.y;
-          // if (this._focus[0] != -1) {
-          //   px = this._focus[0];
-          //   py = this._focus[1];
-          // }
-          this.entries = level.actors.filter(
-          // @ts-ignore
-          (a) => a && a !== game.hero && a.health > 0);
-          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
-              xy.distanceBetween(b.x, b.y, px, py));
-          let focused = this.entries.find((a) => xy.equals(a, this._focus));
-          // @ts-ignore
-          let used = this.drawActor(buf, x, y, game.hero);
-          game.hero.data.sideY = y;
-          game.hero.data.sideH = used;
-          if (xy.equals(game.hero, this._focus)) {
-              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              // @ts-ignore
-              focused = game.hero;
-          }
-          else if (focused) {
-              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-          }
-          y += used + 1;
-          this.entries.forEach((a) => {
-              const used = this.drawActor(buf, x, y, a);
-              if (a === focused) {
-                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              }
-              else if (focused) {
-                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-              }
-              a.data.sideY = y;
-              a.data.sideH = used;
-              y += used + 1;
-          });
-          y += 1;
-          // y += buf.drawText(x, y, "Press Escape to lose.");
-          buf.clearClip();
-      }
-      _mousemove(e) {
-          super._mousemove(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          this._focus.slice();
-          this.clearFocus();
-          const level = this.scene.data.level;
-          const game = level.game;
-          const hero = game.hero;
-          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
-              this.setFocus(hero.x, hero.y);
-          }
-          else {
-              this.entries.forEach((a) => {
-                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
-                      this.setFocus(a.x, a.y);
-                  }
-              });
-          }
-          // if (!GWU.xy.equals(wasFocus, this._focus)) {
-          //   this.emit("focus", this._focus);
-          //   this.needsDraw = true;
-          // }
-          e.stopPropagation();
-      }
-      _click(e) {
-          super._click(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          if (this._focus[0] > -1) {
-              this.emit("choose", this._focus);
-          }
-      }
-  }
-  function sidebar(scene, x, height) {
-      const widget = new Sidebar({
-          id: "SIDEBAR",
-          tag: "sidebar",
-          x: x,
-          y: 0,
-          width: scene.width - x,
-          height: height,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  function flavor(scene, x, y) {
-      const widget = index$1$1.make({
-          id: "FLAVOR",
-          tag: "flavor",
-          x: x,
-          y: y,
-          width: scene.width - x,
-          height: 1,
-          scene,
-          bg: index$9.from("darker_gray"),
-          fg: index$9.from("purple"),
-          draw(buf) {
-              const scene = this.scene;
-              const level = scene.data.level;
-              level.game;
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  class Details extends index$1$1.Dialog {
-      _text;
-      constructor(opts) {
-          opts.border = opts.border ?? "ascii";
-          super(opts);
-          this._text = new index$1$1.Text({
-              id: "INFO",
-              text: "details...",
-              x: this.bounds.x + 1,
-              y: this.bounds.y + 1,
-          });
-          this.addChild(this._text);
-          this.hidden = true;
-      }
-      showActor(actor) {
-          let text = actor.name + " [" + actor.power + "]\n";
-          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
-          text += "Moves : " + actor.moveSpeed + "\n";
-          if (actor.damage > 0) {
-              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          if (actor.range > 0) {
-              text +=
-                  "Ranged: " +
-                      actor.rangedDamage +
-                      " / " +
-                      actor.rangedAttackSpeed +
-                      " @ " +
-                      actor.range +
-                      " (" +
-                      actor.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-      showHero(player) {
-          let text = player.name + "\n";
-          const armor = player.slots.armor;
-          if (armor) {
-              text += "Health: " + player.health + " / " + player.health_max + "\n";
-              text += "#{teal}";
-              text += "  " + armor.name + " [" + armor.power + "]\n";
-              if (armor.kind.armor_flags != 0) {
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
-                      text += "  {-35% Damage Received}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
-                      text += "  {30% Negate Hits}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
-                      text += "  {-40% Artifact Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
-                      text += "  {+10 Arrows Per Bundle}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
-                      text += "  {100% Longer Roll Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
-                      text += "  {+30% Melee Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
-                      text += "  {Mobs Target You More}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
-                      text += "  {+15% Move Speed Aura}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
-                      text += "  {-40% Potion Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
-                      text += "  {Potion Boosts Defense}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
-                      text += "  {Potion Heals Nearby Allies}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
-                      text += "  {+30% Ranged Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
-                      text += "  {+20% Weapon Damage Aura}\n";
-                  }
-              }
-              text += "#{}";
-          }
-          else {
-              text += "Health: " + player.health + "/" + player.health_max + "\n";
-          }
-          text += "Moves : " + player.moveSpeed + "\n";
-          const melee = player.slots.melee;
-          if (melee) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-              text += "#{teal}";
-              text += `  ${melee.name} [${melee.power}]\n`;
-              text += "#{}";
-          }
-          else if (player.damage > 0) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          const ranged = player.slots.ranged;
-          if (ranged) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      " / " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-              text += "#{teal}";
-              text += "  " + ranged.name + " [" + ranged.power + "]\n";
-          }
-          else if (player.range > 0) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      "  " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-  }
-  function details(scene, width, height) {
-      const widget = new Details({
-          id: "DETAILS",
-          tag: "details",
-          x: 2,
-          y: 2,
-          width: width - 4,
-          height: height - 4,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  class AttackInfo {
-      damage;
-      time;
-      constructor(damage, time) {
-          this.damage = damage;
-          this.time = time;
-      }
-  }
-  class Actor extends Obj {
-      _turnTime = 0;
-      _level = null;
-      kind;
-      data = {};
-      health = 0;
-      health_max = 0;
-      ammo = 0;
-      _power = 1;
-      armor_flags = 0;
-      statuses = [];
-      combo_index = 0;
-      leader = null;
-      constructor(kind) {
-          super();
-          this.kind = kind;
-          if (!this.kind)
-              throw new Error("Missing ActorKind!");
-          this.z = 1;
-          this.health_max = this.kind.health || 10;
-          this.health = this.health_max;
-          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
-          const onFns = kind.on || {};
-          Object.entries(onFns).forEach(([key, val]) => {
-              this.on(key, val);
-          });
-      }
-      _create(opts) {
-          super._create(opts);
-          Object.entries(opts).forEach(([key, val]) => {
-              // 'on' section handled by super._make
-              if (typeof val === "function") {
-                  this.on(key, val);
-              }
-          });
-          this.power = opts.power || 1;
-          // machineHome
-      }
-      // attributes
-      get name() {
-          return this.kind.name;
-      }
-      get damage() {
-          // TODO - combo damage
-          return Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
-      }
-      get attackSpeed() {
-          // TODO - combo speed
-          return this.kind.attackSpeed;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get rangedDamage() {
-          return Math.round(this.kind.rangedDamage * (1 + (this._power - 1) / 2));
-      }
-      get rangedAttackSpeed() {
-          return this.kind.rangedAttackSpeed;
-      }
-      get moveSpeed() {
-          return this.kind.moveSpeed;
-      }
-      get comboLen() {
-          return this.kind.combo;
-      }
-      get power() {
-          return this._power;
-      }
-      set power(val) {
-          this._power = val;
-          this.health = Math.round(this.kind.health * (1 + (this._power - 1) / 2));
-          this.health_max = this.health;
-      }
-      isHero() {
-          return false;
-      }
-      //
-      getMeleeAttack() {
-          const attack = new AttackInfo(this.damage, this.attackSpeed);
-          this.combo_index += 1;
-          this.combo_index = this.combo_index % this.comboLen;
-          return attack;
-      }
-      hasArmorFlag(flag) {
-          return (this.armor_flags & flag) > 0;
-      }
-      // TODO - Should this be a method instead of a property?
-      get canMeleeAttack() {
-          return this.damage > 0 && this.attackSpeed > 0;
-      }
-      addStatus(status) {
-          const current = this.statuses.findIndex((current) => current && current.merge(status));
-          if (current >= 0) {
-              return;
-          }
-          const empty = this.statuses.findIndex((s) => !s);
-          if (empty >= 0) {
-              this.statuses[empty] = status;
-          }
-          else {
-              this.statuses.push(status);
-          }
-      }
-      remove_status(status) {
-          const index = this.statuses.indexOf(status);
-          if (index >= 0) {
-              this.statuses[index] = null;
-          }
-      }
-      startTurn(level) {
-          this._turnTime = 0;
-          this.emit("turn_start", level, this);
-      }
-      endTurn(level, time) {
-          this._turnTime = time;
-          this.emit("turn_end", level, this, time);
-      }
-      hasActed() {
-          return this._turnTime > 0;
-      }
-      draw(buf) {
-          if (this.health <= 0)
-              return;
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      avoidsTile(tile) {
-          return tile.blocksMove || false;
-      }
-      moveCost(x, y) {
-          const level = this._level;
-          if (!level)
-              return index$6.OBSTRUCTION;
-          if (!level.hasXY(x, y))
-              return index$6.OBSTRUCTION;
-          if (level.blocksDiagonal(x, y))
-              return index$6.OBSTRUCTION;
-          if (level.blocksMove(x, y))
-              return index$6.BLOCKED;
-          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
-          return index$6.OK;
-      }
-      pathTo(loc) {
-          const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
-          return path;
-      }
-      act(level) {
-          // TODO - move this to plugin
-          this.startTurn(level);
-          ai(level, this);
-          if (!this.hasActed()) {
-              console.log("No actor AI action.");
-          }
-      }
-      bump(level, actor) {
-          const actions = this.kind.bump;
-          for (let action of actions) {
-              const fn = get$1(action);
-              if (fn && fn(level, actor, this)) {
-                  return true;
-              }
-          }
-          return false; // did nothing
-      }
-      tick(level, time) {
-          this.emit("tick", level, this, time);
-          Object.values(this.statuses).forEach((status, i) => {
-              if (status) {
-                  if (!status.tick(this, level, time)) {
-                      this.statuses[i] = null;
-                  }
-              }
-          });
-      }
-      getSidebarEntry() {
-          const entry = new SidebarEntry(this.name, this.kind.fg);
-          entry.add_progress("Health", "green", this.health, this.health_max);
-          this.statuses.forEach((s) => {
-              s && s.update_sidebar(this, entry);
-          });
-          this.emit("sidebar", this, entry); // Allow plugins to update sidebar
-          return entry;
-      }
-  }
-
-  const kinds$2 = {};
-  // @ts-ignore
-  globalThis.ActorKinds = kinds$2;
-  function makeKind$2(cfg) {
-      const kind = Object.assign({
-          name: "",
-          hero: false,
-          health: 10,
-          notice: 10,
-          moveSpeed: 100,
-          ch: "!",
-          fg: "white",
-          bump: ["attack"],
-          on: {},
-          damage: 0,
-          attackSpeed: 0,
-          combo: 0,
-          comboDamage: 0,
-          comboSpeed: 0,
-          range: 0,
-          rangedDamage: 0,
-          rangedAttackSpeed: 0,
-          ammo: 0,
-          tooClose: 0,
-          dropChance: 0,
-          dropMatch: [],
-          slots: new Map(),
-      }, cfg);
-      if (kind.name == "") {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
-      }
-      if (typeof cfg.bump === "string") {
-          kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      }
-      if (typeof cfg.dropMatch === "string") {
-          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
-      }
-      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
-          kind.dropMatch.push("drop"); // Default drops
-      }
-      if (kind.attackSpeed == 0 && kind.damage > 0) {
-          kind.attackSpeed = kind.moveSpeed;
-      }
-      if (kind.comboDamage == 0) {
-          kind.combo = 0;
-          kind.comboSpeed = 0;
-      }
-      else if (kind.combo < 2) {
-          kind.comboDamage = 0;
-          kind.comboSpeed = 0;
-      }
-      else if (kind.comboSpeed == 0) {
-          kind.comboSpeed = kind.attackSpeed;
-      }
-      if (kind.ammo == 0 && kind.range > 0) {
-          kind.ammo = 10; // You get 10 shots by default
-      }
-      // TODO: Create drop language
-      //      - 50 (drop default treasure 50% of time)
-      //      - ARROWS (always drop arrows)
-      //      - ARROWS@35 (35% drop arrows)
-      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
-      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
-      //      - #TREASURE@50% (50% drop from the TREASURE tag)
-      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
-      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
-      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
-      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
-      if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
-          kind.dropChance = 100;
-      }
-      return kind;
-  }
-  function install$6(cfg) {
-      const kind = makeKind$2(cfg);
-      kinds$2[kind.id.toLowerCase()] = kind;
-  }
-  function getKind$2(id) {
-      return kinds$2[id.toLowerCase()] || null;
-  }
-
-  class Status {
-      start(actor, level) { }
-      tick(actor, level, time) {
-          return false; // no longer active
-      }
-      stop(actor, level) { }
-      merge(status) {
-          return false;
-      }
-      // TODO - Wrap this with higher level interface
-      //      - Allow modifying the health bar
-      //      - Allow set text { set_status("Regen") }
-      update_sidebar(actor, entry) { }
-      // TODO - Wrap this with higher level interface
-      //      - Allow modifying other parts
-      //      - Allow set text { set_status("Regen") }
-      draw_details() { }
-  }
-  class RegenData {
-      amount;
-      time;
-      elapsed;
-      constructor(amount, time) {
-          this.amount = amount;
-          this.time = time;
-          this.elapsed = 0;
-      }
-      get isActive() {
-          return this.amount > 0.0 && this.elapsed < this.time;
-      }
-      tick(time) {
-          let used = Math.floor((this.amount * this.elapsed) / this.time);
-          this.elapsed = Math.min(this.time, this.elapsed + time);
-          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
-          return new_used - used;
-      }
-  }
-  class RegenStatus extends Status {
-      data;
-      constructor(amount, time) {
-          super();
-          this.data = [new RegenData(amount, time)];
-      }
-      tick(actor, level, time) {
-          let still_active = false;
-          this.data.forEach((d) => {
-              if (d.isActive) {
-                  still_active = true;
-                  const amount = d.tick(time);
-                  if (amount > 0) {
-                      heal(level, actor, { amount });
-                  }
-              }
-          });
-          return still_active;
-      }
-      merge(status) {
-          if (status instanceof RegenStatus) {
-              // do merge
-              this.data = this.data.concat(status.data);
-              status.data = [];
-              return true;
-          }
-          return false;
-      }
-      update_sidebar(actor, entry) {
-          entry.add_status("{Regen}", "green");
-      }
-  }
-
-  class ActorFactory {
-      plugins = [];
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      create(kind, opts = {}) {
-          let out = Option.None();
-          if (opts.ctor) {
-              out = opts.ctor(kind, opts);
-          }
-          out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.ctor) {
-                  return p.ctor(kind, opts);
-              }
-              return v;
-          }, out);
-          let actor = out.unwrapOrElse(() => new Actor(kind));
-          this.apply(actor);
-          actor._create(opts);
-          actor.emit("create", actor, opts);
-          return actor;
-      }
-      apply(item) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key === "on") {
-                      Object.entries(val).forEach(([k2, v2]) => {
-                          if (typeof v2 === "function") {
-                              item.on(k2, v2);
-                          }
-                          else {
-                              console.warn("Invalid 'on' member in Item plugin: " + k2);
-                          }
-                      });
-                  }
-                  else if (key === "data") {
-                      Object.assign(item.data, val);
-                  }
-                  else if (typeof val === "function") {
-                      item.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$3 = new ActorFactory();
-  function use$3(plugin) {
-      factory$3.use(plugin);
-  }
-  function create$3(kind, config = {}) {
-      if (typeof kind === "string") {
-          kind = getKind$2(kind);
-          if (!kind)
-              throw new Error("Failed to find kind.");
-      }
-      if (typeof config === "number") {
-          config = { power: config };
-      }
-      if (kind.hero) {
-          throw new Error("ActorKind is Hero: " + kind.id);
-      }
-      return factory$3.create(kind, config);
-  }
-  function randomSpawnLocFor(level, actor) {
-      let x;
-      let y;
-      let tries = level.width * level.height;
-      do {
-          --tries;
-          x = level.rng.number(level.width);
-          y = level.rng.number(level.height);
-          // TODO - also not in a currently visible location
-      } while ((tries && !level.hasTile(x, y, "FLOOR")) || level.actorAt(x, y));
-      if (!tries) {
-          return Option.None();
-      }
-      return Option.Some({ x, y });
-  }
-  function spawn(level, id, // Should this be | ActorKind instead of | Actor?
-  x, y) {
-      const newbie = typeof id === "string" ? create$3(id) : id;
-      if (x === undefined || y === undefined) {
-          const loc = randomSpawnLocFor(level);
-          if (loc.isNone()) {
-              console.error("Failed to find spawn location for : " + newbie.name);
-              return;
-          }
-          const xy = loc.unwrap();
-          newbie.x = xy.x;
-          newbie.y = xy.y;
-      }
-      else {
-          newbie.x = x;
-          newbie.y = y;
-      }
-      level.addActor(newbie);
-      return newbie;
-  }
-
-  class Hero extends Actor {
-      // TODO - Make this part of a plugin
-      mapToMe;
-      // TODO - Make this part of a plugin
-      fov;
-      goalPath;
-      followPath;
-      // TODO - Make this part of a plugin
-      slots;
-      constructor(kind) {
-          super(kind);
-          this.mapToMe = new index$6.DijkstraMap();
-          this.fov = null;
-          this.goalPath = null;
-          this.followPath = false;
-          this.slots = {};
-          // this.potion_max = 40 * 200;
-          // this.potion = this.potion_max; // Potion is ready
-      }
-      // @ts-ignore
-      _create(opts) {
-          // @ts-ignore
-          super._create(opts);
-          // this.on("add", (level: Level) => {
-          //   this.updateMapToMe();
-          //   this.updateFov();
-          // });
-          // this.on("move", () => {
-          //   this.updateMapToMe();
-          //   this.updateFov();
-          // });
-          // this.on("remove", () => {
-          //   if (this.fov) {
-          //     GWU.grid.free(this.fov);
-          //     this.fov = null;
-          //   }
-          //   this.clearGoal();
-          // });
-          // this.on("turn_end", (game: Game, time: number) => {
-          //   // this.potion = Math.min(this.potion + time, this.potion_max);
-          // });
-          // this.on("damage", () => this.clearGoal());
-          // Need items in slots....
-          Object.entries(this.kind.slots).forEach(([slot, id]) => {
-              const item = make(id);
-              if (item === null) {
-                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
-              }
-              else {
-                  this.equip(item);
-                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
-              }
-          });
-      }
-      // attributes
-      get damage() {
-          const melee = this.slots.melee;
-          if (melee) {
-              // track combo...
-              if (this.combo_index == melee.kind.combo - 1) {
-                  return melee.comboDamage;
-              }
-              return melee.damage;
-          }
-          return super.damage;
-      }
-      get attackSpeed() {
-          const melee = this.slots.melee;
-          if (melee) {
-              // track combo...
-              if (this.combo_index == melee.kind.combo - 1) {
-                  return melee.comboSpeed;
-              }
-              return melee.speed;
-          }
-          return super.attackSpeed;
-      }
-      get range() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.range;
-          }
-          return super.range;
-      }
-      get rangedDamage() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.damage;
-          }
-          return super.rangedDamage;
-      }
-      get rangedAttackSpeed() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.speed;
-          }
-          return super.rangedAttackSpeed;
-      }
-      // get canUsePotion(): boolean {
-      //   return this.potion >= this.potion_max;
-      // }
-      get comboLen() {
-          const melee = this.slots.melee;
-          if (melee) {
-              return melee.combo;
-          }
-          return this.kind.combo;
-      }
-      isHero() {
-          return true;
-      }
-      // TODO - plugin?
-      equip(item) {
-          if (item.slot === null) {
-              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
-          }
-          this.slots[item.slot] = item;
-          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
-          const health_pct = this.health / this.health_max;
-          let new_health_max = this.kind.health;
-          Object.entries(this.slots).forEach(([s, i]) => {
-              if (i) {
-                  this.armor_flags |= i.kind.armor_flags;
-                  new_health_max += i.defense;
-              }
-          });
-          this.health_max = new_health_max;
-          this.health = Math.round(new_health_max * health_pct);
-          this.combo_index = 0;
-      }
-      // TODO - plugin?
-      unequipSlot(slot) {
-          this.slots[slot] = null;
-          this.armor_flags = 0;
-          const health_pct = this.health / this.health_max;
-          let new_health_max = this.kind.health;
-          Object.entries(this.slots).forEach(([s, i]) => {
-              if (i) {
-                  this.armor_flags |= i.kind.armor_flags;
-                  new_health_max += i.defense;
-              }
-          });
-          this.health_max = new_health_max;
-          this.health = Math.round(new_health_max * health_pct);
-          this.combo_index = 0;
-      }
-      act(level) {
-          // TODO - move this to plugin
-          this.startTurn(level);
-          if (this.goalPath && this.followPath && this.goalPath.length) {
-              const step = this.goalPath[0];
-              if (step) {
-                  if (level.hasActor(step[0], step[1])) {
-                      level.game.addMessage("You are blocked.");
-                  }
-                  else {
-                      const dir = xy.dirFromTo(this, step);
-                      // @ts-ignore
-                      if (moveDir(level, this, dir, true)) {
-                          if (xy.equals(this, step)) {
-                              this.goalPath.shift(); // we moved there, so remove that step
-                          }
-                          else {
-                              this.clearGoal();
-                          }
-                          return;
-                      }
-                      level.game.addMessage("You lost track of path.");
-                  }
-              }
-          }
-          this.clearGoal();
-          level.needInput = true;
-          console.log("Hero - await input", level.scheduler.time);
-      }
-      setGoal(x, y) {
-          if (!this._level || this.followPath)
-              return;
-          const level = this._level;
-          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
-              if (level.hasActor(i, j))
-                  return index$6.AVOIDED;
-              return this.moveCost(i, j);
-          });
-          if (this.goalPath &&
-              this.goalPath.length &&
-              xy.equals(this.goalPath[0], this)) {
-              this.goalPath.shift(); // remove the spot we are standing on
-          }
-      }
-      clearGoal() {
-          this.followPath = false;
-          this.goalPath = null;
-      }
-      updateMapToMe() {
-          const level = this._level;
-          if (!level)
-              return;
-          this.mapToMe.reset(level.width, level.height);
-          this.mapToMe.setGoal(this.x, this.y);
-          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
-      }
-      updateFov() {
-          const level = this._level;
-          if (!level)
-              return;
-          if (!this.fov ||
-              this.fov.width !== level.width ||
-              this.fov.height !== level.height) {
-              this.fov && grid.free(this.fov);
-              this.fov = grid.alloc(level.width, level.height);
-          }
-          index$7.calculate(this.fov, (x, y) => {
-              return this.moveCost(x, y) >= index$6.BLOCKED;
-          }, this.x, this.y, 100);
-      }
-      isInFov(...args) {
-          if (!this.fov)
-              return false;
-          if (args.length == 2) {
-              const [x, y] = args;
-              return this.fov.get(x, y) > 0;
-          }
-          else {
-              const pos = args[0];
-              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
-          }
-      }
-  }
-
-  const kinds$1 = {};
-  // @ts-ignore
-  globalThis.HeroKinds = kinds$1;
-  function makeKind$1(cfg) {
-      let kind;
-      kind = makeKind$2(cfg);
-      kind = Object.assign(kind, {
-          slots: {},
-      });
-      if (cfg.slots) {
-          kind.slots = cfg.slots;
-      }
-      return kind;
-  }
-  function install$5(cfg) {
-      const kind = makeKind$1(cfg);
-      kinds$1[kind.id.toLowerCase()] = kind;
-  }
-  function getKind$1(id) {
-      return kinds$1[id.toLowerCase()] || null;
-  }
-
-  class HeroFactory {
-      plugins = [];
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      create(kind, opts = {}) {
-          let out = Option.None();
-          if (opts.ctor) {
-              out = opts.ctor(kind, opts);
-          }
-          out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.ctor) {
-                  return p.ctor(kind, opts);
-              }
-              return v;
-          }, out);
-          let hero = out.unwrapOrElse(() => new Hero(kind));
-          this.apply(hero);
-          hero._create(opts);
-          hero.emit("create", hero, opts);
-          return hero;
-      }
-      apply(hero) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key === "on") {
-                      Object.entries(val).forEach(([k2, v2]) => {
-                          if (typeof v2 === "function") {
-                              hero.on(k2, v2);
-                          }
-                          else {
-                              console.warn("Invalid 'on' member in Item plugin: " + k2);
-                          }
-                      });
-                  }
-                  else if (key === "data") {
-                      Object.assign(hero.data, val);
-                  }
-                  else if (typeof val === "function") {
-                      hero.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$2 = new HeroFactory();
-  function use$2(plugin) {
-      factory$2.use(plugin);
-  }
-  function create$2(kind, config = {}) {
-      if (typeof kind === "string") {
-          kind = getKind$1(kind);
-          if (!kind)
-              throw new Error("Failed to find kind.");
-      }
-      if (config === undefined) {
-          config = {};
-      }
-      if (typeof config === "number") {
-          config = { power: config };
-      }
-      return factory$2.create(kind, config);
-  }
 
   const commandsByName = {};
   function install$4(name, fn) {
@@ -22962,7 +23034,7 @@ void main() {
           this.tiles.fill(tile);
       }
       setTile(x, y, id, opts = {}) {
-          const tile = typeof id === "string" ? getTileByName[id] : getTile(id);
+          const tile = typeof id === "string" ? getTileByName(id) : getTile(id);
           if (!tile) {
               console.warn("Failed to find tile: " + id);
               return;
@@ -22987,7 +23059,7 @@ void main() {
       getTile(x, y) {
           const id = this.tiles.get(x, y);
           if (id === undefined)
-              return getTileByName["IMPREGNABLE"];
+              return getTileByName("IMPREGNABLE");
           return getTile(id);
       }
       //
@@ -23247,9 +23319,9 @@ void main() {
       },
   }));
 
-  const kinds = {};
-  // @ts-ignore
-  globalThis.LevelKinds = kinds;
+  // export const kinds: Record<string, LevelKind> = {};
+  // // @ts-ignore
+  // globalThis.LevelKinds = kinds;
   function makeKind(cfg) {
       const kind = Object.assign({
           id: "",
@@ -23314,28 +23386,43 @@ void main() {
       return kind;
   }
   function install$3(...args) {
-      let id, config;
       if (args.length == 1) {
-          config = args[0];
-          id = config.id;
+          return factory$1.installKind(args[0]);
       }
-      else {
-          id = args[0];
-          config = args[1];
-      }
-      const kind = makeKind(config);
-      kind.id = id;
-      kinds[id.toLowerCase()] = kind;
-      return kind;
+      return factory$1.installKind(args[0], args[1]);
   }
   function getKind(id) {
-      return kinds[id.toLowerCase()] || null;
+      return factory$1.getKind(id);
   }
 
   class LevelFactory {
       plugins = [];
+      kinds = {};
       use(plugin) {
           this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
       }
       create(game, id, kind, opts) {
           // Create the Item
@@ -23368,6 +23455,7 @@ void main() {
                           }
                       });
                   }
+                  else if (key === "kinds") ;
                   else if (key == "keymap") {
                       level.keymap = utils.mergeDeep(level.keymap, val);
                   }
@@ -23744,8 +23832,8 @@ void main() {
           this._levelObjs = {};
           this.start_level = 1;
           // Exposes types to world
-          this.actors = kinds$2;
-          this.items = kinds$3;
+          this.actors = factory$3;
+          this.items = factory$4;
           this.hordes = hordes;
           this.tiles = index$1.tileFactory;
           //
@@ -24014,42 +24102,91 @@ void main() {
       return plugins[id.toLowerCase()] || null;
   }
   function startPlugins(app, ...names) {
-      names.forEach((name) => {
-          // if already started, ignore
-          if (!active.find((p) => p.name == name)) {
-              const plugin = getPlugin(name);
-              if (plugin) {
-                  console.log("Starting plugin: " + name);
-                  // start dependencies
-                  if (Array.isArray(plugin.plugins) && plugin.plugins.length) {
-                      startPlugins(app, ...plugin.plugins);
-                  }
-                  // install factory plugins
-                  if (plugin.game) {
-                      use(plugin.game);
-                  }
-                  if (plugin.actor) {
-                      use$3(plugin.actor);
-                  }
-                  if (plugin.hero) {
-                      use$2(plugin.hero);
-                  }
-                  if (plugin.item) {
-                      use$4(plugin.item);
-                  }
-                  if (plugin.level) {
-                      use$1(plugin.level);
-                  }
-                  // Start the plugin
-                  if (plugin.app && plugin.app.start) {
-                      plugin.app.start(app);
-                  }
-                  active.push(plugin);
-              }
-              else {
-                  console.error(`MISSING PLUGIN: ${name}`);
+      names.forEach((name_or_plugin) => {
+          let plugin;
+          let name;
+          if (typeof name_or_plugin === "string") {
+              name = name_or_plugin;
+              // if already started, ignore
+              if (!active.find((p) => p.name == name)) {
+                  plugin = getPlugin(name);
               }
           }
+          else {
+              plugin = name_or_plugin;
+              name = plugin.name;
+          }
+          if (plugin) {
+              console.log("Starting plugin: " + name);
+              // start dependencies
+              if (Array.isArray(plugin.plugins) && plugin.plugins.length) {
+                  startPlugins(app, ...plugin.plugins);
+              }
+              // install factory plugins
+              if (plugin.game) {
+                  use(plugin.game);
+              }
+              if (plugin.actor) {
+                  use$3(plugin.actor);
+              }
+              if (plugin.hero) {
+                  use$2(plugin.hero);
+              }
+              if (plugin.item) {
+                  use$4(plugin.item);
+              }
+              if (plugin.level) {
+                  use$1(plugin.level);
+              }
+              // TODO - How to use TilePlugin?
+              // TODO - How to control loading tiles?
+              // Start the plugin
+              if (plugin.app && plugin.app.start) {
+                  plugin.app.start(app);
+              }
+              active.push(plugin);
+          }
+          else {
+              console.error(`MISSING PLUGIN: ${name}`);
+          }
+      });
+      active.forEach((p) => {
+          // TODO - commands
+          // TODO - actions
+          if (p.actor) {
+              const kinds = p.actor.kinds || {};
+              Object.entries(kinds).forEach(([k, v]) => {
+                  install$7(v);
+              });
+          }
+          if (p.hero) {
+              const kinds = p.hero.kinds || {};
+              Object.entries(kinds).forEach(([k, v]) => {
+                  install$6(v);
+              });
+          }
+          if (p.item && p.item.kinds) {
+              let kinds = [];
+              if (!Array.isArray(p.item.kinds)) {
+                  kinds = [p.item.kinds];
+              }
+              else {
+                  kinds = p.item.kinds;
+              }
+              kinds.forEach((kindSet) => {
+                  Object.entries(kindSet).forEach(([k, v]) => {
+                      install$9(v);
+                  });
+              });
+          }
+          if (p.level) {
+              const kinds = p.level.kinds || {};
+              Object.entries(kinds).forEach(([k, v]) => {
+                  install$3(v);
+              });
+          }
+          // TODO - hordes
+          // TODO - tiles
       });
   }
 
@@ -24346,108 +24483,112 @@ void main() {
   };
   install$1(core);
 
-  install$5({
-      id: "HERO",
-      name: "Hero",
-      ch: "@",
-      fg: "white",
-      bg: -1,
-      moveSpeed: 100,
-      health: 20,
-      ammo: 20,
-      // damage: 10,
-      // attackSpeed: 100,
-      // rangedDamage: 3,
-      // range: 10,
-      // rangedAttackSpeed: 100,
-      slots: {
-          ranged: "SHORTBOW",
-          melee: "CUTLASS",
-          armor: "PLATE_ARMOR",
+  const heroes = {
+      HERO: {
+          id: "HERO",
+          name: "Hero",
+          ch: "@",
+          fg: "white",
+          bg: -1,
+          moveSpeed: 100,
+          health: 20,
+          ammo: 20,
+          // damage: 10,
+          // attackSpeed: 100,
+          // rangedDamage: 3,
+          // range: 10,
+          // rangedAttackSpeed: 100,
+          slots: {
+              ranged: "SHORTBOW",
+              melee: "CUTLASS",
+              armor: "PLATE_ARMOR",
+          },
       },
-  });
-  install$6({
-      id: "ZOMBIE",
-      name: "Zombie",
-      ch: "z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 6,
-      damage: 8, // dps=4
-      dropChance: 100,
-  });
-  install$6({
-      id: "ARMOR_ZOMBIE",
-      ch: "Z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 25,
-      damage: 10, // dps=5
-      dropChance: 10,
-  });
-  install$6({
-      id: "ARMOR_ZOMBIE_2",
-      ch: "Z",
-      fg: "green",
-      moveSpeed: 200,
-      health: 50,
-      damage: 12, // dps=6
-      dropChance: 10,
-  });
-  install$6({
-      id: "Vindicator",
-      ch: "v",
-      fg: "blue",
-      moveSpeed: 100,
-      health: 11,
-      damage: 9,
-      // chargeSpeed: 75
-      // chargeDistance: 6
-      // attackSpeed: 150
-      dropChance: 10,
-  });
-  install$6({
-      id: "SKELETON",
-      ch: "s",
-      fg: "white",
-      moveSpeed: 125,
-      health: 6,
-      damage: 0,
-      rangedDamage: 3,
-      range: 8,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 100,
-  });
-  install$6({
-      id: "ARMOR_SKELETON",
-      ch: "S",
-      fg: "white",
-      moveSpeed: 125,
-      health: 25,
-      damage: 0,
-      rangedDamage: 4,
-      range: 9,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 10,
-  });
-  install$6({
-      id: "ARMOR_SKELETON_2",
-      ch: "S",
-      fg: "white",
-      moveSpeed: 125,
-      health: 50,
-      damage: 0,
-      rangedDamage: 5,
-      range: 10,
-      tooClose: 4,
-      rangedAttackSpeed: 200,
-      // notice: 10
-      dropChance: 10,
-  });
+  };
+  const actors = {
+      ZOMBIE: {
+          id: "ZOMBIE",
+          name: "Zombie",
+          ch: "z",
+          fg: "green",
+          moveSpeed: 200,
+          health: 6,
+          damage: 8, // dps=4
+          dropChance: 100,
+      },
+      ARMOR_ZOMBIE: {
+          id: "ARMOR_ZOMBIE",
+          ch: "Z",
+          fg: "green",
+          moveSpeed: 200,
+          health: 25,
+          damage: 10, // dps=5
+          dropChance: 10,
+      },
+      ARMOR_ZOMBIE_2: {
+          id: "ARMOR_ZOMBIE_2",
+          ch: "Z",
+          fg: "green",
+          moveSpeed: 200,
+          health: 50,
+          damage: 12, // dps=6
+          dropChance: 10,
+      },
+      VINDICATOR: {
+          id: "VINDICATOR",
+          ch: "v",
+          fg: "blue",
+          moveSpeed: 100,
+          health: 11,
+          damage: 9,
+          // chargeSpeed: 75
+          // chargeDistance: 6
+          // attackSpeed: 150
+          dropChance: 10,
+      },
+      SKELETON: {
+          id: "SKELETON",
+          ch: "s",
+          fg: "white",
+          moveSpeed: 125,
+          health: 6,
+          damage: 0,
+          rangedDamage: 3,
+          range: 8,
+          tooClose: 4,
+          rangedAttackSpeed: 200,
+          // notice: 10
+          dropChance: 100,
+      },
+      ARMOR_SKELETON: {
+          id: "ARMOR_SKELETON",
+          ch: "S",
+          fg: "white",
+          moveSpeed: 125,
+          health: 25,
+          damage: 0,
+          rangedDamage: 4,
+          range: 9,
+          tooClose: 4,
+          rangedAttackSpeed: 200,
+          // notice: 10
+          dropChance: 10,
+      },
+      ARMOR_SKELETON_2: {
+          id: "ARMOR_SKELETON_2",
+          ch: "S",
+          fg: "white",
+          moveSpeed: 125,
+          health: 50,
+          damage: 0,
+          rangedDamage: 5,
+          range: 10,
+          tooClose: 4,
+          rangedAttackSpeed: 200,
+          // notice: 10
+          dropChance: 10,
+      },
+  };
   /*
   PLAYER - health = 100
   SWORD - 10-16 (10,10,16 thrust)
@@ -24541,756 +24682,887 @@ void main() {
       frequency: (l) => 2 * l,
   });
 
-  install$8({
-      id: "HEALTH_POTION",
-      ch: "!",
-      fg: "pink",
-      on: {
-          pickup(level, item, actor) {
-              // TODO - vary the messages
-              // TODO - Different healing amounts?
-              actor.health = actor.kind.health; // TODO - move this to an effect
-              level.game.addMessage("You drink the potion.");
-              level.removeItem(item);
-              // destroy
-              return true;
+  const drop_kinds = {
+      HEALTH_POTION: {
+          id: "HEALTH_POTION",
+          ch: "!",
+          fg: "pink",
+          on: {
+              pickup(level, item, actor) {
+                  // TODO - vary the messages
+                  // TODO - Different healing amounts?
+                  actor.health = actor.kind.health; // TODO - move this to an effect
+                  level.game.addMessage("You drink the potion.");
+                  level.removeItem(item);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "", // Not a drop because it is innate
+      },
+      ARROWS: {
+          id: "ARROWS",
+          ch: "|",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   actor.health = actor.kind.health;
+                  level.game.addMessage("You pickup some ammo.");
+                  level.removeItem(this);
+                  // destroy
+                  actor.ammo += 10;
+                  if (actor.data.bonus_arrows > 0) {
+                      actor.ammo += 10 * actor.data.bonus_arrows;
+                  }
+                  return true;
+              },
+          },
+          tags: "drop",
+      },
+      APPLE: {
+          id: "APPLE",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Apples - 20%/3s
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
+                  level.game.addMessage("You eat an apple.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      BREAD: {
+          id: "BREAD",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Bread - 100%/30s
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
+                  level.game.addMessage("You eat some bread.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      PORK: {
+          id: "PORK",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Pork - 50%/10s
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
+                  level.game.addMessage("You eat some pork.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      SALMON: {
+          id: "SALMON",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Salmon - 35%/8s
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
+                  level.game.addMessage("You eat some salmon.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      BERRIES: {
+          id: "BERRIES",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Berries - 20%/5s + speedup
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
+                  level.game.addMessage("You eat some berries.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      MELON: {
+          id: "MELON",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Melon - 75%/15s
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
+                  level.game.addMessage("You eat some melon.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      FRUIT: {
+          id: "FRUIT",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Fruit - 30%/1s
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
+                  level.game.addMessage("You eat some fruit.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+      FISH: {
+          id: "FISH",
+          ch: "&",
+          fg: "yellow",
+          on: {
+              pickup(level, item, actor) {
+                  //   [] Fish - 20%/2s + 10% oxygen
+                  actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
+                  level.game.addMessage("You eat some fish.");
+                  level.removeItem(this);
+                  // destroy
+                  return true;
+              },
+          },
+          tags: "drop, food",
+      },
+  };
+
+  const level_kinds = {
+      TOWER: {
+          id: "TOWER",
+          width: 60,
+          height: 35,
+          scene: "level",
+          dig: true,
+          keymap: { i: "show_inventory" },
+          on: {
+              create(level, opts) {
+                  console.log("TOWER LEVEL CREATE");
+                  const depth = (level.data.depth = parseInt(level.id.toString()));
+                  if (level.kind.data.waves && level.kind.data.waves.length > 0) {
+                      level.data.waves = level.kind.data.waves;
+                  }
+                  else {
+                      level.data.waves = [];
+                      for (let i = 0; i < depth; ++i) {
+                          level.data.waves.push({
+                              delay: 500 + i * 2000,
+                              power: depth * 2 - 1 + level.rng.dice(1, 3),
+                              horde: { depth: depth },
+                          });
+                      }
+                  }
+                  level.data.wavesLeft = level.data.waves.length;
+              },
+              show(level, scene) {
+                  // put player in starting location
+                  let startLoc = level.locations.start || [
+                      Math.floor(level.width / 2),
+                      Math.floor(level.height / 2),
+                  ];
+                  // TODO - this should be an Option<Loc>
+                  startLoc = level.rng.matchingLocNear(startLoc[0], startLoc[1], (x, y) => level.hasTile(x, y, "FLOOR"));
+                  // TODO - if (startLoc.isNone()) { return GWU.Result.Err("Failed to find starting location for Hero on level: " + level.id); }
+                  // TODO - let res = next(req);
+                  // TODO - if (res.isErr()) { return res; }
+                  level.game.hero.clearGoal();
+                  // TODO - real time flash, then do all of this...
+                  // @ts-ignore
+                  spawn(level, level.game.hero, startLoc[0], startLoc[1]);
+                  level.data.wavesLeft = level.data.waves.length;
+                  level.data.waves.forEach((wave) => {
+                      console.log("WAVE - " + wave.delay);
+                      level.wait(wave.delay || 0, () => {
+                          let horde = null;
+                          if (wave.horde) {
+                              if (typeof wave.horde === "string") {
+                                  horde = from(wave.horde);
+                              }
+                              else {
+                                  wave.horde.depth = wave.horde.depth || level.depth;
+                                  horde = random(wave.horde);
+                              }
+                          }
+                          else {
+                              horde = random({ depth: level.depth });
+                          }
+                          if (!horde) {
+                              throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
+                          }
+                          const leader = horde.spawn(level, wave);
+                          if (!leader)
+                              throw new Error("Failed to place horde!");
+                          leader.once("add", () => {
+                              --level.data.wavesLeft;
+                          });
+                      });
+                  });
+                  if (level.welcome) {
+                      level.game.addMessage(level.welcome);
+                  }
+              },
+              hide(level) {
+                  // @ts-ignore
+                  level.removeActor(level.game.hero);
+              },
+              tick(level, dt) {
+                  // Do we have work left to do on the level?
+                  if (level.done || !level.started)
+                      return;
+                  if (level.data.wavesLeft > 0)
+                      return;
+                  if (level.actors.length > 1)
+                      return;
+                  // win level
+                  level.done = true;
+                  if (level.proceed) {
+                      level.game.addMessage(level.proceed);
+                  }
+                  const inactiveStairs = getTileByName("UP_STAIRS_INACTIVE").index;
+                  level.tiles.forEach((index, x, y) => {
+                      if (index === inactiveStairs) {
+                          flash(level, x, y, "yellow").then(() => {
+                              level.setTile(x, y, "UP_STAIRS");
+                          });
+                      }
+                  });
+              },
+              up_stairs(level, actor) {
+                  const game = level.game;
+                  const depth = level.data.depth;
+                  if (depth >= game.data.LAST_LEVEL) {
+                      game.app.scenes.start("win", { game });
+                  }
+                  else {
+                      game.app.scenes.start("reward", { depth: depth, game });
+                  }
+              },
+              lose(level, reason) {
+                  // TODO - Move to gameopts?
+                  const game = level.game;
+                  game.app.scenes.start("lose", {
+                      depth: level.data.depth,
+                      game,
+                      reason,
+                  });
+              },
           },
       },
-      tags: "", // Not a drop because it is innate
-  });
-  install$8({
-      id: "ARROWS",
-      ch: "|",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   actor.health = actor.kind.health;
-              level.game.addMessage("You pickup some ammo.");
-              level.removeItem(this);
-              // destroy
-              actor.ammo += 10;
-              if (actor.data.bonus_arrows > 0) {
-                  actor.ammo += 10 * actor.data.bonus_arrows;
-              }
-              return true;
-          },
-      },
-      tags: "drop",
-  });
-  install$8({
-      id: "APPLE",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Apples - 20%/3s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 3 * 200));
-              level.game.addMessage("You eat an apple.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "BREAD",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Bread - 100%/30s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max), 30 * 200));
-              level.game.addMessage("You eat some bread.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "PORK",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Pork - 50%/10s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.5), 10 * 200));
-              level.game.addMessage("You eat some pork.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "SALMON",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Salmon - 35%/8s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.35), 8 * 200));
-              level.game.addMessage("You eat some salmon.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "BERRIES",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Berries - 20%/5s + speedup
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 5 * 200));
-              level.game.addMessage("You eat some berries.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "MELON",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Melon - 75%/15s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.75), 15 * 200));
-              level.game.addMessage("You eat some melon.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "FRUIT",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Fruit - 30%/1s
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.3), 1 * 200));
-              level.game.addMessage("You eat some fruit.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
-  install$8({
-      id: "FISH",
-      ch: "&",
-      fg: "yellow",
-      on: {
-          pickup(level, item, actor) {
-              //   [] Fish - 20%/2s + 10% oxygen
-              actor.addStatus(new RegenStatus(Math.floor(actor.health_max * 0.2), 2 * 200));
-              level.game.addMessage("You eat some fish.");
-              level.removeItem(this);
-              // destroy
-              return true;
-          },
-      },
-      tags: "drop, food",
-  });
+  };
 
   //////////////////////////////////////////////////////
   // MELEE
   //////////////////////////////////////////////////////
-  install$8({
-      id: "DAGGERS",
-      ch: "/",
-      fg: "yellow",
-      speed: 50,
-      damage: 5,
-      combo: 6,
-      combo_speed: 80,
-      combo_damage: 8,
-      tags: "melee",
-  });
-  // FANGS_OF_FROST
-  // MOON_DAGGERS
-  // SHEER_DAGGERS
-  // VOID_BLADES
-  // BEGINNING_AND_END
-  install$8({
-      id: "KNIFE",
-      ch: "/",
-      fg: "yellow",
-      speed: 70,
-      damage: 7,
-      combo: 5,
-      combo_speed: 70,
-      combo_damage: 7,
-      tags: "melee",
-  });
-  // TEMPEST_KNIFE
-  // CHILL_KNIFE
-  // RESOLUTE_KNIFE
-  install$8({
-      id: "SWORD",
-      ch: "/",
-      fg: "yellow",
-      speed: 100,
-      damage: 10, // dps = 10 * 100 / 100 = 10
-      combo: 3,
-      combo_speed: 100,
-      combo_damage: 10,
-      tags: "melee",
-  });
-  // DIAMOND_SWORD
-  // HAWKBRAND
-  // SINISTER_SWORD
-  install$8({
-      id: "CUTLASS",
-      ch: "/",
-      fg: "yellow",
-      speed: 110,
-      damage: 11,
-      combo: 3,
-      combo_speed: 130,
-      combo_damage: 13,
-      tags: "melee",
-  });
-  // CORAL_BLADE
-  // SPONGE_STRIKER
-  install$8({
-      id: "AXE",
-      ch: "/",
-      fg: "yellow",
-      speed: 90,
-      damage: 9,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // HIGHLAND_AXE
-  // FIREBRAND_AXE
-  install$8({
-      id: "DOUBLE_AXE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 150,
-      combo_damage: 15,
-      tags: "melee",
-  });
-  // CURSED_AXE
-  // WHIRLWIND
-  install$8({
-      id: "BACKSTABBER",
-      ch: "/",
-      fg: "yellow",
-      speed: 90,
-      damage: 10,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 10,
-      tags: "melee",
-  });
-  // SWIFT_STRIKER
-  install$8({
-      id: "BATTLESTAFF",
-      ch: "/",
-      fg: "yellow",
-      speed: 70,
-      damage: 7,
-      combo: 4,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // BATTLESTAFF_OF_TERROR
-  // GROWING_STAFF
-  install$8({
-      id: "BONE_CLUB",
-      ch: "/",
-      fg: "yellow",
-      speed: 150,
-      damage: 15,
-      combo: 2,
-      combo_speed: 200,
-      combo_damage: 20,
-      tags: "melee",
-  });
-  // BONE_CUDGEL
-  install$8({
-      id: "CLAYMORE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 180,
-      combo_damage: 18,
-      tags: "melee",
-  });
-  // BROADSWORD
-  // GREAT_AXEBLADE
-  // HEARTSTEALER
-  // OBSIDIAN_CLAYMORE
-  // STARLESS_NIGHT
-  // FROST_SLAYER
-  // DANCERS_SWORD
-  // NAMELESS_BLADE
-  install$8({
-      id: "GLAIVE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 150,
-      combo_damage: 15,
-      tags: "melee",
-  });
-  // GRAVE_BANE
-  // VENOM_GLAIVE
-  install$8({
-      id: "GREAT_HAMMER",
-      ch: "/",
-      fg: "yellow",
-      speed: 180,
-      damage: 18,
-      combo: 2,
-      combo_speed: 200,
-      combo_damage: 20,
-      tags: "melee",
-  });
-  // HAMMER_OF_GRAVITY
-  // STORMLANDER
-  install$8({
-      id: "MACE",
-      ch: "/",
-      fg: "yellow",
-      speed: 110,
-      damage: 11,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // FLAIL
-  // SUNS_GRACE
-  install$8({
-      id: "PICKAXE",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // DIAMOND_PICKAXE
-  install$8({
-      id: "SICKLES",
-      ch: "/",
-      fg: "yellow",
-      speed: 80,
-      damage: 8,
-      combo: 4,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // NIGHTMARES_BITE
-  // LAST_LAUGH
-  // SOUL_KNIFE
-  // ETERNAL_KNIFE
-  // TRUTHSEEKER
-  install$8({
-      id: "WHIP",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 120,
-      combo_damage: 12,
-      tags: "melee",
-  });
-  // VINE_WHIP
-  install$8({
-      id: "GAUNTLETS",
-      ch: "/",
-      fg: "yellow",
-      speed: 50,
-      damage: 5,
-      combo: 7,
-      combo_speed: 60,
-      combo_damage: 6,
-      tags: "melee",
-  });
-  // FIGHTERS_BINDINGS
-  // MAULERS
-  // SOUL_FISTS
-  install$8({
-      id: "SCYTHE",
-      ch: "/",
-      fg: "yellow",
-      speed: 180,
-      damage: 18,
-      combo: 2,
-      combo_speed: 180,
-      combo_damage: 18,
-      tags: "melee",
-  });
-  // SOUL_SCYTHE
-  // FROST_SCYTHE
-  // JAILORS_SCYTHE
-  install$8({
-      id: "KATANA",
-      ch: "/",
-      fg: "yellow",
-      speed: 90,
-      damage: 9,
-      combo: 4,
-      combo_speed: 110,
-      combo_damage: 11,
-      tags: "melee",
-  });
-  // DARK_KATANA
-  // MASTERS_KATANA
-  install$8({
-      id: "SPEAR",
-      ch: "/",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      combo: 3,
-      combo_speed: 140,
-      combo_damage: 14,
-      tags: "melee",
-  });
-  // FORTUNE_SPEAR
-  // WHISPERING_SPEAR
-  install$8({
-      id: "RAPIER",
-      ch: "/",
-      fg: "yellow",
-      speed: 30,
-      damage: 3,
-      combo: 10,
-      combo_speed: 60,
-      combo_damage: 6,
-      tags: "melee",
-  });
-  // BEE_STINGER
-  // FREEZING_FOIL
+  const melee_kinds = {
+      DAGGERS: {
+          id: "DAGGERS",
+          ch: "/",
+          fg: "yellow",
+          speed: 50,
+          damage: 5,
+          combo: 6,
+          combo_speed: 80,
+          combo_damage: 8,
+          tags: "melee",
+      },
+      // FANGS_OF_FROST
+      // MOON_DAGGERS
+      // SHEER_DAGGERS
+      // VOID_BLADES
+      // BEGINNING_AND_END
+      KNIFE: {
+          id: "KNIFE",
+          ch: "/",
+          fg: "yellow",
+          speed: 70,
+          damage: 7,
+          combo: 5,
+          combo_speed: 70,
+          combo_damage: 7,
+          tags: "melee",
+      },
+      // TEMPEST_KNIFE
+      // CHILL_KNIFE
+      // RESOLUTE_KNIFE
+      SWORD: {
+          id: "SWORD",
+          ch: "/",
+          fg: "yellow",
+          speed: 100,
+          damage: 10, // dps = 10 * 100 / 100 = 10
+          combo: 3,
+          combo_speed: 100,
+          combo_damage: 10,
+          tags: "melee",
+      },
+      // DIAMOND_SWORD
+      // HAWKBRAND
+      // SINISTER_SWORD
+      CUTLASS: {
+          id: "CUTLASS",
+          ch: "/",
+          fg: "yellow",
+          speed: 110,
+          damage: 11,
+          combo: 3,
+          combo_speed: 130,
+          combo_damage: 13,
+          tags: "melee",
+      },
+      // CORAL_BLADE
+      // SPONGE_STRIKER
+      AXE: {
+          id: "AXE",
+          ch: "/",
+          fg: "yellow",
+          speed: 90,
+          damage: 9,
+          combo: 3,
+          combo_speed: 120,
+          combo_damage: 12,
+          tags: "melee",
+      },
+      // HIGHLAND_AXE
+      // FIREBRAND_AXE
+      DOUBLE_AXE: {
+          id: "DOUBLE_AXE",
+          ch: "/",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          combo: 3,
+          combo_speed: 150,
+          combo_damage: 15,
+          tags: "melee",
+      },
+      // CURSED_AXE
+      // WHIRLWIND
+      BACKSTABBER: {
+          id: "BACKSTABBER",
+          ch: "/",
+          fg: "yellow",
+          speed: 90,
+          damage: 10,
+          combo: 3,
+          combo_speed: 120,
+          combo_damage: 10,
+          tags: "melee",
+      },
+      // SWIFT_STRIKER
+      BATTLESTAFF: {
+          id: "BATTLESTAFF",
+          ch: "/",
+          fg: "yellow",
+          speed: 70,
+          damage: 7,
+          combo: 4,
+          combo_speed: 120,
+          combo_damage: 12,
+          tags: "melee",
+      },
+      // BATTLESTAFF_OF_TERROR
+      // GROWING_STAFF
+      BONE_CLUB: {
+          id: "BONE_CLUB",
+          ch: "/",
+          fg: "yellow",
+          speed: 150,
+          damage: 15,
+          combo: 2,
+          combo_speed: 200,
+          combo_damage: 20,
+          tags: "melee",
+      },
+      // BONE_CUDGEL
+      CLAYMORE: {
+          id: "CLAYMORE",
+          ch: "/",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          combo: 3,
+          combo_speed: 180,
+          combo_damage: 18,
+          tags: "melee",
+      },
+      // BROADSWORD
+      // GREAT_AXEBLADE
+      // HEARTSTEALER
+      // OBSIDIAN_CLAYMORE
+      // STARLESS_NIGHT
+      // FROST_SLAYER
+      // DANCERS_SWORD
+      // NAMELESS_BLADE
+      GLAIVE: {
+          id: "GLAIVE",
+          ch: "/",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          combo: 3,
+          combo_speed: 150,
+          combo_damage: 15,
+          tags: "melee",
+      },
+      // GRAVE_BANE
+      // VENOM_GLAIVE
+      GREAT_HAMMER: {
+          id: "GREAT_HAMMER",
+          ch: "/",
+          fg: "yellow",
+          speed: 180,
+          damage: 18,
+          combo: 2,
+          combo_speed: 200,
+          combo_damage: 20,
+          tags: "melee",
+      },
+      // HAMMER_OF_GRAVITY
+      // STORMLANDER
+      MACE: {
+          id: "MACE",
+          ch: "/",
+          fg: "yellow",
+          speed: 110,
+          damage: 11,
+          combo: 3,
+          combo_speed: 120,
+          combo_damage: 12,
+          tags: "melee",
+      },
+      // FLAIL
+      // SUNS_GRACE
+      PICKAXE: {
+          id: "PICKAXE",
+          ch: "/",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          combo: 3,
+          combo_speed: 120,
+          combo_damage: 12,
+          tags: "melee",
+      },
+      // DIAMOND_PICKAXE
+      SICKLES: {
+          id: "SICKLES",
+          ch: "/",
+          fg: "yellow",
+          speed: 80,
+          damage: 8,
+          combo: 4,
+          combo_speed: 120,
+          combo_damage: 12,
+          tags: "melee",
+      },
+      // NIGHTMARES_BITE
+      // LAST_LAUGH
+      // SOUL_KNIFE
+      // ETERNAL_KNIFE
+      // TRUTHSEEKER
+      WHIP: {
+          id: "WHIP",
+          ch: "/",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          combo: 3,
+          combo_speed: 120,
+          combo_damage: 12,
+          tags: "melee",
+      },
+      // VINE_WHIP
+      GAUNTLETS: {
+          id: "GAUNTLETS",
+          ch: "/",
+          fg: "yellow",
+          speed: 50,
+          damage: 5,
+          combo: 7,
+          combo_speed: 60,
+          combo_damage: 6,
+          tags: "melee",
+      },
+      // FIGHTERS_BINDINGS
+      // MAULERS
+      // SOUL_FISTS
+      SCYTHE: {
+          id: "SCYTHE",
+          ch: "/",
+          fg: "yellow",
+          speed: 180,
+          damage: 18,
+          combo: 2,
+          combo_speed: 180,
+          combo_damage: 18,
+          tags: "melee",
+      },
+      // SOUL_SCYTHE
+      // FROST_SCYTHE
+      // JAILORS_SCYTHE
+      KATANA: {
+          id: "KATANA",
+          ch: "/",
+          fg: "yellow",
+          speed: 90,
+          damage: 9,
+          combo: 4,
+          combo_speed: 110,
+          combo_damage: 11,
+          tags: "melee",
+      },
+      // DARK_KATANA
+      // MASTERS_KATANA
+      SPEAR: {
+          id: "SPEAR",
+          ch: "/",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          combo: 3,
+          combo_speed: 140,
+          combo_damage: 14,
+          tags: "melee",
+      },
+      // FORTUNE_SPEAR
+      // WHISPERING_SPEAR
+      RAPIER: {
+          id: "RAPIER",
+          ch: "/",
+          fg: "yellow",
+          speed: 30,
+          damage: 3,
+          combo: 10,
+          combo_speed: 60,
+          combo_damage: 6,
+          tags: "melee",
+      },
+      // BEE_STINGER
+      // FREEZING_FOIL
+  };
 
-  install$8({
-      id: "SCALE_MAIL",
-      name: "Scale Mail",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          melee_damage: 30,
+  const armor_kinds = {
+      SCALE_MAIL: {
+          id: "SCALE_MAIL",
+          name: "Scale Mail",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | MELEE_DAMAGE_30",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              melee_damage: 30,
+          },
       },
-  });
-  install$8({
-      id: "MERCENARY_ARMOR",
-      name: "Mercenary Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          weapon_damage_aura: 20,
+      MERCENARY_ARMOR: {
+          id: "MERCENARY_ARMOR",
+          name: "Mercenary Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | WEAPON_DAMAGE_AURA_20",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              weapon_damage_aura: 20,
+          },
       },
-  });
-  install$8({
-      id: "GUARDS_ARMOR",
-      name: "Guards Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
-      tags: "armor",
-      effects: {
-          artifact_cooldown: 40,
-          arrows: 10,
+      GUARDS_ARMOR: {
+          id: "GUARDS_ARMOR",
+          name: "Guards Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "ARTIFACT_COOLDOWN_40 | ARROWS_10",
+          tags: "armor",
+          effects: {
+              artifact_cooldown: 40,
+              arrows: 10,
+          },
       },
-  });
-  install$8({
-      id: "HUNTERS_ARMOR",
-      name: "Hunters Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
-      tags: "armor",
-      effects: {
-          ranged_damage: 30,
-          arrows: 10,
+      HUNTERS_ARMOR: {
+          id: "HUNTERS_ARMOR",
+          name: "Hunters Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "RANGED_DAMAGE_30 | ARROWS_10",
+          tags: "armor",
+          effects: {
+              ranged_damage: 30,
+              arrows: 10,
+          },
       },
-  });
-  install$8({
-      id: "ARCHERS_ARMOR",
-      name: "Archers Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
-      tags: "armor",
-      effects: {
-          ranged_damage: 30,
-          arrows: 10,
-          move_speed_aura: 15,
+      ARCHERS_ARMOR: {
+          id: "ARCHERS_ARMOR",
+          name: "Archers Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "RANGED_DAMAGE_30 | ARROWS_10 | MOVESPEED_AURA_15",
+          tags: "armor",
+          effects: {
+              ranged_damage: 30,
+              arrows: 10,
+              move_speed_aura: 15,
+          },
       },
-  });
-  install$8({
-      id: "REINFORCED_MAIL",
-      name: "Reinforced Mail",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
+      REINFORCED_MAIL: {
+          id: "REINFORCED_MAIL",
+          name: "Reinforced Mail",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              negate_hits: 30,
+              roll_cooldown: 100,
+          },
       },
-  });
-  install$8({
-      id: "STALWART_ARMOR",
-      name: "Stalwart Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
-          potion_boosts_defense: [90, 5 * 200],
+      STALWART_ARMOR: {
+          id: "STALWART_ARMOR",
+          name: "Stalwart Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | POTION_BOOSTS_DEFENSE",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              negate_hits: 30,
+              roll_cooldown: 100,
+              potion_boosts_defense: [90, 5 * 200],
+          },
       },
-  });
-  install$8({
-      id: "PLATE_ARMOR",
-      name: "Plate Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
+      PLATE_ARMOR: {
+          id: "PLATE_ARMOR",
+          name: "Plate Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              negate_hits: 30,
+              roll_cooldown: 100,
+          },
       },
-  });
-  install$8({
-      id: "FULL_METAL_ARMOR",
-      name: "Full Metal Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          negate_hits: 30,
-          roll_cooldown: 100,
-          melee_damage: 30,
+      FULL_METAL_ARMOR: {
+          id: "FULL_METAL_ARMOR",
+          name: "Full Metal Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | NEGATE_HITS_30 | LONGER_ROLL_100 | MELEE_DAMAGE_30",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              negate_hits: 30,
+              roll_cooldown: 100,
+              melee_damage: 30,
+          },
       },
-  });
-  install$8({
-      id: "CHAMPIONS_ARMOR",
-      name: "Champions Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          potion_cooldown: 40,
-          mobs_target_you: 50, // 50%?
+      CHAMPIONS_ARMOR: {
+          id: "CHAMPIONS_ARMOR",
+          name: "Champions Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              potion_cooldown: 40,
+              mobs_target_you: 50, // 50%?
+          },
       },
-  });
-  install$8({
-      id: "HEROS_ARMOR",
-      name: "Heros Armor",
-      ch: "]",
-      fg: "yellow",
-      defense: 50,
-      armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
-      tags: "armor",
-      effects: {
-          damage_reduction: 35,
-          potion_cooldown: 40,
-          mobs_target_you: 50, // 50%?
-          potion_heals_allies: 3,
+      HEROS_ARMOR: {
+          id: "HEROS_ARMOR",
+          name: "Heros Armor",
+          ch: "]",
+          fg: "yellow",
+          defense: 50,
+          armor_flags: "REDUCE_DAMAGE_35 | POTION_COOLDOWN_40 | MOBS_TARGET_YOU_MORE | POTION_HEALS_NEARBY_ALLIES",
+          tags: "armor",
+          effects: {
+              damage_reduction: 35,
+              potion_cooldown: 40,
+              mobs_target_you: 50, // 50%?
+              potion_heals_allies: 3,
+          },
       },
-  });
+  };
 
   //////////////////////////////////////////////////////
   // RANGED
   //////////////////////////////////////////////////////
-  install$8({
-      id: "BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 100,
-      damage: 10,
-      range: 10,
-      charge: 3,
-      tags: "ranged, bow",
-  });
-  // BONE_BOW
-  // TWIN_BOW
-  install$8({
-      id: "HUNTING_BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 90,
-      damage: 9,
-      range: 13,
-      charge: 3,
-      tags: "ranged, bow",
-  });
-  // ANCIENT_BOW
-  // HUNTERS_PROMISE
-  // MASTERS_BOW
-  install$8({
-      id: "LONGBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 130,
-      damage: 13,
-      range: 15,
-      charge: 4,
-      tags: "ranged, bow",
-  });
-  // GUARDIAN_BOW
-  // RED_SNAKE
-  install$8({
-      id: "POWER_BOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 150,
-      damage: 15,
-      range: 20,
-      charge: 5,
-      tags: "ranged, bow",
-  });
-  // ELITE_POWER_BOW
-  // SABREWING
-  install$8({
-      id: "SHORTBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 70,
-      damage: 7,
-      range: 8,
-      charge: 2,
-      tags: "ranged, bow",
-  });
-  // LOVE_SHORTBOW
-  // MECHANICAL_SHORTBOW
-  // PURPLE_STORM
-  // SNOW_BOW
-  // WINTERS_TOUCH
-  install$8({
-      id: "TRICKBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 80,
-      damage: 8,
-      range: 10,
-      charge: 2,
-      tags: "ranged, bow",
-  });
-  // GREEN_MENACE
-  // PINK_SCOUNDREL
-  install$8({
-      id: "CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 120,
-      damage: 12,
-      range: 10,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // AZURE_SEEKER
-  // SLICER
-  // EXPLODING_CROSSBOW
-  // FIREBOLT_THROWER
-  // IMPLODING_CROSSBOW
-  install$8({
-      id: "DUAL_CROSSBOWS",
-      ch: "}",
-      fg: "yellow",
-      speed: 60,
-      damage: 6,
-      range: 8,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // BABY_CROSSBOWS
-  // SPELLBOUND_CROSSBOWS
-  install$8({
-      id: "HEAVY_CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 200,
-      damage: 20,
-      range: 15,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // DOOM_CROSSBOW
-  // SLAYER_CROSSBOW
-  install$8({
-      id: "RAPID_CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 80,
-      damage: 8,
-      range: 10,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // AUTO_CROSSBOW
-  // BUTTERFLY_CROSSBOW
-  install$8({
-      id: "SCATTER_CROSSBOW",
-      ch: "}",
-      fg: "yellow",
-      speed: 100,
-      damage: 10,
-      range: 10,
-      charge: 0,
-      tags: "ranged, xbow",
-  });
-  // HARP_CROSSBOW
-  // LIGHTNING_HARP_CROSSBOW
+  const ranged_kinds = {
+      BOW: {
+          id: "BOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 100,
+          damage: 10,
+          range: 10,
+          charge: 3,
+          tags: "ranged, bow",
+      },
+      // BONE_BOW
+      // TWIN_BOW
+      HUNTING_BOW: {
+          id: "HUNTING_BOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 90,
+          damage: 9,
+          range: 13,
+          charge: 3,
+          tags: "ranged, bow",
+      },
+      // ANCIENT_BOW
+      // HUNTERS_PROMISE
+      // MASTERS_BOW
+      LONGBOW: {
+          id: "LONGBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 130,
+          damage: 13,
+          range: 15,
+          charge: 4,
+          tags: "ranged, bow",
+      },
+      // GUARDIAN_BOW
+      // RED_SNAKE
+      POWER_BOW: {
+          id: "POWER_BOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 150,
+          damage: 15,
+          range: 20,
+          charge: 5,
+          tags: "ranged, bow",
+      },
+      // ELITE_POWER_BOW
+      // SABREWING
+      SHORTBOW: {
+          id: "SHORTBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 70,
+          damage: 7,
+          range: 8,
+          charge: 2,
+          tags: "ranged, bow",
+      },
+      // LOVE_SHORTBOW
+      // MECHANICAL_SHORTBOW
+      // PURPLE_STORM
+      // SNOW_BOW
+      // WINTERS_TOUCH
+      TRICKBOW: {
+          id: "TRICKBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 80,
+          damage: 8,
+          range: 10,
+          charge: 2,
+          tags: "ranged, bow",
+      },
+      // GREEN_MENACE
+      // PINK_SCOUNDREL
+      CROSSBOW: {
+          id: "CROSSBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 120,
+          damage: 12,
+          range: 10,
+          charge: 0,
+          tags: "ranged, xbow",
+      },
+      // AZURE_SEEKER
+      // SLICER
+      // EXPLODING_CROSSBOW
+      // FIREBOLT_THROWER
+      // IMPLODING_CROSSBOW
+      DUAL_CROSSBOWS: {
+          id: "DUAL_CROSSBOWS",
+          ch: "}",
+          fg: "yellow",
+          speed: 60,
+          damage: 6,
+          range: 8,
+          charge: 0,
+          tags: "ranged, xbow",
+      },
+      // BABY_CROSSBOWS
+      // SPELLBOUND_CROSSBOWS
+      HEAVY_CROSSBOW: {
+          id: "HEAVY_CROSSBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 200,
+          damage: 20,
+          range: 15,
+          charge: 0,
+          tags: "ranged, xbow",
+      },
+      // DOOM_CROSSBOW
+      // SLAYER_CROSSBOW
+      RAPID_CROSSBOW: {
+          id: "RAPID_CROSSBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 80,
+          damage: 8,
+          range: 10,
+          charge: 0,
+          tags: "ranged, xbow",
+      },
+      // AUTO_CROSSBOW
+      // BUTTERFLY_CROSSBOW
+      SCATTER_CROSSBOW: {
+          id: "SCATTER_CROSSBOW",
+          ch: "}",
+          fg: "yellow",
+          speed: 100,
+          damage: 10,
+          range: 10,
+          charge: 0,
+          tags: "ranged, xbow",
+      },
+      // HARP_CROSSBOW
+      // LIGHTNING_HARP_CROSSBOW
+  };
 
   const title = {
       create() {
@@ -25879,11 +26151,12 @@ void main() {
       // This will be used when we start the game
       app.data.start_opts = config;
       // Start Plugins...
-      startPlugins(app, ...config.plugins);
+      startPlugins(app, config);
+      // Install kinds
       return app;
   }
 
-  install$7("potion", (level, actor) => {
+  install$8("potion", (level, actor) => {
       if (!actor.isHero)
           return false;
       if (actor.data.potion < actor.data.potion_max) {
@@ -26067,138 +26340,6 @@ void main() {
   */
 
   function start() {
-      install$3({
-          id: "TOWER",
-          width: 60,
-          height: 35,
-          scene: "level",
-          dig: true,
-          keymap: { i: "show_inventory" },
-          on: {
-              create(level, opts) {
-                  console.log("TOWER LEVEL CREATE");
-                  const depth = (level.data.depth = parseInt(level.id.toString()));
-                  if (level.kind.data.waves && level.kind.data.waves.length > 0) {
-                      level.data.waves = level.kind.data.waves;
-                  }
-                  else {
-                      level.data.waves = [];
-                      for (let i = 0; i < depth; ++i) {
-                          level.data.waves.push({
-                              delay: 500 + i * 2000,
-                              power: depth * 2 - 1 + level.rng.dice(1, 3),
-                              horde: { depth: depth },
-                          });
-                      }
-                  }
-                  level.data.wavesLeft = level.data.waves.length;
-              },
-              show(level, scene) {
-                  // put player in starting location
-                  let startLoc = level.locations.start || [
-                      Math.floor(level.width / 2),
-                      Math.floor(level.height / 2),
-                  ];
-                  // TODO - this should be an Option<Loc>
-                  startLoc = level.rng.matchingLocNear(startLoc[0], startLoc[1], (x, y) => level.hasTile(x, y, "FLOOR"));
-                  // TODO - if (startLoc.isNone()) { return GWU.Result.Err("Failed to find starting location for Hero on level: " + level.id); }
-                  // TODO - let res = next(req);
-                  // TODO - if (res.isErr()) { return res; }
-                  level.game.hero.clearGoal();
-                  // TODO - real time flash, then do all of this...
-                  // @ts-ignore
-                  spawn(level, level.game.hero, startLoc[0], startLoc[1]);
-                  level.data.wavesLeft = level.data.waves.length;
-                  level.data.waves.forEach((wave) => {
-                      console.log("WAVE - " + wave.delay);
-                      level.wait(wave.delay || 0, () => {
-                          let horde = null;
-                          if (wave.horde) {
-                              if (typeof wave.horde === "string") {
-                                  horde = from(wave.horde);
-                              }
-                              else {
-                                  wave.horde.depth = wave.horde.depth || level.depth;
-                                  horde = random(wave.horde);
-                              }
-                          }
-                          else {
-                              horde = random({ depth: level.depth });
-                          }
-                          if (!horde) {
-                              throw new Error("Failed to get horde: " + JSON.stringify(wave.horde));
-                          }
-                          const leader = horde.spawn(level, wave);
-                          if (!leader)
-                              throw new Error("Failed to place horde!");
-                          leader.once("add", () => {
-                              --level.data.wavesLeft;
-                          });
-                      });
-                  });
-                  if (level.welcome) {
-                      level.game.addMessage(level.welcome);
-                  }
-              },
-              hide(level) {
-                  // @ts-ignore
-                  level.removeActor(level.game.hero);
-              },
-              tick(level, dt) {
-                  // Do we have work left to do on the level?
-                  if (level.done || !level.started)
-                      return;
-                  if (level.data.wavesLeft > 0)
-                      return;
-                  if (level.actors.length > 1)
-                      return;
-                  // win level
-                  level.done = true;
-                  if (level.proceed) {
-                      level.game.addMessage(level.proceed);
-                  }
-                  const inactiveStairs = getTileByName("UP_STAIRS_INACTIVE").index;
-                  level.tiles.forEach((index, x, y) => {
-                      if (index === inactiveStairs) {
-                          flash(level, x, y, "yellow").then(() => {
-                              level.setTile(x, y, "UP_STAIRS");
-                          });
-                      }
-                  });
-              },
-              up_stairs(level, actor) {
-                  const game = level.game;
-                  const depth = level.data.depth;
-                  if (depth >= game.data.LAST_LEVEL) {
-                      game.app.scenes.start("win", { game });
-                  }
-                  else {
-                      game.app.scenes.start("reward", { depth: depth, game });
-                  }
-              },
-              lose(level, reason) {
-                  // TODO - Move to gameopts?
-                  const game = level.game;
-                  game.app.scenes.start("lose", {
-                      depth: level.data.depth,
-                      game,
-                      reason,
-                  });
-              },
-          },
-      });
-      //   win(this: GWU.app.Scene) {
-      //   const game = this.data.game as Game;
-      //   const LAST_LEVEL = this.app.data.get("LAST_LEVEL");
-      //   if (this.data.level.depth === LAST_LEVEL) {
-      //     this.app.scenes.start("win", this.data);
-      //   } else {
-      //     this.app.scenes.start("reward", this.data);
-      //   }
-      // },
-      // lose(this: GWU.app.Scene) {
-      //   this.app.scenes.start("lose", this.data);
-      // },
       // create the user interface
       const opts = {
           name: "Roguecraft: Tower",
@@ -26215,6 +26356,19 @@ void main() {
                   }
               },
           },
+          actor: { kinds: actors },
+          hero: { kinds: heroes },
+          item: {
+              kinds: [
+                  drop_kinds,
+                  armor_kinds,
+                  melee_kinds,
+                  ranged_kinds,
+              ],
+          },
+          level: { kinds: level_kinds },
+          // TODO - horde: { kinds: ... }
+          // TODO - tile: { kinds: ... }
       };
       startApp(opts);
   }

@@ -258,7 +258,7 @@ export class Level implements GWD.site.AnalysisSite {
 
   setTile(x: number, y: number, id: number | string, opts = {}) {
     const tile =
-      typeof id === "string" ? TILE.getTileByName[id] : TILE.getTile(id);
+      typeof id === "string" ? TILE.getTileByName(id) : TILE.getTile(id);
 
     if (!tile) {
       console.warn("Failed to find tile: " + id);
@@ -288,7 +288,7 @@ export class Level implements GWD.site.AnalysisSite {
 
   getTile(x: number, y: number): TILE.TileInfo {
     const id = this.tiles.get(x, y);
-    if (id === undefined) return TILE.getTileByName["IMPREGNABLE"];
+    if (id === undefined) return TILE.getTileByName("IMPREGNABLE");
     return TILE.getTile(id);
   }
 

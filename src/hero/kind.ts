@@ -5,6 +5,7 @@ import { Level } from "../level";
 import { Item } from "../item";
 import * as ACTOR from "../actor";
 import { SidebarEntry } from "../widgets";
+import { factory } from "./factory";
 
 export type HeroCtorFn = (
   kind: HeroKind,
@@ -59,11 +60,6 @@ export interface HeroKind extends Omit<ACTOR.ActorKind, "on"> {
   slots: { [id: string]: string };
 }
 
-export const kinds: Record<string, HeroKind> = {};
-
-// @ts-ignore
-globalThis.HeroKinds = kinds;
-
 export function makeKind(cfg: HeroKindConfig) {
   let kind: HeroKind;
 
@@ -83,11 +79,9 @@ export function makeKind(cfg: HeroKindConfig) {
 }
 
 export function install(cfg: HeroKindConfig) {
-  const kind = makeKind(cfg);
-
-  kinds[kind.id.toLowerCase()] = kind;
+  factory.installKind(cfg);
 }
 
 export function getKind(id: string): HeroKind | null {
-  return kinds[id.toLowerCase()] || null;
+  return factory.getKind(id);
 }

@@ -4,6 +4,7 @@ import { Actor, ActorMakeOpts as ActorCreateOpts } from "./actor";
 import { Level } from "../level";
 import { Item } from "../item";
 import { SidebarEntry } from "../widgets";
+import { factory } from "./factory";
 
 export type ActorCtorFn = (
   kind: ActorKind,
@@ -121,11 +122,6 @@ export interface ActorKind {
   dropMatch: string[];
 }
 
-export const kinds: Record<string, ActorKind> = {};
-
-// @ts-ignore
-globalThis.ActorKinds = kinds;
-
 export function makeKind(cfg: ActorKindOpts) {
   const kind = Object.assign(
     {
@@ -210,11 +206,9 @@ export function makeKind(cfg: ActorKindOpts) {
 }
 
 export function install(cfg: ActorKindOpts) {
-  const kind = makeKind(cfg);
-
-  kinds[kind.id.toLowerCase()] = kind;
+  factory.installKind(cfg);
 }
 
 export function getKind(id: string): ActorKind | null {
-  return kinds[id.toLowerCase()] || null;
+  return factory.getKind(id);
 }
