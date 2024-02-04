@@ -4,16 +4,95 @@ General:
   [X] Add regeneration status to sidebar - how? on/off? {Regen}
   [] Add temporary speedup to sidebar - how? on/off? {Fast}
   [] Can sidebar do mouseover for items? Mouseover {Regen} gives details - maybe even from multiple sources.
-  [] Charged Shot for bows - 'F' vs 'f'
+  Charged Shot for bows - 'F' vs 'f':
     [] Charge then target
     [] Can cancel at targeting
     [] Is charge time configurable?
-
+  GameOpts:
+    [] - { tile: { kinds: {...}}}
+    [] - { horde: { kinds: {...}}}
+  [] APP.factory => { item, actor, ... }
+  [] Game.create => { actor, item, ... }
+  [] Game.install => { actorKind, itemKind, ... }
+  [] Level.add => { actor, item, ... }
+  [] Look into Phaser plugins to add object types - how does it work?  Can/should this be in there?
+  [] When an Obj is spawned into the FOV, interrupt the Hero travelling
+  [] When an Obj becomes visible, interrupt the Hero travelling (unless the Obj is marked as IGNORE_WHEN_SEEN)
+    - Allow marking object with a key - which key?  
     
 Levels:
-  [] Pick items after level creation
-  [] Ensure spawns have enough total challenge for level
+  [X] Pick items after level creation
+  [X] Ensure spawns have enough total challenge for level
   [] More variety in levels
+
+Framework:
+  [] Loop v.2
+    - Level.update(dt) 
+      - if this.scene.timers.length || this.scene.tweens.length || level.scene.paused.update { return }
+      - let current = this.schedule.peek()
+      - let done = false
+      - while current && !done
+        - let res = current.update(dt)
+        - if res.isOk { this.schedule.pop(), this.schedule.push(current, res.time), done = isHero(current) }
+        - if res.isStop() { this.schedule.pop() }
+        - if res.isRetry { this.scene.needsDraw = true, done = true }
+        - if res.isWait { this.scene.needsDraw = true, done = true }
+        - if this.scene.timers.length || this.scene.tweens.length || level.scene.paused.update { done = true }
+        - current - this.schedule.peek()
+    - Level.tick
+      - remove dead actors
+  [] Actor v.2
+    - Actor.update(dt)
+      - if ! this._todo.length && this.ai
+        - this._todo = this._ai.next()
+      - if this._todo.length 
+        - let current = this.todo[0]
+        - let res = current.perform(dt)
+        - if res.isOk() { this.todo.pop_front() }
+        - if res.isStop() { this.todo = [] }  // Dead is really the only thing that would do this
+        - return res
+      - return idle(this)        
+  [] Actions v.2
+    - constructor(actor, ... target, settings, ...)
+    - perform(dt) -> ActResult
+    - willSucceed() -> boolean
+    - getTargets() -> Obj[]
+    - isValidTarget(obj) -> boolean
+    - range() -> number
+    - 
+  [] Cell
+    - Temp obj for actions that operate on cells
+    - class Cell extends Obj
+      - x, y: number
+      - level: Level
+      - canPerformAction
+      - canResolveAction
+      - getBumpAction
+  [] Commands v.2
+    - Commands run when the key is pressed
+      - When the action is figured out...
+      - actor.setTodo(new_action, ...)
+    - Actor.setTodo(... actions[])
+      - this.todo.forEach( a => a.interrupt() )
+      - this.todo = actions
+  [] ObjKind
+    - performs: { [id: string]: boolean | Settings }
+    - resolves: { [id: string]: boolean | Settings }
+    - bump: [string | {action: string, settings: Settings }]
+  [] Obj
+    - These are local overrides:
+      - performs: { [id: string]: boolean | Settings }
+      - resolves: { [id: string]: boolean | Settings }
+      - bump: [string | {action: string, settings: Settings }]
+    - canPerformAction(name): boolean | Settings
+      - check Obj, then ObjKind
+    - canResolveAction(name): boolean | Settings
+      - check Obj, then ObjKind
+    - getBumpAction(actor): { action: string, settings: Settings} | null
+      - check Obj, then ObjKind
+  [] Level Scene
+    - keypress
+      - execute command right away (possibly running another scene to get input)
 
 
 Player:
@@ -23,11 +102,12 @@ Player:
     [X] Armor
   [] Roll (moves 2 spaces quickly in DIR4 - with '*' glyph during mid roll)
     - Press 'r' then direction?
+  [] Interrupt travel on take damage
+    - Add to hero plugin
 
 Mobs:
   [] Adjust strength for power
   [] Set power by level on spawn
-
 
 
 Items:
@@ -63,6 +143,32 @@ Artifacts:
   [] Boots of Swiftness
   [] Wind Horn
   [] ...
+
+
+More:
+  [] Enchant Items
+  [] Effects
+  [] Magic/Spells
+  Conversations
+    [] Custom Canvas/Scene w/ 2 large icons and alternating text boxes.
+        Intro: {
+          kind: 'Talk',
+          talk: [
+            { left: { char: '@', color: '#fff', name: 'You' },
+              right: { char: 'K', color: 'purple', name: 'The King' },
+              text: '<Hello.'
+            },
+            '>Welcome my #yellow#hero#.',
+            "<Well, I don't know about that.",
+            ">You are going to save the #purple#kingdom#.  That is known.",
+            "<If you say so.",
+            ">Your first task is to rid the #red#sewers# of #f99#dangers#.",
+            ">The last crew of #green#workers# to enter did not return.",
+            ">Be careful!"
+          ]
+        },
+
+
 
 Armors:
   [] Need a base armor with no benefits?  Leather?

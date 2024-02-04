@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import { CallbackFn, ObjMakeOpts, ObjEvents } from "../game/obj";
+import * as OBJ from "../object";
 import { Actor, ActorMakeOpts as ActorCreateOpts } from "./actor";
 import { Level } from "../level";
 import { Item } from "../item";
@@ -49,9 +49,45 @@ export interface ActorEvents {
   // use?: ActorItemFn;
 }
 
-export interface ActorKindOpts {
+export interface ActorKind extends OBJ.ObjKind {
+  id: string;
+  name: string;
+  tags: string[];
+
+  hero: boolean;
+
+  health: number;
+
+  notice: number;
+  moveSpeed: number;
+
+  ch: string;
+  fg: GWU.color.ColorBase;
+  bg?: GWU.color.ColorBase;
+
+  on: ActorEvents & OBJ.ObjEvents;
+
+  damage: number;
+  attackSpeed: number;
+  combo: number;
+  comboDamage: number;
+  comboSpeed: number;
+
+  range: number;
+  rangedDamage: number;
+  tooClose: number;
+  rangedAttackSpeed: number;
+  ammo: number;
+
+  dropChance: number;
+  dropMatch: string[];
+}
+
+export interface ActorKindConfig extends OBJ.ObjKindConfig {
   id: string;
   name?: string;
+  tags?: string | string[];
+
   hero?: boolean;
   health?: number;
 
@@ -62,9 +98,7 @@ export interface ActorKindOpts {
   fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
 
-  bump?: string | string[];
-
-  on?: ActorEvents & ObjEvents;
+  on?: ActorEvents & OBJ.ObjEvents;
 
   // melee
   damage?: number;
@@ -80,95 +114,44 @@ export interface ActorKindOpts {
   rangedAttackSpeed?: number;
   ammo?: number;
 
-  slots?: { [id: string]: string };
-
   dropChance?: number;
   dropMatch?: string | string[];
 }
 
-export interface ActorKind {
-  id: string;
-  name: string;
-  hero: boolean;
+export function makeKind(cfg: ActorKindConfig) {
+  const kind = OBJ.makeKind(cfg) as ActorKind;
 
-  health: number;
-
-  notice: number;
-  moveSpeed: number;
-
-  ch: string;
-  fg: GWU.color.ColorBase;
-  bg?: GWU.color.ColorBase;
-
-  bump: string[];
-
-  on: ActorEvents & ObjEvents;
-
-  damage: number;
-  attackSpeed: number;
-  combo: number;
-  comboDamage: number;
-  comboSpeed: number;
-
-  range: number;
-  rangedDamage: number;
-  tooClose: number;
-  rangedAttackSpeed: number;
-  ammo: number;
-
-  // slots: Map<string, string>;
-
-  dropChance: number;
-  dropMatch: string[];
-}
-
-export function makeKind(cfg: ActorKindOpts) {
-  const kind = Object.assign(
-    {
-      name: "",
-      hero: false,
-      health: 10,
-      notice: 10,
-      moveSpeed: 100,
-      ch: "!",
-      fg: "white",
-      bump: ["attack"],
-      on: {},
-
-      damage: 0,
-      attackSpeed: 0,
-      combo: 0,
-      comboDamage: 0,
-      comboSpeed: 0,
-
-      range: 0,
-      rangedDamage: 0,
-      rangedAttackSpeed: 0,
-      ammo: 0,
-
-      tooClose: 0,
-
-      dropChance: 0,
-      dropMatch: [],
-
-      slots: new Map<string, string>(),
-    },
-    cfg
-  ) as ActorKind;
-
-  if (kind.name == "") {
+  if (!kind.id || kind.id.length === 0) {
+    throw new Error("ItemKind must have 'id'.");
+  }
+  if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
     kind.name = GWU.text.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
   }
+  if (cfg.tags && typeof cfg.tags === "string") {
+    kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+  }
+  kind.ch = kind.ch || "!";
+  if (kind.fg) {
+    kind.fg = GWU.color.make(cfg.fg);
+  } else {
+    kind.fg = GWU.colors.red;
+  }
+  if (kind.bg) {
+    kind.bg = GWU.color.make(cfg.bg);
+  } else {
+    kind.bg = GWU.color.NONE;
+  }
 
-  if (typeof cfg.bump === "string") {
-    kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-  }
-  if (typeof cfg.dropMatch === "string") {
-    kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
-  }
-  if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
-    kind.dropMatch.push("drop"); // Default drops
-  }
+  kind.damage = kind.damage || 0;
+  kind.attackSpeed = kind.attackSpeed || 100;
+  kind.combo = kind.combo || 0;
+  kind.comboDamage = kind.comboDamage || 0;
+  kind.comboSpeed = kind.comboSpeed || 0;
+  kind.range = kind.range || 0;
+  kind.rangedDamage = kind.rangedDamage || 0;
+  kind.tooClose = kind.tooClose || 0;
+  kind.rangedAttackSpeed = kind.rangedAttackSpeed || 0;
+  kind.ammo = kind.ammo || 0;
 
   if (kind.attackSpeed == 0 && kind.damage > 0) {
     kind.attackSpeed = kind.moveSpeed;
@@ -199,13 +182,22 @@ export function makeKind(cfg: ActorKindOpts) {
   //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
   //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
   //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
-  if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
+  kind.dropChance = kind.dropChance || 0;
+  kind.dropMatch = kind.dropMatch || [];
+  if (typeof cfg.dropMatch === "string") {
+    kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
+  }
+  if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
+    kind.dropMatch.push("drop"); // Default drops
+  }
+  if (kind.dropMatch.length > 0 && kind.dropChance == 0) {
     kind.dropChance = 100;
   }
+
   return kind;
 }
 
-export function install(cfg: ActorKindOpts) {
+export function install(cfg: ActorKindConfig) {
   factory.installKind(cfg);
 }
 

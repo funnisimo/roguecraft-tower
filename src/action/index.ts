@@ -60,7 +60,7 @@ export function moveDir(
 
   const other = level.actorAt(newX, newY);
   if (other) {
-    if (other.kind && other.bump(level, actor)) {
+    if (other.kind && other.doBump(level, actor)) {
       return true;
     }
     if (actor.hasActed()) return true;

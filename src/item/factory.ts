@@ -1,5 +1,5 @@
 import * as GWU from "gw-utils";
-import { CallbackFn, ObjEvents } from "../game";
+import { CallbackFn, ObjEvents } from "../object";
 import { Level } from "../level";
 import { Item } from "./item";
 import {

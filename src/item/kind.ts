@@ -1,16 +1,16 @@
 import * as GWU from "gw-utils";
 import { Actor } from "../actor";
 import { Item } from "./item";
-import { CallbackFn, ObjEvents, ObjMakeOpts } from "../game";
+import * as OBJ from "../object";
 import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
 import { Level } from "../level";
 import { SidebarEntry } from "../widgets";
 import { factory } from "./factory";
+import { ObjKind } from "../object/kind";
 
-export interface ItemCreateOpts extends ObjMakeOpts, ItemEvents {
+export interface ItemCreateOpts extends OBJ.ObjCreateOpts, ItemEvents {
   power?: number;
-  on?: ObjEvents; // give core events better type help?
   data?: Record<string, string>;
 }
 
@@ -50,48 +50,17 @@ export interface ItemEvents {
   sidebar?: ItemSidebarFn;
 }
 
-export interface ItemKindConfig {
-  id: string;
-  name?: string;
-
-  ch?: string;
-  fg?: GWU.color.ColorBase;
-  bg?: GWU.color.ColorBase;
-
-  frequency?: GWU.frequency.FrequencyConfig;
-
-  //   bump?: string | string[];
-  speed?: number;
-  damage?: number;
-  combo?: number;
-  combo_speed?: number;
-  combo_damage?: number;
-  range?: number;
-  charge?: number; // charge multiplier for speed + damage
-
-  defense?: number;
-
-  slot?: string;
-
-  on?: ItemEvents & ObjEvents;
-
-  tags?: string | string[];
-  armor_flags?: string | string[];
-  melee_flags?: string | string[];
-  ranged_flags?: string | string[];
-
-  effects?: EffectConfig;
-}
-
-export interface ItemKind {
+export interface ItemKind extends ObjKind {
+  // TODO - move these to ObjKind
   id: string;
   name: string;
+  tags: string[];
 
+  // TODO - move these to ObjKind
   ch: string;
-  fg: GWU.color.ColorBase;
-  bg?: GWU.color.ColorBase;
+  fg: GWU.color.Color;
+  bg?: GWU.color.Color;
 
-  //   bump: string[];
   speed: number;
   damage: number;
   combo: number;
@@ -99,14 +68,12 @@ export interface ItemKind {
   combo_damage: number;
   range: number;
   charge: number;
-
   defense: number;
 
   slot: string | null;
-  on: ItemEvents & { [id: string]: CallbackFn };
+  on: ItemEvents & OBJ.ObjEvents;
 
   frequency: GWU.frequency.FrequencyFn;
-  tags: string[];
   armor_flags: ARMOR_FLAGS;
   melee_flags: MELEE_FLAGS;
   ranged_flags: RANGED_FLAGS;
@@ -121,72 +88,95 @@ export interface ItemKind {
   //   rangedAttackSpeed: number;
 }
 
+export interface ItemKindConfig extends OBJ.ObjKindConfig {
+  id: string;
+  name?: string;
+  tags?: string | string[];
+
+  // TODO - move these to ObjKind
+  ch?: string;
+  fg?: GWU.color.ColorBase;
+  bg?: GWU.color.ColorBase;
+
+  speed?: number;
+  damage?: number;
+  combo?: number;
+  combo_speed?: number;
+  combo_damage?: number;
+  range?: number;
+  charge?: number;
+  defense?: number;
+
+  slot?: string | null;
+  on?: ItemEvents & OBJ.ObjEvents;
+
+  frequency?: GWU.frequency.FrequencyConfig;
+  armor_flags?: string | string[];
+  melee_flags?: string | string[];
+  ranged_flags?: string | string[];
+  effects?: EffectConfig;
+}
+
 export function makeKind(cfg: ItemKindConfig): ItemKind {
-  const kind = Object.assign(
-    {
-      name: "",
-      ch: "!",
-      fg: "white",
-      //   bump: ["attack"],
-      on: {},
-      frequency: 10,
-      speed: 100,
-      damage: 0,
-      combo: 0,
-      combo_speed: 0,
-      combo_damage: 0,
-      range: 0,
-      charge: 0,
-      defense: 0,
-      slot: null,
-      tags: [],
-      armor_flags: 0,
-      melee_flags: 0,
-      ranged_flags: 0,
-      effects: {},
-    },
-    cfg
-  ) as ItemKind;
+  let kind = OBJ.makeKind(cfg) as ItemKind;
 
   if (!kind.id || kind.id.length === 0) {
     throw new Error("ItemKind must have 'id'.");
   }
-
-  if (kind.name.length == 0) {
-    kind.name = GWU.text.title_case(kind.id.toLowerCase().replace("_", " "));
+  if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
+    kind.name = GWU.text.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
   }
-
-  if (typeof cfg.tags == "string") {
+  if (cfg.tags && typeof cfg.tags === "string") {
     kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
   }
-
-  if (typeof cfg.armor_flags !== "number") {
-    kind.armor_flags = GWU.flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+  kind.ch = kind.ch || "!";
+  if (kind.fg) {
+    kind.fg = GWU.color.make(cfg.fg);
+  } else {
+    kind.fg = GWU.colors.red;
+  }
+  if (kind.bg) {
+    kind.bg = GWU.color.make(cfg.bg);
+  } else {
+    kind.bg = GWU.color.NONE;
   }
 
-  if (typeof cfg.melee_flags !== "number") {
-    kind.melee_flags = GWU.flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
-  }
+  kind.speed = kind.speed || 100;
+  kind.damage = kind.damage || 0;
+  kind.combo = kind.combo || 0;
+  kind.combo_speed = kind.combo_speed || 0;
+  kind.range = kind.range || 0;
+  kind.charge = kind.charge || 0;
+  kind.defense = kind.defense || 0;
 
-  if (typeof cfg.ranged_flags !== "number") {
-    kind.ranged_flags = GWU.flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
-  }
-
-  //   if (typeof cfg.bump === "string") {
-  //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-  //   }
-
-  kind.frequency = GWU.frequency.make(kind.frequency);
-
-  if (kind.slot === null) {
+  if (!kind.slot) {
     if (kind.range > 0) {
       kind.slot = "ranged";
     } else if (kind.damage > 0) {
       kind.slot = "melee";
     } else if (kind.defense > 0) {
       kind.slot = "armor";
+    } else {
+      kind.slot = null;
     }
   }
+
+  if (kind.frequency && typeof kind.frequency !== "function") {
+    kind.frequency = GWU.frequency.make(cfg.frequency);
+  }
+
+  if (typeof cfg.armor_flags !== "number") {
+    kind.armor_flags = GWU.flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+  }
+  if (typeof cfg.melee_flags !== "number") {
+    kind.melee_flags = GWU.flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
+  }
+  if (typeof cfg.ranged_flags !== "number") {
+    kind.ranged_flags = GWU.flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
+  }
+
+  // TODO - Effects
+
   return kind;
 }
 

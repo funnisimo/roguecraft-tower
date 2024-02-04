@@ -1,8 +1,7 @@
 import * as GWU from "gw-utils";
 import * as GWD from "gw-dig";
-import { CallbackFn, Game } from "../game";
 import { Actor } from "../actor";
-import { Obj } from "../game/obj";
+import { CallbackFn, Obj } from "../object";
 import { Level } from "../level";
 
 export interface TileEvents {

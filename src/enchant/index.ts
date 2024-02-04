@@ -1,5 +1,5 @@
 import { Actor, ActorEvents } from "../actor";
-import { CallbackFn, ObjEvents } from "../game";
+import { CallbackFn, ObjEvents } from "../object";
 import { ItemEvents } from "../item";
 
 export interface Enchant {

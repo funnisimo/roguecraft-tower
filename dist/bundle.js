@@ -996,9 +996,9 @@
       root = _root;
 
   /* Built-in method references that are verified to be native. */
-  var Map$1$1 = getNative$1(root, 'Map');
+  var Map$1 = getNative$1(root, 'Map');
 
-  var _Map = Map$1$1;
+  var _Map = Map$1;
 
   var Hash = _Hash,
       ListCache = _ListCache,
@@ -16143,24 +16143,34 @@ void main() {
   });
 
   class Obj {
-      x;
-      y;
-      z;
-      events;
-      // spawn: boolean;
-      constructor() {
-          this.x = -1;
-          this.y = -1;
-          this.z = 0;
-          this.events = new index.Events(this);
-          // this.spawn = false;
-          // Object.assign(this, cfg);
-      }
+      x = -1;
+      y = -1;
+      z = 0;
+      events = new index.Events(this);
+      // spawned: boolean = false;
+      performs = []; // TODO - { action: string, settings: Record<string,any> }[]
+      resolves = []; // TODO - { action: string, settings: Record<string,any> }[]
+      bump = []; // TODO - { action: string, settings: Record<string,any> }[]
+      kind;
       // create(opts: ObjCreateOpts) {
       //   this._create(opts);
       //   this.emit("create", opts);
       // }
+      constructor(kind) {
+          this.kind = kind;
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+      }
       _create(cfg) {
+          const kindFns = this.kind.on || {};
+          Object.entries(kindFns).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
           this.x = cfg.x !== undefined ? cfg.x : this.x;
           this.y = cfg.y !== undefined ? cfg.y : this.y;
           this.z = cfg.z !== undefined ? cfg.z : this.z;
@@ -16170,6 +16180,15 @@ void main() {
                   return;
               this.on(key, value);
           });
+          if (cfg.performs && Array.isArray(cfg.performs)) {
+              this.performs = cfg.performs;
+          }
+          if (cfg.resolves && Array.isArray(cfg.resolves)) {
+              this.resolves = cfg.resolves;
+          }
+          if (cfg.bump && Array.isArray(cfg.bump)) {
+              this.bump = cfg.bump;
+          }
       }
       draw(buf) { }
       on(...args) {
@@ -16186,12 +16205,46 @@ void main() {
       }
   }
 
+  function makeKind$4(config) {
+      const kind = Object.assign({
+          performs: [],
+          resolves: [],
+          bump: [],
+          on: {},
+      }, config);
+      if (config.performs) {
+          if (typeof config.performs == "string") {
+              kind.performs = config.performs.split(/[|,]/).map((v) => v.trim());
+          }
+      }
+      if (config.resolves) {
+          if (typeof config.resolves == "string") {
+              kind.resolves = config.resolves.split(/[|,]/).map((v) => v.trim());
+          }
+      }
+      if (config.bump) {
+          if (typeof config.bump == "string") {
+              kind.bump = config.bump.split(/[|,]/).map((v) => v.trim());
+          }
+      }
+      if (config.on && typeof config.on !== "object") {
+          kind.on = {};
+      }
+      return kind;
+  }
+
+  const FX_KIND = {
+      performs: [],
+      resolves: [],
+      bump: [],
+      on: {},
+  };
   class FX extends Obj {
       ch;
       fg;
       bg;
       constructor(cfg) {
-          super();
+          super(FX_KIND);
           this.ch = cfg.ch || null;
           this.fg = cfg.fg || null;
           this.bg = cfg.bg || null;
@@ -16395,26 +16448,17 @@ void main() {
 
   class Item extends Obj {
       _turnTime = 0;
-      kind;
       data;
       _power;
       _damage;
       _comboDamage;
       _defense;
       constructor(kind) {
-          super();
-          this.kind = kind;
-          if (!this.kind)
-              throw new Error("Must have kind.");
+          super(kind);
           this.data = {};
           this._damage = this.kind.damage;
           this._comboDamage = this.kind.combo_damage;
           this._defense = this.kind.defense;
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
           this.power = 1; // cause calculations to fire
       }
       // create(opts: ItemCreateOpts) {
@@ -16632,36 +16676,52 @@ void main() {
   }
 
   function makeKind$3(cfg) {
-      const kind = Object.assign({
-          name: "",
-          ch: "!",
-          fg: "white",
-          //   bump: ["attack"],
-          on: {},
-          frequency: 10,
-          speed: 100,
-          damage: 0,
-          combo: 0,
-          combo_speed: 0,
-          combo_damage: 0,
-          range: 0,
-          charge: 0,
-          defense: 0,
-          slot: null,
-          tags: [],
-          armor_flags: 0,
-          melee_flags: 0,
-          ranged_flags: 0,
-          effects: {},
-      }, cfg);
+      let kind = makeKind$4(cfg);
       if (!kind.id || kind.id.length === 0) {
           throw new Error("ItemKind must have 'id'.");
       }
-      if (kind.name.length == 0) {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace("_", " "));
+      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
       }
-      if (typeof cfg.tags == "string") {
+      if (cfg.tags && typeof cfg.tags === "string") {
           kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      kind.ch = kind.ch || "!";
+      if (kind.fg) {
+          kind.fg = index$9.make(cfg.fg);
+      }
+      else {
+          kind.fg = colors.red;
+      }
+      if (kind.bg) {
+          kind.bg = index$9.make(cfg.bg);
+      }
+      else {
+          kind.bg = index$9.NONE;
+      }
+      kind.speed = kind.speed || 100;
+      kind.damage = kind.damage || 0;
+      kind.combo = kind.combo || 0;
+      kind.combo_speed = kind.combo_speed || 0;
+      kind.range = kind.range || 0;
+      kind.charge = kind.charge || 0;
+      kind.defense = kind.defense || 0;
+      if (!kind.slot) {
+          if (kind.range > 0) {
+              kind.slot = "ranged";
+          }
+          else if (kind.damage > 0) {
+              kind.slot = "melee";
+          }
+          else if (kind.defense > 0) {
+              kind.slot = "armor";
+          }
+          else {
+              kind.slot = null;
+          }
+      }
+      if (kind.frequency && typeof kind.frequency !== "function") {
+          kind.frequency = frequency.make(cfg.frequency);
       }
       if (typeof cfg.armor_flags !== "number") {
           kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
@@ -16672,21 +16732,7 @@ void main() {
       if (typeof cfg.ranged_flags !== "number") {
           kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
       }
-      //   if (typeof cfg.bump === "string") {
-      //     kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
-      //   }
-      kind.frequency = frequency.make(kind.frequency);
-      if (kind.slot === null) {
-          if (kind.range > 0) {
-              kind.slot = "ranged";
-          }
-          else if (kind.damage > 0) {
-              kind.slot = "melee";
-          }
-          else if (kind.defense > 0) {
-              kind.slot = "armor";
-          }
-      }
+      // TODO - Effects
       return kind;
   }
   function install$9(cfg) {
@@ -16784,7 +16830,7 @@ void main() {
       }
       const other = level.actorAt(newX, newY);
       if (other) {
-          if (other.kind && other.bump(level, actor)) {
+          if (other.kind && other.doBump(level, actor)) {
               return true;
           }
           if (actor.hasActed())
@@ -17209,7 +17255,7 @@ void main() {
       return widget;
   }
 
-  let Map$1 = class Map extends index.Widget {
+  class Map extends index.Widget {
       _focus = [-1, -1];
       constructor(opts) {
           super(opts);
@@ -17249,9 +17295,9 @@ void main() {
           this._focus[0] = -1;
           this._focus[1] = -1;
       }
-  };
+  }
   function map(scene, width, height) {
-      const widget = new Map$1({
+      const widget = new Map({
           id: "MAP",
           tag: "map",
           x: 0,
@@ -17706,7 +17752,6 @@ void main() {
   class Actor extends Obj {
       _turnTime = 0;
       _level = null;
-      kind;
       data = {};
       health = 0;
       health_max = 0;
@@ -17717,18 +17762,11 @@ void main() {
       combo_index = 0;
       leader = null;
       constructor(kind) {
-          super();
-          this.kind = kind;
-          if (!this.kind)
-              throw new Error("Missing ActorKind!");
+          super(kind);
           this.z = 1;
           this.health_max = this.kind.health || 10;
           this.health = this.health_max;
           this.ammo = this.kind.ammo || 0; // TODO - scale with power?
-          const onFns = kind.on || {};
-          Object.entries(onFns).forEach(([key, val]) => {
-              this.on(key, val);
-          });
       }
       _create(opts) {
           super._create(opts);
@@ -17856,7 +17894,8 @@ void main() {
               console.log("No actor AI action.");
           }
       }
-      bump(level, actor) {
+      doBump(level, actor) {
+          // TODO - Check this.bump first!!!
           const actions = this.kind.bump;
           for (let action of actions) {
               const fn = get$1(action);
@@ -18015,36 +18054,39 @@ void main() {
   }
 
   function makeKind$2(cfg) {
-      const kind = Object.assign({
-          name: "",
-          hero: false,
-          health: 10,
-          notice: 10,
-          moveSpeed: 100,
-          ch: "!",
-          fg: "white",
-          bump: ["attack"],
-          on: {},
-          damage: 0,
-          attackSpeed: 0,
-          combo: 0,
-          comboDamage: 0,
-          comboSpeed: 0,
-          range: 0,
-          rangedDamage: 0,
-          rangedAttackSpeed: 0,
-          ammo: 0,
-          tooClose: 0,
-          dropChance: 0,
-          dropMatch: [],
-          slots: new Map(),
-      }, cfg);
-      if (kind.name == "") {
+      const kind = makeKind$4(cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("ItemKind must have 'id'.");
+      }
+      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
           kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
       }
-      if (typeof cfg.bump === "string") {
-          kind.bump = cfg.bump.split(/[,]/g).map((t) => t.trim());
+      if (cfg.tags && typeof cfg.tags === "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
       }
+      kind.ch = kind.ch || "!";
+      if (kind.fg) {
+          kind.fg = index$9.make(cfg.fg);
+      }
+      else {
+          kind.fg = colors.red;
+      }
+      if (kind.bg) {
+          kind.bg = index$9.make(cfg.bg);
+      }
+      else {
+          kind.bg = index$9.NONE;
+      }
+      kind.damage = kind.damage || 0;
+      kind.attackSpeed = kind.attackSpeed || 100;
+      kind.combo = kind.combo || 0;
+      kind.comboDamage = kind.comboDamage || 0;
+      kind.comboSpeed = kind.comboSpeed || 0;
+      kind.range = kind.range || 0;
+      kind.rangedDamage = kind.rangedDamage || 0;
+      kind.tooClose = kind.tooClose || 0;
+      kind.rangedAttackSpeed = kind.rangedAttackSpeed || 0;
+      kind.ammo = kind.ammo || 0;
       if (typeof cfg.dropMatch === "string") {
           kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
       }
@@ -23045,7 +23087,7 @@ void main() {
           // TODO - check priority, etc... in a plugin
           this.emit("set_tile", data); // TODO - Is this a good idea?  Is this the right way to do it?
           if (data.tile) {
-              this.tiles[x][y] = data.tile.index;
+              this.tiles.set(x, y, data.tile.index);
               // this.game && this.game.drawAt(x, y);
               if (tile.on && tile.on.place) {
                   tile.on.place.call(tile, this, x, y);
@@ -23087,40 +23129,40 @@ void main() {
       }
       // AnalysisSite
       setInLoop(x, y) {
-          this.flags[x][y] |= index$1.Flags.IN_LOOP;
+          this.flags._data[x][y] |= index$1.Flags.IN_LOOP;
       }
       clearInLoop(x, y) {
-          this.flags[x][y] &= ~index$1.Flags.IN_LOOP;
+          this.flags._data[x][y] &= ~index$1.Flags.IN_LOOP;
       }
       isInLoop(x, y) {
-          return ((this.flags[x][y] || 0) & index$1.Flags.IN_LOOP) > 0;
+          return ((this.flags.get(x, y) || 0) & index$1.Flags.IN_LOOP) > 0;
       }
       clearChokepoint(x, y) {
-          this.flags[x][y] &= ~index$1.Flags.CHOKEPOINT;
+          this.flags._data[x][y] &= ~index$1.Flags.CHOKEPOINT;
       }
       setChokepoint(x, y) {
-          this.flags[x][y] |= index$1.Flags.CHOKEPOINT;
+          this.flags._data[x][y] |= index$1.Flags.CHOKEPOINT;
       }
       isChokepoint(x, y) {
-          return !!(this.flags[x][y] & index$1.Flags.CHOKEPOINT);
+          return !!(this.flags.get(x, y) & index$1.Flags.CHOKEPOINT);
       }
       setChokeCount(x, y, count) {
-          this.choke[x][y] = count;
+          this.choke.set(x, y, count);
       }
       getChokeCount(x, y) {
-          return this.choke[x][y];
+          return this.choke.get(x, y) || 0;
       }
       setGateSite(x, y) {
-          this.flags[x][y] |= index$1.Flags.GATE_SITE;
+          this.flags._data[x][y] |= index$1.Flags.GATE_SITE;
       }
       clearGateSite(x, y) {
-          this.flags[x][y] &= ~index$1.Flags.GATE_SITE;
+          this.flags._data[x][y] &= ~index$1.Flags.GATE_SITE;
       }
       isGateSite(x, y) {
-          return !!(this.flags[x][y] & index$1.Flags.GATE_SITE);
+          return !!(this.flags.get(x, y) & index$1.Flags.GATE_SITE);
       }
       isAreaMachine(x, y) {
-          return !!(this.flags[x][y] & index$1.Flags.IN_AREA_MACHINE);
+          return !!(this.flags.get(x, y) & index$1.Flags.IN_AREA_MACHINE);
       }
       drawAt(buf, x, y) {
           buf.blackOut(x, y);

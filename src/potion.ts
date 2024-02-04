@@ -4,7 +4,8 @@ import { Level } from "./level/level";
 import * as ACTIONS from "./action";
 import { Actor } from "./actor/actor";
 import { SidebarEntry } from "./widgets/sidebar";
-import { GameOpts, Obj, install } from "./game";
+import { GameOpts, install } from "./game";
+import { Obj } from "./object";
 import { Hero, HeroMakeOpts } from "./hero";
 
 ACTIONS.install("potion", (level: Level, actor: Actor): boolean => {

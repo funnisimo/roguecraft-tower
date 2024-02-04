@@ -1,13 +1,20 @@
 import * as GWU from "gw-utils";
-import { Obj, ObjMakeOpts, CallbackFn } from "../game/obj";
+import { Obj, ObjCreateOpts, CallbackFn, ObjKind } from "../object";
 import { Game } from "../game/game";
 import { Level } from "../level";
 
-export interface FXConfig extends ObjMakeOpts {
+export interface FXConfig extends ObjCreateOpts {
   ch?: string | null;
   fg?: GWU.color.ColorBase;
   bg?: GWU.color.ColorBase;
 }
+
+const FX_KIND: ObjKind = {
+  performs: [],
+  resolves: [],
+  bump: [],
+  on: {},
+};
 
 export class FX extends Obj {
   ch: string | null;
@@ -15,7 +22,7 @@ export class FX extends Obj {
   bg: GWU.color.ColorBase;
 
   constructor(cfg: FXConfig) {
-    super();
+    super(FX_KIND);
     this.ch = cfg.ch || null;
     this.fg = cfg.fg || null;
     this.bg = cfg.bg || null;

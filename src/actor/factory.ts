@@ -1,15 +1,15 @@
 import * as GWU from "gw-utils";
-import { CallbackFn, ObjEvents } from "../game";
+import { CallbackFn, ObjEvents } from "../object";
 import { Level } from "../level";
 import { ActorMakeOpts, Actor } from "./actor";
-import { ActorEvents, ActorKind, ActorKindOpts, makeKind } from "./kind";
+import { ActorEvents, ActorKind, ActorKindConfig, makeKind } from "./kind";
 import * as FX from "../fx";
 
 export interface ActorPlugin extends ActorEvents {
-  createKind?: (kind: ActorKind, opts: ActorKindOpts) => void;
+  createKind?: (kind: ActorKind, opts: ActorKindConfig) => void;
   on?: ObjEvents;
   data?: { [key: string]: any };
-  kinds?: { [id: string]: ActorKindOpts };
+  kinds?: { [id: string]: ActorKindConfig };
 }
 
 export class ActorFactory {
@@ -20,11 +20,11 @@ export class ActorFactory {
     this.plugins.push(plugin);
   }
 
-  installKind(opts: ActorKindOpts): ActorKind;
-  installKind(id: string, opts: ActorKindOpts): ActorKind;
+  installKind(opts: ActorKindConfig): ActorKind;
+  installKind(id: string, opts: ActorKindConfig): ActorKind;
   installKind(...args: any[]): ActorKind {
     let id: string;
-    let opts: ActorKindOpts;
+    let opts: ActorKindConfig;
     if (args.length == 1) {
       opts = args[0];
       id = args[0].id;

@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 
 import * as FX from "../fx/index";
-import { CallbackFn, Obj, ObjMakeOpts, ObjEvents } from "../game/obj";
+import { CallbackFn, Obj, ObjCreateOpts, ObjEvents } from "../object/obj";
 import { Game } from "../game/game";
 import { Level } from "../level/level";
 import { TileInfo } from "../tile";
@@ -15,7 +15,7 @@ import { SidebarEntry } from "../widgets";
 import { Hero } from "../hero/hero";
 import { factory } from "./factory";
 
-export interface ActorMakeOpts extends ObjMakeOpts, ActorEvents {
+export interface ActorMakeOpts extends ObjCreateOpts, ActorEvents {
   power?: number;
   machineHome?: number;
 }
@@ -31,9 +31,9 @@ export class AttackInfo {
 }
 
 export class Actor extends Obj {
+  declare kind: ActorKind;
   _turnTime = 0;
   _level: Level | null = null;
-  kind: ActorKind;
   data: Record<string, any> = {};
   health: number = 0;
   health_max: number = 0;
@@ -46,19 +46,12 @@ export class Actor extends Obj {
   leader: Actor | null = null;
 
   constructor(kind: ActorKind) {
-    super();
-    this.kind = kind;
-    if (!this.kind) throw new Error("Missing ActorKind!");
+    super(kind);
 
     this.z = 1;
     this.health_max = this.kind.health || 10;
     this.health = this.health_max;
     this.ammo = this.kind.ammo || 0; // TODO - scale with power?
-
-    const onFns = kind.on || {};
-    Object.entries(onFns).forEach(([key, val]: [string, CallbackFn]) => {
-      this.on(key, val);
-    });
   }
 
   _create(opts: ActorMakeOpts) {
@@ -210,7 +203,8 @@ export class Actor extends Obj {
     }
   }
 
-  bump(level: Level, actor: Actor): boolean {
+  doBump(level: Level, actor: Actor): boolean {
+    // TODO - Check this.bump first!!!
     const actions = this.kind.bump;
 
     for (let action of actions) {

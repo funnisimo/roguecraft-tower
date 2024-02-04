@@ -1,10 +1,11 @@
 import * as GWU from "gw-utils";
 import { ItemKind, ItemCreateOpts } from "./kind";
-import { Obj } from "../game/obj";
+import { Obj } from "../object";
 
 export class Item extends Obj {
+  declare kind: ItemKind;
+
   _turnTime = 0;
-  kind: ItemKind;
   data: Record<string, any>;
   _power: number;
   _damage: number;
@@ -12,20 +13,12 @@ export class Item extends Obj {
   _defense: number;
 
   constructor(kind: ItemKind) {
-    super();
-    this.kind = kind;
-    if (!this.kind) throw new Error("Must have kind.");
+    super(kind);
 
     this.data = {};
     this._damage = this.kind.damage;
     this._comboDamage = this.kind.combo_damage;
     this._defense = this.kind.defense;
-
-    Object.entries(this.kind.on).forEach(([key, value]) => {
-      if (!value) return;
-      this.on(key, value);
-    });
-
     this.power = 1; // cause calculations to fire
   }
 

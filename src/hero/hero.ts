@@ -3,13 +3,14 @@ import * as GWU from "gw-utils";
 import * as ACTOR from "../actor";
 import * as ACTION from "../action";
 import { Level } from "../level";
-import { Game, ObjMakeOpts, ObjEvents } from "../game";
+import { Game } from "../game";
+import { ObjCreateOpts, ObjEvents } from "../object";
 import * as ITEM from "../item";
 import { HeroEvents, HeroKind, getKind } from "./kind";
 import { factory } from "./factory";
 // import * as PLUGINS from "../game/plugins";
 
-export interface HeroMakeOpts extends ObjMakeOpts, HeroEvents {
+export interface HeroMakeOpts extends ObjCreateOpts, HeroEvents {
   power?: number;
   slots?: { [id: string]: string }; // TODO - Allow more object create options here
 }

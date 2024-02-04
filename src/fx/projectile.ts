@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 import { Game } from "../game/game";
 import { FX, flash, create } from "./flash";
-import { CallbackFn } from "../game/obj";
+import { CallbackFn } from "../object/obj";
 import { Level } from "../level";
 
 export type Pos = GWU.xy.Loc | GWU.xy.XY;

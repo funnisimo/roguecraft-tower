@@ -10,7 +10,7 @@ import * as ITEM from "../item";
 import * as HORDE from "../horde";
 import { Level } from "../level";
 import { factory } from "./factory";
-import { CallbackFn } from "./obj";
+import { CallbackFn } from "../object";
 import { CommandFn } from "../command";
 
 export type EventFn = (level: Level, e: GWU.app.Event) => void;

@@ -1,6 +1,7 @@
 import * as GWU from "gw-utils";
 import * as GWD from "gw-dig";
-import { Game, ObjEvents } from "../game";
+import { Game } from "../game";
+import { ObjEvents } from "../object";
 import * as HORDE from "../horde";
 import { Level } from "./level";
 import { CommandFn } from "../command";

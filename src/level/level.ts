@@ -8,9 +8,9 @@ import * as ACTIONS from "../action";
 
 import * as TILE from "../tile";
 import * as ITEM from "../item";
-import * as OBJ from "../game/obj";
+import * as OBJ from "../object/obj";
 import { Game } from "../game/game";
-import { CallbackFn } from "../game/obj";
+import { CallbackFn } from "../object/obj";
 import { Hero } from "../hero";
 import { LevelConfig, LevelKind, LevelCreateOpts, getKind } from "./kind";
 import { factory } from "./factory";

@@ -133,9 +133,11 @@ export function startPlugins(app: GWU.app.App, ...names: (string | Plugin)[]) {
 
     if (p.actor) {
       const kinds = p.actor.kinds || {};
-      Object.entries(kinds).forEach(([k, v]: [string, ACTOR.ActorKindOpts]) => {
-        ACTOR.install(v);
-      });
+      Object.entries(kinds).forEach(
+        ([k, v]: [string, ACTOR.ActorKindConfig]) => {
+          ACTOR.install(v);
+        }
+      );
     }
     if (p.hero) {
       const kinds = p.hero.kinds || {};
