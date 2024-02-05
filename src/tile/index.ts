@@ -40,6 +40,7 @@ export interface TileOptions extends GWD.site.TileOptions {
 }
 
 export interface TileConfig extends TileOptions, GWD.site.TileConfig {}
+export type TileConfigSet = Record<string, TileConfig>;
 
 export interface TileInfo
   extends Omit<TileOptions, "priority" | "tags">,
@@ -64,83 +65,69 @@ export function getTileByName(name: string): TileInfo | null {
   return GWD.site.getTile(name);
 }
 
-install({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-install({
-  id: "WALL",
-  ch: "#",
-  fg: 0x333,
-  bg: 0x666,
-  blocksMove: true,
-  blocksVision: true,
-  blocksDiagonal: true,
-});
-install({
-  id: "CORPSE",
-  ch: "&",
-  fg: 0x666,
-  bg: 0x222,
-  priority: 15,
-  on: {
-    place(level, x, y) {
-      // game.wait(1000, () => {
-      //   if (game.map.hasTile(x, y, ids.CORPSE)) {
-      //     game.setTile(x, y, ids.FLOOR);
-      //   }
-      // });
-    },
-    tick(level: Level, x: number, y: number) {
-      if (level.rng.chance(5)) {
-        level.setTile(x, y, "FLOOR");
-      }
+export const default_tiles: TileConfigSet = {
+  FLOOR: { id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 },
+  WALL: {
+    id: "WALL",
+    ch: "#",
+    fg: 0x333,
+    bg: 0x666,
+    blocksMove: true,
+    blocksVision: true,
+    blocksDiagonal: true,
+  },
+  CORPSE: {
+    id: "CORPSE",
+    ch: "&",
+    fg: 0x666,
+    bg: 0x222,
+    priority: 15,
+    on: {
+      place(level, x, y) {
+        // game.wait(1000, () => {
+        //   if (game.map.hasTile(x, y, ids.CORPSE)) {
+        //     game.setTile(x, y, ids.FLOOR);
+        //   }
+        // });
+      },
+      tick(level: Level, x: number, y: number) {
+        if (level.rng.chance(5)) {
+          level.setTile(x, y, "FLOOR");
+        }
+      },
     },
   },
-});
-install({
-  id: "DOWN_STAIRS",
-  ch: "<",
-  fg: "gray",
-  on: {
-    enter(level: Level, actor) {
-      level.game.addMessage("There is no turning back.");
+  DOWN_STAIRS: {
+    id: "DOWN_STAIRS",
+    ch: "<",
+    fg: "gray",
+    on: {
+      enter(level: Level, actor) {
+        // level.game.addMessage("There is no turning back.");
+        level.emit("down_stairs", level, actor);
+      },
     },
   },
-});
-install({
-  id: "UP_STAIRS",
-  ch: ">",
-  fg: "orange",
-  on: {
-    enter(level, actor) {
-      level.game.addMessage("Going up!");
-      level.emit("up_stairs", level, actor);
+  UP_STAIRS: {
+    id: "UP_STAIRS",
+    ch: ">",
+    fg: "orange",
+    on: {
+      enter(level, actor) {
+        // level.game.addMessage("Going up!");
+        level.emit("up_stairs", level, actor);
+      },
     },
   },
-});
-install({
-  id: "UP_STAIRS_INACTIVE",
-  ch: ">",
-  fg: "gray",
-  priority: 75,
-  on: {
-    enter(level, actor) {
-      level.game.addMessage("There is more to do.");
-    },
-  },
-});
 
-install({
-  id: "IMPREGNABLE",
-  ch: "#",
-  fg: 0x222,
-  bg: 0x444,
-  priority: 200,
-  blocksMove: true,
-  blocksVision: true,
-  blocksDiagonal: true,
-});
-
-// GWD.site.allTiles.forEach((t, i) => {
-//   tilesByIndex[i] = t;
-//   if (tilesByName[t.id]) return;
-//   install(t);
-// });
+  IMPREGNABLE: {
+    id: "IMPREGNABLE",
+    ch: "#",
+    fg: 0x222,
+    bg: 0x444,
+    priority: 200,
+    blocksMove: true,
+    blocksVision: true,
+    blocksDiagonal: true,
+  },
+};

@@ -194,6 +194,13 @@ export function makeKind(cfg: ActorKindConfig) {
     kind.dropChance = 100;
   }
 
+  // Make sure default bump is setup for actor
+  if (cfg.bump === undefined) {
+    if (cfg.damage > 0 || cfg.rangedDamage > 0) {
+      kind.bump.push("attack");
+    }
+  }
+
   return kind;
 }
 

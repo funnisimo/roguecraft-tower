@@ -9,11 +9,13 @@ import {
   makeKind,
 } from "./kind";
 
+export type HeroKindConfigSet = Record<string, HeroKindConfig>;
+
 export interface HeroPlugin extends HeroEvents {
   createKind?: (kind: HeroKind, opts: HeroKindConfig) => void;
   on?: HeroEvents & ObjEvents;
   data?: { [key: string]: any };
-  kinds?: Record<string, HeroKindConfig>;
+  kinds?: HeroKindConfigSet | HeroKindConfigSet[];
 }
 
 export class HeroFactory {

@@ -11,6 +11,7 @@ import {
 } from "./kind";
 import { Level } from "./level";
 import { CommandFn } from "../command";
+import { TileConfig, TileConfigSet } from "../tile";
 
 export interface LevelPlugin extends LevelEvents {
   createKind?: (kind: LevelKind, opts: LevelConfig) => void;
@@ -18,6 +19,7 @@ export interface LevelPlugin extends LevelEvents {
   data?: { [id: string]: any };
   keymap?: { [id: string]: string | CommandFn };
   kinds?: Record<string, LevelConfig>;
+  tiles?: TileConfigSet | TileConfigSet[];
 }
 
 export class LevelFactory {
@@ -95,6 +97,8 @@ export class LevelFactory {
             }
           });
         } else if (key === "kinds") {
+          // Skip
+        } else if (key === "tiles") {
           // Skip
         } else if (key == "keymap") {
           level.keymap = GWU.utils.mergeDeep(level.keymap, val);

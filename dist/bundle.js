@@ -16142,2407 +16142,6 @@ void main() {
     xy: xy
   });
 
-  class Obj {
-      x = -1;
-      y = -1;
-      z = 0;
-      events = new index.Events(this);
-      // spawned: boolean = false;
-      performs = []; // TODO - { action: string, settings: Record<string,any> }[]
-      resolves = []; // TODO - { action: string, settings: Record<string,any> }[]
-      bump = []; // TODO - { action: string, settings: Record<string,any> }[]
-      kind;
-      // create(opts: ObjCreateOpts) {
-      //   this._create(opts);
-      //   this.emit("create", opts);
-      // }
-      constructor(kind) {
-          this.kind = kind;
-          Object.entries(this.kind.on).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-      }
-      _create(cfg) {
-          const kindFns = this.kind.on || {};
-          Object.entries(kindFns).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-          this.x = cfg.x !== undefined ? cfg.x : this.x;
-          this.y = cfg.y !== undefined ? cfg.y : this.y;
-          this.z = cfg.z !== undefined ? cfg.z : this.z;
-          const onFns = cfg.on || {};
-          Object.entries(onFns).forEach(([key, value]) => {
-              if (!value)
-                  return;
-              this.on(key, value);
-          });
-          if (cfg.performs && Array.isArray(cfg.performs)) {
-              this.performs = cfg.performs;
-          }
-          if (cfg.resolves && Array.isArray(cfg.resolves)) {
-              this.resolves = cfg.resolves;
-          }
-          if (cfg.bump && Array.isArray(cfg.bump)) {
-              this.bump = cfg.bump;
-          }
-      }
-      draw(buf) { }
-      on(...args) {
-          if (args.length == 1) {
-              return this.events.on(args[0]);
-          }
-          return this.events.on(args[0], args[1]);
-      }
-      once(event, fn) {
-          return this.events.once(event, fn);
-      }
-      emit(event, ...args) {
-          return this.events.emit(event, ...args);
-      }
-  }
-
-  function makeKind$4(config) {
-      const kind = Object.assign({
-          performs: [],
-          resolves: [],
-          bump: [],
-          on: {},
-      }, config);
-      if (config.performs) {
-          if (typeof config.performs == "string") {
-              kind.performs = config.performs.split(/[|,]/).map((v) => v.trim());
-          }
-      }
-      if (config.resolves) {
-          if (typeof config.resolves == "string") {
-              kind.resolves = config.resolves.split(/[|,]/).map((v) => v.trim());
-          }
-      }
-      if (config.bump) {
-          if (typeof config.bump == "string") {
-              kind.bump = config.bump.split(/[|,]/).map((v) => v.trim());
-          }
-      }
-      if (config.on && typeof config.on !== "object") {
-          kind.on = {};
-      }
-      return kind;
-  }
-
-  const FX_KIND = {
-      performs: [],
-      resolves: [],
-      bump: [],
-      on: {},
-  };
-  class FX extends Obj {
-      ch;
-      fg;
-      bg;
-      constructor(cfg) {
-          super(FX_KIND);
-          this.ch = cfg.ch || null;
-          this.fg = cfg.fg || null;
-          this.bg = cfg.bg || null;
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this);
-      }
-  }
-  function create$4(cfg) {
-      const fx = new FX(cfg);
-      fx._create(cfg);
-      fx.emit("create", fx, cfg);
-      return fx;
-  }
-  function flash(level, x, y, color = "white", ms = 300) {
-      const scene = level.scene;
-      scene.pause({ update: true });
-      const fx = create$4({ x, y, bg: color, z: 4 });
-      level.addFx(fx);
-      let _success = NOOP;
-      scene.needsDraw = true;
-      scene.wait(ms, () => {
-          level.removeFx(fx);
-          scene.resume({ update: true });
-          _success();
-      });
-      return {
-          then(success) {
-              _success = success || NOOP;
-          },
-      };
-  }
-  function flashGameTime(level, x, y, color = "white", ms = 300) {
-      const scene = level.scene;
-      const startTime = scene.app.time;
-      const fx = create$4({ x, y, bg: color, z: 4 });
-      level.addFx(fx);
-      let _success = NOOP;
-      // let _fail: CallbackFn = GWU.NOOP;
-      level.wait(ms, () => {
-          const nowTime = scene.app.time;
-          const timeLeft = ms - (nowTime - startTime);
-          if (timeLeft > 0) {
-              scene.pause({ update: true });
-              scene.wait(timeLeft, () => {
-                  level.removeFx(fx);
-                  scene.resume({ update: true });
-                  _success();
-              });
-          }
-          else {
-              level.removeFx(fx);
-              _success();
-          }
-      });
-      return {
-          then(fn) {
-              _success = fn || NOOP;
-          },
-      };
-  }
-
-  function projectile(level, from, to, sprite, ms) {
-      level.game;
-      const scene = level.scene;
-      from = xy.asXY(from);
-      to = xy.asXY(to);
-      let _success = NOOP;
-      if (sprite.ch && sprite.ch.length == 4) {
-          const dir = xy.dirFromTo(from, to);
-          let index = 0;
-          if (dir[0] && dir[1]) {
-              index = 2;
-              if (dir[0] != dir[1]) {
-                  // remember up is -y
-                  index = 3;
-              }
-          }
-          else if (dir[0]) {
-              index = 1;
-          }
-          const ch = sprite.ch[index];
-          sprite = index$4.make(ch, sprite.fg, sprite.bg);
-      }
-      else if (sprite.ch && sprite.ch.length !== 1) {
-          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
-      }
-      const fx = create$4(sprite);
-      // console.log("- fire", from, to);
-      scene.pause({ update: true });
-      const tween$1 = tween
-          .make(fx)
-          .from(from)
-          .to(to, ["x", "y"])
-          .duration(ms)
-          .onStart((_vals) => {
-          level.addFx(fx);
-      })
-          .onUpdate((vals) => {
-          if (level.blocksMove(vals.x, vals.y)) {
-              tween$1.stop(false);
-          }
-          // console.log("- >> ", vals);
-          scene.needsDraw = true;
-      })
-          .onFinish((vals, isSuccess) => {
-          level.removeFx(fx);
-          scene.resume({ update: true });
-          _success(vals, isSuccess);
-      })
-          .start(scene.tweens);
-      return {
-          then(success) {
-              _success = success || NOOP;
-          },
-      };
-  }
-
-  const fl = flag.fl;
-  var ARMOR_FLAGS;
-  (function (ARMOR_FLAGS) {
-      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
-      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
-      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
-      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
-      // add ?? MOBS_AVOID_YOU_MORE ??
-      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
-      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
-      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
-      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
-      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
-      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
-  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
-  // @ts-ignore
-  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
-  var MELEE_FLAGS;
-  (function (MELEE_FLAGS) {
-      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
-      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
-      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
-      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
-      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
-      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
-      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
-      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
-      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
-      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
-      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
-      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
-      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
-      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
-      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
-      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
-      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
-      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
-      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
-      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
-      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
-      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
-      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
-      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
-      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
-      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
-      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
-      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
-      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
-      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
-  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
-  // @ts-ignore
-  globalThis.MELEE_FLAGS = MELEE_FLAGS;
-  var RANGED_FLAGS;
-  (function (RANGED_FLAGS) {
-      // "GROWING", // Not going to use
-      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
-      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
-      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
-      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
-      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
-      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
-      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
-      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
-      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
-      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
-      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
-      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
-      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
-      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
-      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
-      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
-      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
-      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
-  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
-  // @ts-ignore
-  globalThis.RANGED_FLAGS = RANGED_FLAGS;
-
-  class Item extends Obj {
-      _turnTime = 0;
-      data;
-      _power;
-      _damage;
-      _comboDamage;
-      _defense;
-      constructor(kind) {
-          super(kind);
-          this.data = {};
-          this._damage = this.kind.damage;
-          this._comboDamage = this.kind.combo_damage;
-          this._defense = this.kind.defense;
-          this.power = 1; // cause calculations to fire
-      }
-      // create(opts: ItemCreateOpts) {
-      //   this._create(opts);
-      //   this.emit("create", this, opts);
-      // }
-      _create(opts) {
-          super._create(opts);
-          // install emit handlers for ItemEvents
-          Object.entries(opts).forEach(([key, val]) => {
-              if (typeof val === "function") {
-                  this.on(key, val);
-              }
-          });
-          this.power = opts.power || this.power;
-      }
-      draw(buf) {
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      get name() {
-          return this.kind.name;
-      }
-      get power() {
-          return this._power;
-      }
-      set power(val) {
-          val = val || 1;
-          this._power = val;
-          // Value = POWER * BASE * Math.pow(1.025,POWER)
-          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
-          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
-          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
-      }
-      get damage() {
-          return this._damage;
-      }
-      get comboDamage() {
-          return this._comboDamage;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get speed() {
-          return this.kind.speed;
-      }
-      get comboSpeed() {
-          return this.kind.combo_speed;
-      }
-      get combo() {
-          return this.kind.combo;
-      }
-      get defense() {
-          return this._defense;
-      }
-      get slot() {
-          return this.kind.slot;
-      }
-      get charge() {
-          return this.kind.charge;
-      }
-  }
-
-  class ItemFactory {
-      plugins = [];
-      kinds = {};
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      installKind(...args) {
-          let id;
-          let opts;
-          if (args.length == 1) {
-              opts = args[0];
-              id = args[0].id;
-          }
-          else {
-              id = args[0];
-              opts = args[1];
-          }
-          const kind = makeKind$3(opts);
-          this.plugins.forEach((p) => {
-              if (p.createKind) {
-                  p.createKind(kind, opts);
-              }
-          });
-          this.kinds[id.toLowerCase()] = kind;
-          return kind;
-      }
-      getKind(id) {
-          return this.kinds[id.toLowerCase()] || null;
-      }
-      create(kind, opts = {}) {
-          // Create the Item
-          let out = Option.None();
-          if (opts.ctor) {
-              out = opts.ctor(kind, opts);
-          }
-          out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.ctor) {
-                  return p.ctor(kind, opts);
-              }
-              return v;
-          }, out);
-          let item = out.unwrapOrElse(() => new Item(kind));
-          // Update the item events/data
-          this.apply(item);
-          // finish making the item
-          item._create(opts);
-          item.emit("create", item, opts);
-          return item;
-      }
-      apply(item) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key == "data") {
-                      item.data = utils.mergeDeep(item.data, val);
-                  }
-                  else if (key == "on") {
-                      Object.entries(val).forEach(([k, v]) => {
-                          if (typeof v === "function") {
-                              item.on(k, v);
-                          }
-                      });
-                  }
-                  else if (key === "kinds") ;
-                  else if (typeof val === "function") {
-                      item.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$4 = new ItemFactory();
-  function use$4(plugin) {
-      factory$4.use(plugin);
-  }
-  function make(id, opts = {}) {
-      let kind = typeof id === "string" ? factory$4.getKind(id) : id;
-      if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
-          throw new Error("Invalid ItemKind: " + JSON.stringify(id));
-      }
-      return factory$4.create(kind, opts);
-  }
-  function place(level, x, y, id = null) {
-      let newbie;
-      if (id === null) {
-          newbie = random$1(level); // TODO - default match?
-      }
-      else if (typeof id === "string") {
-          newbie = make(id);
-      }
-      else {
-          newbie = id;
-      }
-      if (!newbie)
-          return null;
-      newbie.kind.fg;
-      const game = level.game;
-      // const scene = level.scene;
-      // const level = level.level;
-      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
-          return !level.blocksMove(i, j) && !level.hasItem(i, j);
-      });
-      if (!locs || locs.length == 0)
-          return null;
-      const loc = game.rng.item(locs);
-      newbie.x = loc[0];
-      newbie.y = loc[1];
-      // level.events.emit("spawn_item", level, newbie);
-      level.addItem(newbie);
-      return newbie;
-  }
-  function placeRandom(level, x, y, match = null) {
-      let item = random$1(level, match);
-      if (!item) {
-          return null;
-      }
-      return place(level, x, y, item);
-  }
-  function random$1(level, match = null) {
-      // pick random kind
-      let allKinds = Object.values(factory$4.kinds);
-      let matches;
-      if (match === null) {
-          matches = [];
-      }
-      else if (typeof match == "string") {
-          matches = match.split(/[|,]/).map((v) => v.trim());
-      }
-      else {
-          matches = match.map((v) => v.trim());
-      }
-      if (matches.length > 0) {
-          allKinds = allKinds.filter((kind) => {
-              return matches.every((m) => {
-                  if (m[0] == "!") {
-                      return !kind.tags.includes(m.substring(1));
-                  }
-                  else {
-                      return kind.tags.includes(m);
-                  }
-              });
-          });
-      }
-      const chances = allKinds.map((k) => k.frequency(level.depth));
-      const index = level.rng.weighted(chances);
-      if (index < 0)
-          return null;
-      const kind = allKinds[index];
-      const item = make(kind);
-      return item;
-  }
-
-  function makeKind$3(cfg) {
-      let kind = makeKind$4(cfg);
-      if (!kind.id || kind.id.length === 0) {
-          throw new Error("ItemKind must have 'id'.");
-      }
-      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
-      }
-      if (cfg.tags && typeof cfg.tags === "string") {
-          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
-      }
-      kind.ch = kind.ch || "!";
-      if (kind.fg) {
-          kind.fg = index$9.make(cfg.fg);
-      }
-      else {
-          kind.fg = colors.red;
-      }
-      if (kind.bg) {
-          kind.bg = index$9.make(cfg.bg);
-      }
-      else {
-          kind.bg = index$9.NONE;
-      }
-      kind.speed = kind.speed || 100;
-      kind.damage = kind.damage || 0;
-      kind.combo = kind.combo || 0;
-      kind.combo_speed = kind.combo_speed || 0;
-      kind.range = kind.range || 0;
-      kind.charge = kind.charge || 0;
-      kind.defense = kind.defense || 0;
-      if (!kind.slot) {
-          if (kind.range > 0) {
-              kind.slot = "ranged";
-          }
-          else if (kind.damage > 0) {
-              kind.slot = "melee";
-          }
-          else if (kind.defense > 0) {
-              kind.slot = "armor";
-          }
-          else {
-              kind.slot = null;
-          }
-      }
-      if (kind.frequency && typeof kind.frequency !== "function") {
-          kind.frequency = frequency.make(cfg.frequency);
-      }
-      if (typeof cfg.armor_flags !== "number") {
-          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
-      }
-      if (typeof cfg.melee_flags !== "number") {
-          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
-      }
-      if (typeof cfg.ranged_flags !== "number") {
-          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
-      }
-      // TODO - Effects
-      return kind;
-  }
-  function install$9(cfg) {
-      factory$4.installKind(cfg);
-  }
-
-  // @returns boolean - indicates whether or not the target dies
-  function damage(level, target, damage) {
-      const game = level.game;
-      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
-      const armor_flags = target.armor_flags;
-      let amount = (damage.amount = damage.amount || 0);
-      damage.msg = damage.msg || `${target.name} is damaged`;
-      damage.color = damage.color || "red";
-      if (!damage.isRanged) {
-          damage.isRanged = false;
-      }
-      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
-          if (game.rng.chance(30)) {
-              game.messages.addCombat(damage.msg + "#{orange [X]}");
-              flash(level, target.x, target.y, "orange", 150);
-              damage.amount = 0;
-              return false;
-          }
-      }
-      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
-          damage.amount = Math.round(damage.amount * 0.65);
-      }
-      target.emit("damage", damage);
-      if (damage.amount <= 0) {
-          return false;
-      }
-      target.health -= damage.amount || 0;
-      if (damage.amount < amount) {
-          damage.color = "orange";
-      }
-      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
-      flash(level, target.x, target.y, damage.color, 150);
-      if (target.health <= 0) {
-          // do all of these move to event handlers?
-          game.messages.addCombat(`${target.name} dies`);
-          // TODO - This should be above the floor (FIXTURE)
-          // that way when it decays the floor returns as normal
-          // and corpses can be custom to the creature that died
-          // no matter what the floor is
-          level.setTile(target.x, target.y, "CORPSE");
-          target.emit("death", level, target);
-          level.removeActor(target);
-          return true;
-      }
-      return false;
-  }
-
-  function heal(level, target, heal) {
-      if (heal.amount <= 0)
-          return;
-      heal.amount = Math.min(heal.amount, target.health_max - target.health);
-      target.health += heal.amount;
-  }
-
-  const actionsByName = {};
-  function install$8(name, fn) {
-      actionsByName[name] = fn;
-  }
-  function get$1(name) {
-      return actionsByName[name] || null;
-  }
-  function idle(level, actor) {
-      console.log("- idle", actor.name, actor.x, actor.y);
-      level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
-      return true;
-  }
-  install$8("idle", idle);
-  function moveRandom(level, actor, quiet = false) {
-      const dir = level.rng.item(xy.DIRS);
-      return moveDir(level, actor, dir, quiet);
-  }
-  install$8("move_random", moveRandom);
-  function moveDir(level, actor, dir, quiet = false) {
-      const game = level.game;
-      const newX = actor.x + dir[0];
-      const newY = actor.y + dir[1];
-      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
-          if (!quiet) {
-              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
-              game.addMessage(`Blocked by a ${tile.id}.`);
-              flash(level, newX, newY, "orange", 150);
-              idle(level, actor);
-              return true;
-          }
-          else {
-              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      const other = level.actorAt(newX, newY);
-      if (other) {
-          if (other.kind && other.doBump(level, actor)) {
-              return true;
-          }
-          if (actor.hasActed())
-              return true;
-          if (!quiet) {
-              game.addMessage(`You bump into a ${other.name}.`);
-              flash(level, newX, newY, "orange", 150);
-              idle(level, actor);
-              return true;
-          }
-          else {
-              console.log("- nothing!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      if (level.blocksMove(newX, newY)) {
-          if (!quiet) {
-              game.addMessage("You bump into a wall.");
-              flash(level, newX, newY, "orange", 150);
-              idle(level, actor);
-              return false;
-          }
-          else {
-              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
-              return false;
-          }
-      }
-      actor.x;
-      actor.y;
-      actor.x = newX;
-      actor.y = newY;
-      // game.drawAt(oldX, oldY);
-      // game.drawAt(newX, newY);
-      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
-      actor.emit("move", level, actor, newX, newY);
-      level.triggerAction("enter", actor);
-      game.endTurn(actor, speed);
-      return true;
-  }
-  function moveTowardHero(level, actor, quiet = false) {
-      const game = level.game;
-      const hero = game.hero;
-      const dir = hero.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
-          return level.hasActor(x, y);
-      });
-      if (dir) {
-          if (moveDir(level, actor, dir, true)) {
-              return true; // success
-          }
-          if (!quiet) {
-              flash(level, actor.x, actor.y, "orange", 150);
-          }
-          return idle(level, actor);
-      }
-      return false;
-  }
-  install$8("move_toward_hero", moveTowardHero);
-  function moveAwayFromHero(level, actor, quiet = false) {
-      const game = level.game;
-      const hero = game.hero;
-      // compute safety map
-      const safety = new index$6.DijkstraMap(level.width, level.height);
-      safety.copy(hero.mapToMe);
-      safety.update((v, x, y) => {
-          if (v >= index$6.BLOCKED)
-              return v;
-          v = -1.2 * v;
-          if (level.isInLoop(x, y))
-              v -= 2;
-          if (level.isGateSite(x, y))
-              v -= 2;
-          return Math.round(v);
-      });
-      safety.setDistance(hero.x, hero.y, index$6.BLOCKED);
-      safety.rescan((x, y) => actor.moveCost(x, y));
-      safety.addObstacle(hero.x, hero.y, (x, y) => hero.moveCost(x, y), 5);
-      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-          return level.hasActor(x, y);
-      });
-      console.log(`- move away (${actor.x},${actor.y}) from player (${hero.x},${hero.y}) - ${dir}`);
-      // if (dir === null) {
-      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
-      //     return map.hasActor(x, y);
-      //   });
-      // }
-      if (dir) {
-          const spread = xy.dirSpread(dir);
-          for (let d of spread) {
-              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
-              if (moveDir(level, actor, d, true)) {
-                  console.log("- success");
-                  return true; // success
-              }
-          }
-          if (!quiet) {
-              flash(level, actor.x, actor.y, "orange", 150);
-          }
-          return idle(level, actor);
-      }
-      return false;
-  }
-  install$8("move_away_from_hero", moveAwayFromHero);
-  function attack(level, actor, target = null) {
-      const game = level.game;
-      if (target) {
-          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
-              return false;
-          }
-      }
-      else {
-          // todo - long reach melee -- spear, etc...
-          const targets = game.level.actors.filter((a) => a !== actor &&
-              actor.health > 0 &&
-              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
-              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
-          if (targets.length == 0) {
-              game.addMessage("no targets.");
-              flash(level, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-              return true; // did something
-          }
-          else if (targets.length > 1) {
-              level.scene.app.scenes
-                  .run("target", { game, actor, targets })
-                  .once("stop", (result) => {
-                  if (!result) {
-                      flash(level, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-                  }
-                  else {
-                      attack(level, actor, result);
-                  }
-              });
-              return true; // didSomething
-          }
-          else {
-              target = targets[0];
-          }
-      }
-      // @ts-ignore
-      const actorIsPlayer = actor === game.hero;
-      // @ts-ignore
-      const otherIsPlayer = target === game.hero;
-      if (!actorIsPlayer && !otherIsPlayer) {
-          return idle(level, actor); // no attacking
-      }
-      const attackInfo = actor.getMeleeAttack();
-      if (!attackInfo) {
-          game.addMessage("Cannot attack.");
-          flash(level, actor.x, actor.y, "orange", 150);
-          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
-      }
-      // we have an actor and a target
-      damage(level, target, {
-          amount: attackInfo.damage,
-          msg: `${actor.name} attacks ${target.name}`,
-      });
-      game.endTurn(actor, attackInfo.time);
-      return true;
-  }
-  install$8("attack", attack);
-  function fire(level, actor, target = null) {
-      const game = level.game;
-      const hero = game.hero;
-      if (!actor.range) {
-          game.addMessage("Nothing to fire.");
-          return false;
-      }
-      if (!actor.ammo) {
-          game.addMessage("No ammo.");
-          return false;
-      }
-      if (target) {
-          if (xy.distanceFromTo(actor, target) > actor.range)
-              return false;
-      }
-      else {
-          // todo - long reach melee -- spear, etc...
-          const targets = game
-              .level.actors.filter((a) => {
-              if (a === actor)
-                  return false;
-              if (actor.health <= 0)
-                  return false;
-              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
-              if (dist > actor.range) {
-                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
-                  return false;
-              }
-              console.log("checking fov...");
-              // HACK - for actor.canSee(a)
-              if (!hero.isInFov(actor)) {
-                  console.log("actor not visible");
-                  return false;
-              }
-              if (!hero.isInFov(a)) {
-                  console.log("target not visible");
-                  return false;
-              }
-              // end hack
-              console.log("ok - ", a.name);
-              return true;
-          })
-              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
-          if (targets.length == 0) {
-              game.addMessage("no targets.");
-              // flash tiles you can fire into
-              const fov = new index$7.FOV({
-                  isBlocked(x, y) {
-                      // TODO - This should be more about visible than move
-                      return actor.moveCost(x, y) >= index$6.BLOCKED;
-                  },
-                  hasXY(x, y) {
-                      return level.hasXY(x, y);
-                  },
-              });
-              // TODO - FOV highlights cells we can't fire into...
-              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
-                  flash(level, x, y, "dark_teal", 125);
-              });
-              // FX.flash(game, actor.x, actor.y, "orange", 150);
-              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
-              return true; // did something
-          }
-          else if (targets.length > 1) {
-              level.scene.app.scenes
-                  .run("target", { game, actor, targets })
-                  .once("stop", (result) => {
-                  if (!result) {
-                      flash(level, actor.x, actor.y, "orange", 150);
-                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
-                  }
-                  else {
-                      fire(level, actor, result);
-                  }
-              });
-              return true; // didSomething
-          }
-          else {
-              target = targets[0];
-          }
-      }
-      // @ts-ignore
-      const actorIsHero = actor === game.hero;
-      // @ts-ignore
-      const otherIsHero = target === game.hero;
-      if (!actorIsHero && !otherIsHero) {
-          return idle(level, actor); // no attacking
-      }
-      // we have an actor and a target
-      // Does this move to an event handler?  'damage', { amount: #, type: string }
-      actor.ammo -= 1;
-      // TODO - get next attack details (and increment counter in actor)
-      projectile(level, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
-          if (!ok) {
-              flash(level, xy.x, xy.y, "orange", 150);
-          }
-          else {
-              damage(level, target, {
-                  amount: actor.rangedDamage,
-                  msg: `${actor.name} shoots ${target.name}`,
-              });
-          }
-      });
-      game.endTurn(actor, actor.rangedAttackSpeed);
-      return true;
-  }
-  install$8("fire", fire);
-  function fireAtHero(level, actor) {
-      const game = level.game;
-      const hero = game.hero;
-      // if player can't see actor then actor can't see player!
-      if (!hero.isInFov(actor.x, actor.y))
-          return false;
-      if (!actor.ammo)
-          return false;
-      actor.ammo -= 1;
-      // TODO - get next attack details (and increment counter in actor)
-      projectile(level, actor, hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
-          if (!ok) {
-              flash(level, xy.x, xy.y, "orange", 150);
-          }
-          else {
-              // @ts-ignore
-              damage(level, hero, {
-                  amount: actor.rangedDamage,
-                  msg: `${actor.name} shoots ${hero.name}`,
-              });
-          }
-      });
-      game.endTurn(actor, actor.rangedAttackSpeed);
-      return true;
-  }
-  install$8("fire_at_hero", fireAtHero);
-  function climb(level, actor) {
-      const game = level.game;
-      const tile = game.level.getTile(actor.x, actor.y);
-      if (tile.on && tile.on.climb) {
-          tile.on.climb.call(tile, game, actor);
-          return actor.hasActed();
-      }
-      else {
-          return idle(level, actor);
-      }
-  }
-  install$8("climb", climb);
-  function pickup(level, actor) {
-      const game = level.game;
-      const item = level.itemAt(actor.x, actor.y);
-      if (item) {
-          item.emit("pickup", level, item, actor);
-          return true;
-      }
-      game.addMessage("Nothing to pickup.");
-      return idle(level, actor);
-  }
-  install$8("pickup", pickup);
-  // export function potion(game: Game, hero: Hero): boolean {
-  //   if (!hero.canUsePotion) {
-  //     game.addMessage("Not ready.");
-  //     // TODO - spend time? idle?
-  //     return false;
-  //   }
-  //   if (hero.health >= hero.health_max) {
-  //     game.addMessage("You do not need to drink a potion.");
-  //     // TODO - spend time? idle?
-  //     return false;
-  //   }
-  //   const heal = Math.floor(hero.health_max * 0.75);
-  //   hero.health = Math.min(hero.health + heal, hero.health_max);
-  //   hero.potion = 0; // Needs to recharge
-  //   game.addMessage("You feel much better.");
-  //   game.endTurn(hero, hero.moveSpeed);
-  //   return true;
-  // }
-
-  function ai(level, actor) {
-      const game = level.game;
-      const hero = game.hero;
-      const noticeDistance = actor.kind.notice || 10;
-      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
-      const canSeeHero = hero.isInFov(actor);
-      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
-      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
-      // TODO - Noticed prior to hero going out of range/view should skip this
-      // Do this with a flag/mode/state/time value?
-      if (distToHero > noticeDistance || !canSeeHero) {
-          // wander to goal?  [wanderChance]
-          // step randomly [idleMoveChance]
-          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
-          // random chance? [randomMoveChance]
-          if (game.rng.chance(20)) {
-              if (moveRandom(level, actor, true))
-                  return;
-          }
-          return idle(level, actor);
-      }
-      if (distToHero <= actor.kind.tooClose) {
-          // should there be a random chance on this?
-          if (moveAwayFromHero(level, actor))
-              return;
-      }
-      // shoot at player?
-      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
-          if (fireAtHero(level, actor))
-              return;
-      }
-      if (distToHero < 2) {
-          // can attack diagonal
-          if (actor.canMeleeAttack) {
-              // @ts-ignore
-              if (attack(level, actor, hero))
-                  return;
-          }
-          if (distToHero == 1) {
-              // Hmmm...
-              return idle(level, actor);
-          }
-      }
-      // If we don't have a min distance from hero then move closer (to get to melee range)
-      if (!actor.kind.tooClose) {
-          if (moveTowardHero(level, actor))
-              return;
-      }
-      return idle(level, actor);
-  }
-
-  function messages(scene, y) {
-      const widget = index$1$1.make({
-          id: "MESSAGES",
-          tag: "msg",
-          x: 0,
-          y: y,
-          width: scene.width,
-          height: scene.height - y,
-          scene,
-          bg: "darkest_gray",
-          fg: "white",
-          draw(buf) {
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              const fg = index$9.from(this._used.fg);
-              const fgc = fg.alpha(50);
-              const scene = this.scene;
-              const level = scene.data.level;
-              const game = level.game;
-              if (game && game.messages) {
-                  game.messages.forEach((msg, confirmed, i) => {
-                      if (i < this.bounds.height) {
-                          const color = confirmed ? fgc : fg;
-                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
-                      }
-                  });
-              }
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  class Map extends index.Widget {
-      _focus = [-1, -1];
-      constructor(opts) {
-          super(opts);
-          this.on("draw", this._draw);
-          this.on("mousemove", this._setFocus);
-          this.on("mouseleave", this._clearFocus);
-          this.on("keypress", this._clearFocus);
-      }
-      _draw(buf) {
-          const scene = this.scene;
-          const level = scene.data.level;
-          const game = level.game;
-          const player = game.hero;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
-          level.tiles.forEach((index, x, y) => {
-              if (this.bounds.contains(x, y)) {
-                  buf.blackOut(x, y);
-                  level.drawAt(buf, x, y);
-                  if (!player.fov || !player.fov.get(x, y)) {
-                      buf.get(x, y).mix("black", 25, 25);
-                  }
-              }
-          });
-          if (player.goalPath) {
-              player.goalPath.forEach(([x, y]) => {
-                  buf.get(x, y).mix("green", 0, 25).separate();
-              });
-          }
-      }
-      _setFocus(e) {
-          this._focus[0] = e.x;
-          this._focus[1] = e.y;
-          this.needsDraw = true;
-          // e.stopPropagation();
-      }
-      _clearFocus() {
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-      }
-  }
-  function map(scene, width, height) {
-      const widget = new Map({
-          id: "MAP",
-          tag: "map",
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-          scene,
-          bg: index$9.BLACK,
-      });
-      return widget;
-  }
-
-  class SidebarEntry {
-      // TODO - icon: GWU.sprite.SpriteData | null;
-      name;
-      nameColor;
-      progressbars;
-      statuses;
-      constructor(name, color) {
-          // TODO: this.icon = null;
-          this.name = name;
-          this.nameColor = color === undefined ? "white" : color;
-          this.progressbars = [];
-          this.statuses = [];
-      }
-      add_progress(text, color, val, max) {
-          this.progressbars.push({
-              text,
-              color,
-              val,
-              max,
-          });
-          return this;
-      }
-      add_status(text, color) {
-          this.statuses.push({ text, color });
-          return this;
-      }
-  }
-  class Sidebar extends index.Widget {
-      _focus = [-1, -1];
-      entries = [];
-      constructor(opts) {
-          super(opts);
-      }
-      setFocus(x, y) {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = x;
-          this._focus[1] = y;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.emit("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      clearFocus() {
-          const wasFocus = this._focus.slice();
-          this._focus[0] = -1;
-          this._focus[1] = -1;
-          if (!xy.equals(wasFocus, this._focus)) {
-              this.emit("focus", this._focus);
-              this.needsDraw = true;
-          }
-      }
-      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
-      //   buf.drawText(x, y, "Hero");
-      //   this.drawHealth(buf, x, y + 1, 28, player);
-      //   this.drawPotion(buf, x, y + 2, 28, player);
-      //   let lines = 3; // Hero + health + potion
-      //   player.statuses.forEach((status) => {
-      //     if (status) {
-      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
-      //     }
-      //   });
-      //   return lines;
-      // }
-      drawActor(buf, x, y, actor) {
-          //   buf.drawText(x, y, actor.name, actor.kind.fg);
-          //   this.drawHealth(buf, x, y + 1, 28, actor);
-          //   let lines = 2; // name + health
-          //   actor.statuses.forEach((status) => {
-          //     if (status) {
-          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
-          //     }
-          //   });
-          //   return lines;
-          let entry = actor.getSidebarEntry();
-          return this.drawEntry(buf, x, y, entry);
-      }
-      drawEntry(buf, x, y, entry) {
-          buf.drawText(x, y, entry.name, entry.nameColor);
-          let lines = 1;
-          entry.progressbars.forEach((p) => {
-              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
-              lines += 1;
-          });
-          entry.statuses.forEach((s) => {
-              buf.drawText(x, y + lines, s.text, s.color);
-              lines += 1;
-          });
-          return lines;
-      }
-      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
-          const pct = val / max;
-          const full = Math.floor(w * pct);
-          const partialPct = Math.floor(100 * (w * pct - full));
-          buf.fillRect(x, y, full, 1, null, null, bg);
-          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
-          if (text && text.length) {
-              buf.drawText(x, y, text, fg, null, w, "center");
-          }
-      }
-      // drawHealth(
-      //   buf: GWU.buffer.Buffer,
-      //   x: number,
-      //   y: number,
-      //   w: number,
-      //   actor: Actor
-      // ) {
-      //   const pct = actor.health / actor.health_max;
-      //   const bg = GWU.color.colors.green.mix(
-      //     GWU.color.colors.red,
-      //     100 * (1 - pct)
-      //   );
-      //   this.drawProgress(
-      //     buf,
-      //     x,
-      //     y,
-      //     w,
-      //     "white",
-      //     bg,
-      //     actor.health,
-      //     actor.health_max,
-      //     "HEALTH"
-      //   );
-      // }
-      // drawPotion(
-      //   buf: GWU.buffer.Buffer,
-      //   x: number,
-      //   y: number,
-      //   w: number,
-      //   player: Hero
-      // ) {
-      //   this.drawProgress(
-      //     buf,
-      //     x,
-      //     y,
-      //     w,
-      //     "white",
-      //     GWU.color.colors.blue,
-      //     player.potion,
-      //     player.potion_max,
-      //     "Potion"
-      //   );
-      // }
-      _draw(buf) {
-          const scene = this.scene;
-          const level = scene.data.level;
-          const game = level.game;
-          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-          const x = this.bounds.x + 1;
-          let y = this.bounds.y;
-          buf.setClip(this.bounds);
-          // buf.drawText(x);
-          y += buf.drawText(x, y, scene.app.name, "green");
-          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
-          y += buf.drawText(x, y, "Level: " + level.data.depth, "pink");
-          y += 1;
-          let px = game.hero.x;
-          let py = game.hero.y;
-          // if (this._focus[0] != -1) {
-          //   px = this._focus[0];
-          //   py = this._focus[1];
-          // }
-          this.entries = level.actors.filter(
-          // @ts-ignore
-          (a) => a && a !== game.hero && a.health > 0);
-          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
-              xy.distanceBetween(b.x, b.y, px, py));
-          let focused = this.entries.find((a) => xy.equals(a, this._focus));
-          // @ts-ignore
-          let used = this.drawActor(buf, x, y, game.hero);
-          game.hero.data.sideY = y;
-          game.hero.data.sideH = used;
-          if (xy.equals(game.hero, this._focus)) {
-              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              // @ts-ignore
-              focused = game.hero;
-          }
-          else if (focused) {
-              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-          }
-          y += used + 1;
-          this.entries.forEach((a) => {
-              const used = this.drawActor(buf, x, y, a);
-              if (a === focused) {
-                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
-              }
-              else if (focused) {
-                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
-              }
-              a.data.sideY = y;
-              a.data.sideH = used;
-              y += used + 1;
-          });
-          y += 1;
-          // y += buf.drawText(x, y, "Press Escape to lose.");
-          buf.clearClip();
-      }
-      _mousemove(e) {
-          super._mousemove(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          this._focus.slice();
-          this.clearFocus();
-          const level = this.scene.data.level;
-          const game = level.game;
-          const hero = game.hero;
-          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
-              this.setFocus(hero.x, hero.y);
-          }
-          else {
-              this.entries.forEach((a) => {
-                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
-                      this.setFocus(a.x, a.y);
-                  }
-              });
-          }
-          // if (!GWU.xy.equals(wasFocus, this._focus)) {
-          //   this.emit("focus", this._focus);
-          //   this.needsDraw = true;
-          // }
-          e.stopPropagation();
-      }
-      _click(e) {
-          super._click(e);
-          if (e.defaultPrevented || e.propagationStopped)
-              return;
-          if (this._focus[0] > -1) {
-              this.emit("choose", this._focus);
-          }
-      }
-  }
-  function sidebar(scene, x, height) {
-      const widget = new Sidebar({
-          id: "SIDEBAR",
-          tag: "sidebar",
-          x: x,
-          y: 0,
-          width: scene.width - x,
-          height: height,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  function flavor(scene, x, y) {
-      const widget = index$1$1.make({
-          id: "FLAVOR",
-          tag: "flavor",
-          x: x,
-          y: y,
-          width: scene.width - x,
-          height: 1,
-          scene,
-          bg: index$9.from("darker_gray"),
-          fg: index$9.from("purple"),
-          draw(buf) {
-              const scene = this.scene;
-              const level = scene.data.level;
-              level.game;
-              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
-              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-      });
-      return widget;
-  }
-
-  class Details extends index$1$1.Dialog {
-      _text;
-      constructor(opts) {
-          opts.border = opts.border ?? "ascii";
-          super(opts);
-          this._text = new index$1$1.Text({
-              id: "INFO",
-              text: "details...",
-              x: this.bounds.x + 1,
-              y: this.bounds.y + 1,
-          });
-          this.addChild(this._text);
-          this.hidden = true;
-      }
-      showActor(actor) {
-          let text = actor.name + " [" + actor.power + "]\n";
-          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
-          text += "Moves : " + actor.moveSpeed + "\n";
-          if (actor.damage > 0) {
-              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          if (actor.range > 0) {
-              text +=
-                  "Ranged: " +
-                      actor.rangedDamage +
-                      " / " +
-                      actor.rangedAttackSpeed +
-                      " @ " +
-                      actor.range +
-                      " (" +
-                      actor.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-      showHero(player) {
-          let text = player.name + "\n";
-          const armor = player.slots.armor;
-          if (armor) {
-              text += "Health: " + player.health + " / " + player.health_max + "\n";
-              text += "#{teal}";
-              text += "  " + armor.name + " [" + armor.power + "]\n";
-              if (armor.kind.armor_flags != 0) {
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
-                      text += "  {-35% Damage Received}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
-                      text += "  {30% Negate Hits}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
-                      text += "  {-40% Artifact Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
-                      text += "  {+10 Arrows Per Bundle}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
-                      text += "  {100% Longer Roll Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
-                      text += "  {+30% Melee Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
-                      text += "  {Mobs Target You More}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
-                      text += "  {+15% Move Speed Aura}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
-                      text += "  {-40% Potion Cooldown}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
-                      text += "  {Potion Boosts Defense}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
-                      text += "  {Potion Heals Nearby Allies}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
-                      text += "  {+30% Ranged Damage}\n";
-                  }
-                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
-                      text += "  {+20% Weapon Damage Aura}\n";
-                  }
-              }
-              text += "#{}";
-          }
-          else {
-              text += "Health: " + player.health + "/" + player.health_max + "\n";
-          }
-          text += "Moves : " + player.moveSpeed + "\n";
-          const melee = player.slots.melee;
-          if (melee) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-              text += "#{teal}";
-              text += `  ${melee.name} [${melee.power}]\n`;
-              text += "#{}";
-          }
-          else if (player.damage > 0) {
-              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
-          }
-          else {
-              text += "Melee : None\n";
-          }
-          const ranged = player.slots.ranged;
-          if (ranged) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      " / " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-              text += "#{teal}";
-              text += "  " + ranged.name + " [" + ranged.power + "]\n";
-          }
-          else if (player.range > 0) {
-              text +=
-                  "Ranged: " +
-                      player.rangedDamage +
-                      "  " +
-                      player.rangedAttackSpeed +
-                      " @ " +
-                      player.range +
-                      " (" +
-                      player.ammo +
-                      ")\n";
-          }
-          else {
-              text += "Ranged: None";
-          }
-          this._text.text(text);
-          this.bounds.height = this._text.bounds.height + 2;
-          this.bounds.width = this._text.bounds.width + 2;
-      }
-  }
-  function details(scene, width, height) {
-      const widget = new Details({
-          id: "DETAILS",
-          tag: "details",
-          x: 2,
-          y: 2,
-          width: width - 4,
-          height: height - 4,
-          scene,
-          bg: index$9.from("dark_gray"),
-      });
-      return widget;
-  }
-
-  class AttackInfo {
-      damage;
-      time;
-      constructor(damage, time) {
-          this.damage = damage;
-          this.time = time;
-      }
-  }
-  class Actor extends Obj {
-      _turnTime = 0;
-      _level = null;
-      data = {};
-      health = 0;
-      health_max = 0;
-      ammo = 0;
-      _power = 1;
-      armor_flags = 0;
-      statuses = [];
-      combo_index = 0;
-      leader = null;
-      constructor(kind) {
-          super(kind);
-          this.z = 1;
-          this.health_max = this.kind.health || 10;
-          this.health = this.health_max;
-          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
-      }
-      _create(opts) {
-          super._create(opts);
-          Object.entries(opts).forEach(([key, val]) => {
-              // 'on' section handled by super._make
-              if (typeof val === "function") {
-                  this.on(key, val);
-              }
-          });
-          this.power = opts.power || 1;
-          // machineHome
-      }
-      // attributes
-      get name() {
-          return this.kind.name;
-      }
-      get damage() {
-          // TODO - combo damage
-          return Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
-      }
-      get attackSpeed() {
-          // TODO - combo speed
-          return this.kind.attackSpeed;
-      }
-      get range() {
-          return this.kind.range;
-      }
-      get rangedDamage() {
-          return Math.round(this.kind.rangedDamage * (1 + (this._power - 1) / 2));
-      }
-      get rangedAttackSpeed() {
-          return this.kind.rangedAttackSpeed;
-      }
-      get moveSpeed() {
-          return this.kind.moveSpeed;
-      }
-      get comboLen() {
-          return this.kind.combo;
-      }
-      get power() {
-          return this._power;
-      }
-      set power(val) {
-          this._power = val;
-          this.health = Math.round(this.kind.health * (1 + (this._power - 1) / 2));
-          this.health_max = this.health;
-      }
-      isHero() {
-          return false;
-      }
-      //
-      getMeleeAttack() {
-          const attack = new AttackInfo(this.damage, this.attackSpeed);
-          this.combo_index += 1;
-          this.combo_index = this.combo_index % this.comboLen;
-          return attack;
-      }
-      hasArmorFlag(flag) {
-          return (this.armor_flags & flag) > 0;
-      }
-      // TODO - Should this be a method instead of a property?
-      get canMeleeAttack() {
-          return this.damage > 0 && this.attackSpeed > 0;
-      }
-      addStatus(status) {
-          const current = this.statuses.findIndex((current) => current && current.merge(status));
-          if (current >= 0) {
-              return;
-          }
-          const empty = this.statuses.findIndex((s) => !s);
-          if (empty >= 0) {
-              this.statuses[empty] = status;
-          }
-          else {
-              this.statuses.push(status);
-          }
-      }
-      remove_status(status) {
-          const index = this.statuses.indexOf(status);
-          if (index >= 0) {
-              this.statuses[index] = null;
-          }
-      }
-      startTurn(level) {
-          this._turnTime = 0;
-          this.emit("turn_start", level, this);
-      }
-      endTurn(level, time) {
-          this._turnTime = time;
-          this.emit("turn_end", level, this, time);
-      }
-      hasActed() {
-          return this._turnTime > 0;
-      }
-      draw(buf) {
-          if (this.health <= 0)
-              return;
-          buf.drawSprite(this.x, this.y, this.kind);
-      }
-      avoidsTile(tile) {
-          return tile.blocksMove || false;
-      }
-      moveCost(x, y) {
-          const level = this._level;
-          if (!level)
-              return index$6.OBSTRUCTION;
-          if (!level.hasXY(x, y))
-              return index$6.OBSTRUCTION;
-          if (level.blocksDiagonal(x, y))
-              return index$6.OBSTRUCTION;
-          if (level.blocksMove(x, y))
-              return index$6.BLOCKED;
-          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
-          return index$6.OK;
-      }
-      pathTo(loc) {
-          const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
-          return path;
-      }
-      act(level) {
-          // TODO - move this to plugin
-          this.startTurn(level);
-          ai(level, this);
-          if (!this.hasActed()) {
-              console.log("No actor AI action.");
-          }
-      }
-      doBump(level, actor) {
-          // TODO - Check this.bump first!!!
-          const actions = this.kind.bump;
-          for (let action of actions) {
-              const fn = get$1(action);
-              if (fn && fn(level, actor, this)) {
-                  return true;
-              }
-          }
-          return false; // did nothing
-      }
-      tick(level, time) {
-          this.emit("tick", level, this, time);
-          Object.values(this.statuses).forEach((status, i) => {
-              if (status) {
-                  if (!status.tick(this, level, time)) {
-                      this.statuses[i] = null;
-                  }
-              }
-          });
-      }
-      getSidebarEntry() {
-          const entry = new SidebarEntry(this.name, this.kind.fg);
-          entry.add_progress("Health", "green", this.health, this.health_max);
-          this.statuses.forEach((s) => {
-              s && s.update_sidebar(this, entry);
-          });
-          this.emit("sidebar", this, entry); // Allow plugins to update sidebar
-          return entry;
-      }
-  }
-
-  class ActorFactory {
-      plugins = [];
-      kinds = {};
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      installKind(...args) {
-          let id;
-          let opts;
-          if (args.length == 1) {
-              opts = args[0];
-              id = args[0].id;
-          }
-          else {
-              id = args[0];
-              opts = args[1];
-          }
-          const kind = makeKind$2(opts);
-          this.plugins.forEach((p) => {
-              if (p.createKind) {
-                  p.createKind(kind, opts);
-              }
-          });
-          this.kinds[id.toLowerCase()] = kind;
-          return kind;
-      }
-      getKind(id) {
-          return this.kinds[id.toLowerCase()] || null;
-      }
-      create(kind, opts = {}) {
-          let out = Option.None();
-          if (opts.ctor) {
-              out = opts.ctor(kind, opts);
-          }
-          out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.ctor) {
-                  return p.ctor(kind, opts);
-              }
-              return v;
-          }, out);
-          let actor = out.unwrapOrElse(() => new Actor(kind));
-          this.apply(actor);
-          actor._create(opts);
-          actor.emit("create", actor, opts);
-          return actor;
-      }
-      apply(item) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key === "on") {
-                      Object.entries(val).forEach(([k2, v2]) => {
-                          if (typeof v2 === "function") {
-                              item.on(k2, v2);
-                          }
-                          else {
-                              console.warn("Invalid 'on' member in Item plugin: " + k2);
-                          }
-                      });
-                  }
-                  else if (key === "data") {
-                      Object.assign(item.data, val);
-                  }
-                  else if (key === "kinds") ;
-                  else if (typeof val === "function") {
-                      item.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$3 = new ActorFactory();
-  function use$3(plugin) {
-      factory$3.use(plugin);
-  }
-  function create$3(kind, config = {}) {
-      if (typeof kind === "string") {
-          kind = factory$3.getKind(kind);
-          if (!kind)
-              throw new Error("Failed to find kind.");
-      }
-      if (typeof config === "number") {
-          config = { power: config };
-      }
-      if (kind.hero) {
-          throw new Error("ActorKind is Hero: " + kind.id);
-      }
-      return factory$3.create(kind, config);
-  }
-  function randomSpawnLocFor(level, actor) {
-      let x;
-      let y;
-      let tries = level.width * level.height;
-      do {
-          --tries;
-          x = level.rng.number(level.width);
-          y = level.rng.number(level.height);
-          // TODO - also not in a currently visible location
-      } while ((tries && !level.hasTile(x, y, "FLOOR")) || level.actorAt(x, y));
-      if (!tries) {
-          return Option.None();
-      }
-      return Option.Some({ x, y });
-  }
-  function spawn(level, id, // Should this be | ActorKind instead of | Actor?
-  x, y) {
-      const newbie = typeof id === "string" ? create$3(id) : id;
-      if (x === undefined || y === undefined) {
-          const loc = randomSpawnLocFor(level);
-          if (loc.isNone()) {
-              console.error("Failed to find spawn location for : " + newbie.name);
-              return;
-          }
-          const xy = loc.unwrap();
-          newbie.x = xy.x;
-          newbie.y = xy.y;
-      }
-      else {
-          newbie.x = x;
-          newbie.y = y;
-      }
-      level.addActor(newbie);
-      return newbie;
-  }
-
-  function makeKind$2(cfg) {
-      const kind = makeKind$4(cfg);
-      if (!kind.id || kind.id.length === 0) {
-          throw new Error("ItemKind must have 'id'.");
-      }
-      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
-          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
-      }
-      if (cfg.tags && typeof cfg.tags === "string") {
-          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
-      }
-      kind.ch = kind.ch || "!";
-      if (kind.fg) {
-          kind.fg = index$9.make(cfg.fg);
-      }
-      else {
-          kind.fg = colors.red;
-      }
-      if (kind.bg) {
-          kind.bg = index$9.make(cfg.bg);
-      }
-      else {
-          kind.bg = index$9.NONE;
-      }
-      kind.damage = kind.damage || 0;
-      kind.attackSpeed = kind.attackSpeed || 100;
-      kind.combo = kind.combo || 0;
-      kind.comboDamage = kind.comboDamage || 0;
-      kind.comboSpeed = kind.comboSpeed || 0;
-      kind.range = kind.range || 0;
-      kind.rangedDamage = kind.rangedDamage || 0;
-      kind.tooClose = kind.tooClose || 0;
-      kind.rangedAttackSpeed = kind.rangedAttackSpeed || 0;
-      kind.ammo = kind.ammo || 0;
-      if (typeof cfg.dropMatch === "string") {
-          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
-      }
-      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
-          kind.dropMatch.push("drop"); // Default drops
-      }
-      if (kind.attackSpeed == 0 && kind.damage > 0) {
-          kind.attackSpeed = kind.moveSpeed;
-      }
-      if (kind.comboDamage == 0) {
-          kind.combo = 0;
-          kind.comboSpeed = 0;
-      }
-      else if (kind.combo < 2) {
-          kind.comboDamage = 0;
-          kind.comboSpeed = 0;
-      }
-      else if (kind.comboSpeed == 0) {
-          kind.comboSpeed = kind.attackSpeed;
-      }
-      if (kind.ammo == 0 && kind.range > 0) {
-          kind.ammo = 10; // You get 10 shots by default
-      }
-      // TODO: Create drop language
-      //      - 50 (drop default treasure 50% of time)
-      //      - ARROWS (always drop arrows)
-      //      - ARROWS@35 (35% drop arrows)
-      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
-      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
-      //      - #TREASURE@50% (50% drop from the TREASURE tag)
-      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
-      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
-      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
-      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
-      if (kind.dropChance == 0 && kind.dropMatch.length > 0) {
-          kind.dropChance = 100;
-      }
-      return kind;
-  }
-  function install$7(cfg) {
-      factory$3.installKind(cfg);
-  }
-  function getKind$2(id) {
-      return factory$3.getKind(id);
-  }
-
-  class Status {
-      start(actor, level) { }
-      tick(actor, level, time) {
-          return false; // no longer active
-      }
-      stop(actor, level) { }
-      merge(status) {
-          return false;
-      }
-      // TODO - Wrap this with higher level interface
-      //      - Allow modifying the health bar
-      //      - Allow set text { set_status("Regen") }
-      update_sidebar(actor, entry) { }
-      // TODO - Wrap this with higher level interface
-      //      - Allow modifying other parts
-      //      - Allow set text { set_status("Regen") }
-      draw_details() { }
-  }
-  class RegenData {
-      amount;
-      time;
-      elapsed;
-      constructor(amount, time) {
-          this.amount = amount;
-          this.time = time;
-          this.elapsed = 0;
-      }
-      get isActive() {
-          return this.amount > 0.0 && this.elapsed < this.time;
-      }
-      tick(time) {
-          let used = Math.floor((this.amount * this.elapsed) / this.time);
-          this.elapsed = Math.min(this.time, this.elapsed + time);
-          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
-          return new_used - used;
-      }
-  }
-  class RegenStatus extends Status {
-      data;
-      constructor(amount, time) {
-          super();
-          this.data = [new RegenData(amount, time)];
-      }
-      tick(actor, level, time) {
-          let still_active = false;
-          this.data.forEach((d) => {
-              if (d.isActive) {
-                  still_active = true;
-                  const amount = d.tick(time);
-                  if (amount > 0) {
-                      heal(level, actor, { amount });
-                  }
-              }
-          });
-          return still_active;
-      }
-      merge(status) {
-          if (status instanceof RegenStatus) {
-              // do merge
-              this.data = this.data.concat(status.data);
-              status.data = [];
-              return true;
-          }
-          return false;
-      }
-      update_sidebar(actor, entry) {
-          entry.add_status("{Regen}", "green");
-      }
-  }
-
-  class Hero extends Actor {
-      // TODO - Make this part of a plugin
-      mapToMe;
-      // TODO - Make this part of a plugin
-      fov;
-      goalPath;
-      followPath;
-      // TODO - Make this part of a plugin
-      slots;
-      constructor(kind) {
-          super(kind);
-          this.mapToMe = new index$6.DijkstraMap();
-          this.fov = null;
-          this.goalPath = null;
-          this.followPath = false;
-          this.slots = {};
-          // this.potion_max = 40 * 200;
-          // this.potion = this.potion_max; // Potion is ready
-      }
-      // @ts-ignore
-      _create(opts) {
-          // @ts-ignore
-          super._create(opts);
-          // this.on("add", (level: Level) => {
-          //   this.updateMapToMe();
-          //   this.updateFov();
-          // });
-          // this.on("move", () => {
-          //   this.updateMapToMe();
-          //   this.updateFov();
-          // });
-          // this.on("remove", () => {
-          //   if (this.fov) {
-          //     GWU.grid.free(this.fov);
-          //     this.fov = null;
-          //   }
-          //   this.clearGoal();
-          // });
-          // this.on("turn_end", (game: Game, time: number) => {
-          //   // this.potion = Math.min(this.potion + time, this.potion_max);
-          // });
-          // this.on("damage", () => this.clearGoal());
-          // Need items in slots....
-          Object.entries(this.kind.slots).forEach(([slot, id]) => {
-              const item = make(id);
-              if (item === null) {
-                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
-              }
-              else {
-                  this.equip(item);
-                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
-              }
-          });
-      }
-      // attributes
-      get damage() {
-          const melee = this.slots.melee;
-          if (melee) {
-              // track combo...
-              if (this.combo_index == melee.kind.combo - 1) {
-                  return melee.comboDamage;
-              }
-              return melee.damage;
-          }
-          return super.damage;
-      }
-      get attackSpeed() {
-          const melee = this.slots.melee;
-          if (melee) {
-              // track combo...
-              if (this.combo_index == melee.kind.combo - 1) {
-                  return melee.comboSpeed;
-              }
-              return melee.speed;
-          }
-          return super.attackSpeed;
-      }
-      get range() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.range;
-          }
-          return super.range;
-      }
-      get rangedDamage() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.damage;
-          }
-          return super.rangedDamage;
-      }
-      get rangedAttackSpeed() {
-          const ranged = this.slots.ranged;
-          if (ranged) {
-              return ranged.speed;
-          }
-          return super.rangedAttackSpeed;
-      }
-      // get canUsePotion(): boolean {
-      //   return this.potion >= this.potion_max;
-      // }
-      get comboLen() {
-          const melee = this.slots.melee;
-          if (melee) {
-              return melee.combo;
-          }
-          return this.kind.combo;
-      }
-      isHero() {
-          return true;
-      }
-      // TODO - plugin?
-      equip(item) {
-          if (item.slot === null) {
-              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
-          }
-          this.slots[item.slot] = item;
-          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
-          const health_pct = this.health / this.health_max;
-          let new_health_max = this.kind.health;
-          Object.entries(this.slots).forEach(([s, i]) => {
-              if (i) {
-                  this.armor_flags |= i.kind.armor_flags;
-                  new_health_max += i.defense;
-              }
-          });
-          this.health_max = new_health_max;
-          this.health = Math.round(new_health_max * health_pct);
-          this.combo_index = 0;
-      }
-      // TODO - plugin?
-      unequipSlot(slot) {
-          this.slots[slot] = null;
-          this.armor_flags = 0;
-          const health_pct = this.health / this.health_max;
-          let new_health_max = this.kind.health;
-          Object.entries(this.slots).forEach(([s, i]) => {
-              if (i) {
-                  this.armor_flags |= i.kind.armor_flags;
-                  new_health_max += i.defense;
-              }
-          });
-          this.health_max = new_health_max;
-          this.health = Math.round(new_health_max * health_pct);
-          this.combo_index = 0;
-      }
-      act(level) {
-          // TODO - move this to plugin
-          this.startTurn(level);
-          if (this.goalPath && this.followPath && this.goalPath.length) {
-              const step = this.goalPath[0];
-              if (step) {
-                  if (level.hasActor(step[0], step[1])) {
-                      level.game.addMessage("You are blocked.");
-                  }
-                  else {
-                      const dir = xy.dirFromTo(this, step);
-                      // @ts-ignore
-                      if (moveDir(level, this, dir, true)) {
-                          if (xy.equals(this, step)) {
-                              this.goalPath.shift(); // we moved there, so remove that step
-                          }
-                          else {
-                              this.clearGoal();
-                          }
-                          return;
-                      }
-                      level.game.addMessage("You lost track of path.");
-                  }
-              }
-          }
-          this.clearGoal();
-          level.needInput = true;
-          console.log("Hero - await input", level.scheduler.time);
-      }
-      setGoal(x, y) {
-          if (!this._level || this.followPath)
-              return;
-          const level = this._level;
-          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
-              if (level.hasActor(i, j))
-                  return index$6.AVOIDED;
-              return this.moveCost(i, j);
-          });
-          if (this.goalPath &&
-              this.goalPath.length &&
-              xy.equals(this.goalPath[0], this)) {
-              this.goalPath.shift(); // remove the spot we are standing on
-          }
-      }
-      clearGoal() {
-          this.followPath = false;
-          this.goalPath = null;
-      }
-      updateMapToMe() {
-          const level = this._level;
-          if (!level)
-              return;
-          this.mapToMe.reset(level.width, level.height);
-          this.mapToMe.setGoal(this.x, this.y);
-          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
-      }
-      updateFov() {
-          const level = this._level;
-          if (!level)
-              return;
-          if (!this.fov ||
-              this.fov.width !== level.width ||
-              this.fov.height !== level.height) {
-              this.fov && grid.free(this.fov);
-              this.fov = grid.alloc(level.width, level.height);
-          }
-          index$7.calculate(this.fov, (x, y) => {
-              return this.moveCost(x, y) >= index$6.BLOCKED;
-          }, this.x, this.y, 100);
-      }
-      isInFov(...args) {
-          if (!this.fov)
-              return false;
-          if (args.length == 2) {
-              const [x, y] = args;
-              return this.fov.get(x, y) > 0;
-          }
-          else {
-              const pos = args[0];
-              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
-          }
-      }
-  }
-
-  class HeroFactory {
-      plugins = [];
-      kinds = {};
-      use(plugin) {
-          this.plugins.push(plugin);
-      }
-      installKind(...args) {
-          let id;
-          let opts;
-          if (args.length == 1) {
-              opts = args[0];
-              id = args[0].id;
-          }
-          else {
-              id = args[0];
-              opts = args[1];
-          }
-          const kind = makeKind$1(opts);
-          this.plugins.forEach((p) => {
-              if (p.createKind) {
-                  p.createKind(kind, opts);
-              }
-          });
-          this.kinds[id.toLowerCase()] = kind;
-          return kind;
-      }
-      getKind(id) {
-          return this.kinds[id.toLowerCase()] || null;
-      }
-      create(kind, opts = {}) {
-          let out = Option.None();
-          if (opts.ctor) {
-              out = opts.ctor(kind, opts);
-          }
-          out = this.plugins.reduce((v, p) => {
-              if (v.isNone() && p.ctor) {
-                  return p.ctor(kind, opts);
-              }
-              return v;
-          }, out);
-          let hero = out.unwrapOrElse(() => new Hero(kind));
-          this.apply(hero);
-          hero._create(opts);
-          hero.emit("create", hero, opts);
-          return hero;
-      }
-      apply(hero) {
-          this.plugins.forEach((p) => {
-              Object.entries(p).forEach(([key, val]) => {
-                  if (key === "on") {
-                      Object.entries(val).forEach(([k2, v2]) => {
-                          if (typeof v2 === "function") {
-                              hero.on(k2, v2);
-                          }
-                          else {
-                              console.warn("Invalid 'on' member in Item plugin: " + k2);
-                          }
-                      });
-                  }
-                  else if (key === "data") {
-                      Object.assign(hero.data, val);
-                  }
-                  else if (key === "kinds") ;
-                  else if (typeof val === "function") {
-                      hero.on(key, val);
-                  }
-                  else {
-                      console.warn("Invalid member of Item plugin: " + key);
-                  }
-              });
-          });
-      }
-  }
-  const factory$2 = new HeroFactory();
-  function use$2(plugin) {
-      factory$2.use(plugin);
-  }
-  function create$2(kind, config = {}) {
-      if (typeof kind === "string") {
-          kind = getKind$1(kind);
-          if (!kind)
-              throw new Error("Failed to find kind.");
-      }
-      if (config === undefined) {
-          config = {};
-      }
-      if (typeof config === "number") {
-          config = { power: config };
-      }
-      return factory$2.create(kind, config);
-  }
-
-  function makeKind$1(cfg) {
-      let kind;
-      kind = makeKind$2(cfg);
-      kind = Object.assign(kind, {
-          slots: {},
-      });
-      if (cfg.slots) {
-          kind.slots = cfg.slots;
-      }
-      return kind;
-  }
-  function install$6(cfg) {
-      factory$2.installKind(cfg);
-  }
-  function getKind$1(id) {
-      return factory$2.getKind(id);
-  }
-
   class TileFactory {
       constructor(withDefaults = true) {
           this.plugins = [];
@@ -22710,7 +20309,7 @@ void main() {
 
   // export const tilesByIndex: TileInfo[] = [];
   // export const tilesByName: Record<string, TileInfo> = {};
-  function install$5(cfg) {
+  function install$9(cfg) {
       console.log("INSTALL TILE - " + cfg.id);
       index$1.installTile(cfg);
       // tilesByIndex[info.index] = info;
@@ -22722,84 +20321,2521 @@ void main() {
   function getTileByName(name) {
       return index$1.getTile(name);
   }
-  install$5({ id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 });
-  install$5({
-      id: "WALL",
-      ch: "#",
-      fg: 0x333,
-      bg: 0x666,
-      blocksMove: true,
-      blocksVision: true,
-      blocksDiagonal: true,
-  });
-  install$5({
-      id: "CORPSE",
-      ch: "&",
-      fg: 0x666,
-      bg: 0x222,
-      priority: 15,
-      on: {
-          place(level, x, y) {
-              // game.wait(1000, () => {
-              //   if (game.map.hasTile(x, y, ids.CORPSE)) {
-              //     game.setTile(x, y, ids.FLOOR);
-              //   }
-              // });
+  const default_tiles = {
+      FLOOR: { id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 },
+      WALL: {
+          id: "WALL",
+          ch: "#",
+          fg: 0x333,
+          bg: 0x666,
+          blocksMove: true,
+          blocksVision: true,
+          blocksDiagonal: true,
+      },
+      CORPSE: {
+          id: "CORPSE",
+          ch: "&",
+          fg: 0x666,
+          bg: 0x222,
+          priority: 15,
+          on: {
+              place(level, x, y) {
+                  // game.wait(1000, () => {
+                  //   if (game.map.hasTile(x, y, ids.CORPSE)) {
+                  //     game.setTile(x, y, ids.FLOOR);
+                  //   }
+                  // });
+              },
+              tick(level, x, y) {
+                  if (level.rng.chance(5)) {
+                      level.setTile(x, y, "FLOOR");
+                  }
+              },
           },
-          tick(level, x, y) {
-              if (level.rng.chance(5)) {
-                  level.setTile(x, y, "FLOOR");
+      },
+      DOWN_STAIRS: {
+          id: "DOWN_STAIRS",
+          ch: "<",
+          fg: "gray",
+          on: {
+              enter(level, actor) {
+                  // level.game.addMessage("There is no turning back.");
+                  level.emit("down_stairs", level, actor);
+              },
+          },
+      },
+      UP_STAIRS: {
+          id: "UP_STAIRS",
+          ch: ">",
+          fg: "orange",
+          on: {
+              enter(level, actor) {
+                  // level.game.addMessage("Going up!");
+                  level.emit("up_stairs", level, actor);
+              },
+          },
+      },
+      IMPREGNABLE: {
+          id: "IMPREGNABLE",
+          ch: "#",
+          fg: 0x222,
+          bg: 0x444,
+          priority: 200,
+          blocksMove: true,
+          blocksVision: true,
+          blocksDiagonal: true,
+      },
+  };
+
+  class Obj {
+      x = -1;
+      y = -1;
+      z = 0;
+      events = new index.Events(this);
+      // spawned: boolean = false;
+      performs = []; // TODO - { action: string, settings: Record<string,any> }[]
+      resolves = []; // TODO - { action: string, settings: Record<string,any> }[]
+      bump = []; // TODO - { action: string, settings: Record<string,any> }[]
+      kind;
+      // create(opts: ObjCreateOpts) {
+      //   this._create(opts);
+      //   this.emit("create", opts);
+      // }
+      constructor(kind) {
+          this.kind = kind;
+          Object.entries(this.kind.on).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+      }
+      _create(cfg) {
+          this.x = cfg.x !== undefined ? cfg.x : this.x;
+          this.y = cfg.y !== undefined ? cfg.y : this.y;
+          this.z = cfg.z !== undefined ? cfg.z : this.z;
+          const onFns = cfg.on || {};
+          Object.entries(onFns).forEach(([key, value]) => {
+              if (!value)
+                  return;
+              this.on(key, value);
+          });
+          if (cfg.performs && Array.isArray(cfg.performs)) {
+              this.performs = cfg.performs;
+          }
+          if (cfg.resolves && Array.isArray(cfg.resolves)) {
+              this.resolves = cfg.resolves;
+          }
+          if (cfg.bump && Array.isArray(cfg.bump)) {
+              this.bump = cfg.bump;
+          }
+      }
+      draw(buf) { }
+      on(...args) {
+          if (args.length == 1) {
+              return this.events.on(args[0]);
+          }
+          return this.events.on(args[0], args[1]);
+      }
+      once(event, fn) {
+          return this.events.once(event, fn);
+      }
+      emit(event, ...args) {
+          return this.events.emit(event, ...args);
+      }
+  }
+
+  function makeKind$4(config) {
+      const kind = Object.assign({
+          performs: [],
+          resolves: [],
+          bump: [],
+          on: {},
+      }, config);
+      if (config.performs) {
+          if (typeof config.performs == "string") {
+              kind.performs = config.performs.split(/[|,]/).map((v) => v.trim());
+          }
+      }
+      if (config.resolves) {
+          if (typeof config.resolves == "string") {
+              kind.resolves = config.resolves.split(/[|,]/).map((v) => v.trim());
+          }
+      }
+      if (config.bump) {
+          if (typeof config.bump == "string") {
+              kind.bump = config.bump.split(/[|,]/).map((v) => v.trim());
+          }
+      }
+      if (config.on && typeof config.on !== "object") {
+          kind.on = {};
+      }
+      return kind;
+  }
+
+  const FX_KIND = {
+      performs: [],
+      resolves: [],
+      bump: [],
+      on: {},
+  };
+  class FX extends Obj {
+      ch;
+      fg;
+      bg;
+      constructor(cfg) {
+          super(FX_KIND);
+          this.ch = cfg.ch || null;
+          this.fg = cfg.fg || null;
+          this.bg = cfg.bg || null;
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this);
+      }
+  }
+  function create$4(cfg) {
+      const fx = new FX(cfg);
+      fx._create(cfg);
+      fx.emit("create", fx, cfg);
+      return fx;
+  }
+  function flash(level, x, y, color = "white", ms = 300) {
+      const scene = level.scene;
+      scene.pause({ update: true });
+      const fx = create$4({ x, y, bg: color, z: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      scene.needsDraw = true;
+      scene.wait(ms, () => {
+          level.removeFx(fx);
+          scene.resume({ update: true });
+          _success();
+      });
+      return {
+          then(success) {
+              _success = success || NOOP;
+          },
+      };
+  }
+  function flashGameTime(level, x, y, color = "white", ms = 300) {
+      const scene = level.scene;
+      const startTime = scene.app.time;
+      const fx = create$4({ x, y, bg: color, z: 4 });
+      level.addFx(fx);
+      let _success = NOOP;
+      // let _fail: CallbackFn = GWU.NOOP;
+      level.wait(ms, () => {
+          const nowTime = scene.app.time;
+          const timeLeft = ms - (nowTime - startTime);
+          if (timeLeft > 0) {
+              scene.pause({ update: true });
+              scene.wait(timeLeft, () => {
+                  level.removeFx(fx);
+                  scene.resume({ update: true });
+                  _success();
+              });
+          }
+          else {
+              level.removeFx(fx);
+              _success();
+          }
+      });
+      return {
+          then(fn) {
+              _success = fn || NOOP;
+          },
+      };
+  }
+
+  function projectile(level, from, to, sprite, ms) {
+      level.game;
+      const scene = level.scene;
+      from = xy.asXY(from);
+      to = xy.asXY(to);
+      let _success = NOOP;
+      if (sprite.ch && sprite.ch.length == 4) {
+          const dir = xy.dirFromTo(from, to);
+          let index = 0;
+          if (dir[0] && dir[1]) {
+              index = 2;
+              if (dir[0] != dir[1]) {
+                  // remember up is -y
+                  index = 3;
+              }
+          }
+          else if (dir[0]) {
+              index = 1;
+          }
+          const ch = sprite.ch[index];
+          sprite = index$4.make(ch, sprite.fg, sprite.bg);
+      }
+      else if (sprite.ch && sprite.ch.length !== 1) {
+          throw new Error('projectile requires 4 chars - vert,horiz,diag-left,diag-right (e.g: "|-\\/")');
+      }
+      const fx = create$4(sprite);
+      // console.log("- fire", from, to);
+      scene.pause({ update: true });
+      const tween$1 = tween
+          .make(fx)
+          .from(from)
+          .to(to, ["x", "y"])
+          .duration(ms)
+          .onStart((_vals) => {
+          level.addFx(fx);
+      })
+          .onUpdate((vals) => {
+          if (level.blocksMove(vals.x, vals.y)) {
+              tween$1.stop(false);
+          }
+          // console.log("- >> ", vals);
+          scene.needsDraw = true;
+      })
+          .onFinish((vals, isSuccess) => {
+          level.removeFx(fx);
+          scene.resume({ update: true });
+          _success(vals, isSuccess);
+      })
+          .start(scene.tweens);
+      return {
+          then(success) {
+              _success = success || NOOP;
+          },
+      };
+  }
+
+  const fl = flag.fl;
+  var ARMOR_FLAGS;
+  (function (ARMOR_FLAGS) {
+      ARMOR_FLAGS[ARMOR_FLAGS["ARTIFACT_COOLDOWN_40"] = fl(0)] = "ARTIFACT_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["ARROWS_10"] = fl(1)] = "ARROWS_10";
+      ARMOR_FLAGS[ARMOR_FLAGS["LONGER_ROLL_100"] = fl(2)] = "LONGER_ROLL_100";
+      ARMOR_FLAGS[ARMOR_FLAGS["MELEE_DAMAGE_30"] = fl(3)] = "MELEE_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["MOBS_TARGET_YOU_MORE"] = fl(4)] = "MOBS_TARGET_YOU_MORE";
+      // add ?? MOBS_AVOID_YOU_MORE ??
+      ARMOR_FLAGS[ARMOR_FLAGS["MOVESPEED_AURA_15"] = fl(5)] = "MOVESPEED_AURA_15";
+      ARMOR_FLAGS[ARMOR_FLAGS["NEGATE_HITS_30"] = fl(6)] = "NEGATE_HITS_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_COOLDOWN_40"] = fl(7)] = "POTION_COOLDOWN_40";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_BOOSTS_DEFENSE"] = fl(8)] = "POTION_BOOSTS_DEFENSE";
+      ARMOR_FLAGS[ARMOR_FLAGS["POTION_HEALS_NEARBY_ALLIES"] = fl(9)] = "POTION_HEALS_NEARBY_ALLIES";
+      ARMOR_FLAGS[ARMOR_FLAGS["RANGED_DAMAGE_30"] = fl(10)] = "RANGED_DAMAGE_30";
+      ARMOR_FLAGS[ARMOR_FLAGS["REDUCE_DAMAGE_35"] = fl(11)] = "REDUCE_DAMAGE_35";
+      ARMOR_FLAGS[ARMOR_FLAGS["WEAPON_DAMAGE_AURA_20"] = fl(12)] = "WEAPON_DAMAGE_AURA_20";
+  })(ARMOR_FLAGS || (ARMOR_FLAGS = {}));
+  // @ts-ignore
+  globalThis.ARMOR_FLAGS = ARMOR_FLAGS;
+  var MELEE_FLAGS;
+  (function (MELEE_FLAGS) {
+      MELEE_FLAGS[MELEE_FLAGS["SPIN_ATTACK"] = fl(0)] = "SPIN_ATTACK";
+      MELEE_FLAGS[MELEE_FLAGS["THRUST"] = fl(1)] = "THRUST";
+      MELEE_FLAGS[MELEE_FLAGS["SWIRLING"] = fl(2)] = "SWIRLING";
+      MELEE_FLAGS[MELEE_FLAGS["LONGER_REACH"] = fl(3)] = "LONGER_REACH";
+      MELEE_FLAGS[MELEE_FLAGS["SHOCKWAVE"] = fl(4)] = "SHOCKWAVE";
+      MELEE_FLAGS[MELEE_FLAGS["BURNS"] = fl(5)] = "BURNS";
+      MELEE_FLAGS[MELEE_FLAGS["STUNS"] = fl(6)] = "STUNS";
+      MELEE_FLAGS[MELEE_FLAGS["AMBUSH"] = fl(7)] = "AMBUSH";
+      MELEE_FLAGS[MELEE_FLAGS["ECHO"] = fl(8)] = "ECHO";
+      MELEE_FLAGS[MELEE_FLAGS["EXPLODING"] = fl(9)] = "EXPLODING";
+      MELEE_FLAGS[MELEE_FLAGS["COMMITTED"] = fl(10)] = "COMMITTED";
+      MELEE_FLAGS[MELEE_FLAGS["PUSHBACK"] = fl(11)] = "PUSHBACK";
+      MELEE_FLAGS[MELEE_FLAGS["SHARPNESS"] = fl(12)] = "SHARPNESS";
+      MELEE_FLAGS[MELEE_FLAGS["LEECHING"] = fl(13)] = "LEECHING";
+      MELEE_FLAGS[MELEE_FLAGS["RAMPAGING"] = fl(14)] = "RAMPAGING";
+      MELEE_FLAGS[MELEE_FLAGS["WEAKENING"] = fl(15)] = "WEAKENING";
+      MELEE_FLAGS[MELEE_FLAGS["FREEZING"] = fl(16)] = "FREEZING";
+      MELEE_FLAGS[MELEE_FLAGS["POISON_CLOUD"] = fl(17)] = "POISON_CLOUD";
+      MELEE_FLAGS[MELEE_FLAGS["POISONS"] = fl(18)] = "POISONS";
+      MELEE_FLAGS[MELEE_FLAGS["SPLASH"] = fl(19)] = "SPLASH";
+      MELEE_FLAGS[MELEE_FLAGS["GRAVITY"] = fl(20)] = "GRAVITY";
+      MELEE_FLAGS[MELEE_FLAGS["LIGHTNING_BOLTS"] = fl(21)] = "LIGHTNING_BOLTS";
+      MELEE_FLAGS[MELEE_FLAGS["CHAINS"] = fl(22)] = "CHAINS";
+      MELEE_FLAGS[MELEE_FLAGS["RADIANCE"] = fl(23)] = "RADIANCE";
+      MELEE_FLAGS[MELEE_FLAGS["SHARED_PAIN"] = fl(24)] = "SHARED_PAIN";
+      MELEE_FLAGS[MELEE_FLAGS["PROSPECTOR"] = fl(25)] = "PROSPECTOR";
+      MELEE_FLAGS[MELEE_FLAGS["CRITICAL_HIT"] = fl(26)] = "CRITICAL_HIT";
+      MELEE_FLAGS[MELEE_FLAGS["SPEED_RUSH"] = fl(27)] = "SPEED_RUSH";
+      MELEE_FLAGS[MELEE_FLAGS["LOOTING"] = fl(28)] = "LOOTING";
+      MELEE_FLAGS[MELEE_FLAGS["SPAWN_BEE"] = fl(29)] = "SPAWN_BEE";
+  })(MELEE_FLAGS || (MELEE_FLAGS = {}));
+  // @ts-ignore
+  globalThis.MELEE_FLAGS = MELEE_FLAGS;
+  var RANGED_FLAGS;
+  (function (RANGED_FLAGS) {
+      // "GROWING", // Not going to use
+      RANGED_FLAGS[RANGED_FLAGS["EXTRA_SHOT"] = fl(0)] = "EXTRA_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["INFINITE_SHOTS"] = fl(1)] = "INFINITE_SHOTS";
+      RANGED_FLAGS[RANGED_FLAGS["POWER"] = fl(2)] = "POWER";
+      RANGED_FLAGS[RANGED_FLAGS["SUPERCHARGED"] = fl(3)] = "SUPERCHARGED";
+      RANGED_FLAGS[RANGED_FLAGS["EXPLODING"] = fl(4)] = "EXPLODING";
+      RANGED_FLAGS[RANGED_FLAGS["RADIANCE_SHOT"] = fl(5)] = "RADIANCE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["ENRAGES"] = fl(6)] = "ENRAGES";
+      RANGED_FLAGS[RANGED_FLAGS["ACCELERATE"] = fl(7)] = "ACCELERATE";
+      RANGED_FLAGS[RANGED_FLAGS["RAPID_FIRE"] = fl(8)] = "RAPID_FIRE";
+      RANGED_FLAGS[RANGED_FLAGS["FREEZES"] = fl(9)] = "FREEZES";
+      RANGED_FLAGS[RANGED_FLAGS["TRIPLE_SHOT"] = fl(10)] = "TRIPLE_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["CHAINS_HITS"] = fl(11)] = "CHAINS_HITS";
+      RANGED_FLAGS[RANGED_FLAGS["POISON_CLOUD"] = fl(12)] = "POISON_CLOUD";
+      RANGED_FLAGS[RANGED_FLAGS["POISONS"] = fl(13)] = "POISONS";
+      RANGED_FLAGS[RANGED_FLAGS["ROLL_CHARGES"] = fl(14)] = "ROLL_CHARGES";
+      RANGED_FLAGS[RANGED_FLAGS["GRAVITY_SHOT"] = fl(15)] = "GRAVITY_SHOT";
+      RANGED_FLAGS[RANGED_FLAGS["RICOCHET"] = fl(16)] = "RICOCHET";
+      RANGED_FLAGS[RANGED_FLAGS["TEMPO_THEFT"] = fl(17)] = "TEMPO_THEFT";
+      RANGED_FLAGS[RANGED_FLAGS["PIERCING"] = fl(18)] = "PIERCING";
+      RANGED_FLAGS[RANGED_FLAGS["CHAIN_REACTION"] = fl(19)] = "CHAIN_REACTION";
+      RANGED_FLAGS[RANGED_FLAGS["KNOCKBACK"] = fl(20)] = "KNOCKBACK";
+  })(RANGED_FLAGS || (RANGED_FLAGS = {}));
+  // @ts-ignore
+  globalThis.RANGED_FLAGS = RANGED_FLAGS;
+
+  class Item extends Obj {
+      _turnTime = 0;
+      data;
+      _power;
+      _damage;
+      _comboDamage;
+      _defense;
+      constructor(kind) {
+          super(kind);
+          this.data = {};
+          this._damage = this.kind.damage;
+          this._comboDamage = this.kind.combo_damage;
+          this._defense = this.kind.defense;
+          this.power = 1; // cause calculations to fire
+      }
+      // create(opts: ItemCreateOpts) {
+      //   this._create(opts);
+      //   this.emit("create", this, opts);
+      // }
+      _create(opts) {
+          super._create(opts);
+          // install emit handlers for ItemEvents
+          Object.entries(opts).forEach(([key, val]) => {
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.power = opts.power || this.power;
+      }
+      draw(buf) {
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      get name() {
+          return this.kind.name;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          val = val || 1;
+          this._power = val;
+          // Value = POWER * BASE * Math.pow(1.025,POWER)
+          this._damage = Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+          this._comboDamage = Math.round(this.kind.combo_damage * (1 + (this._power - 1) / 2));
+          this._defense = Math.round(this.kind.defense * (1 + (this._power - 1) / 2));
+      }
+      get damage() {
+          return this._damage;
+      }
+      get comboDamage() {
+          return this._comboDamage;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get speed() {
+          return this.kind.speed;
+      }
+      get comboSpeed() {
+          return this.kind.combo_speed;
+      }
+      get combo() {
+          return this.kind.combo;
+      }
+      get defense() {
+          return this._defense;
+      }
+      get slot() {
+          return this.kind.slot;
+      }
+      get charge() {
+          return this.kind.charge;
+      }
+  }
+
+  class ItemFactory {
+      plugins = [];
+      kinds = {};
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind$3(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
+      }
+      create(kind, opts = {}) {
+          // Create the Item
+          let out = Option.None();
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
+              }
+              return v;
+          }, out);
+          let item = out.unwrapOrElse(() => new Item(kind));
+          // Update the item events/data
+          this.apply(item);
+          // finish making the item
+          item._create(opts);
+          item.emit("create", item, opts);
+          return item;
+      }
+      apply(item) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key == "data") {
+                      item.data = utils.mergeDeep(item.data, val);
+                  }
+                  else if (key == "on") {
+                      Object.entries(val).forEach(([k, v]) => {
+                          if (typeof v === "function") {
+                              item.on(k, v);
+                          }
+                      });
+                  }
+                  else if (key === "kinds") ;
+                  else if (typeof val === "function") {
+                      item.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$4 = new ItemFactory();
+  function use$4(plugin) {
+      factory$4.use(plugin);
+  }
+  function make(id, opts = {}) {
+      let kind = typeof id === "string" ? factory$4.getKind(id) : id;
+      if (!kind || typeof kind !== "object" || typeof kind.id !== "string") {
+          throw new Error("Invalid ItemKind: " + JSON.stringify(id));
+      }
+      return factory$4.create(kind, opts);
+  }
+  function place(level, x, y, id = null) {
+      let newbie;
+      if (id === null) {
+          newbie = random$1(level); // TODO - default match?
+      }
+      else if (typeof id === "string") {
+          newbie = make(id);
+      }
+      else {
+          newbie = id;
+      }
+      if (!newbie)
+          return null;
+      newbie.kind.fg;
+      const game = level.game;
+      // const scene = level.scene;
+      // const level = level.level;
+      const locs = xy.closestMatchingLocs(x, y, (i, j) => {
+          return !level.blocksMove(i, j) && !level.hasItem(i, j);
+      });
+      if (!locs || locs.length == 0)
+          return null;
+      const loc = game.rng.item(locs);
+      newbie.x = loc[0];
+      newbie.y = loc[1];
+      // level.events.emit("spawn_item", level, newbie);
+      level.addItem(newbie);
+      return newbie;
+  }
+  function placeRandom(level, x, y, match = null) {
+      let item = random$1(level, match);
+      if (!item) {
+          return null;
+      }
+      return place(level, x, y, item);
+  }
+  function random$1(level, match = null) {
+      // pick random kind
+      let allKinds = Object.values(factory$4.kinds);
+      let matches;
+      if (match === null) {
+          matches = [];
+      }
+      else if (typeof match == "string") {
+          matches = match.split(/[|,]/).map((v) => v.trim());
+      }
+      else {
+          matches = match.map((v) => v.trim());
+      }
+      if (matches.length > 0) {
+          allKinds = allKinds.filter((kind) => {
+              return matches.every((m) => {
+                  if (m[0] == "!") {
+                      return !kind.tags.includes(m.substring(1));
+                  }
+                  else {
+                      return kind.tags.includes(m);
+                  }
+              });
+          });
+      }
+      const chances = allKinds.map((k) => k.frequency(level.depth));
+      const index = level.rng.weighted(chances);
+      if (index < 0)
+          return null;
+      const kind = allKinds[index];
+      const item = make(kind);
+      return item;
+  }
+
+  function makeKind$3(cfg) {
+      let kind = makeKind$4(cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("ItemKind must have 'id'.");
+      }
+      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
+      }
+      if (cfg.tags && typeof cfg.tags === "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      kind.ch = kind.ch || "!";
+      if (kind.fg) {
+          kind.fg = index$9.make(cfg.fg);
+      }
+      else {
+          kind.fg = colors.red;
+      }
+      if (kind.bg) {
+          kind.bg = index$9.make(cfg.bg);
+      }
+      else {
+          kind.bg = index$9.NONE;
+      }
+      kind.speed = kind.speed || 100;
+      kind.damage = kind.damage || 0;
+      kind.combo = kind.combo || 0;
+      kind.combo_speed = kind.combo_speed || 0;
+      kind.range = kind.range || 0;
+      kind.charge = kind.charge || 0;
+      kind.defense = kind.defense || 0;
+      if (!kind.slot) {
+          if (kind.range > 0) {
+              kind.slot = "ranged";
+          }
+          else if (kind.damage > 0) {
+              kind.slot = "melee";
+          }
+          else if (kind.defense > 0) {
+              kind.slot = "armor";
+          }
+          else {
+              kind.slot = null;
+          }
+      }
+      if (kind.frequency && typeof kind.frequency !== "function") {
+          kind.frequency = frequency.make(cfg.frequency);
+      }
+      else if (!kind.frequency) {
+          kind.frequency = frequency.make(100); // Default is 100
+      }
+      if (typeof cfg.armor_flags !== "number") {
+          kind.armor_flags = flag.from_safe(ARMOR_FLAGS, cfg.armor_flags);
+      }
+      if (typeof cfg.melee_flags !== "number") {
+          kind.melee_flags = flag.from_safe(MELEE_FLAGS, cfg.melee_flags);
+      }
+      if (typeof cfg.ranged_flags !== "number") {
+          kind.ranged_flags = flag.from_safe(RANGED_FLAGS, cfg.ranged_flags);
+      }
+      // TODO - Effects
+      return kind;
+  }
+  function install$8(cfg) {
+      factory$4.installKind(cfg);
+  }
+
+  // @returns boolean - indicates whether or not the target dies
+  function damage(level, target, damage) {
+      const game = level.game;
+      // TODO - apply defenses... event? "damage" << allows changing b/c it is the DamageConfig obj
+      const armor_flags = target.armor_flags;
+      let amount = (damage.amount = damage.amount || 0);
+      damage.msg = damage.msg || `${target.name} is damaged`;
+      damage.color = damage.color || "red";
+      if (!damage.isRanged) {
+          damage.isRanged = false;
+      }
+      if ((armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) > 0) {
+          if (game.rng.chance(30)) {
+              game.messages.addCombat(damage.msg + "#{orange [X]}");
+              flash(level, target.x, target.y, "orange", 150);
+              damage.amount = 0;
+              return false;
+          }
+      }
+      if ((armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) > 0) {
+          damage.amount = Math.round(damage.amount * 0.65);
+      }
+      target.emit("damage", damage);
+      if (damage.amount <= 0) {
+          return false;
+      }
+      target.health -= damage.amount || 0;
+      if (damage.amount < amount) {
+          damage.color = "orange";
+      }
+      game.messages.addCombat(damage.msg + `#{${damage.color} [${damage.amount}]}`);
+      flash(level, target.x, target.y, damage.color, 150);
+      if (target.health <= 0) {
+          // do all of these move to event handlers?
+          game.messages.addCombat(`${target.name} dies`);
+          // TODO - This should be above the floor (FIXTURE)
+          // that way when it decays the floor returns as normal
+          // and corpses can be custom to the creature that died
+          // no matter what the floor is
+          level.setTile(target.x, target.y, "CORPSE");
+          target.emit("death", level, target);
+          level.removeActor(target);
+          return true;
+      }
+      return false;
+  }
+
+  function heal(level, target, heal) {
+      if (heal.amount <= 0)
+          return;
+      heal.amount = Math.min(heal.amount, target.health_max - target.health);
+      target.health += heal.amount;
+  }
+
+  const actionsByName = {};
+  function install$7(name, fn) {
+      actionsByName[name] = fn;
+  }
+  function get$1(name) {
+      return actionsByName[name] || null;
+  }
+  function idle(level, actor) {
+      console.log("- idle", actor.name, actor.x, actor.y);
+      level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
+      return true;
+  }
+  install$7("idle", idle);
+  function moveRandom(level, actor, quiet = false) {
+      const dir = level.rng.item(xy.DIRS);
+      return moveDir(level, actor, dir, quiet);
+  }
+  install$7("move_random", moveRandom);
+  function moveDir(level, actor, dir, quiet = false) {
+      const game = level.game;
+      const newX = actor.x + dir[0];
+      const newY = actor.y + dir[1];
+      if (level.diagonalBlocked(actor.x, actor.y, actor.x + dir[0], actor.y + dir[1])) {
+          if (!quiet) {
+              const tile = level.getTile(actor.x + dir[0], actor.y + dir[1]);
+              game.addMessage(`Blocked by a ${tile.id}.`);
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return true;
+          }
+          else {
+              console.log("- diagonal blocked!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      const other = level.actorAt(newX, newY);
+      if (other) {
+          if (other.kind && other.doBump(level, actor)) {
+              return true;
+          }
+          if (actor.hasActed())
+              return true;
+          if (!quiet) {
+              game.addMessage(`You bump into a ${other.name}.`);
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return true;
+          }
+          else {
+              console.log("- nothing!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      if (level.blocksMove(newX, newY)) {
+          if (!quiet) {
+              game.addMessage("You bump into a wall.");
+              flash(level, newX, newY, "orange", 150);
+              idle(level, actor);
+              return false;
+          }
+          else {
+              console.log("- nothing blocked!!!", actor.name, actor.x, actor.y);
+              return false;
+          }
+      }
+      actor.x;
+      actor.y;
+      actor.x = newX;
+      actor.y = newY;
+      // game.drawAt(oldX, oldY);
+      // game.drawAt(newX, newY);
+      const speed = Math.round(actor.kind.moveSpeed * (xy.isDiagonal(dir) ? 1.4 : 1.0));
+      actor.emit("move", level, actor, newX, newY);
+      level.triggerAction("enter", actor);
+      game.endTurn(actor, speed);
+      return true;
+  }
+  function moveTowardHero(level, actor, quiet = false) {
+      const game = level.game;
+      const hero = game.hero;
+      const dir = hero.mapToMe.nextDir(actor.x, actor.y, (x, y) => {
+          return level.hasActor(x, y);
+      });
+      if (dir) {
+          if (moveDir(level, actor, dir, true)) {
+              return true; // success
+          }
+          if (!quiet) {
+              flash(level, actor.x, actor.y, "orange", 150);
+          }
+          return idle(level, actor);
+      }
+      return false;
+  }
+  install$7("move_toward_hero", moveTowardHero);
+  function moveAwayFromHero(level, actor, quiet = false) {
+      const game = level.game;
+      const hero = game.hero;
+      // compute safety map
+      const safety = new index$6.DijkstraMap(level.width, level.height);
+      safety.copy(hero.mapToMe);
+      safety.update((v, x, y) => {
+          if (v >= index$6.BLOCKED)
+              return v;
+          v = -1.2 * v;
+          if (level.isInLoop(x, y))
+              v -= 2;
+          if (level.isGateSite(x, y))
+              v -= 2;
+          return Math.round(v);
+      });
+      safety.setDistance(hero.x, hero.y, index$6.BLOCKED);
+      safety.rescan((x, y) => actor.moveCost(x, y));
+      safety.addObstacle(hero.x, hero.y, (x, y) => hero.moveCost(x, y), 5);
+      let dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+          return level.hasActor(x, y);
+      });
+      console.log(`- move away (${actor.x},${actor.y}) from player (${hero.x},${hero.y}) - ${dir}`);
+      // if (dir === null) {
+      //   dir = safety.nextDir(actor.x, actor.y, (x, y) => {
+      //     return map.hasActor(x, y);
+      //   });
+      // }
+      if (dir) {
+          const spread = xy.dirSpread(dir);
+          for (let d of spread) {
+              console.log("- try", d, safety.getDistance(actor.x, actor.y), safety.getDistance(actor.x + d[0], actor.y + d[1]));
+              if (moveDir(level, actor, d, true)) {
+                  console.log("- success");
+                  return true; // success
+              }
+          }
+          if (!quiet) {
+              flash(level, actor.x, actor.y, "orange", 150);
+          }
+          return idle(level, actor);
+      }
+      return false;
+  }
+  install$7("move_away_from_hero", moveAwayFromHero);
+  function attack(level, actor, target = null) {
+      const game = level.game;
+      if (target) {
+          if (level.diagonalBlocked(actor.x, actor.y, target.x, target.y)) {
+              return false;
+          }
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game.level.actors.filter((a) => a !== actor &&
+              actor.health > 0 &&
+              xy.distanceBetween(a.x, a.y, actor.x, actor.y) < 2 && // can attack diagonal
+              !level.diagonalBlocked(actor.x, actor.y, a.x, a.y));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              flash(level, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              level.scene.app.scenes
+                  .run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(level, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+                  }
+                  else {
+                      attack(level, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      // @ts-ignore
+      const actorIsPlayer = actor === game.hero;
+      // @ts-ignore
+      const otherIsPlayer = target === game.hero;
+      if (!actorIsPlayer && !otherIsPlayer) {
+          return idle(level, actor); // no attacking
+      }
+      const attackInfo = actor.getMeleeAttack();
+      if (!attackInfo) {
+          game.addMessage("Cannot attack.");
+          flash(level, actor.x, actor.y, "orange", 150);
+          game.endTurn(actor, Math.floor(actor.kind.moveSpeed / 4));
+      }
+      // we have an actor and a target
+      damage(level, target, {
+          amount: attackInfo.damage,
+          msg: `${actor.name} attacks ${target.name}`,
+      });
+      game.endTurn(actor, attackInfo.time);
+      return true;
+  }
+  install$7("attack", attack);
+  function fire(level, actor, target = null) {
+      const game = level.game;
+      const hero = game.hero;
+      if (!actor.range) {
+          game.addMessage("Nothing to fire.");
+          return false;
+      }
+      if (!actor.ammo) {
+          game.addMessage("No ammo.");
+          return false;
+      }
+      if (target) {
+          if (xy.distanceFromTo(actor, target) > actor.range)
+              return false;
+      }
+      else {
+          // todo - long reach melee -- spear, etc...
+          const targets = game
+              .level.actors.filter((a) => {
+              if (a === actor)
+                  return false;
+              if (actor.health <= 0)
+                  return false;
+              const dist = xy.distanceBetween(a.x, a.y, actor.x, actor.y);
+              if (dist > actor.range) {
+                  console.log("too far - %f/%d - %s", dist, actor.range, a.name);
+                  return false;
+              }
+              console.log("checking fov...");
+              // HACK - for actor.canSee(a)
+              if (!hero.isInFov(actor)) {
+                  console.log("actor not visible");
+                  return false;
+              }
+              if (!hero.isInFov(a)) {
+                  console.log("target not visible");
+                  return false;
+              }
+              // end hack
+              console.log("ok - ", a.name);
+              return true;
+          })
+              .sort((a, b) => xy.distanceFromTo(hero, a) - xy.distanceFromTo(hero, b));
+          if (targets.length == 0) {
+              game.addMessage("no targets.");
+              // flash tiles you can fire into
+              const fov = new index$7.FOV({
+                  isBlocked(x, y) {
+                      // TODO - This should be more about visible than move
+                      return actor.moveCost(x, y) >= index$6.BLOCKED;
+                  },
+                  hasXY(x, y) {
+                      return level.hasXY(x, y);
+                  },
+              });
+              // TODO - FOV highlights cells we can't fire into...
+              fov.calculate(actor.x, actor.y, actor.range - 0.9, (x, y) => {
+                  flash(level, x, y, "dark_teal", 125);
+              });
+              // FX.flash(game, actor.x, actor.y, "orange", 150);
+              game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
+              return true; // did something
+          }
+          else if (targets.length > 1) {
+              level.scene.app.scenes
+                  .run("target", { game, actor, targets })
+                  .once("stop", (result) => {
+                  if (!result) {
+                      flash(level, actor.x, actor.y, "orange", 150);
+                      game.endTurn(actor, Math.floor(actor.moveSpeed / 4));
+                  }
+                  else {
+                      fire(level, actor, result);
+                  }
+              });
+              return true; // didSomething
+          }
+          else {
+              target = targets[0];
+          }
+      }
+      // @ts-ignore
+      const actorIsHero = actor === game.hero;
+      // @ts-ignore
+      const otherIsHero = target === game.hero;
+      if (!actorIsHero && !otherIsHero) {
+          return idle(level, actor); // no attacking
+      }
+      // we have an actor and a target
+      // Does this move to an event handler?  'damage', { amount: #, type: string }
+      actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
+      projectile(level, actor, target, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(level, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              damage(level, target, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${target.name}`,
+              });
+          }
+      });
+      game.endTurn(actor, actor.rangedAttackSpeed);
+      return true;
+  }
+  install$7("fire", fire);
+  function fireAtHero(level, actor) {
+      const game = level.game;
+      const hero = game.hero;
+      // if player can't see actor then actor can't see player!
+      if (!hero.isInFov(actor.x, actor.y))
+          return false;
+      if (!actor.ammo)
+          return false;
+      actor.ammo -= 1;
+      // TODO - get next attack details (and increment counter in actor)
+      projectile(level, actor, hero, { ch: "|-\\/", fg: "white" }, 300).then((xy, ok) => {
+          if (!ok) {
+              flash(level, xy.x, xy.y, "orange", 150);
+          }
+          else {
+              // @ts-ignore
+              damage(level, hero, {
+                  amount: actor.rangedDamage,
+                  msg: `${actor.name} shoots ${hero.name}`,
+              });
+          }
+      });
+      game.endTurn(actor, actor.rangedAttackSpeed);
+      return true;
+  }
+  install$7("fire_at_hero", fireAtHero);
+  function climb(level, actor) {
+      const game = level.game;
+      const tile = game.level.getTile(actor.x, actor.y);
+      if (tile.on && tile.on.climb) {
+          tile.on.climb.call(tile, game, actor);
+          return actor.hasActed();
+      }
+      else {
+          return idle(level, actor);
+      }
+  }
+  install$7("climb", climb);
+  function pickup(level, actor) {
+      const game = level.game;
+      const item = level.itemAt(actor.x, actor.y);
+      if (item) {
+          item.emit("pickup", level, item, actor);
+          return true;
+      }
+      game.addMessage("Nothing to pickup.");
+      return idle(level, actor);
+  }
+  install$7("pickup", pickup);
+  // export function potion(game: Game, hero: Hero): boolean {
+  //   if (!hero.canUsePotion) {
+  //     game.addMessage("Not ready.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   if (hero.health >= hero.health_max) {
+  //     game.addMessage("You do not need to drink a potion.");
+  //     // TODO - spend time? idle?
+  //     return false;
+  //   }
+  //   const heal = Math.floor(hero.health_max * 0.75);
+  //   hero.health = Math.min(hero.health + heal, hero.health_max);
+  //   hero.potion = 0; // Needs to recharge
+  //   game.addMessage("You feel much better.");
+  //   game.endTurn(hero, hero.moveSpeed);
+  //   return true;
+  // }
+
+  function ai(level, actor) {
+      const game = level.game;
+      const hero = game.hero;
+      const noticeDistance = actor.kind.notice || 10;
+      const distToHero = xy.distanceBetween(hero.x, hero.y, actor.x, actor.y);
+      const canSeeHero = hero.isInFov(actor);
+      console.log(`Actor.AI - ${actor.kind.id}@${actor.x},${actor.y} - dist=${distToHero}, canSee=${canSeeHero}`);
+      // TODO - If attacked by hero, then we need to ignore notice distance and move in to attack
+      // TODO - Noticed prior to hero going out of range/view should skip this
+      // Do this with a flag/mode/state/time value?
+      if (distToHero > noticeDistance || !canSeeHero) {
+          // wander to goal?  [wanderChance]
+          // step randomly [idleMoveChance]
+          // move around anchor? (e.g. guarding an area, hanging out by a campfire, ...)
+          // random chance? [randomMoveChance]
+          if (game.rng.chance(20)) {
+              if (moveRandom(level, actor, true))
+                  return;
+          }
+          return idle(level, actor);
+      }
+      if (distToHero <= actor.kind.tooClose) {
+          // should there be a random chance on this?
+          if (moveAwayFromHero(level, actor))
+              return;
+      }
+      // shoot at player?
+      if (actor.kind.rangedDamage && distToHero <= actor.kind.range) {
+          if (fireAtHero(level, actor))
+              return;
+      }
+      if (distToHero < 2) {
+          // can attack diagonal
+          if (actor.canMeleeAttack) {
+              // @ts-ignore
+              if (attack(level, actor, hero))
+                  return;
+          }
+          if (distToHero == 1) {
+              // Hmmm...
+              return idle(level, actor);
+          }
+      }
+      // If we don't have a min distance from hero then move closer (to get to melee range)
+      if (!actor.kind.tooClose) {
+          if (moveTowardHero(level, actor))
+              return;
+      }
+      return idle(level, actor);
+  }
+
+  function messages(scene, y) {
+      const widget = index$1$1.make({
+          id: "MESSAGES",
+          tag: "msg",
+          x: 0,
+          y: y,
+          width: scene.width,
+          height: scene.height - y,
+          scene,
+          bg: "darkest_gray",
+          fg: "white",
+          draw(buf) {
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              const fg = index$9.from(this._used.fg);
+              const fgc = fg.alpha(50);
+              const scene = this.scene;
+              const level = scene.data.level;
+              const game = level.game;
+              if (game && game.messages) {
+                  game.messages.forEach((msg, confirmed, i) => {
+                      if (i < this.bounds.height) {
+                          const color = confirmed ? fgc : fg;
+                          buf.drawText(this.bounds.x, this.bounds.top + i, msg, color);
+                      }
+                  });
               }
           },
-      },
-  });
-  install$5({
-      id: "DOWN_STAIRS",
-      ch: "<",
-      fg: "gray",
-      on: {
-          enter(level, actor) {
-              level.game.addMessage("There is no turning back.");
+          mousemove(e) {
+              e.stopPropagation();
           },
-      },
-  });
-  install$5({
-      id: "UP_STAIRS",
-      ch: ">",
-      fg: "orange",
-      on: {
-          enter(level, actor) {
-              level.game.addMessage("Going up!");
-              level.emit("up_stairs", level, actor);
+          click(e) {
+              e.stopPropagation();
           },
-      },
-  });
-  install$5({
-      id: "UP_STAIRS_INACTIVE",
-      ch: ">",
-      fg: "gray",
-      priority: 75,
-      on: {
-          enter(level, actor) {
-              level.game.addMessage("There is more to do.");
+      });
+      return widget;
+  }
+
+  class Map extends index.Widget {
+      _focus = [-1, -1];
+      constructor(opts) {
+          super(opts);
+          this.on("draw", this._draw);
+          this.on("mousemove", this._setFocus);
+          this.on("mouseleave", this._clearFocus);
+          this.on("keypress", this._clearFocus);
+      }
+      _draw(buf) {
+          const scene = this.scene;
+          const level = scene.data.level;
+          const game = level.game;
+          const player = game.hero;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", "black", "black");
+          level.tiles.forEach((index, x, y) => {
+              if (this.bounds.contains(x, y)) {
+                  buf.blackOut(x, y);
+                  level.drawAt(buf, x, y);
+                  if (!player.fov || !player.fov.get(x, y)) {
+                      buf.get(x, y).mix("black", 25, 25);
+                  }
+              }
+          });
+          if (player.goalPath) {
+              player.goalPath.forEach(([x, y]) => {
+                  buf.get(x, y).mix("green", 0, 25).separate();
+              });
+          }
+      }
+      _setFocus(e) {
+          this._focus[0] = e.x;
+          this._focus[1] = e.y;
+          this.needsDraw = true;
+          // e.stopPropagation();
+      }
+      _clearFocus() {
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+      }
+  }
+  function map(scene, width, height) {
+      const widget = new Map({
+          id: "MAP",
+          tag: "map",
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          scene,
+          bg: index$9.BLACK,
+      });
+      return widget;
+  }
+
+  class SidebarEntry {
+      // TODO - icon: GWU.sprite.SpriteData | null;
+      name;
+      nameColor;
+      progressbars;
+      statuses;
+      constructor(name, color) {
+          // TODO: this.icon = null;
+          this.name = name;
+          this.nameColor = color === undefined ? "white" : color;
+          this.progressbars = [];
+          this.statuses = [];
+      }
+      add_progress(text, color, val, max) {
+          this.progressbars.push({
+              text,
+              color,
+              val,
+              max,
+          });
+          return this;
+      }
+      add_status(text, color) {
+          this.statuses.push({ text, color });
+          return this;
+      }
+  }
+  class Sidebar extends index.Widget {
+      _focus = [-1, -1];
+      entries = [];
+      constructor(opts) {
+          super(opts);
+      }
+      setFocus(x, y) {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = x;
+          this._focus[1] = y;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.emit("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      clearFocus() {
+          const wasFocus = this._focus.slice();
+          this._focus[0] = -1;
+          this._focus[1] = -1;
+          if (!xy.equals(wasFocus, this._focus)) {
+              this.emit("focus", this._focus);
+              this.needsDraw = true;
+          }
+      }
+      // drawPlayer(buf: GWU.buffer.Buffer, x: number, y: number, player: Hero) {
+      //   buf.drawText(x, y, "Hero");
+      //   this.drawHealth(buf, x, y + 1, 28, player);
+      //   this.drawPotion(buf, x, y + 2, 28, player);
+      //   let lines = 3; // Hero + health + potion
+      //   player.statuses.forEach((status) => {
+      //     if (status) {
+      //       lines += status.draw_sidebar(buf, x, y + lines, 28, player);
+      //     }
+      //   });
+      //   return lines;
+      // }
+      drawActor(buf, x, y, actor) {
+          //   buf.drawText(x, y, actor.name, actor.kind.fg);
+          //   this.drawHealth(buf, x, y + 1, 28, actor);
+          //   let lines = 2; // name + health
+          //   actor.statuses.forEach((status) => {
+          //     if (status) {
+          //       lines += status.draw_sidebar(buf, x, y + lines, 28, actor);
+          //     }
+          //   });
+          //   return lines;
+          let entry = actor.getSidebarEntry();
+          return this.drawEntry(buf, x, y, entry);
+      }
+      drawEntry(buf, x, y, entry) {
+          buf.drawText(x, y, entry.name, entry.nameColor);
+          let lines = 1;
+          entry.progressbars.forEach((p) => {
+              this.drawProgress(buf, x, y + lines, 28, "white", p.color, p.val, p.max, p.text);
+              lines += 1;
+          });
+          entry.statuses.forEach((s) => {
+              buf.drawText(x, y + lines, s.text, s.color);
+              lines += 1;
+          });
+          return lines;
+      }
+      drawProgress(buf, x, y, w, fg, bg, val, max, text = "") {
+          const pct = val / max;
+          const full = Math.floor(w * pct);
+          const partialPct = Math.floor(100 * (w * pct - full));
+          buf.fillRect(x, y, full, 1, null, null, bg);
+          buf.draw(x + full, y, null, null, index$9.from(bg).alpha(partialPct));
+          if (text && text.length) {
+              buf.drawText(x, y, text, fg, null, w, "center");
+          }
+      }
+      // drawHealth(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   actor: Actor
+      // ) {
+      //   const pct = actor.health / actor.health_max;
+      //   const bg = GWU.color.colors.green.mix(
+      //     GWU.color.colors.red,
+      //     100 * (1 - pct)
+      //   );
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     bg,
+      //     actor.health,
+      //     actor.health_max,
+      //     "HEALTH"
+      //   );
+      // }
+      // drawPotion(
+      //   buf: GWU.buffer.Buffer,
+      //   x: number,
+      //   y: number,
+      //   w: number,
+      //   player: Hero
+      // ) {
+      //   this.drawProgress(
+      //     buf,
+      //     x,
+      //     y,
+      //     w,
+      //     "white",
+      //     GWU.color.colors.blue,
+      //     player.potion,
+      //     player.potion_max,
+      //     "Potion"
+      //   );
+      // }
+      _draw(buf) {
+          const scene = this.scene;
+          const level = scene.data.level;
+          const game = level.game;
+          buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+          const x = this.bounds.x + 1;
+          let y = this.bounds.y;
+          buf.setClip(this.bounds);
+          // buf.drawText(x);
+          y += buf.drawText(x, y, scene.app.name, "green");
+          y += buf.drawText(x, y, "Seed: " + game.seed, "pink");
+          y += buf.drawText(x, y, "Level: " + level.data.depth, "pink");
+          y += 1;
+          let px = game.hero.x;
+          let py = game.hero.y;
+          // if (this._focus[0] != -1) {
+          //   px = this._focus[0];
+          //   py = this._focus[1];
+          // }
+          this.entries = level.actors.filter(
+          // @ts-ignore
+          (a) => a && a !== game.hero && a.health > 0);
+          this.entries.sort((a, b) => xy.distanceBetween(a.x, a.y, px, py) -
+              xy.distanceBetween(b.x, b.y, px, py));
+          let focused = this.entries.find((a) => xy.equals(a, this._focus));
+          // @ts-ignore
+          let used = this.drawActor(buf, x, y, game.hero);
+          game.hero.data.sideY = y;
+          game.hero.data.sideH = used;
+          if (xy.equals(game.hero, this._focus)) {
+              buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              // @ts-ignore
+              focused = game.hero;
+          }
+          else if (focused) {
+              buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+          }
+          y += used + 1;
+          this.entries.forEach((a) => {
+              const used = this.drawActor(buf, x, y, a);
+              if (a === focused) {
+                  buf.mix("white", 20, x - 1, y, this.bounds.width, used);
+              }
+              else if (focused) {
+                  buf.mix(this._used.bg || null, 50, x - 1, y, this.bounds.width, used);
+              }
+              a.data.sideY = y;
+              a.data.sideH = used;
+              y += used + 1;
+          });
+          y += 1;
+          // y += buf.drawText(x, y, "Press Escape to lose.");
+          buf.clearClip();
+      }
+      _mousemove(e) {
+          super._mousemove(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          this._focus.slice();
+          this.clearFocus();
+          const level = this.scene.data.level;
+          const game = level.game;
+          const hero = game.hero;
+          if (hero.data.sideY <= e.y && hero.data.sideY + hero.data.sideH >= e.y) {
+              this.setFocus(hero.x, hero.y);
+          }
+          else {
+              this.entries.forEach((a) => {
+                  if (a.data.sideY <= e.y && a.data.sideY + a.data.sideH >= e.y) {
+                      this.setFocus(a.x, a.y);
+                  }
+              });
+          }
+          // if (!GWU.xy.equals(wasFocus, this._focus)) {
+          //   this.emit("focus", this._focus);
+          //   this.needsDraw = true;
+          // }
+          e.stopPropagation();
+      }
+      _click(e) {
+          super._click(e);
+          if (e.defaultPrevented || e.propagationStopped)
+              return;
+          if (this._focus[0] > -1) {
+              this.emit("choose", this._focus);
+          }
+      }
+  }
+  function sidebar(scene, x, height) {
+      const widget = new Sidebar({
+          id: "SIDEBAR",
+          tag: "sidebar",
+          x: x,
+          y: 0,
+          width: scene.width - x,
+          height: height,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  function flavor(scene, x, y) {
+      const widget = index$1$1.make({
+          id: "FLAVOR",
+          tag: "flavor",
+          x: x,
+          y: y,
+          width: scene.width - x,
+          height: 1,
+          scene,
+          bg: index$9.from("darker_gray"),
+          fg: index$9.from("purple"),
+          draw(buf) {
+              const scene = this.scene;
+              const level = scene.data.level;
+              level.game;
+              buf.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height, " ", this._used.bg, this._used.bg);
+              buf.drawText(this.bounds.x, this.bounds.y, this.prop("text"), this._used.fg, this._used.bg, this.bounds.width);
           },
-      },
-  });
-  install$5({
-      id: "IMPREGNABLE",
-      ch: "#",
-      fg: 0x222,
-      bg: 0x444,
-      priority: 200,
-      blocksMove: true,
-      blocksVision: true,
-      blocksDiagonal: true,
-  });
-  // GWD.site.allTiles.forEach((t, i) => {
-  //   tilesByIndex[i] = t;
-  //   if (tilesByName[t.id]) return;
-  //   install(t);
-  // });
+          mousemove(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+      });
+      return widget;
+  }
+
+  class Details extends index$1$1.Dialog {
+      _text;
+      constructor(opts) {
+          opts.border = opts.border ?? "ascii";
+          super(opts);
+          this._text = new index$1$1.Text({
+              id: "INFO",
+              text: "details...",
+              x: this.bounds.x + 1,
+              y: this.bounds.y + 1,
+          });
+          this.addChild(this._text);
+          this.hidden = true;
+      }
+      showActor(actor) {
+          let text = actor.name + " [" + actor.power + "]\n";
+          text += "Health: " + actor.health + " / " + actor.health_max + "\n";
+          text += "Moves : " + actor.moveSpeed + "\n";
+          if (actor.damage > 0) {
+              text += "Melee : " + actor.damage + " / " + actor.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          if (actor.range > 0) {
+              text +=
+                  "Ranged: " +
+                      actor.rangedDamage +
+                      " / " +
+                      actor.rangedAttackSpeed +
+                      " @ " +
+                      actor.range +
+                      " (" +
+                      actor.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+      showHero(player) {
+          let text = player.name + "\n";
+          const armor = player.slots.armor;
+          if (armor) {
+              text += "Health: " + player.health + " / " + player.health_max + "\n";
+              text += "#{teal}";
+              text += "  " + armor.name + " [" + armor.power + "]\n";
+              if (armor.kind.armor_flags != 0) {
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+                      text += "  {-35% Damage Received}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+                      text += "  {30% Negate Hits}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+                      text += "  {-40% Artifact Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
+                      text += "  {+10 Arrows Per Bundle}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+                      text += "  {100% Longer Roll Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+                      text += "  {+30% Melee Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+                      text += "  {Mobs Target You More}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+                      text += "  {+15% Move Speed Aura}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+                      text += "  {-40% Potion Cooldown}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+                      text += "  {Potion Boosts Defense}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+                      text += "  {Potion Heals Nearby Allies}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+                      text += "  {+30% Ranged Damage}\n";
+                  }
+                  if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+                      text += "  {+20% Weapon Damage Aura}\n";
+                  }
+              }
+              text += "#{}";
+          }
+          else {
+              text += "Health: " + player.health + "/" + player.health_max + "\n";
+          }
+          text += "Moves : " + player.moveSpeed + "\n";
+          const melee = player.slots.melee;
+          if (melee) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+              text += "#{teal}";
+              text += `  ${melee.name} [${melee.power}]\n`;
+              text += "#{}";
+          }
+          else if (player.damage > 0) {
+              text += "Melee : " + player.damage + " / " + player.attackSpeed + "\n";
+          }
+          else {
+              text += "Melee : None\n";
+          }
+          const ranged = player.slots.ranged;
+          if (ranged) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      " / " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+              text += "#{teal}";
+              text += "  " + ranged.name + " [" + ranged.power + "]\n";
+          }
+          else if (player.range > 0) {
+              text +=
+                  "Ranged: " +
+                      player.rangedDamage +
+                      "  " +
+                      player.rangedAttackSpeed +
+                      " @ " +
+                      player.range +
+                      " (" +
+                      player.ammo +
+                      ")\n";
+          }
+          else {
+              text += "Ranged: None";
+          }
+          this._text.text(text);
+          this.bounds.height = this._text.bounds.height + 2;
+          this.bounds.width = this._text.bounds.width + 2;
+      }
+  }
+  function details(scene, width, height) {
+      const widget = new Details({
+          id: "DETAILS",
+          tag: "details",
+          x: 2,
+          y: 2,
+          width: width - 4,
+          height: height - 4,
+          scene,
+          bg: index$9.from("dark_gray"),
+      });
+      return widget;
+  }
+
+  class AttackInfo {
+      damage;
+      time;
+      constructor(damage, time) {
+          this.damage = damage;
+          this.time = time;
+      }
+  }
+  class Actor extends Obj {
+      _turnTime = 0;
+      _level = null;
+      data = {};
+      health = 0;
+      health_max = 0;
+      ammo = 0;
+      _power = 1;
+      armor_flags = 0;
+      statuses = [];
+      combo_index = 0;
+      leader = null;
+      constructor(kind) {
+          super(kind);
+          this.z = 1;
+          this.health_max = this.kind.health || 10;
+          this.health = this.health_max;
+          this.ammo = this.kind.ammo || 0; // TODO - scale with power?
+      }
+      _create(opts) {
+          super._create(opts);
+          Object.entries(opts).forEach(([key, val]) => {
+              // 'on' section handled by super._make
+              if (typeof val === "function") {
+                  this.on(key, val);
+              }
+          });
+          this.power = opts.power || 1;
+          // machineHome
+      }
+      // attributes
+      get name() {
+          return this.kind.name;
+      }
+      get damage() {
+          // TODO - combo damage
+          return Math.round(this.kind.damage * (1 + (this._power - 1) / 2));
+      }
+      get attackSpeed() {
+          // TODO - combo speed
+          return this.kind.attackSpeed;
+      }
+      get range() {
+          return this.kind.range;
+      }
+      get rangedDamage() {
+          return Math.round(this.kind.rangedDamage * (1 + (this._power - 1) / 2));
+      }
+      get rangedAttackSpeed() {
+          return this.kind.rangedAttackSpeed;
+      }
+      get moveSpeed() {
+          return this.kind.moveSpeed;
+      }
+      get comboLen() {
+          return this.kind.combo;
+      }
+      get power() {
+          return this._power;
+      }
+      set power(val) {
+          this._power = val;
+          this.health = Math.round(this.kind.health * (1 + (this._power - 1) / 2));
+          this.health_max = this.health;
+      }
+      isHero() {
+          return false;
+      }
+      //
+      getMeleeAttack() {
+          const attack = new AttackInfo(this.damage, this.attackSpeed);
+          this.combo_index += 1;
+          this.combo_index = this.combo_index % this.comboLen;
+          return attack;
+      }
+      hasArmorFlag(flag) {
+          return (this.armor_flags & flag) > 0;
+      }
+      // TODO - Should this be a method instead of a property?
+      get canMeleeAttack() {
+          return this.damage > 0 && this.attackSpeed > 0;
+      }
+      addStatus(status) {
+          const current = this.statuses.findIndex((current) => current && current.merge(status));
+          if (current >= 0) {
+              return;
+          }
+          const empty = this.statuses.findIndex((s) => !s);
+          if (empty >= 0) {
+              this.statuses[empty] = status;
+          }
+          else {
+              this.statuses.push(status);
+          }
+      }
+      remove_status(status) {
+          const index = this.statuses.indexOf(status);
+          if (index >= 0) {
+              this.statuses[index] = null;
+          }
+      }
+      startTurn(level) {
+          this._turnTime = 0;
+          this.emit("turn_start", level, this);
+      }
+      endTurn(level, time) {
+          this._turnTime = time;
+          this.emit("turn_end", level, this, time);
+      }
+      hasActed() {
+          return this._turnTime > 0;
+      }
+      draw(buf) {
+          if (this.health <= 0)
+              return;
+          buf.drawSprite(this.x, this.y, this.kind);
+      }
+      avoidsTile(tile) {
+          return tile.blocksMove || false;
+      }
+      moveCost(x, y) {
+          const level = this._level;
+          if (!level)
+              return index$6.OBSTRUCTION;
+          if (!level.hasXY(x, y))
+              return index$6.OBSTRUCTION;
+          if (level.blocksDiagonal(x, y))
+              return index$6.OBSTRUCTION;
+          if (level.blocksMove(x, y))
+              return index$6.BLOCKED;
+          // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
+          return index$6.OK;
+      }
+      pathTo(loc) {
+          const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
+          return path;
+      }
+      act(level) {
+          // TODO - move this to plugin
+          this.startTurn(level);
+          ai(level, this);
+          if (!this.hasActed()) {
+              console.log("No actor AI action.");
+          }
+      }
+      doBump(level, actor) {
+          // TODO - Check this.bump first!!!
+          const actions = this.kind.bump;
+          for (let action of actions) {
+              const fn = get$1(action);
+              if (fn && fn(level, actor, this)) {
+                  return true;
+              }
+          }
+          return false; // did nothing
+      }
+      tick(level, time) {
+          this.emit("tick", level, this, time);
+          Object.values(this.statuses).forEach((status, i) => {
+              if (status) {
+                  if (!status.tick(this, level, time)) {
+                      this.statuses[i] = null;
+                  }
+              }
+          });
+      }
+      getSidebarEntry() {
+          const entry = new SidebarEntry(this.name, this.kind.fg);
+          entry.add_progress("Health", "green", this.health, this.health_max);
+          this.statuses.forEach((s) => {
+              s && s.update_sidebar(this, entry);
+          });
+          this.emit("sidebar", this, entry); // Allow plugins to update sidebar
+          return entry;
+      }
+  }
+
+  class ActorFactory {
+      plugins = [];
+      kinds = {};
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind$2(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
+      }
+      create(kind, opts = {}) {
+          let out = Option.None();
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
+              }
+              return v;
+          }, out);
+          let actor = out.unwrapOrElse(() => new Actor(kind));
+          this.apply(actor);
+          actor._create(opts);
+          actor.emit("create", actor, opts);
+          return actor;
+      }
+      apply(item) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              item.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(item.data, val);
+                  }
+                  else if (key === "kinds") ;
+                  else if (typeof val === "function") {
+                      item.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$3 = new ActorFactory();
+  function use$3(plugin) {
+      factory$3.use(plugin);
+  }
+  function create$3(kind, config = {}) {
+      if (typeof kind === "string") {
+          kind = factory$3.getKind(kind);
+          if (!kind)
+              throw new Error("Failed to find kind.");
+      }
+      if (typeof config === "number") {
+          config = { power: config };
+      }
+      if (kind.hero) {
+          throw new Error("ActorKind is Hero: " + kind.id);
+      }
+      return factory$3.create(kind, config);
+  }
+  function randomSpawnLocFor(level, actor) {
+      let x;
+      let y;
+      let tries = level.width * level.height;
+      do {
+          --tries;
+          x = level.rng.number(level.width);
+          y = level.rng.number(level.height);
+          // TODO - also not in a currently visible location
+      } while ((tries && !level.hasTile(x, y, "FLOOR")) || level.actorAt(x, y));
+      if (!tries) {
+          return Option.None();
+      }
+      return Option.Some({ x, y });
+  }
+  function spawn(level, id, // Should this be | ActorKind instead of | Actor?
+  x, y) {
+      const newbie = typeof id === "string" ? create$3(id) : id;
+      if (x === undefined || y === undefined) {
+          const loc = randomSpawnLocFor(level);
+          if (loc.isNone()) {
+              console.error("Failed to find spawn location for : " + newbie.name);
+              return;
+          }
+          const xy = loc.unwrap();
+          newbie.x = xy.x;
+          newbie.y = xy.y;
+      }
+      else {
+          newbie.x = x;
+          newbie.y = y;
+      }
+      level.addActor(newbie);
+      return newbie;
+  }
+
+  function makeKind$2(cfg) {
+      const kind = makeKind$4(cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("ItemKind must have 'id'.");
+      }
+      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
+      }
+      if (cfg.tags && typeof cfg.tags === "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      kind.ch = kind.ch || "!";
+      if (kind.fg) {
+          kind.fg = index$9.make(cfg.fg);
+      }
+      else {
+          kind.fg = colors.red;
+      }
+      if (kind.bg) {
+          kind.bg = index$9.make(cfg.bg);
+      }
+      else {
+          kind.bg = index$9.NONE;
+      }
+      kind.damage = kind.damage || 0;
+      kind.attackSpeed = kind.attackSpeed || 100;
+      kind.combo = kind.combo || 0;
+      kind.comboDamage = kind.comboDamage || 0;
+      kind.comboSpeed = kind.comboSpeed || 0;
+      kind.range = kind.range || 0;
+      kind.rangedDamage = kind.rangedDamage || 0;
+      kind.tooClose = kind.tooClose || 0;
+      kind.rangedAttackSpeed = kind.rangedAttackSpeed || 0;
+      kind.ammo = kind.ammo || 0;
+      if (kind.attackSpeed == 0 && kind.damage > 0) {
+          kind.attackSpeed = kind.moveSpeed;
+      }
+      if (kind.comboDamage == 0) {
+          kind.combo = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.combo < 2) {
+          kind.comboDamage = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.comboSpeed == 0) {
+          kind.comboSpeed = kind.attackSpeed;
+      }
+      if (kind.ammo == 0 && kind.range > 0) {
+          kind.ammo = 10; // You get 10 shots by default
+      }
+      // TODO: Create drop language
+      //      - 50 (drop default treasure 50% of time)
+      //      - ARROWS (always drop arrows)
+      //      - ARROWS@35 (35% drop arrows)
+      //      - ARROWS@50%/HEALTH@20% (arrows (50%) or health (20%) or nothing (30%)) (% is optional)
+      //      - ARROWS@50%+HEALTH@20% (arrows (50%) AND/OR health (20%))
+      //      - #TREASURE@50% (50% drop from the TREASURE tag)
+      //      - #TREASURE*3@50% (50% drop 3 from TREASURE tag)
+      //      - #TREASURE@50%*3 (try to drop from TREASURE with 50% chance 3 times)
+      //      - [ARROWS+HEALTH]@50% (50% drop both arrows and health)
+      //      - [ARROWS@50+HEALTH]@50 (50% drop health and 50% of those have arrows with them)
+      kind.dropChance = kind.dropChance || 0;
+      kind.dropMatch = kind.dropMatch || [];
+      if (typeof cfg.dropMatch === "string") {
+          kind.dropMatch = cfg.dropMatch.split(/[,]/g).map((t) => t.trim());
+      }
+      if (kind.dropChance > 0 && kind.dropMatch.length == 0) {
+          kind.dropMatch.push("drop"); // Default drops
+      }
+      if (kind.dropMatch.length > 0 && kind.dropChance == 0) {
+          kind.dropChance = 100;
+      }
+      // Make sure default bump is setup for actor
+      if (cfg.bump === undefined) {
+          if (cfg.damage > 0 || cfg.rangedDamage > 0) {
+              kind.bump.push("attack");
+          }
+      }
+      return kind;
+  }
+  function install$6(cfg) {
+      factory$3.installKind(cfg);
+  }
+  function getKind$2(id) {
+      return factory$3.getKind(id);
+  }
+
+  class Status {
+      start(actor, level) { }
+      tick(actor, level, time) {
+          return false; // no longer active
+      }
+      stop(actor, level) { }
+      merge(status) {
+          return false;
+      }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying the health bar
+      //      - Allow set text { set_status("Regen") }
+      update_sidebar(actor, entry) { }
+      // TODO - Wrap this with higher level interface
+      //      - Allow modifying other parts
+      //      - Allow set text { set_status("Regen") }
+      draw_details() { }
+  }
+  class RegenData {
+      amount;
+      time;
+      elapsed;
+      constructor(amount, time) {
+          this.amount = amount;
+          this.time = time;
+          this.elapsed = 0;
+      }
+      get isActive() {
+          return this.amount > 0.0 && this.elapsed < this.time;
+      }
+      tick(time) {
+          let used = Math.floor((this.amount * this.elapsed) / this.time);
+          this.elapsed = Math.min(this.time, this.elapsed + time);
+          let new_used = Math.floor((this.amount * this.elapsed) / this.time);
+          return new_used - used;
+      }
+  }
+  class RegenStatus extends Status {
+      data;
+      constructor(amount, time) {
+          super();
+          this.data = [new RegenData(amount, time)];
+      }
+      tick(actor, level, time) {
+          let still_active = false;
+          this.data.forEach((d) => {
+              if (d.isActive) {
+                  still_active = true;
+                  const amount = d.tick(time);
+                  if (amount > 0) {
+                      heal(level, actor, { amount });
+                  }
+              }
+          });
+          return still_active;
+      }
+      merge(status) {
+          if (status instanceof RegenStatus) {
+              // do merge
+              this.data = this.data.concat(status.data);
+              status.data = [];
+              return true;
+          }
+          return false;
+      }
+      update_sidebar(actor, entry) {
+          entry.add_status("{Regen}", "green");
+      }
+  }
+
+  class Hero extends Actor {
+      // TODO - Make this part of a plugin
+      mapToMe;
+      // TODO - Make this part of a plugin
+      fov;
+      goalPath;
+      followPath;
+      // TODO - Make this part of a plugin
+      slots;
+      constructor(kind) {
+          super(kind);
+          this.mapToMe = new index$6.DijkstraMap();
+          this.fov = null;
+          this.goalPath = null;
+          this.followPath = false;
+          this.slots = {};
+          // this.potion_max = 40 * 200;
+          // this.potion = this.potion_max; // Potion is ready
+      }
+      // @ts-ignore
+      _create(opts) {
+          // @ts-ignore
+          super._create(opts);
+          // this.on("add", (level: Level) => {
+          //   this.updateMapToMe();
+          //   this.updateFov();
+          // });
+          // this.on("move", () => {
+          //   this.updateMapToMe();
+          //   this.updateFov();
+          // });
+          // this.on("remove", () => {
+          //   if (this.fov) {
+          //     GWU.grid.free(this.fov);
+          //     this.fov = null;
+          //   }
+          //   this.clearGoal();
+          // });
+          // this.on("turn_end", (game: Game, time: number) => {
+          //   // this.potion = Math.min(this.potion + time, this.potion_max);
+          // });
+          // this.on("damage", () => this.clearGoal());
+          // Need items in slots....
+          Object.entries(this.kind.slots).forEach(([slot, id]) => {
+              const item = make(id);
+              if (item === null) {
+                  console.log(`player UNKNOWN Item ERROR = ${id} @ ${slot}`);
+              }
+              else {
+                  this.equip(item);
+                  console.log(`player Item = ${item.kind.id} @ ${slot}`);
+              }
+          });
+      }
+      // attributes
+      get damage() {
+          const melee = this.slots.melee;
+          if (melee) {
+              // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboDamage;
+              }
+              return melee.damage;
+          }
+          return super.damage;
+      }
+      get attackSpeed() {
+          const melee = this.slots.melee;
+          if (melee) {
+              // track combo...
+              if (this.combo_index == melee.kind.combo - 1) {
+                  return melee.comboSpeed;
+              }
+              return melee.speed;
+          }
+          return super.attackSpeed;
+      }
+      get range() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.range;
+          }
+          return super.range;
+      }
+      get rangedDamage() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.damage;
+          }
+          return super.rangedDamage;
+      }
+      get rangedAttackSpeed() {
+          const ranged = this.slots.ranged;
+          if (ranged) {
+              return ranged.speed;
+          }
+          return super.rangedAttackSpeed;
+      }
+      // get canUsePotion(): boolean {
+      //   return this.potion >= this.potion_max;
+      // }
+      get comboLen() {
+          const melee = this.slots.melee;
+          if (melee) {
+              return melee.combo;
+          }
+          return this.kind.combo;
+      }
+      isHero() {
+          return true;
+      }
+      // TODO - plugin?
+      equip(item) {
+          if (item.slot === null) {
+              throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
+          }
+          this.slots[item.slot] = item;
+          this.armor_flags = 0; // TODO - this.kind.item_flags (allows mobs to have flags too)
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.armor_flags |= i.kind.armor_flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
+      }
+      // TODO - plugin?
+      unequipSlot(slot) {
+          this.slots[slot] = null;
+          this.armor_flags = 0;
+          const health_pct = this.health / this.health_max;
+          let new_health_max = this.kind.health;
+          Object.entries(this.slots).forEach(([s, i]) => {
+              if (i) {
+                  this.armor_flags |= i.kind.armor_flags;
+                  new_health_max += i.defense;
+              }
+          });
+          this.health_max = new_health_max;
+          this.health = Math.round(new_health_max * health_pct);
+          this.combo_index = 0;
+      }
+      act(level) {
+          // TODO - move this to plugin
+          this.startTurn(level);
+          if (this.goalPath && this.followPath && this.goalPath.length) {
+              const step = this.goalPath[0];
+              if (step) {
+                  if (level.hasActor(step[0], step[1])) {
+                      level.game.addMessage("You are blocked.");
+                  }
+                  else {
+                      const dir = xy.dirFromTo(this, step);
+                      // @ts-ignore
+                      if (moveDir(level, this, dir, true)) {
+                          if (xy.equals(this, step)) {
+                              this.goalPath.shift(); // we moved there, so remove that step
+                          }
+                          else {
+                              this.clearGoal();
+                          }
+                          return;
+                      }
+                      level.game.addMessage("You lost track of path.");
+                  }
+              }
+          }
+          this.clearGoal();
+          level.needInput = true;
+          console.log("Hero - await input", level.scheduler.time);
+      }
+      setGoal(x, y) {
+          if (!this._level || this.followPath)
+              return;
+          const level = this._level;
+          this.goalPath = index$6.fromTo(this, [x, y], (i, j) => {
+              if (level.hasActor(i, j))
+                  return index$6.AVOIDED;
+              return this.moveCost(i, j);
+          });
+          if (this.goalPath &&
+              this.goalPath.length &&
+              xy.equals(this.goalPath[0], this)) {
+              this.goalPath.shift(); // remove the spot we are standing on
+          }
+      }
+      clearGoal() {
+          this.followPath = false;
+          this.goalPath = null;
+      }
+      updateMapToMe() {
+          const level = this._level;
+          if (!level)
+              return;
+          this.mapToMe.reset(level.width, level.height);
+          this.mapToMe.setGoal(this.x, this.y);
+          this.mapToMe.calculate((x, y) => this.moveCost(x, y));
+      }
+      updateFov() {
+          const level = this._level;
+          if (!level)
+              return;
+          if (!this.fov ||
+              this.fov.width !== level.width ||
+              this.fov.height !== level.height) {
+              this.fov && grid.free(this.fov);
+              this.fov = grid.alloc(level.width, level.height);
+          }
+          index$7.calculate(this.fov, (x, y) => {
+              return this.moveCost(x, y) >= index$6.BLOCKED;
+          }, this.x, this.y, 100);
+      }
+      isInFov(...args) {
+          if (!this.fov)
+              return false;
+          if (args.length == 2) {
+              const [x, y] = args;
+              return this.fov.get(x, y) > 0;
+          }
+          else {
+              const pos = args[0];
+              return this.fov.get(xy.x(pos), xy.y(pos)) > 0;
+          }
+      }
+  }
+
+  class HeroFactory {
+      plugins = [];
+      kinds = {};
+      use(plugin) {
+          this.plugins.push(plugin);
+      }
+      installKind(...args) {
+          let id;
+          let opts;
+          if (args.length == 1) {
+              opts = args[0];
+              id = args[0].id;
+          }
+          else {
+              id = args[0];
+              opts = args[1];
+          }
+          const kind = makeKind$1(opts);
+          this.plugins.forEach((p) => {
+              if (p.createKind) {
+                  p.createKind(kind, opts);
+              }
+          });
+          this.kinds[id.toLowerCase()] = kind;
+          return kind;
+      }
+      getKind(id) {
+          return this.kinds[id.toLowerCase()] || null;
+      }
+      create(kind, opts = {}) {
+          let out = Option.None();
+          if (opts.ctor) {
+              out = opts.ctor(kind, opts);
+          }
+          out = this.plugins.reduce((v, p) => {
+              if (v.isNone() && p.ctor) {
+                  return p.ctor(kind, opts);
+              }
+              return v;
+          }, out);
+          let hero = out.unwrapOrElse(() => new Hero(kind));
+          this.apply(hero);
+          hero._create(opts);
+          hero.emit("create", hero, opts);
+          return hero;
+      }
+      apply(hero) {
+          this.plugins.forEach((p) => {
+              Object.entries(p).forEach(([key, val]) => {
+                  if (key === "on") {
+                      Object.entries(val).forEach(([k2, v2]) => {
+                          if (typeof v2 === "function") {
+                              hero.on(k2, v2);
+                          }
+                          else {
+                              console.warn("Invalid 'on' member in Item plugin: " + k2);
+                          }
+                      });
+                  }
+                  else if (key === "data") {
+                      Object.assign(hero.data, val);
+                  }
+                  else if (key === "kinds") ;
+                  else if (typeof val === "function") {
+                      hero.on(key, val);
+                  }
+                  else {
+                      console.warn("Invalid member of Item plugin: " + key);
+                  }
+              });
+          });
+      }
+  }
+  const factory$2 = new HeroFactory();
+  function use$2(plugin) {
+      factory$2.use(plugin);
+  }
+  function create$2(kind, config = {}) {
+      if (typeof kind === "string") {
+          kind = getKind$1(kind);
+          if (!kind)
+              throw new Error("Failed to find kind.");
+      }
+      if (config === undefined) {
+          config = {};
+      }
+      if (typeof config === "number") {
+          config = { power: config };
+      }
+      return factory$2.create(kind, config);
+  }
+
+  function makeKind$1(cfg) {
+      const kind = makeKind$4(cfg);
+      if (!kind.id || kind.id.length === 0) {
+          throw new Error("HeroKind must have 'id'.");
+      }
+      if (!kind.name || typeof kind.name !== "string" || kind.name.length == 0) {
+          kind.name = index$8.title_case(kind.id.toLowerCase().replace(/\_/g, " "));
+      }
+      if (cfg.tags && typeof cfg.tags === "string") {
+          kind.tags = cfg.tags.split(/[|,]/).map((v) => v.trim());
+      }
+      kind.ch = kind.ch || "!";
+      if (kind.fg) {
+          kind.fg = index$9.make(cfg.fg);
+      }
+      else {
+          kind.fg = colors.red;
+      }
+      if (kind.bg) {
+          kind.bg = index$9.make(cfg.bg);
+      }
+      else {
+          kind.bg = index$9.NONE;
+      }
+      kind.damage = kind.damage || 0;
+      kind.attackSpeed = kind.attackSpeed || 100;
+      kind.combo = kind.combo || 0;
+      kind.comboDamage = kind.comboDamage || 0;
+      kind.comboSpeed = kind.comboSpeed || 0;
+      kind.range = kind.range || 0;
+      kind.rangedDamage = kind.rangedDamage || 0;
+      kind.tooClose = kind.tooClose || 0;
+      kind.rangedAttackSpeed = kind.rangedAttackSpeed || 0;
+      kind.ammo = kind.ammo || 0;
+      if (kind.attackSpeed == 0 && kind.damage > 0) {
+          kind.attackSpeed = kind.moveSpeed;
+      }
+      if (kind.comboDamage == 0) {
+          kind.combo = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.combo < 2) {
+          kind.comboDamage = 0;
+          kind.comboSpeed = 0;
+      }
+      else if (kind.comboSpeed == 0) {
+          kind.comboSpeed = kind.attackSpeed;
+      }
+      if (kind.ammo == 0 && kind.range > 0) {
+          kind.ammo = 10; // You get 10 shots by default
+      }
+      // TODO - validate?
+      kind.slots = kind.slots || {};
+      return kind;
+  }
+  function install$5(cfg) {
+      factory$2.installKind(cfg);
+  }
+  function getKind$1(id) {
+      return factory$2.getKind(id);
+  }
 
   const commandsByName = {};
   function install$4(name, fn) {
@@ -23500,6 +23536,7 @@ void main() {
                       });
                   }
                   else if (key === "kinds") ;
+                  else if (key === "tiles") ;
                   else if (key == "keymap") {
                       level.keymap = utils.mergeDeep(level.keymap, val);
                   }
@@ -24197,16 +24234,32 @@ void main() {
       active.forEach((p) => {
           // TODO - commands
           // TODO - actions
-          if (p.actor) {
-              const kinds = p.actor.kinds || {};
-              Object.entries(kinds).forEach(([k, v]) => {
-                  install$7(v);
+          if (p.actor && p.actor.kinds) {
+              let kinds = [];
+              if (!Array.isArray(p.actor.kinds)) {
+                  kinds = [p.actor.kinds];
+              }
+              else {
+                  kinds = p.actor.kinds;
+              }
+              kinds.forEach((kindSet) => {
+                  Object.entries(kindSet).forEach(([k, v]) => {
+                      install$6(v);
+                  });
               });
           }
-          if (p.hero) {
-              const kinds = p.hero.kinds || {};
-              Object.entries(kinds).forEach(([k, v]) => {
-                  install$6(v);
+          if (p.hero && p.hero.kinds) {
+              let kinds = [];
+              if (!Array.isArray(p.hero.kinds)) {
+                  kinds = [p.hero.kinds];
+              }
+              else {
+                  kinds = p.hero.kinds;
+              }
+              kinds.forEach((kindSet) => {
+                  Object.entries(kindSet).forEach(([k, v]) => {
+                      install$5(v);
+                  });
               });
           }
           if (p.item && p.item.kinds) {
@@ -24219,14 +24272,36 @@ void main() {
               }
               kinds.forEach((kindSet) => {
                   Object.entries(kindSet).forEach(([k, v]) => {
+                      install$8(v);
+                  });
+              });
+          }
+          if (p.level && p.level.tiles) {
+              let tiles = [];
+              if (!Array.isArray(p.level.tiles)) {
+                  tiles = [p.level.tiles];
+              }
+              else {
+                  tiles = p.level.tiles;
+              }
+              tiles.forEach((tileSet) => {
+                  Object.entries(tileSet).forEach(([k, v]) => {
                       install$9(v);
                   });
               });
           }
-          if (p.level) {
-              const kinds = p.level.kinds || {};
-              Object.entries(kinds).forEach(([k, v]) => {
-                  install$3(v);
+          if (p.level && p.level.kinds) {
+              let kinds = [];
+              if (!Array.isArray(p.level.kinds)) {
+                  kinds = [p.level.kinds];
+              }
+              else {
+                  kinds = p.level.kinds;
+              }
+              kinds.forEach((kindSet) => {
+                  Object.entries(kindSet).forEach(([k, v]) => {
+                      install$3(v);
+                  });
               });
           }
           // TODO - hordes
@@ -24893,6 +24968,40 @@ void main() {
       },
   };
 
+  const tiles = {
+      DOWN_STAIRS: {
+          id: "DOWN_STAIRS",
+          ch: "<",
+          fg: "gray",
+          on: {
+              enter(level, actor) {
+                  level.game.addMessage("There is no turning back.");
+              },
+          },
+      },
+      UP_STAIRS: {
+          id: "UP_STAIRS",
+          ch: ">",
+          fg: "orange",
+          on: {
+              enter(level, actor) {
+                  level.game.addMessage("Going up!");
+                  level.emit("up_stairs", level, actor);
+              },
+          },
+      },
+      UP_STAIRS_INACTIVE: {
+          id: "UP_STAIRS_INACTIVE",
+          ch: ">",
+          fg: "gray",
+          priority: 75,
+          on: {
+              enter(level, actor) {
+                  level.game.addMessage("There is more to do.");
+              },
+          },
+      },
+  };
   const level_kinds = {
       TOWER: {
           id: "TOWER",
@@ -26200,7 +26309,7 @@ void main() {
       return app;
   }
 
-  install$8("potion", (level, actor) => {
+  install$7("potion", (level, actor) => {
       if (!actor.isHero)
           return false;
       if (actor.data.potion < actor.data.potion_max) {
@@ -26410,7 +26519,10 @@ void main() {
                   ranged_kinds,
               ],
           },
-          level: { kinds: level_kinds },
+          level: {
+              kinds: level_kinds,
+              tiles: [default_tiles, tiles],
+          },
           // TODO - horde: { kinds: ... }
           // TODO - tile: { kinds: ... }
       };

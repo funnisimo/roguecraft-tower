@@ -44,12 +44,6 @@ export class Obj {
   }
 
   _create(cfg: ObjCreateOpts) {
-    const kindFns = this.kind.on || {};
-    Object.entries(kindFns).forEach(([key, value]) => {
-      if (!value) return;
-      this.on(key, value);
-    });
-
     this.x = cfg.x !== undefined ? cfg.x : this.x;
     this.y = cfg.y !== undefined ? cfg.y : this.y;
     this.z = cfg.z !== undefined ? cfg.z : this.z;

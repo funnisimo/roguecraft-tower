@@ -11,6 +11,42 @@ export interface WaveInfo {
   power?: number;
 }
 
+export const tiles: Record<string, TILE.TileConfig> = {
+  DOWN_STAIRS: {
+    id: "DOWN_STAIRS",
+    ch: "<",
+    fg: "gray",
+    on: {
+      enter(level: Level, actor) {
+        level.game.addMessage("There is no turning back.");
+      },
+    },
+  },
+
+  UP_STAIRS: {
+    id: "UP_STAIRS",
+    ch: ">",
+    fg: "orange",
+    on: {
+      enter(level, actor) {
+        level.game.addMessage("Going up!");
+        level.emit("up_stairs", level, actor);
+      },
+    },
+  },
+  UP_STAIRS_INACTIVE: {
+    id: "UP_STAIRS_INACTIVE",
+    ch: ">",
+    fg: "gray",
+    priority: 75,
+    on: {
+      enter(level, actor) {
+        level.game.addMessage("There is more to do.");
+      },
+    },
+  },
+};
+
 export const level_kinds = {
   TOWER: {
     id: "TOWER",

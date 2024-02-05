@@ -40,7 +40,10 @@ function start() {
         RANGED_KINDS.ranged_kinds,
       ],
     },
-    level: { kinds: LEVEL_KINDS.level_kinds },
+    level: {
+      kinds: LEVEL_KINDS.level_kinds,
+      tiles: [TILE.default_tiles, LEVEL_KINDS.tiles],
+    },
     // TODO - horde: { kinds: ... }
     // TODO - tile: { kinds: ... }
   };

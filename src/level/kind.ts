@@ -66,6 +66,8 @@ export type LevelConfig = Partial<LevelKind> & {
   height: number;
 };
 
+export type LevelConfigSet = Record<string, LevelConfig>;
+
 // export const kinds: Record<string, LevelKind> = {};
 
 // // @ts-ignore

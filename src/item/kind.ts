@@ -163,6 +163,8 @@ export function makeKind(cfg: ItemKindConfig): ItemKind {
 
   if (kind.frequency && typeof kind.frequency !== "function") {
     kind.frequency = GWU.frequency.make(cfg.frequency);
+  } else if (!kind.frequency) {
+    kind.frequency = GWU.frequency.make(100); // Default is 100
   }
 
   if (typeof cfg.armor_flags !== "number") {

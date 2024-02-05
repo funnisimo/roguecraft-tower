@@ -5,11 +5,13 @@ import { ActorMakeOpts, Actor } from "./actor";
 import { ActorEvents, ActorKind, ActorKindConfig, makeKind } from "./kind";
 import * as FX from "../fx";
 
+export type ActorKindConfigSet = Record<string, ActorKindConfig>;
+
 export interface ActorPlugin extends ActorEvents {
   createKind?: (kind: ActorKind, opts: ActorKindConfig) => void;
   on?: ObjEvents;
   data?: { [key: string]: any };
-  kinds?: { [id: string]: ActorKindConfig };
+  kinds?: ActorKindConfigSet | ActorKindConfigSet[];
 }
 
 export class ActorFactory {
