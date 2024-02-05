@@ -11,6 +11,9 @@ import * as COMMANDS from "../command";
 
 export const level: PLUGINS.Plugin = {
   name: "level",
+  tile: {
+    tiles: TILE.default_tiles,
+  },
   actor: {
     add(level: Level, actor: Actor) {
       level.scheduler.push(actor, actor.kind.moveSpeed);

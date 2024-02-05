@@ -29,23 +29,25 @@ function start() {
           console.log(`Level: ${i}, seed=${levelSeed}`);
         }
       },
+      lose(game: GAME.Game, reason: string) {
+        game.app.scenes.start("lose", { reason, game });
+      },
     },
-    actor: { kinds: ACTOR_KINDS.actors },
-    hero: { kinds: ACTOR_KINDS.heroes },
-    item: {
-      kinds: [
+    kinds: {
+      actor: ACTOR_KINDS.actors,
+      hero: ACTOR_KINDS.heroes,
+      item: [
         DROP_KINDS.drop_kinds,
         ARMOR_KINDS.armor_kinds,
         MELEE_KINDS.melee_kinds,
         RANGED_KINDS.ranged_kinds,
       ],
+      level: LEVEL_KINDS.level_kinds,
+      tile: LEVEL_KINDS.tiles,
+      // TODO - horde: ...,
     },
-    level: {
-      kinds: LEVEL_KINDS.level_kinds,
-      tiles: [TILE.default_tiles, LEVEL_KINDS.tiles],
-    },
+
     // TODO - horde: { kinds: ... }
-    // TODO - tile: { kinds: ... }
   };
 
   GAME.startApp(opts);

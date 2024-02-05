@@ -155,6 +155,20 @@ export function install(...args: any[]): LevelKind {
   return factory.installKind(args[0], args[1]);
 }
 
+export function installSet(set: LevelConfigSet | LevelConfigSet[]) {
+  let kinds: LevelConfigSet[] = [];
+  if (!Array.isArray(set)) {
+    kinds = [set];
+  } else {
+    kinds = set;
+  }
+  kinds.forEach((kindSet) => {
+    Object.entries(kindSet).forEach(([k, v]: [string, LevelConfig]) => {
+      install(k, v);
+    });
+  });
+}
+
 export function getKind(id: string): LevelKind | null {
   return factory.getKind(id);
 }

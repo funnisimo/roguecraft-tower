@@ -7,6 +7,7 @@ import * as LEVEL from "../level";
 import { Game, GameEvents, GameOpts } from "./game";
 import * as GAME from "./factory";
 import * as TILE from "../tile";
+import { ObjEvents } from "../object";
 
 namespace global {
   var GAME: Game;
@@ -21,12 +22,19 @@ export interface Plugin extends GameOpts {
   name: string;
   plugins?: string[];
   app?: AppEvents;
-  tile?: GWD.site.TilePlugin;
-  game?: GameEvents;
+  tile?: TILE.TilePlugin;
+  game?: GameEvents & ObjEvents;
   level?: LEVEL.LevelPlugin;
   actor?: ACTOR.ActorPlugin;
   hero?: HERO.HeroPlugin;
   item?: ITEM.ItemPlugin;
+  kinds?: {
+    level?: LEVEL.LevelConfigSet | LEVEL.LevelConfigSet[];
+    actor?: ACTOR.ActorKindConfigSet | ACTOR.ActorKindConfigSet[];
+    hero?: HERO.HeroKindConfigSet | HERO.HeroKindConfigSet[];
+    item?: ITEM.ItemKindConfigSet | ITEM.ItemKindConfigSet[];
+    tile?: TILE.TileConfigSet | TILE.TileConfigSet[];
+  };
 }
 
 export const plugins: Record<string, Plugin> = {};
@@ -114,8 +122,9 @@ export function startPlugins(app: GWU.app.App, ...names: (string | Plugin)[]) {
       if (plugin.level) {
         LEVEL.use(plugin.level);
       }
-      // TODO - How to use TilePlugin?
-      // TODO - How to control loading tiles?
+      if (plugin.tile) {
+        GWD.site.tileFactory.use(plugin.tile);
+      }
 
       // Start the plugin
       if (plugin.app && plugin.app.start) {
@@ -133,77 +142,38 @@ export function startPlugins(app: GWU.app.App, ...names: (string | Plugin)[]) {
     // TODO - actions
 
     if (p.actor && p.actor.kinds) {
-      let kinds: ACTOR.ActorKindConfigSet[] = [];
-      if (!Array.isArray(p.actor.kinds)) {
-        kinds = [p.actor.kinds];
-      } else {
-        kinds = p.actor.kinds;
-      }
-      kinds.forEach((kindSet) => {
-        Object.entries(kindSet).forEach(
-          ([k, v]: [string, ACTOR.ActorKindConfig]) => {
-            ACTOR.install(v);
-          }
-        );
-      });
+      ACTOR.installSet(p.actor.kinds);
     }
+    if (p.kinds && p.kinds.actor) {
+      ACTOR.installSet(p.kinds.actor);
+    }
+
     if (p.hero && p.hero.kinds) {
-      let kinds: HERO.HeroKindConfigSet[] = [];
-      if (!Array.isArray(p.hero.kinds)) {
-        kinds = [p.hero.kinds];
-      } else {
-        kinds = p.hero.kinds;
-      }
-      kinds.forEach((kindSet) => {
-        Object.entries(kindSet).forEach(
-          ([k, v]: [string, HERO.HeroKindConfig]) => {
-            HERO.install(v);
-          }
-        );
-      });
+      HERO.installSet(p.hero.kinds);
     }
+    if (p.kinds && p.kinds.hero) {
+      HERO.installSet(p.kinds.hero);
+    }
+
     if (p.item && p.item.kinds) {
-      let kinds: ITEM.ItemKindConfigSet[] = [];
-      if (!Array.isArray(p.item.kinds)) {
-        kinds = [p.item.kinds];
-      } else {
-        kinds = p.item.kinds;
-      }
-      kinds.forEach((kindSet) => {
-        Object.entries(kindSet).forEach(
-          ([k, v]: [string, ITEM.ItemKindConfig]) => {
-            ITEM.install(v);
-          }
-        );
-      });
+      ITEM.installSet(p.item.kinds);
     }
-    if (p.level && p.level.tiles) {
-      let tiles: TILE.TileConfigSet[] = [];
-      if (!Array.isArray(p.level.tiles)) {
-        tiles = [p.level.tiles];
-      } else {
-        tiles = p.level.tiles;
-      }
-      tiles.forEach((tileSet) => {
-        Object.entries(tileSet).forEach(([k, v]: [string, TILE.TileConfig]) => {
-          TILE.install(v);
-        });
-      });
+    if (p.kinds && p.kinds.item) {
+      ITEM.installSet(p.kinds.item);
     }
+
+    if (p.tile && p.tile.tiles) {
+      TILE.installSet(p.tile.tiles);
+    }
+    if (p.kinds && p.kinds.tile) {
+      TILE.installSet(p.kinds.tile);
+    }
+
     if (p.level && p.level.kinds) {
-      let kinds: LEVEL.LevelConfigSet[] = [];
-      if (!Array.isArray(p.level.kinds)) {
-        kinds = [p.level.kinds];
-      } else {
-        kinds = p.level.kinds;
-      }
-      kinds.forEach((kindSet) => {
-        Object.entries(kindSet).forEach(
-          ([k, v]: [string, LEVEL.LevelConfig]) => {
-            LEVEL.install(v);
-          }
-        );
-      });
+      LEVEL.installSet(p.level.kinds);
+    }
+    if (p.kinds && p.kinds.level) {
+      LEVEL.installSet(p.kinds.level);
     }
     // TODO - hordes
     // TODO - tiles

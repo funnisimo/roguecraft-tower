@@ -4,7 +4,7 @@ import { Actor, ActorMakeOpts as ActorCreateOpts } from "./actor";
 import { Level } from "../level";
 import { Item } from "../item";
 import { SidebarEntry } from "../widgets";
-import { factory } from "./factory";
+import { ActorKindConfigSet, factory } from "./factory";
 
 export type ActorCtorFn = (
   kind: ActorKind,
@@ -206,6 +206,20 @@ export function makeKind(cfg: ActorKindConfig) {
 
 export function install(cfg: ActorKindConfig) {
   factory.installKind(cfg);
+}
+
+export function installSet(set: ActorKindConfigSet | ActorKindConfigSet[]) {
+  let kinds: ActorKindConfigSet[] = [];
+  if (!Array.isArray(set)) {
+    kinds = [set];
+  } else {
+    kinds = set;
+  }
+  kinds.forEach((kindSet) => {
+    Object.entries(kindSet).forEach(([k, v]: [string, ActorKindConfig]) => {
+      install(v);
+    });
+  });
 }
 
 export function getKind(id: string): ActorKind | null {

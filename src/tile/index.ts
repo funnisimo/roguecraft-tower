@@ -42,6 +42,10 @@ export interface TileOptions extends GWD.site.TileOptions {
 export interface TileConfig extends TileOptions, GWD.site.TileConfig {}
 export type TileConfigSet = Record<string, TileConfig>;
 
+export interface TilePlugin extends GWD.site.TilePlugin {
+  tiles: TileConfigSet | TileConfigSet[];
+}
+
 export interface TileInfo
   extends Omit<TileOptions, "priority" | "tags">,
     GWD.site.TileInfo {}
@@ -55,6 +59,20 @@ export function install(cfg: TileConfig) {
   const info = GWD.site.installTile(cfg);
   // tilesByIndex[info.index] = info;
   // tilesByName[info.id] = info;
+}
+
+export function installSet(set: TileConfigSet | TileConfigSet[]) {
+  let kinds: TileConfigSet[] = [];
+  if (!Array.isArray(set)) {
+    kinds = [set];
+  } else {
+    kinds = set;
+  }
+  kinds.forEach((kindSet) => {
+    Object.entries(kindSet).forEach(([k, v]: [string, TileConfig]) => {
+      install(v);
+    });
+  });
 }
 
 export function getTile(index: number): TileInfo | null {

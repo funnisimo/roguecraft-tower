@@ -19,7 +19,6 @@ export interface LevelPlugin extends LevelEvents {
   data?: { [id: string]: any };
   keymap?: { [id: string]: string | CommandFn };
   kinds?: Record<string, LevelConfig>;
-  tiles?: TileConfigSet | TileConfigSet[];
 }
 
 export class LevelFactory {

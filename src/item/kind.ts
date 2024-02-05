@@ -6,7 +6,7 @@ import { ARMOR_FLAGS, MELEE_FLAGS, RANGED_FLAGS } from "./flags";
 import { EffectConfig } from "../effect";
 import { Level } from "../level";
 import { SidebarEntry } from "../widgets";
-import { factory } from "./factory";
+import { ItemKindConfigSet, factory } from "./factory";
 import { ObjKind } from "../object/kind";
 
 export interface ItemCreateOpts extends OBJ.ObjCreateOpts, ItemEvents {
@@ -184,6 +184,20 @@ export function makeKind(cfg: ItemKindConfig): ItemKind {
 
 export function install(cfg: ItemKindConfig) {
   factory.installKind(cfg);
+}
+
+export function installSet(set: ItemKindConfigSet | ItemKindConfigSet[]) {
+  let kinds: ItemKindConfigSet[] = [];
+  if (!Array.isArray(set)) {
+    kinds = [set];
+  } else {
+    kinds = set;
+  }
+  kinds.forEach((kindSet) => {
+    Object.entries(kindSet).forEach(([k, v]: [string, ItemKindConfig]) => {
+      install(v);
+    });
+  });
 }
 
 export function getKind(id: string): ItemKind | null {

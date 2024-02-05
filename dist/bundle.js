@@ -20307,86 +20307,6 @@ void main() {
       Flags[Flags["BP_NOT_IN_HALLWAY"] = Fl$3(15)] = "BP_NOT_IN_HALLWAY";
   })(Flags$3 || (Flags$3 = {}));
 
-  // export const tilesByIndex: TileInfo[] = [];
-  // export const tilesByName: Record<string, TileInfo> = {};
-  function install$9(cfg) {
-      console.log("INSTALL TILE - " + cfg.id);
-      index$1.installTile(cfg);
-      // tilesByIndex[info.index] = info;
-      // tilesByName[info.id] = info;
-  }
-  function getTile(index) {
-      return index$1.getTile(index);
-  }
-  function getTileByName(name) {
-      return index$1.getTile(name);
-  }
-  const default_tiles = {
-      FLOOR: { id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 },
-      WALL: {
-          id: "WALL",
-          ch: "#",
-          fg: 0x333,
-          bg: 0x666,
-          blocksMove: true,
-          blocksVision: true,
-          blocksDiagonal: true,
-      },
-      CORPSE: {
-          id: "CORPSE",
-          ch: "&",
-          fg: 0x666,
-          bg: 0x222,
-          priority: 15,
-          on: {
-              place(level, x, y) {
-                  // game.wait(1000, () => {
-                  //   if (game.map.hasTile(x, y, ids.CORPSE)) {
-                  //     game.setTile(x, y, ids.FLOOR);
-                  //   }
-                  // });
-              },
-              tick(level, x, y) {
-                  if (level.rng.chance(5)) {
-                      level.setTile(x, y, "FLOOR");
-                  }
-              },
-          },
-      },
-      DOWN_STAIRS: {
-          id: "DOWN_STAIRS",
-          ch: "<",
-          fg: "gray",
-          on: {
-              enter(level, actor) {
-                  // level.game.addMessage("There is no turning back.");
-                  level.emit("down_stairs", level, actor);
-              },
-          },
-      },
-      UP_STAIRS: {
-          id: "UP_STAIRS",
-          ch: ">",
-          fg: "orange",
-          on: {
-              enter(level, actor) {
-                  // level.game.addMessage("Going up!");
-                  level.emit("up_stairs", level, actor);
-              },
-          },
-      },
-      IMPREGNABLE: {
-          id: "IMPREGNABLE",
-          ch: "#",
-          fg: 0x222,
-          bg: 0x444,
-          priority: 200,
-          blocksMove: true,
-          blocksVision: true,
-          blocksDiagonal: true,
-      },
-  };
-
   class Obj {
       x = -1;
       y = -1;
@@ -20977,8 +20897,22 @@ void main() {
       // TODO - Effects
       return kind;
   }
-  function install$8(cfg) {
+  function install$9(cfg) {
       factory$4.installKind(cfg);
+  }
+  function installSet$4(set) {
+      let kinds = [];
+      if (!Array.isArray(set)) {
+          kinds = [set];
+      }
+      else {
+          kinds = set;
+      }
+      kinds.forEach((kindSet) => {
+          Object.entries(kindSet).forEach(([k, v]) => {
+              install$9(v);
+          });
+      });
   }
 
   // @returns boolean - indicates whether or not the target dies
@@ -21036,7 +20970,7 @@ void main() {
   }
 
   const actionsByName = {};
-  function install$7(name, fn) {
+  function install$8(name, fn) {
       actionsByName[name] = fn;
   }
   function get$1(name) {
@@ -21047,12 +20981,12 @@ void main() {
       level.game.endTurn(actor, Math.round(actor.kind.moveSpeed / 2));
       return true;
   }
-  install$7("idle", idle);
+  install$8("idle", idle);
   function moveRandom(level, actor, quiet = false) {
       const dir = level.rng.item(xy.DIRS);
       return moveDir(level, actor, dir, quiet);
   }
-  install$7("move_random", moveRandom);
+  install$8("move_random", moveRandom);
   function moveDir(level, actor, dir, quiet = false) {
       const game = level.game;
       const newX = actor.x + dir[0];
@@ -21129,7 +21063,7 @@ void main() {
       }
       return false;
   }
-  install$7("move_toward_hero", moveTowardHero);
+  install$8("move_toward_hero", moveTowardHero);
   function moveAwayFromHero(level, actor, quiet = false) {
       const game = level.game;
       const hero = game.hero;
@@ -21174,7 +21108,7 @@ void main() {
       }
       return false;
   }
-  install$7("move_away_from_hero", moveAwayFromHero);
+  install$8("move_away_from_hero", moveAwayFromHero);
   function attack(level, actor, target = null) {
       const game = level.game;
       if (target) {
@@ -21233,7 +21167,7 @@ void main() {
       game.endTurn(actor, attackInfo.time);
       return true;
   }
-  install$7("attack", attack);
+  install$8("attack", attack);
   function fire(level, actor, target = null) {
       const game = level.game;
       const hero = game.hero;
@@ -21340,7 +21274,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  install$7("fire", fire);
+  install$8("fire", fire);
   function fireAtHero(level, actor) {
       const game = level.game;
       const hero = game.hero;
@@ -21366,7 +21300,7 @@ void main() {
       game.endTurn(actor, actor.rangedAttackSpeed);
       return true;
   }
-  install$7("fire_at_hero", fireAtHero);
+  install$8("fire_at_hero", fireAtHero);
   function climb(level, actor) {
       const game = level.game;
       const tile = game.level.getTile(actor.x, actor.y);
@@ -21378,7 +21312,7 @@ void main() {
           return idle(level, actor);
       }
   }
-  install$7("climb", climb);
+  install$8("climb", climb);
   function pickup(level, actor) {
       const game = level.game;
       const item = level.itemAt(actor.x, actor.y);
@@ -21389,7 +21323,7 @@ void main() {
       game.addMessage("Nothing to pickup.");
       return idle(level, actor);
   }
-  install$7("pickup", pickup);
+  install$8("pickup", pickup);
   // export function potion(game: Game, hero: Hero): boolean {
   //   if (!hero.canUsePotion) {
   //     game.addMessage("Not ready.");
@@ -22376,8 +22310,22 @@ void main() {
       }
       return kind;
   }
-  function install$6(cfg) {
+  function install$7(cfg) {
       factory$3.installKind(cfg);
+  }
+  function installSet$3(set) {
+      let kinds = [];
+      if (!Array.isArray(set)) {
+          kinds = [set];
+      }
+      else {
+          kinds = set;
+      }
+      kinds.forEach((kindSet) => {
+          Object.entries(kindSet).forEach(([k, v]) => {
+              install$7(v);
+          });
+      });
   }
   function getKind$2(id) {
       return factory$3.getKind(id);
@@ -22830,12 +22778,120 @@ void main() {
       kind.slots = kind.slots || {};
       return kind;
   }
-  function install$5(cfg) {
+  function install$6(cfg) {
       factory$2.installKind(cfg);
+  }
+  function installSet$2(set) {
+      let kinds = [];
+      if (!Array.isArray(set)) {
+          kinds = [set];
+      }
+      else {
+          kinds = set;
+      }
+      kinds.forEach((kindSet) => {
+          Object.entries(kindSet).forEach(([k, v]) => {
+              install$6(v);
+          });
+      });
   }
   function getKind$1(id) {
       return factory$2.getKind(id);
   }
+
+  // export const tilesByIndex: TileInfo[] = [];
+  // export const tilesByName: Record<string, TileInfo> = {};
+  function install$5(cfg) {
+      console.log("INSTALL TILE - " + cfg.id);
+      index$1.installTile(cfg);
+      // tilesByIndex[info.index] = info;
+      // tilesByName[info.id] = info;
+  }
+  function installSet$1(set) {
+      let kinds = [];
+      if (!Array.isArray(set)) {
+          kinds = [set];
+      }
+      else {
+          kinds = set;
+      }
+      kinds.forEach((kindSet) => {
+          Object.entries(kindSet).forEach(([k, v]) => {
+              install$5(v);
+          });
+      });
+  }
+  function getTile(index) {
+      return index$1.getTile(index);
+  }
+  function getTileByName(name) {
+      return index$1.getTile(name);
+  }
+  const default_tiles = {
+      FLOOR: { id: "FLOOR", ch: "\u00b7", fg: 0x666, bg: 0x222 },
+      WALL: {
+          id: "WALL",
+          ch: "#",
+          fg: 0x333,
+          bg: 0x666,
+          blocksMove: true,
+          blocksVision: true,
+          blocksDiagonal: true,
+      },
+      CORPSE: {
+          id: "CORPSE",
+          ch: "&",
+          fg: 0x666,
+          bg: 0x222,
+          priority: 15,
+          on: {
+              place(level, x, y) {
+                  // game.wait(1000, () => {
+                  //   if (game.map.hasTile(x, y, ids.CORPSE)) {
+                  //     game.setTile(x, y, ids.FLOOR);
+                  //   }
+                  // });
+              },
+              tick(level, x, y) {
+                  if (level.rng.chance(5)) {
+                      level.setTile(x, y, "FLOOR");
+                  }
+              },
+          },
+      },
+      DOWN_STAIRS: {
+          id: "DOWN_STAIRS",
+          ch: "<",
+          fg: "gray",
+          on: {
+              enter(level, actor) {
+                  // level.game.addMessage("There is no turning back.");
+                  level.emit("down_stairs", level, actor);
+              },
+          },
+      },
+      UP_STAIRS: {
+          id: "UP_STAIRS",
+          ch: ">",
+          fg: "orange",
+          on: {
+              enter(level, actor) {
+                  // level.game.addMessage("Going up!");
+                  level.emit("up_stairs", level, actor);
+              },
+          },
+      },
+      IMPREGNABLE: {
+          id: "IMPREGNABLE",
+          ch: "#",
+          fg: 0x222,
+          bg: 0x444,
+          priority: 200,
+          blocksMove: true,
+          blocksVision: true,
+          blocksDiagonal: true,
+      },
+  };
 
   const commandsByName = {};
   function install$4(name, fn) {
@@ -23470,6 +23526,20 @@ void main() {
           return factory$1.installKind(args[0]);
       }
       return factory$1.installKind(args[0], args[1]);
+  }
+  function installSet(set) {
+      let kinds = [];
+      if (!Array.isArray(set)) {
+          kinds = [set];
+      }
+      else {
+          kinds = set;
+      }
+      kinds.forEach((kindSet) => {
+          Object.entries(kindSet).forEach(([k, v]) => {
+              install$3(k, v);
+          });
+      });
   }
   function getKind(id) {
       return factory$1.getKind(id);
@@ -24219,8 +24289,9 @@ void main() {
               if (plugin.level) {
                   use$1(plugin.level);
               }
-              // TODO - How to use TilePlugin?
-              // TODO - How to control loading tiles?
+              if (plugin.tile) {
+                  index$1.tileFactory.use(plugin.tile);
+              }
               // Start the plugin
               if (plugin.app && plugin.app.start) {
                   plugin.app.start(app);
@@ -24235,74 +24306,34 @@ void main() {
           // TODO - commands
           // TODO - actions
           if (p.actor && p.actor.kinds) {
-              let kinds = [];
-              if (!Array.isArray(p.actor.kinds)) {
-                  kinds = [p.actor.kinds];
-              }
-              else {
-                  kinds = p.actor.kinds;
-              }
-              kinds.forEach((kindSet) => {
-                  Object.entries(kindSet).forEach(([k, v]) => {
-                      install$6(v);
-                  });
-              });
+              installSet$3(p.actor.kinds);
+          }
+          if (p.kinds && p.kinds.actor) {
+              installSet$3(p.kinds.actor);
           }
           if (p.hero && p.hero.kinds) {
-              let kinds = [];
-              if (!Array.isArray(p.hero.kinds)) {
-                  kinds = [p.hero.kinds];
-              }
-              else {
-                  kinds = p.hero.kinds;
-              }
-              kinds.forEach((kindSet) => {
-                  Object.entries(kindSet).forEach(([k, v]) => {
-                      install$5(v);
-                  });
-              });
+              installSet$2(p.hero.kinds);
+          }
+          if (p.kinds && p.kinds.hero) {
+              installSet$2(p.kinds.hero);
           }
           if (p.item && p.item.kinds) {
-              let kinds = [];
-              if (!Array.isArray(p.item.kinds)) {
-                  kinds = [p.item.kinds];
-              }
-              else {
-                  kinds = p.item.kinds;
-              }
-              kinds.forEach((kindSet) => {
-                  Object.entries(kindSet).forEach(([k, v]) => {
-                      install$8(v);
-                  });
-              });
+              installSet$4(p.item.kinds);
           }
-          if (p.level && p.level.tiles) {
-              let tiles = [];
-              if (!Array.isArray(p.level.tiles)) {
-                  tiles = [p.level.tiles];
-              }
-              else {
-                  tiles = p.level.tiles;
-              }
-              tiles.forEach((tileSet) => {
-                  Object.entries(tileSet).forEach(([k, v]) => {
-                      install$9(v);
-                  });
-              });
+          if (p.kinds && p.kinds.item) {
+              installSet$4(p.kinds.item);
+          }
+          if (p.tile && p.tile.tiles) {
+              installSet$1(p.tile.tiles);
+          }
+          if (p.kinds && p.kinds.tile) {
+              installSet$1(p.kinds.tile);
           }
           if (p.level && p.level.kinds) {
-              let kinds = [];
-              if (!Array.isArray(p.level.kinds)) {
-                  kinds = [p.level.kinds];
-              }
-              else {
-                  kinds = p.level.kinds;
-              }
-              kinds.forEach((kindSet) => {
-                  Object.entries(kindSet).forEach(([k, v]) => {
-                      install$3(v);
-                  });
-              });
+              installSet(p.level.kinds);
+          }
+          if (p.kinds && p.kinds.level) {
+              installSet(p.kinds.level);
           }
           // TODO - hordes
           // TODO - tiles
@@ -24318,6 +24349,9 @@ void main() {
 
   const level$1 = {
       name: "level",
+      tile: {
+          tiles: default_tiles,
+      },
       actor: {
           add(level, actor) {
               level.scheduler.push(actor, actor.kind.moveSpeed);
@@ -26309,7 +26343,7 @@ void main() {
       return app;
   }
 
-  install$7("potion", (level, actor) => {
+  install$8("potion", (level, actor) => {
       if (!actor.isHero)
           return false;
       if (actor.data.potion < actor.data.potion_max) {
@@ -26508,23 +26542,24 @@ void main() {
                       console.log(`Level: ${i}, seed=${levelSeed}`);
                   }
               },
+              lose(game, reason) {
+                  game.app.scenes.start("lose", { reason, game });
+              },
           },
-          actor: { kinds: actors },
-          hero: { kinds: heroes },
-          item: {
-              kinds: [
+          kinds: {
+              actor: actors,
+              hero: heroes,
+              item: [
                   drop_kinds,
                   armor_kinds,
                   melee_kinds,
                   ranged_kinds,
               ],
-          },
-          level: {
-              kinds: level_kinds,
-              tiles: [default_tiles, tiles],
+              level: level_kinds,
+              tile: tiles,
+              // TODO - horde: ...,
           },
           // TODO - horde: { kinds: ... }
-          // TODO - tile: { kinds: ... }
       };
       startApp(opts);
   }

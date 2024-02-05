@@ -5,7 +5,7 @@ import { Level } from "../level";
 import { Item } from "../item";
 import * as ACTOR from "../actor";
 import { SidebarEntry } from "../widgets";
-import { factory } from "./factory";
+import { HeroKindConfigSet, factory } from "./factory";
 
 export type HeroCtorFn = (
   kind: HeroKind,
@@ -123,6 +123,20 @@ export function makeKind(cfg: HeroKindConfig) {
 
 export function install(cfg: HeroKindConfig) {
   factory.installKind(cfg);
+}
+
+export function installSet(set: HeroKindConfigSet | HeroKindConfigSet[]) {
+  let kinds: HeroKindConfigSet[] = [];
+  if (!Array.isArray(set)) {
+    kinds = [set];
+  } else {
+    kinds = set;
+  }
+  kinds.forEach((kindSet) => {
+    Object.entries(kindSet).forEach(([k, v]: [string, HeroKindConfig]) => {
+      install(v);
+    });
+  });
 }
 
 export function getKind(id: string): HeroKind | null {
