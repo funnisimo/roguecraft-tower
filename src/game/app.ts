@@ -1,12 +1,25 @@
 import * as GWU from "gw-utils";
 import * as SCENES from "../scenes";
-import { GameOpts } from "./game";
+import { GameOpts, Keymap } from "./game";
 import { factory } from "./factory";
 import { Plugin, startPlugins } from "./plugins";
+import * as CMD from "../command";
 
 // export type GameFn = (Game) => void;
 
 export interface StartAppOpts extends Omit<GWU.app.AppOpts, "name">, Plugin {}
+
+export const core_keymap: Keymap = {
+  a: "attack",
+  f: "fire",
+  g: "pickup",
+  " ": "idle",
+  ".": "idle",
+  ">": "find_up_stairs",
+  "<": "find_down_stairs",
+  dir: "move_dir",
+  Enter: "follow_path",
+};
 
 export function startApp(config: StartAppOpts): GWU.app.App {
   const appOpts = GWU.utils.mergeDeep(
@@ -24,7 +37,8 @@ export function startApp(config: StartAppOpts): GWU.app.App {
         reward: SCENES.reward,
       },
       scene: "title",
-      plugins: [],
+      plugins: ["core"],
+      commands: CMD.core_commands,
     },
     config
   ) as StartAppOpts;

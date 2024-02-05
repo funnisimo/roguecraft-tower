@@ -16148,18 +16148,24 @@ void main() {
           this.tileIds = {};
           this.allTiles = [];
           if (withDefaults) {
-              installDefaults(this);
+              this.installSet(default_tiles$1);
           }
       }
       use(plugin) {
           this.plugins.push(plugin);
       }
       getTile(name) {
+          const tile = this._getTile(name);
+          if (!tile) {
+              console.warn('Failed to find tile: ' + name);
+          }
+          return tile;
+      }
+      _getTile(name) {
           let id;
           if (typeof name === 'string') {
               id = this.tileIds[name];
               if (id === undefined) {
-                  // TODO - Log?  Will hit this during default installs.
                   return null;
               }
           }
@@ -16189,7 +16195,7 @@ void main() {
           const base = { id, index: this.allTiles.length, priority: 0, tags: [] };
           opts.extends = opts.extends || id;
           if (opts.extends) {
-              const root = this.getTile(opts.extends);
+              const root = this._getTile(opts.extends);
               if (root) {
                   Object.assign(base, root);
               }
@@ -16249,6 +16255,29 @@ void main() {
           }
           return info;
       }
+      installSet(set) {
+          const arr = Array.isArray(set) ? set : [set];
+          arr.forEach((s) => {
+              Object.entries(s).forEach(([k, v]) => {
+                  if (typeof v === 'string') {
+                      // This is a reference
+                      const tile = this.getTile(v);
+                      if (tile) {
+                          this.tileIds[k] = tile.index;
+                      }
+                      else {
+                          console.warn('Trying to install invalid tile reference: ' +
+                              k +
+                              ' => ' +
+                              v);
+                      }
+                  }
+                  else {
+                      this.install(k, v);
+                  }
+              });
+          });
+      }
       apply(tile, config) {
           this.plugins.forEach((p) => {
               if (p.createTile) {
@@ -16259,6 +16288,58 @@ void main() {
   }
   // export const tileIds: Record<string, number> = {};
   // export const allTiles: TileInfo[] = [];
+  const default_tiles$1 = {
+      NONE: {
+          priority: 0,
+          ch: '',
+      },
+      NOTHING: 'NONE',
+      NULL: 'NONE',
+      FLOOR: { priority: 10, ch: '.' },
+      WALL: {
+          blocksMove: true,
+          blocksVision: true,
+          priority: 50,
+          ch: '#',
+      },
+      DOOR: {
+          blocksVision: true,
+          door: true,
+          priority: 60,
+          ch: '+',
+      },
+      SECRET_DOOR: {
+          blocksMove: true,
+          secretDoor: true,
+          priority: 70,
+          ch: '%',
+      },
+      UP_STAIRS: {
+          stairs: true,
+          priority: 80,
+          ch: '>',
+      },
+      DOWN_STAIRS: {
+          stairs: true,
+          priority: 80,
+          ch: '<',
+      },
+      LAKE: {
+          priority: 40,
+          liquid: true,
+          ch: '~',
+      },
+      DEEP: 'LAKE',
+      SHALLOW: { priority: 30, ch: '`' },
+      BRIDGE: { priority: 45, ch: '=' },
+      IMPREGNABLE: {
+          priority: 200,
+          ch: '%',
+          impregnable: true,
+          blocksMove: true,
+          blocksVision: true,
+      },
+  };
   const tileFactory = new TileFactory(true);
   function installTile(...args) {
       if (args.length == 1) {
@@ -16274,55 +16355,6 @@ void main() {
   }
   function blocksMove(name) {
       return tileFactory.blocksMove(name);
-  }
-  function installDefaults(factory) {
-      factory.tileIds['NOTHING'] = factory.tileIds['NULL'] = factory.install('NONE', {
-          priority: 0,
-          ch: '',
-      }).index;
-      factory.install('FLOOR', { priority: 10, ch: '.' });
-      factory.install('WALL', {
-          blocksMove: true,
-          blocksVision: true,
-          priority: 50,
-          ch: '#',
-      });
-      factory.install('DOOR', {
-          blocksVision: true,
-          door: true,
-          priority: 60,
-          ch: '+',
-      });
-      factory.install('SECRET_DOOR', {
-          blocksMove: true,
-          secretDoor: true,
-          priority: 70,
-          ch: '%',
-      });
-      factory.install('UP_STAIRS', {
-          stairs: true,
-          priority: 80,
-          ch: '>',
-      });
-      factory.install('DOWN_STAIRS', {
-          stairs: true,
-          priority: 80,
-          ch: '<',
-      });
-      factory.tileIds['DEEP'] = factory.install('LAKE', {
-          priority: 40,
-          liquid: true,
-          ch: '~',
-      }).index;
-      factory.install('SHALLOW', { priority: 30, ch: '`' });
-      factory.install('BRIDGE', { priority: 45, ch: '=' }); // layers help here
-      factory.install('IMPREGNABLE', {
-          priority: 200,
-          ch: '%',
-          impregnable: true,
-          blocksMove: true,
-          blocksVision: true,
-      });
   }
 
   const features = {};
@@ -18526,6 +18558,7 @@ void main() {
       __proto__: null,
       log: index$2,
       TileFactory: TileFactory,
+      default_tiles: default_tiles$1,
       tileFactory: tileFactory,
       installTile: installTile,
       getTile: getTile$1,
@@ -20900,7 +20933,7 @@ void main() {
   function install$9(cfg) {
       factory$4.installKind(cfg);
   }
-  function installSet$4(set) {
+  function installSet$5(set) {
       let kinds = [];
       if (!Array.isArray(set)) {
           kinds = [set];
@@ -22058,10 +22091,12 @@ void main() {
           // if (level.hasActor(x, y)) return GWU.path.AVOIDED;
           return index$6.OK;
       }
+      // move out of class
       pathTo(loc) {
           const path = index$6.fromTo(this, loc, (x, y) => this.moveCost(x, y));
           return path;
       }
+      // TODO - more generic & plugin
       act(level) {
           // TODO - move this to plugin
           this.startTurn(level);
@@ -22070,6 +22105,7 @@ void main() {
               console.log("No actor AI action.");
           }
       }
+      // TODO - move to Obj
       doBump(level, actor) {
           // TODO - Check this.bump first!!!
           const actions = this.kind.bump;
@@ -22313,7 +22349,7 @@ void main() {
   function install$7(cfg) {
       factory$3.installKind(cfg);
   }
-  function installSet$3(set) {
+  function installSet$4(set) {
       let kinds = [];
       if (!Array.isArray(set)) {
           kinds = [set];
@@ -22455,7 +22491,7 @@ void main() {
               }
           });
       }
-      // attributes
+      // TODO - move to attack & plugin?
       get damage() {
           const melee = this.slots.melee;
           if (melee) {
@@ -22512,7 +22548,7 @@ void main() {
       isHero() {
           return true;
       }
-      // TODO - plugin?
+      // TODO - action and plugin?
       equip(item) {
           if (item.slot === null) {
               throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -22531,7 +22567,7 @@ void main() {
           this.health = Math.round(new_health_max * health_pct);
           this.combo_index = 0;
       }
-      // TODO - plugin?
+      // TODO - action and plugin?
       unequipSlot(slot) {
           this.slots[slot] = null;
           this.armor_flags = 0;
@@ -22781,7 +22817,7 @@ void main() {
   function install$6(cfg) {
       factory$2.installKind(cfg);
   }
-  function installSet$2(set) {
+  function installSet$3(set) {
       let kinds = [];
       if (!Array.isArray(set)) {
           kinds = [set];
@@ -22807,7 +22843,7 @@ void main() {
       // tilesByIndex[info.index] = info;
       // tilesByName[info.id] = info;
   }
-  function installSet$1(set) {
+  function installSet$2(set) {
       let kinds = [];
       if (!Array.isArray(set)) {
           kinds = [set];
@@ -22893,76 +22929,97 @@ void main() {
       },
   };
 
+  /**
+   * The installed Commands.
+   * @todo - Move to CommandFactory class and global instance.
+   */
   const commandsByName = {};
+  /**
+   * Installs a Command function for use in keymaps.
+   * @param name The name that is used to activate the Command.
+   * @param fn The function that is called when the Command is activated.
+   * @see {keymap}
+   */
   function install$4(name, fn) {
       commandsByName[name] = fn;
   }
+  function installSet$1(set) {
+      if (!set)
+          return;
+      let arr = !Array.isArray(set) ? [set] : set;
+      arr.forEach((set) => {
+          if (typeof set !== "object")
+              return; // TODO - log warning!
+          Object.entries(set).forEach(([key, val]) => {
+              install$4(key, val);
+          });
+      });
+  }
+  /**
+   * Finds the installed Command with the given name.
+   * @param name The name that the Command was installed with
+   * @returns The Command function (if any) that matches the name
+   * @see {keymap}
+   */
   function get(name) {
       return commandsByName[name] || null;
   }
-  install$4("show_inventory", (scene, e) => {
-      console.log(">> INVENTORY <<");
-      e.stopPropagation();
-  });
-  install$4("find_up_stairs", (scene, e) => {
-      // find stairs
-      let loc = [-1, -1];
-      const level = scene.data.level;
-      level.tiles.forEach((t, x, y) => {
-          const tile = getTile(t);
-          if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
-              loc[0] = x;
-              loc[1] = y;
+
+  const core_commands = {
+      find_up_stairs: (scene, e) => {
+          // find stairs
+          let loc = [-1, -1];
+          const level = scene.data.level;
+          level.tiles.forEach((t, x, y) => {
+              const tile = getTile(t);
+              if (tile.id === "UP_STAIRS" || tile.id === "UP_STAIRS_INACTIVE") {
+                  loc[0] = x;
+                  loc[1] = y;
+              }
+          });
+          // set player goal
+          if (loc[0] >= 0) {
+              level.game.hero.setGoal(loc[0], loc[1]);
           }
-      });
-      // set player goal
-      if (loc[0] >= 0) {
-          level.game.hero.setGoal(loc[0], loc[1]);
-      }
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$4("find_down_stairs", (scene, e) => {
-      // find stairs
-      let loc = [-1, -1];
-      const level = scene.data.level;
-      level.tiles.forEach((t, x, y) => {
-          const tile = getTile(t);
-          if (tile.id === "DOWN_STAIRS") {
-              loc[0] = x;
-              loc[1] = y;
+          scene.needsDraw = true;
+          e.stopPropagation();
+      },
+      find_down_stairs: (scene, e) => {
+          // find stairs
+          let loc = [-1, -1];
+          const level = scene.data.level;
+          level.tiles.forEach((t, x, y) => {
+              const tile = getTile(t);
+              if (tile.id === "DOWN_STAIRS") {
+                  loc[0] = x;
+                  loc[1] = y;
+              }
+          });
+          // set player goal
+          if (loc[0] >= 0) {
+              level.game.hero.setGoal(loc[0], loc[1]);
           }
-      });
-      // set player goal
-      if (loc[0] >= 0) {
-          level.game.hero.setGoal(loc[0], loc[1]);
-      }
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$4("move_dir", (scene, e) => {
-      const level = scene.data.level;
-      // @ts-ignore
-      moveDir(level, level.game.hero, e.dir);
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$4("follow_path", (scene, e) => {
-      const level = scene.data.level;
-      const hero = level.game.hero;
-      if (hero.goalPath && hero.goalPath.length) {
-          hero.followPath = true;
-          hero.act(level);
-      }
-      scene.needsDraw = true;
-      e.stopPropagation();
-  });
-  install$4("spawn_zombie", (scene, e) => {
-      const level = scene.data.level;
-      const game = level.game;
-      spawn(level, "zombie", game.hero.x, game.hero.y);
-      e.stopPropagation();
-  });
+          scene.needsDraw = true;
+          e.stopPropagation();
+      },
+      move_dir: (scene, e) => {
+          const level = scene.data.level;
+          // @ts-ignore
+          moveDir(level, level.game.hero, e.dir);
+          scene.needsDraw = true;
+          e.stopPropagation();
+      },
+      follow_path: (scene, e) => {
+          const level = scene.data.level;
+          const hero = level.game.hero;
+          if (hero.goalPath && hero.goalPath.length) {
+              hero.followPath = true;
+              hero.act(level);
+          }
+          scene.needsDraw = true;
+          e.stopPropagation();
+      },
+  };
 
   class Level {
       id = 0;
@@ -23946,6 +24003,610 @@ void main() {
       return matches[index];
   }
 
+  const title = {
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
+          build.pos(10, 30).text("Press any key to start.");
+          build.pos(10, 32).text("Press s to enter seed.");
+          build.pos(10, 34).text("Press h for help.");
+          // Press 's' to choose a seed and start a game
+          this.on("s", (e) => {
+              const prompt = this.app.prompt("What is your starting seed?", {
+                  numbersOnly: true,
+                  bg: index$9.BLACK.alpha(50),
+              });
+              // TODO - This should be something better than "stop"
+              prompt.on("stop", (seed) => {
+                  e.stopPropagation();
+                  if (seed) {
+                      // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
+                      const full_opts = utils.mergeDeep(this.app.data.start_opts, {
+                          seed,
+                      });
+                      const game = create(this.app, full_opts);
+                      const level = game.getLevel(game.start_level);
+                      level.show();
+                  }
+              });
+              e.stopPropagation();
+          });
+          // press 'h' for help
+          this.on("h", (e) => {
+              this.app.scenes.start("help");
+              e.stopPropagation();
+          });
+          // Any 'other' key results in starting a new game with a random seed
+          this.on("keypress", (e) => {
+              // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
+              const full_opts = utils.mergeDeep(this.app.data.start_opts, {});
+              const game = create(this.app, full_opts);
+              const level = game.getLevel(game.start_level);
+              level.show();
+              e.stopPropagation();
+          });
+      },
+  };
+
+  const level$1 = {
+      create(opts) {
+          this.bg = index$9.from("dark_gray");
+          // const level = this;
+          // TODO - Get these sizes and locations dynamically -- allow config in create opts somehow
+          const sidebar$1 = sidebar(this, 60, 35);
+          const flavor$1 = flavor(this, 0, 35);
+          const messages$1 = messages(this, 36);
+          const map$1 = map(this, 60, 35);
+          const details$1 = details(this, 60, 35);
+          sidebar$1.on("focus", (loc) => {
+              loc = loc || [-1, -1];
+              map$1._focus = loc;
+              const level = this.data.level;
+              const game = level.game;
+              const hero = game.hero;
+              if (loc[0] < 0) {
+                  // game.level.clearPath();
+                  hero.clearGoal();
+              }
+              else {
+                  // highlight path
+                  hero.setGoal(loc[0], loc[1]);
+                  // const player = game.player;
+                  // const path = player.pathTo(loc);
+                  // game.level.setPath(path);
+              }
+              const actor = level.actorAt(loc[0], loc[1]);
+              if (actor) {
+                  details$1.hidden = false;
+                  // @ts-ignore
+                  if (actor === hero) {
+                      details$1.showHero(hero);
+                  }
+                  else {
+                      details$1.showActor(actor);
+                  }
+              }
+              else {
+                  details$1.hidden = true;
+              }
+          });
+          sidebar$1.on("mouseleave", () => {
+              details$1.hidden = true;
+          });
+          sidebar$1.on("choose", (loc) => {
+              console.log("sidebar choose - hero go to :", loc[0], loc[1]);
+              const level = this.data.level;
+              const game = level.game;
+              game.hero.setGoal(loc[0], loc[1]);
+              game.hero.followPath = true;
+              game.hero.act(level);
+          });
+          messages$1.on("click", (e) => {
+              const level = this.data.level;
+              const game = level.game;
+              if (game.messages.length > 10) {
+                  this.app.scenes.run("archive", {
+                      messages: game.messages,
+                      startHeight: 10,
+                  });
+              }
+              e.stopPropagation();
+          });
+          map$1.on("mousemove", (e) => {
+              const level = this.data.level;
+              const game = level.game;
+              const text = level.getFlavor(e.x, e.y);
+              flavor$1.prop("text", text);
+              sidebar$1.setFocus(e.x, e.y);
+              if (!level.started)
+                  return;
+              // highlight path
+              const hero = game.hero;
+              hero.setGoal(e.x, e.y);
+              // const path = player.pathTo(e);
+              // game.level.setPath(path);
+          });
+          map$1.on("mouseleave", (e) => {
+              const level = this.data.level;
+              const game = level.game;
+              sidebar$1.clearFocus();
+              // game.level.clearPath();
+              game.hero.clearGoal();
+          });
+          map$1.on("click", (e) => {
+              console.log("map click - player go to:", e.x, e.y);
+              const level = this.data.level;
+              const game = level.game;
+              if (!level.started)
+                  return;
+              if (game.hero.followPath) {
+                  game.hero.setGoal(e.x, e.y);
+                  game.hero.followPath = false;
+              }
+              else {
+                  // TODO - This should follow the enqueue path..
+                  game.hero.setGoal(e.x, e.y);
+                  game.hero.followPath = true;
+                  game.hero.act(level);
+              }
+          });
+      },
+      start(opts) {
+          this.data.level = opts.level;
+          this.needsDraw = true;
+      },
+      update(dt) {
+          this.data.level.update(dt);
+      },
+      on: {
+          keypress(e) {
+              const sidebar = this.get("SIDEBAR");
+              sidebar.clearFocus();
+              // this.data.level.clearPath();
+              const level = this.data.level;
+              const game = level.game;
+              if (game.hero.followPath) {
+                  game.hero.followPath = false;
+              }
+              else {
+                  level.inputQueue.enqueue(e.clone());
+              }
+              e.stopPropagation();
+          },
+      },
+  };
+
+  const win = {
+      create() {
+          this.bg = index$9.from("dark_blue");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
+          build.pos(10, 17).text("WIN!", { fg: "green" });
+          build.pos(10, 22).text("Final Level: {}", { fg: "pink", id: "LEVEL" });
+          build.pos(10, 30).text("Press any key to restart.");
+          this.on("keypress", () => {
+              this.app.scenes.start("title");
+          });
+      },
+      start(opts) {
+          const level = opts.game.level;
+          const id = level.depth || 1;
+          const w = this.get("LEVEL");
+          w.text("Final Level: " + id);
+      },
+  };
+
+  const lose = {
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
+          build.pos(10, 17).text("LOSE!", { fg: "green" });
+          build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
+          build.pos(10, 24).text("{reason}", { fg: "pink", id: "REASON" });
+          build.pos(10, 30).text("Press any key to restart.");
+          this.on("keypress", () => {
+              this.app.scenes.start("title");
+          });
+      },
+      start(opts) {
+          const id = opts.game.level.id || "???";
+          const w = this.get("LEVEL");
+          w.text("On Level: " + id);
+          const r = this.get("REASON");
+          r.text(opts.reason);
+      },
+  };
+
+  const reward = {
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(5, 3).text(this.app.name, { fg: "green" });
+          build
+              .pos(5, 5)
+              .text("Choose your reward \nfor Level: {}", { fg: "pink", id: "LEVEL" });
+          const list = build
+              .pos(5, 8)
+              .datalist({ empty: "-", border: "ascii", id: "STUFF", width: 20 });
+          //.text("REWARD", { fg: "green", id: "STUFF" });
+          build
+              .pos(5, 40)
+              .text("Press <Enter> to choose your reward and go to the next level.");
+          build.pos(30, 5).text("Armor", { id: "ARMOR", fg: "white" });
+          build.pos(30, 16).text("Melee", { id: "MELEE", fg: "white" });
+          build.pos(30, 27).text("Ranged", { id: "RANGED", fg: "white" });
+          // this.on("Enter", () => {
+          //   this.app.scenes.start("level", this.data.game);
+          // });
+          list.on("change", (e) => {
+              const items = this.data.items;
+              if (!this.data.equipped)
+                  return;
+              const used = [
+                  null,
+                  this.data.equipped.armor,
+                  this.data.equipped.melee,
+                  this.data.equipped.ranged,
+              ];
+              if (items) {
+                  const item = items[e.row];
+                  if (item) {
+                      used[e.row] = item;
+                  }
+              }
+              // update display
+              const game = this.data.game;
+              const a_text = this.get("ARMOR");
+              const a_color = e.row == 1 ? "teal" : "white";
+              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1], game.hero.kind.health));
+              const m_text = this.get("MELEE");
+              const m_color = e.row == 2 ? "teal" : "white";
+              m_text.text(`MELEE:\n#{${m_color}}` + melee_text(used[2]));
+              const r_text = this.get("RANGED");
+              const r_color = e.row == 3 ? "teal" : "white";
+              r_text.text(`RANGED:\n#{${r_color}}` + ranged_text(used[3]));
+          });
+          list.on("action", () => {
+              const items = this.data.items;
+              const item = items[list.selectedRow];
+              const game = this.data.game;
+              if (item) {
+                  console.log("list selection - " + item.name);
+                  const player = game.hero;
+                  player.equip(item);
+                  game.addMessage(`You equip a ${item.name}`);
+              }
+              const level = game.getLevel(this.data.depth);
+              level.show();
+          });
+      },
+      start(opts) {
+          const depth = opts.depth;
+          const game = opts.game;
+          const w = this.get("LEVEL");
+          w.text("Choose your \nreward for Level: " + depth);
+          const s = this.get("STUFF");
+          const armor = random$1(game.level, "armor");
+          const melee = random$1(game.level, "melee");
+          const ranged = random$1(game.level, "ranged");
+          armor.power = depth + game.rng.dice(1, 5);
+          melee.power = depth + game.rng.dice(1, 5);
+          ranged.power = depth + game.rng.dice(1, 5);
+          const player = game.hero;
+          const equipped = Object.entries(player.slots).reduce((o, current) => {
+              o[current[0]] = current[1];
+              return o;
+          }, {});
+          // depth + 1 to indicate that we are going to the next level
+          this.data = {
+              game,
+              items: [null, armor, melee, ranged],
+              equipped,
+              depth: depth + 1, // NOTE: Adding 1 here so we always have the next level in mind!
+          };
+          s.data(["None", armor.name, melee.name, ranged.name]); // triggers - change
+      },
+  };
+  function armor_text(armor, health = 10) {
+      let text = armor.name + " [" + armor.power + "]\n";
+      const defense = armor.defense + health;
+      text += "  Health: " + defense + "\n";
+      if (armor.kind.armor_flags != 0) {
+          if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
+              text += "  {-35% Damage Received}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
+              text += "  {30% Negate Hits}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
+              text += "  {-40% Artifact Cooldown}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
+              text += "  {+10 Arrows Per Bundle}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
+              text += "  {100% Longer Roll Cooldown}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
+              text += "  {+30% Melee Damage}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
+              text += "  {Mobs Target You More}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
+              text += "  {+15% Move Speed Aura}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
+              text += "  {-40% Potion Cooldown}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
+              text += "  {Potion Boosts Defense}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
+              text += "  {Potion Heals Nearby Allies}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
+              text += "  {+30% Ranged Damage}\n";
+          }
+          if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
+              text += "  {+20% Weapon Damage Aura}\n";
+          }
+      }
+      return text;
+  }
+  function melee_text(melee) {
+      let text = melee.name + " [" + melee.power + "]\n";
+      text += "  Attack: " + melee.damage + " / " + melee.speed + "\n";
+      text +=
+          "  Combo : " +
+              melee.comboDamage +
+              " / " +
+              melee.comboSpeed +
+              " % " +
+              melee.combo +
+              "\n";
+      if (melee.kind.melee_flags != 0) ;
+      return text;
+  }
+  function ranged_text(ranged) {
+      let text = ranged.name + " [" + ranged.power + "]\n";
+      text +=
+          "  Attack: " +
+              ranged.damage +
+              " / " +
+              ranged.speed +
+              " @ " +
+              ranged.range +
+              "\n";
+      if (ranged.charge > 0) {
+          text += "  Charge: " + ranged.charge + "\n";
+      }
+      if (ranged.kind.ranged_flags != 0) ;
+      return text;
+  }
+
+  const help = {
+      create() {
+          this.bg = index$9.from("dark_gray");
+          const build = new index$1$1.Builder(this);
+          build.pos(10, 15).text(this.app.name, { fg: "green" });
+          build.pos(10, 17).text("HELP!", { fg: "green" });
+          build.pos(10, 30).text("Press any key to return to title.");
+          this.on("keypress", () => {
+              this.app.scenes.start("title");
+          });
+      },
+  };
+
+  const TargetScene = {
+      start(data) {
+          // const game = data.game;
+          // const actor = data.actor;
+          // const targets = data.targets;
+          this.data = data;
+          this.data.current = 0;
+          this.bg = index$9.NONE;
+          this.needsDraw = false;
+          this.buffer.nullify();
+          let current = this.data.targets[this.data.current];
+          const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
+          this.buffer.drawSprite(current.x, current.y, mixer);
+          console.log("target", current.x, current.y);
+      },
+      on: {
+          dir(e) {
+              if (!e.dir)
+                  return;
+              let current = this.data.targets[this.data.current];
+              this.buffer.nullify(current.x, current.y);
+              if (e.dir[0] > 0) {
+                  this.data.current += 1;
+              }
+              else if (e.dir[0] < 0) {
+                  this.data.current -= 1;
+              }
+              else if (e.dir[1] > 0) {
+                  this.data.current += 1;
+              }
+              else if (e.dir[1] < 0) {
+                  this.data.current += 1;
+              }
+              if (this.data.current < 0) {
+                  this.data.current = this.data.targets.length - 1;
+              }
+              else if (this.data.current >= this.data.targets.length) {
+                  this.data.current = 0;
+              }
+              current = this.data.targets[this.data.current];
+              console.log("target", current.x, current.y);
+              const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
+              this.buffer.drawSprite(current.x, current.y, mixer);
+          },
+          Enter() {
+              this.stop(this.data.targets[this.data.current]);
+          },
+          Escape() {
+              this.stop(null);
+          },
+          keypress(e) {
+              e.stopPropagation();
+          },
+          click(e) {
+              e.stopPropagation();
+          },
+          mousemove(e) {
+              e.stopPropagation();
+          },
+      },
+  };
+  index.installScene("target", TargetScene);
+
+  const archive = {
+      bg: index$9.BLACK.alpha(50),
+      start(source) {
+          this.data.messages = source.messages;
+          this.data.shown = source.startHeight;
+          this.data.startHeight = source.startHeight;
+          this.data.mode = "forward";
+          this.data.totalCount = source.messages.length;
+          source.messages.confirmAll();
+          this.wait(16, () => forward(this));
+      },
+      draw(buf) {
+          drawArchive(this);
+      },
+      keypress(e) {
+          next(this);
+          e.stopPropagation();
+      },
+      click(e) {
+          next(this);
+          e.stopPropagation();
+      },
+  };
+  // @ts-ignore
+  index.installScene("archive", archive);
+  function next(scene) {
+      if (scene.data.mode === "ack") {
+          scene.data.mode = "reverse";
+          scene.needsDraw = true;
+          if (scene.data.timerCancel) {
+              scene.data.timerCancel();
+          }
+          scene.data.timerCancel = scene.wait(16, () => reverse(scene));
+      }
+      else if (scene.data.mode === "reverse") {
+          scene.stop();
+      }
+      else {
+          scene.data.mode = "ack";
+          scene.data.shown = scene.data.totalCount;
+          if (scene.data.timerCancel) {
+              scene.data.timerCancel();
+              scene.data.timerCancel = null;
+          }
+          scene.needsDraw = true;
+      }
+  }
+  function forward(scene) {
+      // console.log('forward');
+      ++scene.data.shown;
+      scene.data.timerCancel = null;
+      scene.needsDraw = true;
+      if (scene.data.shown < scene.data.totalCount) {
+          scene.data.timerCancel = scene.wait(16, () => forward(scene));
+      }
+      else {
+          scene.data.mode = "ack";
+          scene.data.shown = scene.data.totalCount;
+      }
+  }
+  function reverse(scene) {
+      // console.log('reverse');
+      --scene.data.shown;
+      scene.data.timerCancel = null;
+      if (scene.data.shown <= scene.data.startHeight) {
+          scene.stop();
+      }
+      else {
+          scene.needsDraw = true;
+          scene.data.timerCancel = scene.wait(16, () => reverse(scene));
+      }
+  }
+  function drawArchive(scene) {
+      let fadePercent = 0;
+      const dbuf = scene.buffer;
+      const fg = index$9.from("white");
+      const bg = index$9.from("black");
+      // const dM = reverse ? -1 : 1;
+      // const startM = reverse ? totalMessageCount : scene.bounds.height;
+      // const endM = reverse
+      //     ? scene.bounds.height + dM + 1
+      //     : totalMessageCount + dM;
+      const startY = scene.height - scene.data.shown;
+      const endY = scene.height - 1;
+      const dy = 1;
+      dbuf.fillRect(0, Math.min(startY, endY), scene.width, scene.data.shown, " ", bg, bg);
+      scene.data.messages.forEach((line, _confirmed, j) => {
+          const y = startY + j * dy;
+          if (y > endY)
+              return;
+          fadePercent = Math.floor((50 * j) / scene.data.shown);
+          const fgColor = fg.mix(scene.bg, fadePercent);
+          dbuf.drawText(0, y, line, fgColor, bg);
+      });
+      if (scene.data.mode === "ack") {
+          const y = dbuf.height - 1;
+          const x = dbuf.width - 8; // But definitely on the screen - overwrite some text if necessary
+          dbuf.wrapText(x, y, 8, "--DONE--", bg, fg);
+      }
+  }
+
+  const core_keymap = {
+      a: "attack",
+      f: "fire",
+      g: "pickup",
+      " ": "idle",
+      ".": "idle",
+      ">": "find_up_stairs",
+      "<": "find_down_stairs",
+      dir: "move_dir",
+      Enter: "follow_path",
+  };
+  function startApp(config) {
+      const appOpts = utils.mergeDeep({
+          name: "Goblinwerks",
+          width: 90,
+          height: 45,
+          div: "game",
+          scenes: {
+              title: title,
+              level: level$1,
+              win: win,
+              lose: lose,
+              help: help,
+              reward: reward,
+          },
+          scene: "title",
+          plugins: ["core"],
+          commands: core_commands,
+      }, config);
+      // make the App
+      // - default is to start the app which will start the "title" scene
+      // - the title screen will make and start a new game
+      // - starting a game will make the default level
+      // - ... and then start the level kind's screen with that level
+      const app = index.make(appOpts);
+      // This will be used when we start the game
+      app.data.start_opts = config;
+      // Start Plugins...
+      startPlugins(app, config);
+      // Install kinds
+      return app;
+  }
+
   class Game {
       hero;
       app;
@@ -24012,19 +24673,18 @@ void main() {
           }
           // KEYMAP
           // TODO - move to default plugin
-          this.keymap = Object.assign({
-              a: "attack",
-              f: "fire",
-              g: "pickup",
-              // i: "show_inventory",
-              // "z": "spawn_zombie",
-              " ": "idle",
-              ".": "idle",
-              ">": "find_up_stairs",
-              "<": "find_down_stairs",
-              dir: "move_dir",
-              Enter: "follow_path",
-          }, opts.keymap || {});
+          const optsSet = opts.keymap || core_keymap;
+          const keyset = Array.isArray(optsSet) ? optsSet : [optsSet];
+          keyset.forEach((set) => {
+              Object.entries(set).forEach(([k, v]) => {
+                  if (v === false) {
+                      delete this.keymap[k];
+                  }
+                  else {
+                      this.keymap[k] = v;
+                  }
+              });
+          });
           // CREATE HERO
           // EVENTS - There are no events on GameOpts!!!  Must use plugins
           // Object.entries(opts).forEach(([key, val]) => {
@@ -24292,6 +24952,9 @@ void main() {
               if (plugin.tile) {
                   index$1.tileFactory.use(plugin.tile);
               }
+              if (plugin.commands) {
+                  installSet$1(plugin.commands);
+              }
               // Start the plugin
               if (plugin.app && plugin.app.start) {
                   plugin.app.start(app);
@@ -24306,28 +24969,28 @@ void main() {
           // TODO - commands
           // TODO - actions
           if (p.actor && p.actor.kinds) {
-              installSet$3(p.actor.kinds);
+              installSet$4(p.actor.kinds);
           }
           if (p.kinds && p.kinds.actor) {
-              installSet$3(p.kinds.actor);
+              installSet$4(p.kinds.actor);
           }
           if (p.hero && p.hero.kinds) {
-              installSet$2(p.hero.kinds);
+              installSet$3(p.hero.kinds);
           }
           if (p.kinds && p.kinds.hero) {
-              installSet$2(p.kinds.hero);
+              installSet$3(p.kinds.hero);
           }
           if (p.item && p.item.kinds) {
-              installSet$4(p.item.kinds);
+              installSet$5(p.item.kinds);
           }
           if (p.kinds && p.kinds.item) {
-              installSet$4(p.kinds.item);
+              installSet$5(p.kinds.item);
           }
           if (p.tile && p.tile.tiles) {
-              installSet$1(p.tile.tiles);
+              installSet$2(p.tile.tiles);
           }
           if (p.kinds && p.kinds.tile) {
-              installSet$1(p.kinds.tile);
+              installSet$2(p.kinds.tile);
           }
           if (p.level && p.level.kinds) {
               installSet(p.level.kinds);
@@ -24347,7 +25010,7 @@ void main() {
   };
   install$1(item);
 
-  const level$1 = {
+  const level = {
       name: "level",
       tile: {
           tiles: default_tiles,
@@ -24391,7 +25054,7 @@ void main() {
           },
       },
   };
-  install$1(level$1);
+  install$1(level);
   const turn_based = {
       name: "turn_based",
       level: {
@@ -24539,7 +25202,7 @@ void main() {
                   stairs: {
                       start: "down",
                       up: true,
-                      upTile: "UP_STAIRS_INACTIVE", // TODO - This is not right for a default!!!
+                      // upTile: "UP_STAIRS_INACTIVE", // TODO - This is not right for a default!!!
                       down: true,
                   },
                   goesUp: true,
@@ -25042,7 +25705,7 @@ void main() {
           width: 60,
           height: 35,
           scene: "level",
-          dig: true,
+          dig: { stairs: { upTile: "UP_STAIRS_INACTIVE" } },
           keymap: { i: "show_inventory" },
           on: {
               create(level, opts) {
@@ -25751,598 +26414,6 @@ void main() {
       // LIGHTNING_HARP_CROSSBOW
   };
 
-  const title = {
-      create() {
-          this.bg = index$9.from("dark_gray");
-          const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text(this.app.name, { fg: "green" });
-          build.pos(10, 30).text("Press any key to start.");
-          build.pos(10, 32).text("Press s to enter seed.");
-          build.pos(10, 34).text("Press h for help.");
-          // Press 's' to choose a seed and start a game
-          this.on("s", (e) => {
-              const prompt = this.app.prompt("What is your starting seed?", {
-                  numbersOnly: true,
-                  bg: index$9.BLACK.alpha(50),
-              });
-              // TODO - This should be something better than "stop"
-              prompt.on("stop", (seed) => {
-                  e.stopPropagation();
-                  if (seed) {
-                      // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
-                      const full_opts = utils.mergeDeep(this.app.data.start_opts, {
-                          seed,
-                      });
-                      const game = create(this.app, full_opts);
-                      const level = game.getLevel(game.start_level);
-                      level.show();
-                  }
-              });
-              e.stopPropagation();
-          });
-          // press 'h' for help
-          this.on("h", (e) => {
-              this.app.scenes.start("help");
-              e.stopPropagation();
-          });
-          // Any 'other' key results in starting a new game with a random seed
-          this.on("keypress", (e) => {
-              // TODO - Should be GAME.start(...) -> b/c separating game make and start isn't a thing
-              const full_opts = utils.mergeDeep(this.app.data.start_opts, {});
-              const game = create(this.app, full_opts);
-              const level = game.getLevel(game.start_level);
-              level.show();
-              e.stopPropagation();
-          });
-      },
-  };
-
-  const level = {
-      create(opts) {
-          this.bg = index$9.from("dark_gray");
-          // const level = this;
-          // TODO - Get these sizes and locations dynamically -- allow config in create opts somehow
-          const sidebar$1 = sidebar(this, 60, 35);
-          const flavor$1 = flavor(this, 0, 35);
-          const messages$1 = messages(this, 36);
-          const map$1 = map(this, 60, 35);
-          const details$1 = details(this, 60, 35);
-          sidebar$1.on("focus", (loc) => {
-              loc = loc || [-1, -1];
-              map$1._focus = loc;
-              const level = this.data.level;
-              const game = level.game;
-              const hero = game.hero;
-              if (loc[0] < 0) {
-                  // game.level.clearPath();
-                  hero.clearGoal();
-              }
-              else {
-                  // highlight path
-                  hero.setGoal(loc[0], loc[1]);
-                  // const player = game.player;
-                  // const path = player.pathTo(loc);
-                  // game.level.setPath(path);
-              }
-              const actor = level.actorAt(loc[0], loc[1]);
-              if (actor) {
-                  details$1.hidden = false;
-                  // @ts-ignore
-                  if (actor === hero) {
-                      details$1.showHero(hero);
-                  }
-                  else {
-                      details$1.showActor(actor);
-                  }
-              }
-              else {
-                  details$1.hidden = true;
-              }
-          });
-          sidebar$1.on("mouseleave", () => {
-              details$1.hidden = true;
-          });
-          sidebar$1.on("choose", (loc) => {
-              console.log("sidebar choose - hero go to :", loc[0], loc[1]);
-              const level = this.data.level;
-              const game = level.game;
-              game.hero.setGoal(loc[0], loc[1]);
-              game.hero.followPath = true;
-              game.hero.act(level);
-          });
-          messages$1.on("click", (e) => {
-              const level = this.data.level;
-              const game = level.game;
-              if (game.messages.length > 10) {
-                  this.app.scenes.run("archive", {
-                      messages: game.messages,
-                      startHeight: 10,
-                  });
-              }
-              e.stopPropagation();
-          });
-          map$1.on("mousemove", (e) => {
-              const level = this.data.level;
-              const game = level.game;
-              const text = level.getFlavor(e.x, e.y);
-              flavor$1.prop("text", text);
-              sidebar$1.setFocus(e.x, e.y);
-              if (!level.started)
-                  return;
-              // highlight path
-              const hero = game.hero;
-              hero.setGoal(e.x, e.y);
-              // const path = player.pathTo(e);
-              // game.level.setPath(path);
-          });
-          map$1.on("mouseleave", (e) => {
-              const level = this.data.level;
-              const game = level.game;
-              sidebar$1.clearFocus();
-              // game.level.clearPath();
-              game.hero.clearGoal();
-          });
-          map$1.on("click", (e) => {
-              console.log("map click - player go to:", e.x, e.y);
-              const level = this.data.level;
-              const game = level.game;
-              if (!level.started)
-                  return;
-              if (game.hero.followPath) {
-                  game.hero.setGoal(e.x, e.y);
-                  game.hero.followPath = false;
-              }
-              else {
-                  // TODO - This should follow the enqueue path..
-                  game.hero.setGoal(e.x, e.y);
-                  game.hero.followPath = true;
-                  game.hero.act(level);
-              }
-          });
-      },
-      start(opts) {
-          this.data.level = opts.level;
-          this.needsDraw = true;
-      },
-      update(dt) {
-          this.data.level.update(dt);
-      },
-      on: {
-          keypress(e) {
-              const sidebar = this.get("SIDEBAR");
-              sidebar.clearFocus();
-              // this.data.level.clearPath();
-              const level = this.data.level;
-              const game = level.game;
-              if (game.hero.followPath) {
-                  game.hero.followPath = false;
-              }
-              else {
-                  level.inputQueue.enqueue(e.clone());
-              }
-              e.stopPropagation();
-          },
-      },
-  };
-
-  const win = {
-      create() {
-          this.bg = index$9.from("dark_blue");
-          const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text(this.app.name, { fg: "green" });
-          build.pos(10, 17).text("WIN!", { fg: "green" });
-          build.pos(10, 22).text("Final Level: {}", { fg: "pink", id: "LEVEL" });
-          build.pos(10, 30).text("Press any key to restart.");
-          this.on("keypress", () => {
-              this.app.scenes.start("title");
-          });
-      },
-      start(opts) {
-          const level = opts.game.level;
-          const id = level.depth || 1;
-          const w = this.get("LEVEL");
-          w.text("Final Level: " + id);
-      },
-  };
-
-  const lose = {
-      create() {
-          this.bg = index$9.from("dark_gray");
-          const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text(this.app.name, { fg: "green" });
-          build.pos(10, 17).text("LOSE!", { fg: "green" });
-          build.pos(10, 22).text("On Level: {}", { fg: "pink", id: "LEVEL" });
-          build.pos(10, 24).text("{reason}", { fg: "pink", id: "REASON" });
-          build.pos(10, 30).text("Press any key to restart.");
-          this.on("keypress", () => {
-              this.app.scenes.start("title");
-          });
-      },
-      start(opts) {
-          const id = opts.game.level.id || "???";
-          const w = this.get("LEVEL");
-          w.text("On Level: " + id);
-          const r = this.get("REASON");
-          r.text(opts.reason);
-      },
-  };
-
-  const reward = {
-      create() {
-          this.bg = index$9.from("dark_gray");
-          const build = new index$1$1.Builder(this);
-          build.pos(5, 3).text(this.app.name, { fg: "green" });
-          build
-              .pos(5, 5)
-              .text("Choose your reward \nfor Level: {}", { fg: "pink", id: "LEVEL" });
-          const list = build
-              .pos(5, 8)
-              .datalist({ empty: "-", border: "ascii", id: "STUFF", width: 20 });
-          //.text("REWARD", { fg: "green", id: "STUFF" });
-          build
-              .pos(5, 40)
-              .text("Press <Enter> to choose your reward and go to the next level.");
-          build.pos(30, 5).text("Armor", { id: "ARMOR", fg: "white" });
-          build.pos(30, 16).text("Melee", { id: "MELEE", fg: "white" });
-          build.pos(30, 27).text("Ranged", { id: "RANGED", fg: "white" });
-          // this.on("Enter", () => {
-          //   this.app.scenes.start("level", this.data.game);
-          // });
-          list.on("change", (e) => {
-              const items = this.data.items;
-              if (!this.data.equipped)
-                  return;
-              const used = [
-                  null,
-                  this.data.equipped.armor,
-                  this.data.equipped.melee,
-                  this.data.equipped.ranged,
-              ];
-              if (items) {
-                  const item = items[e.row];
-                  if (item) {
-                      used[e.row] = item;
-                  }
-              }
-              // update display
-              const game = this.data.game;
-              const a_text = this.get("ARMOR");
-              const a_color = e.row == 1 ? "teal" : "white";
-              a_text.text(`ARMOR:\n#{${a_color}}` + armor_text(used[1], game.hero.kind.health));
-              const m_text = this.get("MELEE");
-              const m_color = e.row == 2 ? "teal" : "white";
-              m_text.text(`MELEE:\n#{${m_color}}` + melee_text(used[2]));
-              const r_text = this.get("RANGED");
-              const r_color = e.row == 3 ? "teal" : "white";
-              r_text.text(`RANGED:\n#{${r_color}}` + ranged_text(used[3]));
-          });
-          list.on("action", () => {
-              const items = this.data.items;
-              const item = items[list.selectedRow];
-              const game = this.data.game;
-              if (item) {
-                  console.log("list selection - " + item.name);
-                  const player = game.hero;
-                  player.equip(item);
-                  game.addMessage(`You equip a ${item.name}`);
-              }
-              const level = game.getLevel(this.data.depth);
-              level.show();
-          });
-      },
-      start(opts) {
-          const depth = opts.depth;
-          const game = opts.game;
-          const w = this.get("LEVEL");
-          w.text("Choose your \nreward for Level: " + depth);
-          const s = this.get("STUFF");
-          const armor = random$1(game.level, "armor");
-          const melee = random$1(game.level, "melee");
-          const ranged = random$1(game.level, "ranged");
-          armor.power = depth + game.rng.dice(1, 5);
-          melee.power = depth + game.rng.dice(1, 5);
-          ranged.power = depth + game.rng.dice(1, 5);
-          const player = game.hero;
-          const equipped = Object.entries(player.slots).reduce((o, current) => {
-              o[current[0]] = current[1];
-              return o;
-          }, {});
-          // depth + 1 to indicate that we are going to the next level
-          this.data = {
-              game,
-              items: [null, armor, melee, ranged],
-              equipped,
-              depth: depth + 1, // NOTE: Adding 1 here so we always have the next level in mind!
-          };
-          s.data(["None", armor.name, melee.name, ranged.name]); // triggers - change
-      },
-  };
-  function armor_text(armor, health = 10) {
-      let text = armor.name + " [" + armor.power + "]\n";
-      const defense = armor.defense + health;
-      text += "  Health: " + defense + "\n";
-      if (armor.kind.armor_flags != 0) {
-          if (armor.kind.armor_flags & ARMOR_FLAGS.REDUCE_DAMAGE_35) {
-              text += "  {-35% Damage Received}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.NEGATE_HITS_30) {
-              text += "  {30% Negate Hits}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.ARTIFACT_COOLDOWN_40) {
-              text += "  {-40% Artifact Cooldown}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.ARROWS_10) {
-              text += "  {+10 Arrows Per Bundle}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.LONGER_ROLL_100) {
-              text += "  {100% Longer Roll Cooldown}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.MELEE_DAMAGE_30) {
-              text += "  {+30% Melee Damage}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.MOBS_TARGET_YOU_MORE) {
-              text += "  {Mobs Target You More}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.MOVESPEED_AURA_15) {
-              text += "  {+15% Move Speed Aura}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_COOLDOWN_40) {
-              text += "  {-40% Potion Cooldown}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_BOOSTS_DEFENSE) {
-              text += "  {Potion Boosts Defense}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.POTION_HEALS_NEARBY_ALLIES) {
-              text += "  {Potion Heals Nearby Allies}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.RANGED_DAMAGE_30) {
-              text += "  {+30% Ranged Damage}\n";
-          }
-          if (armor.kind.armor_flags & ARMOR_FLAGS.WEAPON_DAMAGE_AURA_20) {
-              text += "  {+20% Weapon Damage Aura}\n";
-          }
-      }
-      return text;
-  }
-  function melee_text(melee) {
-      let text = melee.name + " [" + melee.power + "]\n";
-      text += "  Attack: " + melee.damage + " / " + melee.speed + "\n";
-      text +=
-          "  Combo : " +
-              melee.comboDamage +
-              " / " +
-              melee.comboSpeed +
-              " % " +
-              melee.combo +
-              "\n";
-      if (melee.kind.melee_flags != 0) ;
-      return text;
-  }
-  function ranged_text(ranged) {
-      let text = ranged.name + " [" + ranged.power + "]\n";
-      text +=
-          "  Attack: " +
-              ranged.damage +
-              " / " +
-              ranged.speed +
-              " @ " +
-              ranged.range +
-              "\n";
-      if (ranged.charge > 0) {
-          text += "  Charge: " + ranged.charge + "\n";
-      }
-      if (ranged.kind.ranged_flags != 0) ;
-      return text;
-  }
-
-  const help = {
-      create() {
-          this.bg = index$9.from("dark_gray");
-          const build = new index$1$1.Builder(this);
-          build.pos(10, 15).text(this.app.name, { fg: "green" });
-          build.pos(10, 17).text("HELP!", { fg: "green" });
-          build.pos(10, 30).text("Press any key to return to title.");
-          this.on("keypress", () => {
-              this.app.scenes.start("title");
-          });
-      },
-  };
-
-  const TargetScene = {
-      start(data) {
-          // const game = data.game;
-          // const actor = data.actor;
-          // const targets = data.targets;
-          this.data = data;
-          this.data.current = 0;
-          this.bg = index$9.NONE;
-          this.needsDraw = false;
-          this.buffer.nullify();
-          let current = this.data.targets[this.data.current];
-          const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
-          this.buffer.drawSprite(current.x, current.y, mixer);
-          console.log("target", current.x, current.y);
-      },
-      on: {
-          dir(e) {
-              if (!e.dir)
-                  return;
-              let current = this.data.targets[this.data.current];
-              this.buffer.nullify(current.x, current.y);
-              if (e.dir[0] > 0) {
-                  this.data.current += 1;
-              }
-              else if (e.dir[0] < 0) {
-                  this.data.current -= 1;
-              }
-              else if (e.dir[1] > 0) {
-                  this.data.current += 1;
-              }
-              else if (e.dir[1] < 0) {
-                  this.data.current += 1;
-              }
-              if (this.data.current < 0) {
-                  this.data.current = this.data.targets.length - 1;
-              }
-              else if (this.data.current >= this.data.targets.length) {
-                  this.data.current = 0;
-              }
-              current = this.data.targets[this.data.current];
-              console.log("target", current.x, current.y);
-              const mixer = this.app.buffer.get(current.x, current.y).clone().swap();
-              this.buffer.drawSprite(current.x, current.y, mixer);
-          },
-          Enter() {
-              this.stop(this.data.targets[this.data.current]);
-          },
-          Escape() {
-              this.stop(null);
-          },
-          keypress(e) {
-              e.stopPropagation();
-          },
-          click(e) {
-              e.stopPropagation();
-          },
-          mousemove(e) {
-              e.stopPropagation();
-          },
-      },
-  };
-  index.installScene("target", TargetScene);
-
-  const archive = {
-      bg: index$9.BLACK.alpha(50),
-      start(source) {
-          this.data.messages = source.messages;
-          this.data.shown = source.startHeight;
-          this.data.startHeight = source.startHeight;
-          this.data.mode = "forward";
-          this.data.totalCount = source.messages.length;
-          source.messages.confirmAll();
-          this.wait(16, () => forward(this));
-      },
-      draw(buf) {
-          drawArchive(this);
-      },
-      keypress(e) {
-          next(this);
-          e.stopPropagation();
-      },
-      click(e) {
-          next(this);
-          e.stopPropagation();
-      },
-  };
-  // @ts-ignore
-  index.installScene("archive", archive);
-  function next(scene) {
-      if (scene.data.mode === "ack") {
-          scene.data.mode = "reverse";
-          scene.needsDraw = true;
-          if (scene.data.timerCancel) {
-              scene.data.timerCancel();
-          }
-          scene.data.timerCancel = scene.wait(16, () => reverse(scene));
-      }
-      else if (scene.data.mode === "reverse") {
-          scene.stop();
-      }
-      else {
-          scene.data.mode = "ack";
-          scene.data.shown = scene.data.totalCount;
-          if (scene.data.timerCancel) {
-              scene.data.timerCancel();
-              scene.data.timerCancel = null;
-          }
-          scene.needsDraw = true;
-      }
-  }
-  function forward(scene) {
-      // console.log('forward');
-      ++scene.data.shown;
-      scene.data.timerCancel = null;
-      scene.needsDraw = true;
-      if (scene.data.shown < scene.data.totalCount) {
-          scene.data.timerCancel = scene.wait(16, () => forward(scene));
-      }
-      else {
-          scene.data.mode = "ack";
-          scene.data.shown = scene.data.totalCount;
-      }
-  }
-  function reverse(scene) {
-      // console.log('reverse');
-      --scene.data.shown;
-      scene.data.timerCancel = null;
-      if (scene.data.shown <= scene.data.startHeight) {
-          scene.stop();
-      }
-      else {
-          scene.needsDraw = true;
-          scene.data.timerCancel = scene.wait(16, () => reverse(scene));
-      }
-  }
-  function drawArchive(scene) {
-      let fadePercent = 0;
-      const dbuf = scene.buffer;
-      const fg = index$9.from("white");
-      const bg = index$9.from("black");
-      // const dM = reverse ? -1 : 1;
-      // const startM = reverse ? totalMessageCount : scene.bounds.height;
-      // const endM = reverse
-      //     ? scene.bounds.height + dM + 1
-      //     : totalMessageCount + dM;
-      const startY = scene.height - scene.data.shown;
-      const endY = scene.height - 1;
-      const dy = 1;
-      dbuf.fillRect(0, Math.min(startY, endY), scene.width, scene.data.shown, " ", bg, bg);
-      scene.data.messages.forEach((line, _confirmed, j) => {
-          const y = startY + j * dy;
-          if (y > endY)
-              return;
-          fadePercent = Math.floor((50 * j) / scene.data.shown);
-          const fgColor = fg.mix(scene.bg, fadePercent);
-          dbuf.drawText(0, y, line, fgColor, bg);
-      });
-      if (scene.data.mode === "ack") {
-          const y = dbuf.height - 1;
-          const x = dbuf.width - 8; // But definitely on the screen - overwrite some text if necessary
-          dbuf.wrapText(x, y, 8, "--DONE--", bg, fg);
-      }
-  }
-
-  function startApp(config) {
-      const appOpts = utils.mergeDeep({
-          name: "Goblinwerks",
-          width: 90,
-          height: 45,
-          div: "game",
-          scenes: {
-              title: title,
-              level: level,
-              win: win,
-              lose: lose,
-              help: help,
-              reward: reward,
-          },
-          scene: "title",
-          plugins: [],
-      }, config);
-      // make the App
-      // - default is to start the app which will start the "title" scene
-      // - the title screen will make and start a new game
-      // - starting a game will make the default level
-      // - ... and then start the level kind's screen with that level
-      const app = index.make(appOpts);
-      // This will be used when we start the game
-      app.data.start_opts = config;
-      // Start Plugins...
-      startPlugins(app, config);
-      // Install kinds
-      return app;
-  }
-
   install$8("potion", (level, actor) => {
       if (!actor.isHero)
           return false;
@@ -26526,6 +26597,18 @@ void main() {
           - remove "attack"
   */
 
+  const extra_commands = {
+      show_inventory: (scene, e) => {
+          console.log(">> INVENTORY <<");
+          e.stopPropagation();
+      },
+      spawn_zombie: (scene, e) => {
+          const level = scene.data.level;
+          const game = level.game;
+          spawn(level, "zombie", game.hero.x, game.hero.y);
+          e.stopPropagation();
+      },
+  };
   function start() {
       // create the user interface
       const opts = {
@@ -26546,6 +26629,7 @@ void main() {
                   game.app.scenes.start("lose", { reason, game });
               },
           },
+          commands: [core_commands, extra_commands],
           kinds: {
               actor: actors,
               hero: heroes,

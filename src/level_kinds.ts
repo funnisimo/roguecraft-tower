@@ -53,7 +53,7 @@ export const level_kinds = {
     width: 60,
     height: 35,
     scene: "level",
-    dig: true,
+    dig: { stairs: { upTile: "UP_STAIRS_INACTIVE" } },
     keymap: { i: "show_inventory" },
     on: {
       create(level: Level, opts: LevelCreateOpts) {

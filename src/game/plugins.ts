@@ -8,6 +8,7 @@ import { Game, GameEvents, GameOpts } from "./game";
 import * as GAME from "./factory";
 import * as TILE from "../tile";
 import { ObjEvents } from "../object";
+import * as CMD from "../command";
 
 namespace global {
   var GAME: Game;
@@ -35,6 +36,7 @@ export interface Plugin extends GameOpts {
     item?: ITEM.ItemKindConfigSet | ITEM.ItemKindConfigSet[];
     tile?: TILE.TileConfigSet | TILE.TileConfigSet[];
   };
+  commands?: CMD.CommandSet | CMD.CommandSet[];
 }
 
 export const plugins: Record<string, Plugin> = {};
@@ -124,6 +126,9 @@ export function startPlugins(app: GWU.app.App, ...names: (string | Plugin)[]) {
       }
       if (plugin.tile) {
         GWD.site.tileFactory.use(plugin.tile);
+      }
+      if (plugin.commands) {
+        CMD.installSet(plugin.commands);
       }
 
       // Start the plugin

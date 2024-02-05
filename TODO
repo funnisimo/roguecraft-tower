@@ -437,3 +437,7 @@ Ranged Weapons:
   [] HARP_CROSSBOW
   [] LIGHTNING_HARP_CROSSBOW
 
+Todo Tree:
+  [x] Use Regex to handle @todo instead of:
+    - Use: (\/\/|#|<!--|\/\*{1,2}|^\s*\*|^|^\s*(-|\d+.))\s*($TAGS)
+    - Add: @tags as a tag item

@@ -1,11 +1,15 @@
 import "jest-extended";
 
-import "../tile";
+import * as TILE from "../tile";
 import * as LEVEL from ".";
 import { Game } from "../game";
 import * as PLUGINS from "../plugins";
 
 describe("Level", () => {
+  beforeAll(() => {
+    TILE.installSet(TILE.default_tiles);
+  });
+
   test("make w/ opts.on.create", () => {
     const createFn = jest.fn();
 
@@ -22,7 +26,7 @@ describe("Level", () => {
         stairs: {
           start: "down",
           up: true,
-          upTile: "UP_STAIRS_INACTIVE",
+          // upTile: "UP_STAIRS_INACTIVE",
           down: true,
         },
         goesUp: true,

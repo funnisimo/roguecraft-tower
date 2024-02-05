@@ -79,7 +79,7 @@ export class Hero extends ACTOR.Actor {
     });
   }
 
-  // attributes
+  // TODO - move to attack & plugin?
   get damage(): number {
     const melee = this.slots.melee;
     if (melee) {
@@ -144,7 +144,7 @@ export class Hero extends ACTOR.Actor {
     return true;
   }
 
-  // TODO - plugin?
+  // TODO - action and plugin?
   equip(item: ITEM.Item) {
     if (item.slot === null) {
       throw new Error(`Item cannot be equipped - ${item.kind.id} - no slot`);
@@ -164,7 +164,7 @@ export class Hero extends ACTOR.Actor {
     this.combo_index = 0;
   }
 
-  // TODO - plugin?
+  // TODO - action and plugin?
   unequipSlot(slot: string) {
     this.slots[slot] = null;
     this.armor_flags = 0;

@@ -1,9 +1,7 @@
 import * as GWU from "gw-utils";
-import * as SCENES from "./scenes/index";
-import * as TILE from "./tile";
 import "./plugins";
-import * as ACTOR_KINDS from "./actor_kinds";
 import "./hordes";
+import * as ACTOR_KINDS from "./actor_kinds";
 import * as DROP_KINDS from "./drop_kinds";
 import * as LEVEL_KINDS from "./level_kinds";
 import * as MELEE_KINDS from "./melee_kinds";
@@ -12,6 +10,22 @@ import * as RANGED_KINDS from "./ranged_kinds";
 import "./potion";
 import "./enchants";
 import * as GAME from "./game";
+import { core_commands } from "./command";
+import { Level } from "./level";
+import * as ACTOR from "./actor";
+
+const extra_commands = {
+  show_inventory: (scene: GWU.app.Scene, e: GWU.app.Event) => {
+    console.log(">> INVENTORY <<");
+    e.stopPropagation();
+  },
+  spawn_zombie: (scene, e) => {
+    const level = scene.data.level as Level;
+    const game = level.game;
+    ACTOR.spawn(level, "zombie", game.hero.x, game.hero.y);
+    e.stopPropagation();
+  },
+};
 
 function start() {
   // create the user interface
@@ -33,6 +47,7 @@ function start() {
         game.app.scenes.start("lose", { reason, game });
       },
     },
+    commands: [core_commands, extra_commands],
     kinds: {
       actor: ACTOR_KINDS.actors,
       hero: ACTOR_KINDS.heroes,

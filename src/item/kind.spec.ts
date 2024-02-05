@@ -1,7 +1,7 @@
 import * as GWU from "gw-utils";
 import * as ITEM from ".";
 
-describe("ObjKind", () => {
+describe("ItemKind", () => {
   test("create - empty", () => {
     let kind = ITEM.makeKind({
       id: "TEST",

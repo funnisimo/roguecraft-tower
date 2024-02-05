@@ -245,7 +245,7 @@ export const dig_level: PLUGINS.Plugin = {
           stairs: {
             start: "down",
             up: true,
-            upTile: "UP_STAIRS_INACTIVE", // TODO - This is not right for a default!!!
+            // upTile: "UP_STAIRS_INACTIVE", // TODO - This is not right for a default!!!
             down: true,
           },
           goesUp: true,

@@ -189,11 +189,13 @@ export class Actor extends Obj {
     return GWU.path.OK;
   }
 
+  // move out of class
   pathTo(loc: GWU.xy.Pos) {
     const path = GWU.path.fromTo(this, loc, (x, y) => this.moveCost(x, y));
     return path;
   }
 
+  // TODO - more generic & plugin
   act(level: Level) {
     // TODO - move this to plugin
     this.startTurn(level);
@@ -203,6 +205,7 @@ export class Actor extends Obj {
     }
   }
 
+  // TODO - move to Obj
   doBump(level: Level, actor: Actor): boolean {
     // TODO - Check this.bump first!!!
     const actions = this.kind.bump;

@@ -11,8 +11,24 @@ import * as HORDE from "../horde";
 import { Level } from "../level";
 import { factory } from "./factory";
 import { CallbackFn } from "../object";
+import { core_keymap } from "./app";
 import { CommandFn } from "../command";
 
+/**
+ * A keymap where the keys are the Event key values (e.g. 'e', '^e', 'Enter')
+ * and the values are:
+ * - false = turn off this key (deletes any handler if any)
+ * - "name" = the name of the command to run for this key
+ * - {fn} = the function to run for this key
+ */
+export type Keymap = Record<string, false | string | CommandFn>;
+
+/**
+ * A set of keymaps.
+ */
+export type KeymapSet = Keymap | Keymap[];
+
+// TODO - ???
 export type EventFn = (level: Level, e: GWU.app.Event) => void;
 
 export interface GameEvents {
@@ -27,9 +43,7 @@ export interface GameOpts {
   levels?: {
     [id: string]: string | (LEVEL.LevelCreateOpts & { kind: string });
   };
-  keymap?: {
-    [id: string]: string | CommandFn;
-  };
+  keymap?: KeymapSet;
   start_level?: string | number;
   hero_kind?: string | (HERO.HeroMakeOpts & { kind: string });
   // on?: ObjEvents & GameEvents;
@@ -114,22 +128,17 @@ export class Game {
 
     // KEYMAP
     // TODO - move to default plugin
-    this.keymap = Object.assign(
-      {
-        a: "attack",
-        f: "fire",
-        g: "pickup",
-        // i: "show_inventory",
-        // "z": "spawn_zombie",
-        " ": "idle",
-        ".": "idle",
-        ">": "find_up_stairs",
-        "<": "find_down_stairs",
-        dir: "move_dir",
-        Enter: "follow_path",
-      },
-      opts.keymap || {}
-    );
+    const optsSet = opts.keymap || core_keymap;
+    const keyset = Array.isArray(optsSet) ? optsSet : [optsSet];
+    keyset.forEach((set) => {
+      Object.entries(set).forEach(([k, v]) => {
+        if (v === false) {
+          delete this.keymap[k];
+        } else {
+          this.keymap[k] = v;
+        }
+      });
+    });
 
     // CREATE HERO
 

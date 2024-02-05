@@ -2,6 +2,7 @@ import { Actor } from "../actor";
 import { Obj } from "../object";
 import { Item } from "../item";
 import { Level } from "../level";
+import { Hero } from "../hero";
 
 type Settings = Record<string, any>;
 
@@ -66,7 +67,7 @@ class ActResult {
 
 type SimpleActionFn = (
   level: Level,
-  actor: Actor,
+  hero: Hero,
   settings?: Settings
 ) => ActResult;
 
@@ -78,23 +79,23 @@ interface Action {
 class SimpleAction implements Action {
   fn: SimpleActionFn;
   level: Level;
-  actor: Actor;
+  hero: Hero;
   settings: Settings;
 
   constructor(
     fn: SimpleActionFn,
     level: Level,
-    actor: Actor,
+    actor: Hero,
     settings: Settings = {}
   ) {
     this.fn = fn;
     this.level = level;
-    this.actor = actor;
+    this.hero = actor;
     this.settings = settings;
   }
 
   perform(dt: number): ActResult {
-    return this.fn(this.level, this.actor, this.settings);
+    return this.fn(this.level, this.hero, this.settings);
   }
 }
 
