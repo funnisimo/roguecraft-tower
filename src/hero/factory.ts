@@ -58,11 +58,11 @@ export class HeroFactory {
   create(kind: HeroKind, opts: HeroMakeOpts = {}): Hero {
     let out: GWU.Option<Hero> = GWU.Option.None();
     if (opts.ctor) {
-      out = opts.ctor(kind, opts);
+      out = opts.ctor(kind, opts) as unknown as GWU.Option<Hero>;
     }
     out = this.plugins.reduce((v, p) => {
       if (v.isNone() && p.ctor) {
-        return p.ctor(kind, opts);
+        return p.ctor(kind, opts) as GWU.Option<Hero>;
       }
       return v;
     }, out);

@@ -35,7 +35,7 @@ export interface ActorEvents {
   move?: ActorLocFn;
   death?: (level: Level, actor: Actor) => void; // TODO - use destroy instead?
 
-  sidebar?: (actor: Actor, entry: SidebarEntry) => number;
+  sidebar?: (actor: Actor, entry: SidebarEntry) => void;
   turn_start?: (level: Level, actor: Actor) => void;
   turn_end?: (level: Level, actor: Actor, time: number) => void;
   tick?: (level: Level, actor: Actor, time: number) => void;

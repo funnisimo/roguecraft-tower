@@ -16,7 +16,6 @@ export interface HeroMakeOpts extends ObjCreateOpts, HeroEvents {
 }
 
 export class Hero extends ACTOR.Actor {
-  // @ts-ignore
   declare kind: HeroKind;
 
   // TODO - Make this part of a plugin

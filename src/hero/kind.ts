@@ -24,22 +24,22 @@ export type HeroLocFn = (
 
 export type HeroItemFn = (level: Level, hero: Hero, item: Item) => void;
 
-export interface HeroEvents {
-  // bump?: (game: Game, hero: Hero, other: Hero) => void;
-  ctor?: HeroCtorFn;
-  create?: HeroCreateFn;
-  destroy?: HeroDestroyFn; // Hero is destroyed (different from death?)
+export interface HeroEvents extends ACTOR.ActorEvents {
+  // // bump?: (game: Game, hero: Hero, other: Hero) => void;
+  // ctor?: HeroCtorFn;
+  // create?: HeroCreateFn;
+  // destroy?: HeroDestroyFn; // Hero is destroyed (different from death?)
 
-  add?: HeroSpawnFn; // Fired when an Hero is placed into the map at creation time
-  remove?: HeroSpawnFn;
+  // add?: HeroSpawnFn; // Fired when an Hero is placed into the map at creation time
+  // remove?: HeroSpawnFn;
 
-  move?: HeroLocFn;
-  death?: (level: Level, hero: Hero) => void; // TODO - use destroy instead?
+  // move?: HeroLocFn;
+  // death?: (level: Level, hero: Hero) => void; // TODO - use destroy instead?
 
-  sidebar?: (hero: Hero, entry: SidebarEntry) => void;
-  turn_start?: (level: Level, hero: Hero) => void;
-  turn_end?: (level: Level, hero: Hero, time: number) => void;
-  tick?: (level: Level, hero: Hero, time: number) => void;
+  // sidebar?: (hero: Hero, entry: SidebarEntry) => void;
+  // turn_start?: (level: Level, hero: Hero) => void;
+  // turn_end?: (level: Level, hero: Hero, time: number) => void;
+  // tick?: (level: Level, hero: Hero, time: number) => void;
 
   pickup?: HeroItemFn;
   drop?: HeroItemFn;
@@ -50,14 +50,12 @@ export interface HeroEvents {
   use?: HeroItemFn;
 }
 
-export interface HeroKindConfig
-  extends Omit<ACTOR.ActorKindConfig, "on" | "dropChance" | "dropMatch"> {
+export interface HeroKindConfig extends Omit<ACTOR.ActorKindConfig, "on"> {
   on?: HeroEvents & OBJ.ObjEvents;
   slots?: { [id: string]: string };
 }
 
-export interface HeroKind
-  extends Omit<ACTOR.ActorKind, "on" | "dropChance" | "dropMatch"> {
+export interface HeroKind extends Omit<ACTOR.ActorKind, "on"> {
   on: HeroEvents & OBJ.ObjEvents;
   slots: { [id: string]: string };
 }
